@@ -1,5 +1,5 @@
 import { renderParticipantDetails } from './participantDetails.js';
-import { animation, clearLocalStorage } from './index.js';
+import { animation, clearLocalStorage } from '../index.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
 import { getIdToken, getDataAttributes, showAnimation, hideAnimation, baseAPI, urls  } from './utils.js';
 import { appState } from './stateManager.js';

@@ -1,7 +1,7 @@
-import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
-import { getIdToken, showAnimation, hideAnimation, baseAPI } from '../utils.js';
+import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
+import { getIdToken, showAnimation, hideAnimation, baseAPI } from './utils.js';
 import { getSchemaHtmlStr, handleEmailPreview } from './storeNotifications.js';
-import { appState } from '../stateManager.js';
+import { appState } from './stateManager.js';
 
 export const renderRetrieveNotificationSchema = async (showDrafts = false) => {
   const isParent = localStorage.getItem("isParent");

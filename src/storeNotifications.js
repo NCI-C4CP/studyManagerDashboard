@@ -1,6 +1,6 @@
-import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner } from '../utils.js';
-import { appState } from '../stateManager.js';
+import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner } from './utils.js';
+import { appState } from './stateManager.js';
 
 const converter = new showdown.Converter();
 const newsletterCategories = ["newsletter", "eNewsletter", "anniversaryNewsletter"];
