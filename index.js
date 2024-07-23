@@ -1154,3 +1154,12 @@ const activityCheckController = () => {
     document.onmousemove = resetTimer;
     document.onkeypress = resetTimer;
 };
+
+// Add version number to footer
+document.addEventListener('DOMContentLoaded', function() {
+    const contentWrapper = document.querySelector('.footer-content .content-wrapper');
+
+    const newElement = document.createElement('div');
+    newElement.innerHTML = `<p id="appVersion">${appVersion.versionNumber}</p>`;
+    contentWrapper.appendChild(newElement);
+});
