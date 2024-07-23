@@ -1,0 +1,3 @@
+steps:
+- name: 'gcr.io/cloud-builders/gsutil'
+  args: ['cp', '-r', 'siteManagerDashboard/*', 'gs://myconnect_dashboard_prod']

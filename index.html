@@ -1,63 +1,104 @@
-<link rel="stylesheet" href="dashboard.css">
-<script src="dashboard.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Site Study Manager Dashboard</title>
+        <link rel="shortcut icon" href="assets/images/Connect-Favicon-96x96.png">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.2/css/all.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+        <link rel="stylesheet" href="assets/css/dashboard.css">
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css">
 
-<h2>EpiSphere Dashboards</h2>
+        <script
+            src="https://www.datadoghq-browser-agent.com/datadog-rum-v4.js" 
+            type="text/javascript">
+        </script>
 
-<p>
-Dashboards for multiple Episphere projects. 
-Code at <a href="https://github.com/episphere/dashboard" target="_blank">github.com/episphere/dashboard</a>.
-To make experimenting with shared libraries easier, the different dashboards are developed in subdirectories of the dashboard repository.
-This is just an idea, it makes sense for more formal team-based development to fall back to the conventional gitflow model.
-</p>
-
-<h3><a href="https://github.com/episphere/connect" target="_blank">Connect</a></h3>
-<li>
-<a href="recruitConnect_1" target="_blank">recruitConnect_1</a>
-- Jonas testing Praful's Connect API at https://episphere-connect.herokuapp.com.
-</li>
-<br/><br/>
-<li>
-<a href="recruitConnect_2" target="_blank">recruitConnect_2</a>
-- Bhaumik testing Praful's Connect API at https://episphere-connect.herokuapp.com.
-</li>
-<br/><br/>
-<li>
-<a href="recruitSite" target="_blank">recruitSite</a>
-- Jonas testing use of new <a href="https://documenter.getpostman.com/view/7490604/SVYnT26j" target="_blank">tracking API (Aug 2019)</a>from site's perspective
-</li>
-<br/><br/>
-<li>
-<a href="recruitParticipant" target="_blank">recruitParticipant</a>
-- Jonas testing approaches to participant recruitment, with and without token, site id etc.
-</li>
-<br/><br/>
-<li>
-<a href="siteManagerDashboard/#" target="_blank">siteManagerDashboard</a>
-- Bhaumik testing use of new <a href="https://documenter.getpostman.com/view/7490604/SVYnT26j" target="_blank">tracking API (Aug 2019)</a>from site's perspective
-</li>
-<br/><br/>
-<li>
-<a href="pwaConnectApp/" target="_blank">PWA Connect App</a>
-- Participant facing PWA Connect App.
-</li>
-<br/><br/>
-<li>
-<a href="https://episphere.github.io/app/recruit" target="_blank">Participant-facing Web App</a>
-- Developing the participant-facing eligibility/consent portal.
-</li>
-<br/><br/>
-<li>
-<a href="AoUconnect" target="_blank">AoUconnect </a>
-- Jonas experimenting with cross OAUTHed calls between NIH All-of-Us and DCEG Connect.
-</li>
-<br/><br/>
-<li>
-<a href="fileUpload" target="_blank">File upload </a>
-- Upload pathology reports to google cloud storage.
-</li>
-<!--
-<li>
-<a href="recruitParticipant" target="_blank">recruitParticipant</a>
-- Jonas testing use of new tracking API from site's perspective
-</li>
--->
+        <script>
+            const host = location.host;
+            let measurementID = '';
+            if(host === 'dashboard-myconnect.cancer.gov') measurementID = 'G-YBD450K10S'
+            else if(host === 'dashboard-myconnect-stage.cancer.gov') measurementID = 'G-29BD50GYSD'
+            else measurementID = 'G-HPFBFBVJYS'
+            const gtagSrc = `https://www.googletagmanager.com/gtag/js?id=${measurementID}`
+            const gtagScript = document.createElement('script');
+            gtagScript.src = gtagSrc;
+            document.head.appendChild(gtagScript);
+        </script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', measurementID);
+        </script>
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                document.addEventListener("click", function (event) {
+                    // Check if the navbar and the menu button exist
+                    const navbar = document.getElementById("navbar_id");
+                    const menuButton = document.getElementById("hamburger_menu_button");
+                    const menuContent = document.getElementById("navbarNavAltMarkup");
+                    if (navbar && menuButton && menuContent) {
+                        // if the clicked element isn't a child of the navbar and the menu is open, close it
+                        if (!event.target.closest("#navbar_id") && menuContent.classList.contains("show")) {
+                            menuButton.click();
+                        }
+                    }
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <nav class="navbar navbar-light bg-light fixed-top" id="navbar_id">
+            <a class="navbar-brand" href="#"><img height="50px" width="140px" src="assets/images/connect.png" alt="Connect blue logo"></a> 
+            <button class="navbar-toggler" type="button" id="hamburger_menu_button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+                <div class="navbar-nav" id="navBarLinks"></div>
+            </div>
+        </nav>
+        <div>
+            <div id="mainContent"></div>
+            <div id="loadingAnimation" role="status" style="display: none;"></div>
+            <div style="position: relative;">
+                <div style="position: absolute; top: 0; right: -5rem; min-width: 300px;" id="showNotification">
+                </div>
+            </div>
+        </div>
+        <div class="row footer-content">
+            <div class="col content-wrapper">
+                <ul class="menu">
+                    <li class="menu-item links-border-right"><a class="footer-links" href="https://dceg.cancer.gov/research/who-we-study/cohorts/connect">DCEG Connect</a></li>
+                    <li class="menu-item links-border-right"><a class="footer-links" href="https://dceg.cancer.gov/">DCEG Home</a></li>
+                    <li class="menu-item links-border-right"><a class="footer-links" href="https://dceg.cancer.gov/about/contact-dceg">Contact DCEG</a></li>
+                    <li class="menu-item links-border-right"><a class="footer-links" href="https://www.cancer.gov/global/web/policies">Policies</a></li>
+                    <li class="menu-item links-border-right"><a class="footer-links" href="https://www.cancer.gov/global/web/policies/accessibility">Accessibility</a></li>
+                    <li class="menu-item links-border-right"><a class="footer-links" href="https://www.cancer.gov/global/viewing-files">Viewing files</a></li>
+                    <li class="menu-item links-border-right"><a class="footer-links" href="https://www.cancer.gov/global/web/policies/foia">FOIA</a></li>
+                    <li class="menu-item"><a class="footer-links" href="https://dceg.cancer.gov/about/sitemap">DCEG Sitemap</a></li>
+                </ul>
+                <ul class="menu">
+                    <li class="menu-item links-border-right"><a class="footer-links" href="http://www.hhs.gov/">U.S. Department of Health and Human Services</a></li>
+                    <li class="menu-item links-border-right"><a class="footer-links" href="http://www.nih.gov/">National Institutes of Health</a></li> 
+                    <li class="menu-item links-border-right"><a class="footer-links" href="http://www.cancer.gov/">National Cancer Institute</a></li> 
+                    <li class="menu-item"><a class="footer-links" href="http://www.usa.gov/">USA.gov</a></li>
+                </ul>
+                <p class="menu footer-tagline">NIH…Turning Discovery Into Health<sup>®</sup></p>
+            </div>
+        </div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" defer></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" defer></script>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/pdf-lib/dist/pdf-lib.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/downloadjs/1.4.8/download.min.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-auth.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js" integrity="sha512-L03kznCrNOfVxOUovR6ESfCz9Gfny7gihUX/huVbQB9zjODtYpxaVtIaAkpetoiyV2eqWbvxMH9fiSv5enX7bw==" crossorigin="anonymous"></script>
+        <script type="module" src="index.js"></script>
+    </body>
+</html>
