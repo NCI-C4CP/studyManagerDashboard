@@ -41,9 +41,8 @@ const isLocalDev = location.hostname === 'localhost' || location.hostname === '1
 const statsDataTimeLimit = 1200000; // 20 minutes
 
 window.onload = async () => {
-
     try{
-        registerServiceWorker();
+        registerServiceWorker(); 
         updateVersionDisplay();
     } catch (error) {
         console.log('Service Worker registration failed:', error);
