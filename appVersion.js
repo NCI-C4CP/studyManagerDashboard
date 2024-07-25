@@ -1,3 +1,3 @@
 const appVersion = {
-    versionNumber: 'v24.7.0'
+    "versionNumber": "v24.7.0"
 }
