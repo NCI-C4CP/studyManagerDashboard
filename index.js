@@ -1170,21 +1170,21 @@ const activityCheckController = () => {
 const registerServiceWorker = async () => {
     if ("serviceWorker" in navigator) {
         try {
-        const registration = await navigator.serviceWorker.register("./serviceWorker.js");
-        console.log('Service Worker registered with scope:', registration.scope);
+            const registration = await navigator.serviceWorker.register("./serviceWorker.js");
+            console.log('Service Worker registered with scope:', registration.scope);
 
-        registration.addEventListener('updatefound', () => { // This event fires when a new service worker is found
-            const newWorker = registration.installing;
-            newWorker.addEventListener('statechange', () => { // This event fires when the state of the service worker changes
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // New content is available, refresh the page
-                console.log("Refreshing page");
-                window.location.reload();
-            }
+            registration.addEventListener('updatefound', () => { // This event fires when a new service worker is found
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => { // This event fires when the state of the service worker changes
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New content is available, refresh the page
+                    console.log("Refreshing page");
+                    window.location.reload();
+                }
             });
         });
         } catch (error) {
-        console.log('Service Worker registration failed:', error);
+            console.log('Service Worker registration failed:', error);
         }
     }
 };
