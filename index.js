@@ -24,6 +24,26 @@ import { appState } from './src/stateManager.js';
 let saveFlag = false;
 let counter = 0;
 
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./serviceWorker.js").catch((error) => {
+        console.error("Service worker registration failed.", error);
+        return;
+    });
+
+    navigator.serviceWorker.ready.then(() => {
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ action: "getAppVersion" });
+        }
+    });
+
+    navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data.action === "sendAppVersion") {
+            document.getElementById("appVersion").textContent = event.data.payload;
+        }
+    });
+}
+
+
 const datadogConfig = {
     clientToken: 'pubcb2a7770dcbc09aaf1da459c45ecff65',
     applicationId: '571977b4-ca80-4a04-b8fe-5d5148508afd',
@@ -41,13 +61,6 @@ const isLocalDev = location.hostname === 'localhost' || location.hostname === '1
 const statsDataTimeLimit = 1200000; // 20 minutes
 
 window.onload = async () => {
-    try{
-        registerServiceWorker(); 
-        updateVersionDisplay();
-    } catch (error) {
-        console.log('Service Worker registration failed:', error);
-    }
-
     if(location.host === urls.prod) {
         !firebase.apps.length ? firebase.initializeApp(prodFirebaseConfig) : firebase.app();
         window.DD_RUM && window.DD_RUM.init({ ...datadogConfig, env: 'prod' });
@@ -1186,44 +1199,5 @@ const registerServiceWorker = async () => {
         } catch (error) {
             console.log('Service Worker registration failed:', error);
         }
-    }
-};
-
-/**
- * Fetches the app version from the cache storage and updates the version display in the footer
-*/
-const updateVersionDisplay = async () => {
-    const versionNumber = await fetchAppVersionFromCache();
-    if (!versionNumber) return;
-
-    let versionElement = document.getElementById('appVersion');
-
-    if (!versionElement) { 
-        const contentWrapper = document.querySelector('.footer-content .content-wrapper');
-        if (!contentWrapper || !versionNumber) return;
-
-        versionElement = document.createElement('p');
-        versionElement.id = 'appVersion';
-        contentWrapper.appendChild(versionElement);
-        versionElement.textContent = versionNumber;
-    }
-};
-
-const fetchAppVersionFromCache = async () => {
-    try {
-        const cache = await caches.open('app-version-cache');
-        const response = await cache.match('./appVersion.js');
-
-        if (!response) return;
-
-        const appVersionText = await response.text();
-        const versionMatch = appVersionText.match(/"versionNumber"\s*:\s*"(v\d+\.\d+\.\d+)"/);
-
-        if (!versionMatch) return;
-
-        return versionMatch[1];
-    } catch (error) {
-        console.error('Error fetching app version:', error);
-        return 'Error fetching version';
     }
 };
