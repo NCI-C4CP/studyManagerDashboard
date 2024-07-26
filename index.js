@@ -43,7 +43,6 @@ if ("serviceWorker" in navigator) {
     });
 }
 
-
 const datadogConfig = {
     clientToken: 'pubcb2a7770dcbc09aaf1da459c45ecff65',
     applicationId: '571977b4-ca80-4a04-b8fe-5d5148508afd',
@@ -1173,31 +1172,4 @@ const activityCheckController = () => {
     window.onload = resetTimer;
     document.onmousemove = resetTimer;
     document.onkeypress = resetTimer;
-};
-
-/**
- * This function is an async function that checks if the service worker is supported by the browser
- * If it is supported, it registers the service worker
- * If the service worker is already installed and there is a new service worker available, it refreshes the page
-*/
-const registerServiceWorker = async () => {
-    if ("serviceWorker" in navigator) {
-        try {
-            const registration = await navigator.serviceWorker.register("./serviceWorker.js");
-            console.log('Service Worker registered with scope:', registration.scope);
-
-            registration.addEventListener('updatefound', () => { // This event fires when a new service worker is found
-                const newWorker = registration.installing;
-                newWorker.addEventListener('statechange', () => { // This event fires when the state of the service worker changes
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    // New content is available, refresh the page
-                    console.log("Refreshing page");
-                    window.location.reload();
-                }
-            });
-        });
-        } catch (error) {
-            console.log('Service Worker registration failed:', error);
-        }
-    }
 };
