@@ -13,7 +13,7 @@ const cacheNameMapper = {
 
 const currCacheNameArray = Object.values(cacheNameMapper);
 
-registerRoute(/\.(?:js|css|html)$/, new NetworkFirst({ cacheName: cacheNameMapper["static-cache"] }));
+registerRoute(/\.(?:js|css|html|pdf)$/, new NetworkFirst({ cacheName: cacheNameMapper["static-cache"] }));
 registerRoute(/\.(?:png|jpg|jpeg|svg|gif|ico)$/,
     new CacheFirst({
         cacheName: cacheNameMapper["images-cache"],
