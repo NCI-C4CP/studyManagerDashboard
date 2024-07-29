@@ -1,4 +1,0 @@
-Data Sent by Sites via Connect API,,,,,,,,,Created by DCEG Connect,,,,
-Site ID,Sub-site ID,Site-Specific Participant ID,Age,Sex,Race,Ethnicity,Total # Contact Attempts,Recruitment Type,Connect Event ID,Connect Event Time Stamp,Connect Submission ID,Connect QC Status,Connect Batch Status
-SNF,Fargo,11910010001,11,F,White,white,1,Targeted,1000,11:00:00 AM,131,Fail,Rejected
-SNF,Sioux Falls,11910010002,44,M,Native American/Alaskan Native,Hispanic,10,Self Referral ,1000,11:00:00 AM,131,Pass,Rejected

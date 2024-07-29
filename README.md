@@ -1,6 +1,5 @@
-# dashboard
-hosting dashboard front ends, suggested with a 
-```
-episphere.github.io/dashboard/foldername
-```
-template. See https://episphere.github.io/dashboard for list.
+# Study Manager Dashboard
+
+This repo implements study manager dashboard for Connect project.
+
+[Here](https://episphere.github.io/studyManagerDashboard/) is the dashboard hosted on GitHub.
