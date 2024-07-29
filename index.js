@@ -24,6 +24,25 @@ import { appState } from './src/stateManager.js';
 let saveFlag = false;
 let counter = 0;
 
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./serviceWorker.js").catch((error) => {
+        console.error("Service worker registration failed.", error);
+        return;
+    });
+
+    navigator.serviceWorker.ready.then(() => {
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ action: "getAppVersion" });
+        }
+    });
+
+    navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data.action === "sendAppVersion") {
+            document.getElementById("appVersion").textContent = event.data.payload;
+        }
+    });
+}
+
 const datadogConfig = {
     clientToken: 'pubcb2a7770dcbc09aaf1da459c45ecff65',
     applicationId: '571977b4-ca80-4a04-b8fe-5d5148508afd',
