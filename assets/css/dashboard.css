@@ -340,3 +340,7 @@ table {
     border-radius: .25rem;
     width: 100px;
   }
+
+#appVersion {
+    font-size: 0.8rem;
+}
