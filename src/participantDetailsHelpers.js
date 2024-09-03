@@ -1206,6 +1206,15 @@ export const submitClickHandler = async (participant, changedOption) => {
     }
 };
 
+export const resetClickHandlers = async (participant) => {
+    console.log('participant', participant);
+    const participantUid = participant?.state?.uid;
+    const resetButton = document.getElementById('resetUserBtn');
+    resetButton.addEventListener('click', async (e) => {
+
+    });
+}
+
 /**
  * Handle the query.frstName and query.lastName fields.
  * Check changedUserDataForProfile the participant profile for all name types. If a name is in changedUserDataForProfile, Add it to the queryNameArray.
@@ -1387,6 +1396,10 @@ const processUserDataUpdate = async (changedUserDataForProfile, changedUserDataF
         });
         return true;
 };
+
+const processUserDataReset = async() => {
+
+}
   
 /**
  * Update the user's history based on new data entered by the user. This only triggers if the user's profile is verified.
@@ -1487,6 +1500,32 @@ export const postUserDataUpdate = async (changedUserData) => {
         return await response.json();
     } catch (error) {
         console.error('Error in postUserDataUpdate:', error);
+        throw error;
+    }
+}
+
+export const getResetUserData = async (uid) => {
+    try {
+        const idToken = await getIdToken();
+        const response = await fetch(`${baseAPI}/dashboard?api=resetUser`, {
+            method: "GET",
+            headers:{
+                Authorization: "Bearer " + idToken,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({uid})
+        });
+
+        console.log('response', response);
+
+        if (!response.ok) { 
+            const error = (response.status + ": " + (await response.json()).message);
+            throw new Error(error);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error in getResetUserData:', error);
         throw error;
     }
 }

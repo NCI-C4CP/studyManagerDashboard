@@ -1,5 +1,5 @@
 import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
-import { attachUpdateLoginMethodListeners, allStates, closeModal, getFieldValues, getImportantRows, getModalLabel, hideUneditableButtons, renderReturnSearchResults, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, } from './participantDetailsHelpers.js';
+import { attachUpdateLoginMethodListeners, allStates, closeModal, getFieldValues, getImportantRows, getModalLabel, hideUneditableButtons, renderReturnSearchResults, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, resetClickHandlers, suffixList, languageList, viewParticipantSummary, } from './participantDetailsHelpers.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
 import { renderParticipantHeader } from './participantHeader.js';
 import { getDataAttributes } from './utils.js';
@@ -43,6 +43,7 @@ export const renderParticipantDetails = (participant, changedOption) => {
     renderReturnSearchResults();
     attachUpdateLoginMethodListeners(participant[fieldMapping.accountEmail], participant[fieldMapping.accountPhone], participant.token, participant.state.uid);
     submitClickHandler(participant, changedOption);
+    resetClickHandlers(participant);
 }
 
 export const render = (participant, changedOption) => {
@@ -63,6 +64,7 @@ export const render = (participant, changedOption) => {
             ${renderParticipantHeader(participant)}     
             ${renderBackToSearchDivAndButton()}
             ${renderCancelChangesAndSaveChangesButtons()}
+            ${renderResetUserButton()}
             ${renderDetailsTableHeader()}
         `;
 
@@ -281,6 +283,15 @@ const renderBackToSearchDivAndButton = () => {
         
     `;
 };
+
+const renderResetUserButton = () => {
+    // @TODO: Make this dev environment only
+    return `
+        <div class="translate-middle">
+            <button type="button" class="btn btn-danger" id="resetUserBtn">Reset User</button>    
+        </div>
+    `
+}
 
 const renderDetailsTableHeader = () => {
     return `
