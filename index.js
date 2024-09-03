@@ -14,6 +14,11 @@ import fieldMapping from './src/fieldToConceptIdMapping.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
 import { firebaseConfig as devFirebaseConfig } from "./config/dev/config.js";
+// When doing local development, uncomment this and comment out the line below it.
+// Get the API key file from Box or the DevOps team
+// Do not accept PRs with the localDevFirebaseConfig import uncommented
+// import { firebaseConfig as localDevFirebaseConfig } from "./config/local-dev/config.js";
+const localDevFirebaseConfig = devFirebaseConfig;
 import { firebaseConfig as stageFirebaseConfig } from "./config/stage/config.js";
 import { firebaseConfig as prodFirebaseConfig } from "./config/prod/config.js";
 import { SSOConfig as devSSOConfig} from './config/dev/identityProvider.js';
@@ -67,6 +72,9 @@ window.onload = async () => {
     else if(location.host === urls.stage) {
         !firebase.apps.length ? firebase.initializeApp(stageFirebaseConfig) : firebase.app();
         window.DD_RUM && window.DD_RUM.init({ ...datadogConfig, env: 'stage' });
+    } 
+    else if (isLocalDev) {
+        !firebase.apps.length ? firebase.initializeApp(localDevFirebaseConfig) : firebase.app();
     } 
     else {
         !firebase.apps.length ? firebase.initializeApp(devFirebaseConfig) : firebase.app();
