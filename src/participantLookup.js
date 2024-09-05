@@ -204,6 +204,7 @@ export const performSearch = async (query, sitePref, failedElem) => {
     if(response.code === 200 && response.data.length > 0) {
         const mainContent = document.getElementById('mainContent')
         let filterRawData = filterdata(response.data);
+        console.log('filterRawData', filterRawData);
 
         if (sitePref !== undefined && sitePref != null && sitePref !== 'allResults') {
             const sitePrefId = nameToKeyObj[sitePref];

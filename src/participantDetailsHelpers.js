@@ -1211,7 +1211,7 @@ export const resetClickHandlers = async (participant) => {
     const participantUid = participant?.state?.uid;
     const resetButton = document.getElementById('resetUserBtn');
     resetButton.addEventListener('click', async (e) => {
-
+        await postResetUserData(participantUid);
     });
 }
 
@@ -1504,11 +1504,11 @@ export const postUserDataUpdate = async (changedUserData) => {
     }
 }
 
-export const getResetUserData = async (uid) => {
+export const postResetUserData = async (uid) => {
     try {
         const idToken = await getIdToken();
         const response = await fetch(`${baseAPI}/dashboard?api=resetUser`, {
-            method: "GET",
+            method: "POST",
             headers:{
                 Authorization: "Bearer " + idToken,
                 "Content-Type": "application/json"
@@ -1525,7 +1525,7 @@ export const getResetUserData = async (uid) => {
         
         return await response.json();
     } catch (error) {
-        console.error('Error in getResetUserData:', error);
+        console.error('Error in postResetUserData:', error);
         throw error;
     }
 }
