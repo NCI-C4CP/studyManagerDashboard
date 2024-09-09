@@ -70,3 +70,6 @@ scratch
 scratch.js
 .eslintrc.json
 .hintrc
+
+# private local dev Firebase key
+config/local-dev/
