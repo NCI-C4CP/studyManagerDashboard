@@ -2,7 +2,7 @@ import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
 import { attachUpdateLoginMethodListeners, allStates, closeModal, getFieldValues, getImportantRows, getModalLabel, hideUneditableButtons, renderReturnSearchResults, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, resetClickHandlers, suffixList, languageList, viewParticipantSummary, } from './participantDetailsHelpers.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
 import { renderParticipantHeader } from './participantHeader.js';
-import { getDataAttributes } from './utils.js';
+import { getDataAttributes, urls } from './utils.js';
 import { appState } from './stateManager.js';
 
 appState.setState({unsavedChangesTrack:{saveFlag: false, counter: 0}});
@@ -38,12 +38,12 @@ export const renderParticipantDetails = (participant, changedOption) => {
     hideUneditableButtons(participant, changedOption);
     localStorage.setItem("participant", JSON.stringify(participant));
     changeParticipantDetail(participant,  changedOption, originalHTML);
+    resetParticipantConfirm(originalHTML);
     editAltContact(participant);
     viewParticipantSummary(participant);
     renderReturnSearchResults();
     attachUpdateLoginMethodListeners(participant[fieldMapping.accountEmail], participant[fieldMapping.accountPhone], participant.token, participant.state.uid);
     submitClickHandler(participant, changedOption);
-    resetClickHandlers(participant);
 }
 
 export const render = (participant, changedOption) => {
@@ -64,7 +64,7 @@ export const render = (participant, changedOption) => {
             ${renderParticipantHeader(participant)}     
             ${renderBackToSearchDivAndButton()}
             ${renderCancelChangesAndSaveChangesButtons()}
-            ${renderResetUserButton()}
+            ${renderResetUserButton(participant?.state?.uid)}
             ${renderDetailsTableHeader()}
         `;
 
@@ -107,6 +107,30 @@ export const render = (participant, changedOption) => {
         template += `${renderShowMoreDataModal()}`
     }
     return template;
+}
+
+const resetParticipantConfirm = (originalHTML) => {
+    const openResetDialogBtn = document.getElementById('openResetDialog');
+    if(openResetDialogBtn) {
+        let data = getDataAttributes(openResetDialogBtn);
+        openResetDialogBtn.addEventListener('click', () => {
+            const header = document.getElementById('modalHeader');
+            const body = document.getElementById('modalBody');  
+            const uid = data.participantuid;
+            header.innerHTML = `
+                    <h5>Confirm Participant Reset</h5>
+                    <button type="button" class="modal-close-btn" id="closeModal" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`
+            body.innerHTML = `<div>
+                Are you sure you want to reset this participant to a just-verified state? This cannot be undone.
+                    <div style="display:inline-block;">
+                            <button type="submit" class="btn btn-danger" data-dismiss="modal" target="_blank">Cancel</button>
+                            &nbsp;
+                            <button type="button" class="btn btn-primary" id="resetUserBtn">Confirm</button>
+                        </div>
+            </div>`
+            resetClickHandlers(uid);
+        });
+    }
 }
 
 const changeParticipantDetail = (participant, changedOption, originalHTML) => {
@@ -284,13 +308,22 @@ const renderBackToSearchDivAndButton = () => {
     `;
 };
 
-const renderResetUserButton = () => {
-    // @TODO: Make this dev environment only
-    return `
-        <div class="translate-middle">
-            <button type="button" class="btn btn-danger" id="resetUserBtn">Reset User</button>    
-        </div>
-    `
+const renderResetUserButton = (participantUid) => {
+    if(location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.host === urls.stage) {
+        return `
+        <a
+            data-toggle="modal" 
+            data-target="#modalShowMoreData"
+            name="modalResetParticipant"
+            id="openResetDialog"
+            data-participantuid="${participantUid}"
+        >
+            <button type="button" class="btn btn-danger">Reset User</button>
+        </a>
+        `
+    } else {
+        return '';
+    }
 }
 
 const renderDetailsTableHeader = () => {

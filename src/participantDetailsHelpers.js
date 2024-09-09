@@ -760,6 +760,37 @@ const showAuthUpdateAPIError = (bodyId, message) => {
     return false;
 }
 
+export const refreshParticipantAfterReset = async (participant) => {
+    showAnimation();
+    localStorage.setItem('participant', JSON.stringify(participant));
+    renderParticipantDetails(participant, {});
+    appState.setState({unsavedChangesTrack:{saveFlag: false, counter: 0}})
+    let alertList = document.getElementById('alert_placeholder');
+    let template = '';
+    template += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    Success! Participant Reset.
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    </div>`
+    hideAnimation();
+    alertList.innerHTML = template;
+}
+
+export const participantRefreshError = async (errorMsg) => {
+    showAnimation();
+    let alertList = document.getElementById('alert_placeholder');
+    let template = '';
+    template += `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    Error resetting participant: ${errorMsg}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    </div>`
+    hideAnimation();
+    alertList.innerHTML = template;
+}
+
 export const refreshParticipantAfterUpdate = async (participant) => {
     showAnimation();
     localStorage.setItem('participant', JSON.stringify(participant));
@@ -1206,12 +1237,26 @@ export const submitClickHandler = async (participant, changedOption) => {
     }
 };
 
-export const resetClickHandlers = async (participant) => {
-    console.log('participant', participant);
-    const participantUid = participant?.state?.uid;
+export const resetClickHandlers = async (participantUid) => {
     const resetButton = document.getElementById('resetUserBtn');
-    resetButton.addEventListener('click', async (e) => {
-        await postResetUserData(participantUid);
+    if(!resetButton) {
+        return;
+    }
+    resetButton.addEventListener('click', async () => {
+        try {
+            const json = await postResetUserData(participantUid);
+            closeModal();
+            if(json.code === 200) {
+                refreshParticipantAfterReset(json.data.data);
+            } else if (json.code === 404) {
+                participantRefreshError('Unable to find participant.');
+            } else {
+                participantRefreshError(json.data);
+            }
+        } catch(error) {
+            console.error('error', error);
+            participantRefreshError('Unknown error.');
+        }
     });
 }
 
@@ -1513,10 +1558,8 @@ export const postResetUserData = async (uid) => {
                 Authorization: "Bearer " + idToken,
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({uid})
+            body: JSON.stringify({uid, saveToDb: 'true'})
         });
-
-        console.log('response', response);
 
         if (!response.ok) { 
             const error = (response.status + ": " + (await response.json()).message);
