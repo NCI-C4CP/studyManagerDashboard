@@ -1441,10 +1441,6 @@ const processUserDataUpdate = async (changedUserDataForProfile, changedUserDataF
         });
         return true;
 };
-
-const processUserDataReset = async() => {
-
-}
   
 /**
  * Update the user's history based on new data entered by the user. This only triggers if the user's profile is verified.

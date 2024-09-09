@@ -38,7 +38,7 @@ export const renderParticipantDetails = (participant, changedOption) => {
     hideUneditableButtons(participant, changedOption);
     localStorage.setItem("participant", JSON.stringify(participant));
     changeParticipantDetail(participant,  changedOption, originalHTML);
-    resetParticipantConfirm(originalHTML);
+    resetParticipantConfirm();
     editAltContact(participant);
     viewParticipantSummary(participant);
     renderReturnSearchResults();
@@ -109,7 +109,7 @@ export const render = (participant, changedOption) => {
     return template;
 }
 
-const resetParticipantConfirm = (originalHTML) => {
+const resetParticipantConfirm = () => {
     const openResetDialogBtn = document.getElementById('openResetDialog');
     if(openResetDialogBtn) {
         let data = getDataAttributes(openResetDialogBtn);
@@ -309,7 +309,7 @@ const renderBackToSearchDivAndButton = () => {
 };
 
 const renderResetUserButton = (participantUid) => {
-    if(location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.host === urls.stage) {
+    if(location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.host === urls.dev) {
         return `
         <a
             data-toggle="modal" 
