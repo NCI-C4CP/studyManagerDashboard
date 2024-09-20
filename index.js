@@ -14,10 +14,6 @@ import fieldMapping from './src/fieldToConceptIdMapping.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
 import { firebaseConfig as devFirebaseConfig } from "./config/dev/config.js";
-// When doing local development, uncomment this
-// Get the API key file from Box or the DevOps team
-// Do not accept PRs with the localDevFirebaseConfig import uncommented
-// import { firebaseConfig as localDevFirebaseConfig } from "./config/local-dev/config.js";
 import { firebaseConfig as stageFirebaseConfig } from "./config/stage/config.js";
 import { firebaseConfig as prodFirebaseConfig } from "./config/prod/config.js";
 import { SSOConfig as devSSOConfig} from './config/dev/identityProvider.js';
@@ -73,9 +69,19 @@ window.onload = async () => {
         window.DD_RUM && window.DD_RUM.init({ ...datadogConfig, env: 'stage' });
     } 
     else if (isLocalDev) {
-        if (typeof localDevFirebaseConfig === 'undefined') {
-            console.error('Local development requires a localDevFirebaseConfig function to be defined in src/local-dev/config.js.');
-            return;
+        let localDevFirebaseConfig = null;
+        let hasError = false;
+        try {
+          const localDevConfig = await import("./config/local-dev/config.js");
+          localDevFirebaseConfig = localDevConfig.firebaseConfig;
+          if (!localDevFirebaseConfig) hasError = true;
+        } catch (error) {
+          hasError = true;
+        }
+
+        if (hasError) {
+          console.error("Local development requires firebaseConfig defined in src/local-dev/config.js.");
+          return;
         }
         !firebase.apps.length ? firebase.initializeApp(localDevFirebaseConfig) : firebase.app();
     } 
