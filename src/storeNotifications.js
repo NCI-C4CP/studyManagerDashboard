@@ -208,15 +208,15 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
     
     <div class="row form-group">
         <label class="col-form-label col-md-3">Start Time</label>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="text" id="startDays" placeholder="# days" ${schemaData?.time?.start ? `value="${schemaData.time.start.day ?? 0}"` : `value="0"`} ${readonlyCheck}>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" min="0" max="23" id="startHours" placeholder="hour (0-23)" ${schemaData?.time?.start ? `value="${schemaData.time.start.hour ?? 0}"`: `value="0"`} ${readonlyCheck}>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2" type="number" min="0" max="59" id="startMinutes" placeholder="minutes (0-59)" ${schemaData?.time?.start ? `value="${schemaData.time.start.minute ?? 0}"`: `value="0"`} ${readonlyCheck}>
+        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" id="startDays" min="0" ${schemaData?.time?.start ? `value="${schemaData.time.start.day ?? 0}"` : `value="0"`} ${readonlyCheck}>
+        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" min="0" max="23" id="startHours" ${schemaData?.time?.start ? `value="${schemaData.time.start.hour ?? 0}"` : `value="0"`} ${readonlyCheck}>
+        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2" type="number" min="0" max="59" id="startMinutes" ${schemaData?.time?.start ? `value="${schemaData.time.start.minute ?? 0}"` : `value="0"`} ${readonlyCheck}>
     </div>
         <div class="row form-group">
         <label class="col-form-label col-md-3">Stop Time</label>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="text" id="stopDays" placeholder="# days" ${schemaData?.time?.stop ? `value="${schemaData.time.stop.day ?? 0}"` : `value="0"`} ${readonlyCheck}>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" min="0" max="23" id="stopHours" placeholder="hour (0-23)" ${schemaData?.time?.stop? `value="${schemaData.time.stop.hour ?? 0}"`: `value="0"`} ${readonlyCheck}>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2" type="number" min="0" max="59" id="stopMinutes" placeholder="minutes (0-59)" ${schemaData?.time?.stop ? `value="${schemaData.time.stop.minute ?? 0}"`: `value="0"`} ${readonlyCheck}>
+        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" id="stopDays" min="1" ${schemaData?.time?.stop ? `value="${schemaData.time.stop.day ?? 2}"` : `value="2"`} ${readonlyCheck}>
+        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" min="0" max="23" id="stopHours" ${schemaData?.time?.stop? `value="${schemaData.time.stop.hour ?? 0}"` : `value="0"`} ${readonlyCheck}>
+        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2" type="number" min="0" max="59" id="stopMinutes" ${schemaData?.time?.stop ? `value="${schemaData.time.stop.minute ?? 0}"` : `value="0"`} ${readonlyCheck}>
     </div>`;
 };
 
@@ -368,7 +368,7 @@ const getConditionHtmlStr = (index = 0, isReadOnly = false, condition = []) => {
   return `
     <div class="row form-group" data-condition-idx="${index}" data-condition-type="simple">
         <label class="col-form-label col-md-3">Condition</label>
-        <div class="condition-key col-md-2 mr-2 p-0">
+        <div class="col-md-2 mr-2 p-0">
           <input required list="dataListConditionKey${index}" class="form-control" name="condition-key" ${conditionKey ? `value="${conditionKey}"` : ""} ${readonlyCheck}>
           <datalist id="dataListConditionKey${index}">
               ${conceptsOptionsStr}
@@ -401,7 +401,7 @@ const getSQLConditionHtmlStr = (index = 0, isReadOnly = false, conditionStr = ""
   return `
     <div class="row form-group" data-condition-idx="${index}" data-condition-type="sql">
         <label class="col-form-label col-md-3">SQL Conditions</label>
-        <div class="condition-key col-md-7 mr-2 p-0">
+        <div class="col-md-7 mr-2 p-0">
           <textarea required class="form-control" rows="2" placeholder='d_685002411.d_867203506=104430631 AND (d_827220437=531629870 OR d_827220437=548392715) AND d_914594314>"2024-01-01" AND d_914594314<"2024-09-10T20:05:16.490Z"' ${readonlyCheck}>${conditionStr}</textarea>
         </div>
         <button type ="button" data-btn-idx="${index}" ${readonlyCheck} class="btn btn-warning ml-4 col-md-1" title="Delete SQL conditions in this row">Delete</button>
