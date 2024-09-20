@@ -91,19 +91,18 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
   let index = 0;
 
   if (schemaData?.conditions) {
-    for (const [conditionKey, valObj] of Object.entries(schemaData.conditions)) {
-      const [conditionOperator, conditionValue] = Object.entries(valObj)[0];
-      conditionHtmlStrAll += getConditionHtmlStr({
-        index,
-        isReadOnly,
-        conditionKey,
-        conditionOperator,
-        conditionValue,
-      });
-      index++;
+    const conditions = JSON.parse(schemaData.conditions);
+    for (const condition of conditions) {
+      if (Array.isArray(condition) && condition.length === 3) {
+        conditionHtmlStrAll += getConditionHtmlStr(index, isReadOnly, condition);
+        index++;
+      } else if (typeof condition === "string") {
+        conditionHtmlStrAll += getSQLConditionHtmlStr(index, isReadOnly, condition);
+        index++;
+      }
     }
   } else {
-    conditionHtmlStrAll = getConditionHtmlStr({ index, isReadOnly });
+    conditionHtmlStrAll = getConditionHtmlStr(index, isReadOnly);
   }
 
   return `
@@ -123,7 +122,7 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
     </div>
 
     <div class="row form-group">
-        <label class="col-form-label col-md-3">Notification type</label>
+        <label class="col-form-label col-md-3">Notification Type</label>
         <input type="checkbox" name="notification-checkbox" data-target-type="email" id="emailCheckBox" ${schemaData?.notificationType?.includes("email")? "checked": ""} ${readonlyCheck} style="height: 25px;">&nbsp;
         <label class="mr-3" for="emailCheckBox">Email</label>
         <input type="checkbox" name="notification-checkbox" data-target-type="sms" id="smsCheckBox" ${schemaData?.notificationType?.includes("sms")? "checked": ""} ${readonlyCheck} style="height: 25px;">&nbsp;
@@ -149,15 +148,16 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
     <div id="emailDiv">${schemaData?.email ? getEmailDivHtml(schemaData.email, isReadOnly, true) : "" }</div>
     <div id="smsDiv">${schemaData?.sms ? getSmsDivHtml(schemaData.sms, isReadOnly, true) : "" }</div>
     <div id="pushDiv">${schemaData?.push?.subject ? getPushDivHtml(schemaData) : "" }</div>
-    <div id="conditionsDiv">
+    <div id="conditionsDiv" data-current-index="${index}">
         ${conditionHtmlStrAll}
     </div>
     <div class="form-group">
-        <button type="button" class="btn btn-outline-primary" id="addConditions" data-condition="${index + 1}" ${readonlyCheck}>Add more condition</button>
+        <button type="button" class="btn btn-outline-primary" id="addOneCondition" ${readonlyCheck}>Add Condition</button>
+        <button type="button" class="btn btn-outline-secondary" id="addSqlCondition" ${readonlyCheck}>Add SQL Condition(s)</button>
     </div>
     
     <div class="row form-group">
-        <label class="col-form-label col-md-3">Email field concept</label>
+        <label class="col-form-label col-md-3">Email Field Concept</label>
         <div class="email-concept col-md-8 p-0">
             <input id="emailConceptId" required list="dataListEmailConcept" class="form-control" ${schemaData?.emailField ? `value="${schemaData.emailField}"`: ""} ${readonlyCheck}>
             <datalist id="dataListEmailConcept">
@@ -167,7 +167,7 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
     </div>
     
     <div class="row form-group">
-        <label class="col-form-label col-md-3">Phone no. concept</label>
+        <label class="col-form-label col-md-3">Phone No. Concept</label>
         <div class="phone-concept col-md-8 p-0">
             <input id="phoneConceptId" required list="dataListPhoneConcept" class="form-control" ${schemaData?.phoneField ? `value="${schemaData.phoneField}"`: ""} ${readonlyCheck}>
             <datalist id="dataListPhoneConcept">
@@ -177,7 +177,7 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
     </div>
 
     <div class="row form-group">
-        <label class="col-form-label col-md-3">First name concept</label>
+        <label class="col-form-label col-md-3">First Name Concept</label>
         <div class="first-name-concept col-md-8 p-0">
             <input id="firstNameConceptId" required list="dataListFirstNameConcept" class="form-control" ${schemaData?.firstNameField ? `value="${schemaData.firstNameField}"`: ""} ${readonlyCheck}>
             <datalist id="dataListFirstNameConcept">
@@ -187,7 +187,7 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
     </div>
 
     <div class="row form-group">
-        <label class="col-form-label col-md-3">Preferred name concept</label>
+        <label class="col-form-label col-md-3">Preferred Name Concept</label>
         <div class="preferred-name-concept col-md-8 p-0">
             <input id="preferredNameConceptId" required list="dataListPreferredNameConcept" class="form-control" ${schemaData?.preferredNameField ? `value="${schemaData.preferredNameField}"`: ""} ${readonlyCheck}>
             <datalist id="dataListPreferredNameConcept">
@@ -197,7 +197,7 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
     </div>
 
     <div class="row form-group">
-        <label class="col-form-label col-md-3">Primary field</label>
+        <label class="col-form-label col-md-3">Primary Field</label>
         <div class="primary-field col-md-8 p-0">
             <input id="primaryFieldConceptId" required list="dataListPrimaryField" class="form-control" ${schemaData?.primaryField ? `value="${schemaData.primaryField}"`: ""} ${readonlyCheck}>
             <datalist id="dataListPrimaryField">
@@ -207,10 +207,16 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
     </div>
     
     <div class="row form-group">
-        <label class="col-form-label col-md-3">Time</label>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="text" id="days" placeholder="# days" ${schemaData?.time ? `value="${schemaData.time.day ?? 0}"` : `value="0"`} ${readonlyCheck}>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" min="0" max="23" id="hours" placeholder="hour (0-23)" ${schemaData?.time ? `value="${schemaData.time.hour ?? 0}"`: `value="0"`} ${readonlyCheck}>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2" type="number" min="0" max="59" id="minutes" placeholder="minutes (0-59)" ${schemaData?.time ? `value="${schemaData.time.minute ?? 0}"`: `value="0"`} ${readonlyCheck}>
+        <label class="col-form-label col-md-3">Start Time</label>
+        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" id="startDays" min="0" ${schemaData?.time?.start ? `value="${schemaData.time.start.day ?? 0}"` : `value="0"`} ${readonlyCheck}>
+        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" min="0" max="23" id="startHours" ${schemaData?.time?.start ? `value="${schemaData.time.start.hour ?? 0}"` : `value="0"`} ${readonlyCheck}>
+        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2" type="number" min="0" max="59" id="startMinutes" ${schemaData?.time?.start ? `value="${schemaData.time.start.minute ?? 0}"` : `value="0"`} ${readonlyCheck}>
+    </div>
+        <div class="row form-group">
+        <label class="col-form-label col-md-3">Stop Time</label>
+        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" id="stopDays" min="1" ${schemaData?.time?.stop ? `value="${schemaData.time.stop.day ?? 2}"` : `value="2"`} ${readonlyCheck}>
+        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" min="0" max="23" id="stopHours" ${schemaData?.time?.stop? `value="${schemaData.time.stop.hour ?? 0}"` : `value="0"`} ${readonlyCheck}>
+        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2" type="number" min="0" max="59" id="stopMinutes" ${schemaData?.time?.stop ? `value="${schemaData.time.stop.minute ?? 0}"` : `value="0"`} ${readonlyCheck}>
     </div>`;
 };
 
@@ -245,9 +251,16 @@ const handleFormSubmit = () => {
 
     schema["primaryField"] = document.getElementById("primaryFieldConceptId").value;
     schema["time"] = {
-      day: parseInt(document.getElementById("days").value),
-      hour: parseInt(document.getElementById("hours").value),
-      minute: parseInt(document.getElementById("minutes").value),
+      start: {
+        day: parseInt(document.getElementById("startDays").value),
+        hour: parseInt(document.getElementById("startHours").value),
+        minute: parseInt(document.getElementById("startMinutes").value),
+      },
+      stop: {
+        day: parseInt(document.getElementById("stopDays").value),
+        hour: parseInt(document.getElementById("stopHours").value),
+        minute: parseInt(document.getElementById("stopMinutes").value),
+      },
     };
 
     const emailInputDivList = document.querySelectorAll("#emailDiv div[data-email-lang]");
@@ -285,18 +298,25 @@ const handleFormSubmit = () => {
       schema["push"] = { subject: pushSubjectEle.value, body: document.getElementById("pushBody").value };
     }
 
-    const opeartorEleArray = Array.from(document.getElementsByName("condition-operator"));
-    const valueTypeEleArray = Array.from(document.getElementsByName("value-type"));
-    const valueEleArray = Array.from(document.getElementsByName("condition-value"));
-    schema["conditions"] = {};
-    Array.from(document.getElementsByName("condition-key")).forEach((element, i) => {
-      schema["conditions"][element.value] = {};
-      if (valueTypeEleArray[i].value === "string") {
-        schema["conditions"][element.value][opeartorEleArray[i].value] = valueEleArray[i].value;
-      } else if (valueTypeEleArray[i].value === "number") {
-        schema["conditions"][element.value][opeartorEleArray[i].value] = parseInt(valueEleArray[i].value);
+    let conditionArray = [];
+    const conditionRowArray = Array.from(document.querySelectorAll("#conditionsDiv div[data-condition-idx]"));
+    for (const conditionRow of conditionRowArray) {
+      if (conditionRow.dataset.conditionType === "sql") {
+        conditionArray.push([conditionRow.querySelector("textarea").value.trim()]);
+        continue;
       }
-    });
+
+      const conditionKey = conditionRow.querySelector("input[name=condition-key]").value.trim().split(/\s+/)[0];
+      const conditionOperator = conditionRow.querySelector("select[name=condition-operator]").value.trim().split(/\s+/)[0];
+      const conditionValueType = conditionRow.querySelector("select[name=value-type]").value.trim().split(/\s+/)[0];
+      const conditionValue = conditionRow.querySelector("input[name=condition-value]").value.trim().split(/\s+/)[0];
+      if (conditionValueType === "string") {
+        conditionArray.push([conditionKey, conditionOperator, conditionValue]);
+      } else if (conditionValueType === "number") {
+        conditionArray.push([conditionKey, conditionOperator, parseInt(conditionValue)]);
+      }
+    }
+    schema["conditions"] = JSON.stringify(conditionArray);
 
     const currSchemaId = await storeNotificationSchema(schema);
     if (!hasSchemaId && currSchemaId.length > 0) {
@@ -311,41 +331,44 @@ const handleFormSubmit = () => {
 
 const handleAddCondition = () => {
   const conditionDiv = document.getElementById("conditionsDiv");
-  const btn = document.getElementById("addConditions");
+  const idAndCallbacks = [
+    ["addOneCondition", getConditionHtmlStr],
+    ["addSqlCondition", getSQLConditionHtmlStr],
+  ];
 
-  btn && btn.addEventListener("click", () => {
-    const index = parseInt(btn.dataset.condition);
-    const wrapperDiv = document.createElement("div");
-    wrapperDiv.innerHTML = getConditionHtmlStr({ index });
-    conditionDiv.appendChild(wrapperDiv.firstElementChild);
-    conditionDiv.querySelector(`button[data-btn-idx="${index}"]`).addEventListener("click", deleteConditionListener);
-    btn.dataset.condition = index + 1;
-  });
+  for (const [btnId, getHtmlStr] of idAndCallbacks) {
+    const btn = document.getElementById(btnId);
+    if (!btn || btn.hasClickListener) continue;
+
+    btn.addEventListener("click", () => {
+      const index = parseInt(conditionDiv.dataset.currentIndex) + 1;
+      const wrapperDiv = document.createElement("div");
+      wrapperDiv.innerHTML = getHtmlStr(index);
+      conditionDiv.appendChild(wrapperDiv.firstElementChild);
+      conditionDiv.querySelector(`button[data-btn-idx="${index}"]`).addEventListener("click", handleDeleteCondition);
+      conditionDiv.dataset.currentIndex = index;
+      btn.hasClickListener = true;
+    });
+  }
 };
 
 const handleDeleteExistingConditions = () => {
-  const conditionDiv = document.getElementById("conditionsDiv");
-  const btns = conditionDiv.querySelectorAll("button[data-btn-idx]");
+  const btns = document.querySelectorAll("#conditionsDiv button[data-btn-idx]");
   btns.forEach((btn) => {
     if (!btn.hasClickListener) {
-      btn.addEventListener("click", deleteConditionListener);
+      btn.addEventListener("click", handleDeleteCondition);
       btn.hasClickListener = true;
     }
   });
 };
 
-const getConditionHtmlStr = ({
-  index = 0,
-  isReadOnly = false,
-  conditionKey = null,
-  conditionOperator = null,
-  conditionValue = null,
-}) => {
+const getConditionHtmlStr = (index = 0, isReadOnly = false, condition = []) => {
   const readonlyCheck = isReadOnly ? "disabled" : "";
+  const [conditionKey = null, conditionOperator = null, conditionValue = null] = condition;
   return `
-    <div class="row form-group" data-condition-idx="${index}">
+    <div class="row form-group" data-condition-idx="${index}" data-condition-type="simple">
         <label class="col-form-label col-md-3">Condition</label>
-        <div class="condition-key col-md-2 mr-2 p-0">
+        <div class="col-md-2 mr-2 p-0">
           <input required list="dataListConditionKey${index}" class="form-control" name="condition-key" ${conditionKey ? `value="${conditionKey}"` : ""} ${readonlyCheck}>
           <datalist id="dataListConditionKey${index}">
               ${conceptsOptionsStr}
@@ -373,7 +396,19 @@ const getConditionHtmlStr = ({
     </div>`;
 };
 
-const deleteConditionListener = (event) => {
+const getSQLConditionHtmlStr = (index = 0, isReadOnly = false, conditionStr = "") => {
+  const readonlyCheck = isReadOnly ? "disabled" : "";
+  return `
+    <div class="row form-group" data-condition-idx="${index}" data-condition-type="sql">
+        <label class="col-form-label col-md-3">SQL Conditions</label>
+        <div class="col-md-7 mr-2 p-0">
+          <textarea required class="form-control" rows="2" placeholder='d_685002411.d_867203506=104430631 AND (d_827220437=531629870 OR d_827220437=548392715) AND d_914594314>"2024-01-01" AND d_914594314<"2024-09-10T20:05:16.490Z"' ${readonlyCheck}>${conditionStr}</textarea>
+        </div>
+        <button type ="button" data-btn-idx="${index}" ${readonlyCheck} class="btn btn-warning ml-4 col-md-1" title="Delete SQL conditions in this row">Delete</button>
+    </div>`;
+};
+
+const handleDeleteCondition = (event) => {
   event.target.parentElement.remove();
 };
 
@@ -670,7 +705,7 @@ const handleDryRun = () => {
     if (resJson.code === 200) {
       dryRunSummary += "Everything looks good!";
     } else {
-      dryRunSummary += `Error occurred in dry run:\n${resJson.message}`;
+      dryRunSummary = `Error occurred during dry run:\n${resJson.message}`;
     }
 
     resultEle.textContent = dryRunSummary;
