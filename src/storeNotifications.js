@@ -240,7 +240,7 @@ const handleFormSubmit = () => {
     }
 
     schema["scheduleAt"] = Array.from(document.getElementsByName("scheduleAt")).filter((dt) => dt.checked)[0].value;
-    schema["sendType"]= "scheduled";
+    schema["sendType"] = "scheduled";
     schema["emailField"] = document.getElementById("emailConceptId").value;
     schema["phoneField"] = document.getElementById("phoneConceptId").value;
     schema["firstNameField"] = document.getElementById("firstNameConceptId").value;
@@ -302,7 +302,8 @@ const handleFormSubmit = () => {
     const conditionRowArray = Array.from(document.querySelectorAll("#conditionsDiv div[data-condition-idx]"));
     for (const conditionRow of conditionRowArray) {
       if (conditionRow.dataset.conditionType === "sql") {
-        conditionArray.push([conditionRow.querySelector("textarea").value.trim()]);
+        const sqlCondition = conditionRow.querySelector("textarea").value.trim();
+        if (sqlCondition.length > 0) conditionArray.push(sqlCondition);
         continue;
       }
 
