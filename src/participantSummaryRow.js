@@ -362,6 +362,24 @@ export const baselinePromisSurvey = (participant) => {
     return getTemplateRow(icon, color, timeline, category, item, itemStatus, date, setting, refused, extra);
 };
 
+export const baselineExperienceSurvey = (participant) => {
+    
+    const refusedAllFutureSurveys = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
+    const refusedAllFutureActivities = participant[fieldMapping.refusedAllFutureActivities];
+    const refusedExperienceSurvey = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedExperienceSurvey];
+
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.experienceSurvey, fieldMapping.experienceSurveyStartDate, fieldMapping.experienceCompleteDate);
+
+    const timeline = "Follow-Up 3-mo";
+    const category = "Survey";
+    const item = "2024 Connect Experience";
+    const setting = "N/A";
+    const refused = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedExperienceSurvey === fieldMapping.yes ? "Y" : "N";
+    const extra = "N/A";
+
+    return getTemplateRow(icon, color, timeline, category, item, itemStatus, date, setting, refused, extra);
+};
+
 export const baselineMenstrualSurvey = (participant) => {
     let template = ``;
 

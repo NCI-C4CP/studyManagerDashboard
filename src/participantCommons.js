@@ -25,7 +25,7 @@ export const renderTable = (data, source) => {
     fieldMapping.email2, fieldMapping.cellPhone, fieldMapping.homePhone, fieldMapping.otherPhone, fieldMapping.previousCancer, fieldMapping.allBaselineSurveysCompleted, 
     fieldMapping.preferredLanguage, fieldMapping.participationStatus, fieldMapping.bohStatusFlag1, fieldMapping.mreStatusFlag1, fieldMapping.sasStatusFlag1, fieldMapping.lawStausFlag1, 
     fieldMapping.ssnFullflag, fieldMapping.ssnPartialFlag , fieldMapping.refusedSurvey,  fieldMapping.refusedBlood, fieldMapping.refusedUrine,  fieldMapping.refusedMouthwash, fieldMapping.refusedSpecimenSurveys, fieldMapping.refusedFutureSamples, fieldMapping.refusedQualityOfLifeSurvey, fieldMapping.refusedAllFutureQualityOfLifeSurveys,
-    fieldMapping.refusedFutureSurveys, fieldMapping.refusedAllFutureActivities, fieldMapping.revokeHIPAA, fieldMapping.dateHipaaRevokeRequested, fieldMapping.dateHIPAARevoc, fieldMapping.withdrawConsent, fieldMapping.dateWithdrewConsentRequested, 
+    fieldMapping.refusedExperienceSurvey, fieldMapping.refusedAllFutureExperienceSurveys, fieldMapping.refusedFutureSurveys, fieldMapping.refusedAllFutureActivities, fieldMapping.revokeHIPAA, fieldMapping.dateHipaaRevokeRequested, fieldMapping.dateHIPAARevoc, fieldMapping.withdrawConsent, fieldMapping.dateWithdrewConsentRequested, 
     fieldMapping.participantDeceased, fieldMapping.dateOfDeath, fieldMapping.destroyData, fieldMapping.dateDataDestroyRequested, fieldMapping.dateDataDestroy, fieldMapping.suspendContact
  ];
     localStorage.removeItem("participant");
@@ -579,7 +579,8 @@ const tableTemplate = (data, showButtons) => {
             )
             :  (x === (fieldMapping.refusedSurvey).toString() || x === (fieldMapping.refusedBlood).toString() || x === (fieldMapping.refusedUrine).toString() ||
                 x === (fieldMapping.refusedMouthwash).toString() || x === (fieldMapping.refusedSpecimenSurveys).toString() || x === (fieldMapping.refusedFutureSamples).toString() || 
-                x === (fieldMapping.refusedFutureSurveys).toString() || x === (fieldMapping.refusedQualityOfLifeSurvey).toString() || x === (fieldMapping.refusedAllFutureQualityOfLifeSurveys).toString()) ?
+                x === (fieldMapping.refusedFutureSurveys).toString() || x === (fieldMapping.refusedQualityOfLifeSurvey).toString() || x === (fieldMapping.refusedAllFutureQualityOfLifeSurveys).toString() ||
+                x === (fieldMapping.refusedExperienceSurvey).toString() || x === (fieldMapping.refusedAllFutureExperienceSurveys).toString()) ?
             (
                 (participant[fieldMapping.refusalOptions]?.[x] === fieldMapping.yes ?
                     ( template += `<td>${participant[fieldMapping.refusalOptions]?.[x] ? 'Yes'  : ''}</td>` )

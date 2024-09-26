@@ -85,6 +85,10 @@ const getParticipantSelectedRefusals = (participant) => {
       strArray.push("Refused QOL survey 3-mo (but willing to do other future surveys)");
     if (refusalOptions[fieldMapping.refusedAllFutureQualityOfLifeSurveys] === fieldMapping.yes)
       strArray.push("Refused all future QOL surveys (but willing to do other future surveys)");
+    if (refusalOptions[fieldMapping.refusedExperienceSurvey] === fieldMapping.yes)
+      strArray.push("Refused 2024 Connect Experience Survey (but willing to do other future surveys)");
+    if (refusalOptions[fieldMapping.refusedAllFutureExperienceSurveys] === fieldMapping.yes)
+      strArray.push("Refused all future Connect Experience surveys (but willing to do other future surveys)");
     if (refusalOptions[fieldMapping.refusedFutureSurveys] === fieldMapping.yes)
       strArray.push("All future surveys (willing to do specimens)");
   }
