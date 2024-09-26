@@ -24,6 +24,25 @@ import { appState } from './src/stateManager.js';
 let saveFlag = false;
 let counter = 0;
 
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./serviceWorker.js").catch((error) => {
+        console.error("Service worker registration failed.", error);
+        return;
+    });
+
+    navigator.serviceWorker.ready.then(() => {
+        if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ action: "getAppVersion" });
+        }
+    });
+
+    navigator.serviceWorker.addEventListener("message", (event) => {
+        if (event.data.action === "sendAppVersion") {
+            document.getElementById("appVersion").textContent = event.data.payload;
+        }
+    });
+}
+
 const datadogConfig = {
     clientToken: 'pubcb2a7770dcbc09aaf1da459c45ecff65',
     applicationId: '571977b4-ca80-4a04-b8fe-5d5148508afd',
@@ -48,6 +67,23 @@ window.onload = async () => {
     else if(location.host === urls.stage) {
         !firebase.apps.length ? firebase.initializeApp(stageFirebaseConfig) : firebase.app();
         window.DD_RUM && window.DD_RUM.init({ ...datadogConfig, env: 'stage' });
+    } 
+    else if (isLocalDev) {
+        let localDevFirebaseConfig = null;
+        let hasError = false;
+        try {
+          const localDevConfig = await import("./config/local-dev/config.js");
+          localDevFirebaseConfig = localDevConfig.firebaseConfig;
+          if (!localDevFirebaseConfig) hasError = true;
+        } catch (error) {
+          hasError = true;
+        }
+
+        if (hasError) {
+          console.error("Local development requires firebaseConfig defined in src/local-dev/config.js.");
+          return;
+        }
+        !firebase.apps.length ? firebase.initializeApp(localDevFirebaseConfig) : firebase.app();
     } 
     else {
         !firebase.apps.length ? firebase.initializeApp(devFirebaseConfig) : firebase.app();
