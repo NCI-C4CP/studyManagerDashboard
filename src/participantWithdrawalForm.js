@@ -76,6 +76,18 @@ export const renderParticipantWithdrawalLandingPage = () => {
                                             All future QOL Surveys (but willing to do other future surveys)
                                         </label>
                                         <br />
+                                        <input class="form-check-input" name="options" type="checkbox" value="Refused 2024 Connect Experience Survey (but willing to do other future surveys)" 
+                                        data-optionKey=${fieldMapping.refusedExperienceSurvey} id="refusedExperienceSurveyCheck">
+                                        <label class="form-check-label" for="refusedExperienceSurveyCheck">
+                                            2024 Connect Experience Survey (but willing to do other future surveys)
+                                        </label>
+                                        <br />
+                                        <input class="form-check-input" name="options" type="checkbox" value="All future Connect Experience Surveys (but willing to do other future surveys)" 
+                                        data-optionKey=${fieldMapping.refusedAllFutureExperienceSurveys} id="refusedAllFutureExperienceSurveysCheck">
+                                        <label class="form-check-label" for="refusedAllFutureExperienceSurveysCheck">
+                                            All future Connect Experience Surveys (but willing to do other future surveys)
+                                        </label>
+                                        <br />
                                         <input class="form-check-input" name="options" type="checkbox" value="All future surveys (willing to do specimens)" 
                                         data-optionKey=${fieldMapping.refusedFutureSurveys} id="defaultCheck6">
                                         <label class="form-check-label" for="defaultCheck6">
@@ -485,6 +497,12 @@ const sendResponses = async (finalOptions, retainOptions, requestedHolder, sourc
         }
         else if (parseInt(x.dataset.optionkey) ===  fieldMapping.refusedAllFutureQualityOfLifeSurveys) {
             setRefusalTimeStamp(sendRefusalData, x.dataset.optionkey, fieldMapping.refAllFutureQualityOfLifeSurveysTimeStamp);
+        }
+        else if (parseInt(x.dataset.optionkey) ===  fieldMapping.refusedExperienceSurvey) {
+            setRefusalTimeStamp(sendRefusalData, x.dataset.optionkey, fieldMapping.refExperienceSurveyTimeStamp);
+        }
+        else if (parseInt(x.dataset.optionkey) ===  fieldMapping.refusedAllFutureExperienceSurveys) {
+            setRefusalTimeStamp(sendRefusalData, x.dataset.optionkey, fieldMapping.refAllFutureExperienceSurveysTimeStamp);
         }
         else {
             sendRefusalData[x.dataset.optionkey] = fieldMapping.yes
