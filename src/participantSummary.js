@@ -3,7 +3,8 @@ import { renderParticipantHeader } from './participantHeader.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey, 
     baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineBloodSample, baselineUrineSample, baselineBiospecSurvey, baselineMenstrualSurvey,
-    baselineMouthwashSample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment } from './participantSummaryRow.js';
+    baselineMouthwashSample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
+    baselineExperienceSurvey} from './participantSummaryRow.js';
 import { humanReadableMDY, conceptToSiteMapping, pdfCoordinatesMap } from './utils.js';
 
 const { PDFDocument, StandardFonts } = PDFLib
@@ -97,6 +98,9 @@ export const render = (participant) => {
                                 </tr>
                                 <tr class="row-color-survey-dark">
                                     ${baselinePromisSurvey(participant)}
+                                </tr>
+                                <tr class="row-color-survey-light">
+                                    ${baselineExperienceSurvey(participant)}
                                 </tr>
                                 <tr class="row-color-sample-dark">
                                     ${baselineBloodSample(participant)}

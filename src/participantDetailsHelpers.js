@@ -760,6 +760,37 @@ const showAuthUpdateAPIError = (bodyId, message) => {
     return false;
 }
 
+export const refreshParticipantAfterReset = async (participant) => {
+    showAnimation();
+    localStorage.setItem('participant', JSON.stringify(participant));
+    renderParticipantDetails(participant, {});
+    appState.setState({unsavedChangesTrack:{saveFlag: false, counter: 0}})
+    let alertList = document.getElementById('alert_placeholder');
+    let template = '';
+    template += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    Success! Participant Reset.
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    </div>`
+    hideAnimation();
+    alertList.innerHTML = template;
+}
+
+export const participantRefreshError = async (errorMsg) => {
+    showAnimation();
+    let alertList = document.getElementById('alert_placeholder');
+    let template = '';
+    template += `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    Error resetting participant: ${errorMsg}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    </div>`
+    hideAnimation();
+    alertList.innerHTML = template;
+}
+
 export const refreshParticipantAfterUpdate = async (participant) => {
     showAnimation();
     localStorage.setItem('participant', JSON.stringify(participant));
@@ -1206,6 +1237,29 @@ export const submitClickHandler = async (participant, changedOption) => {
     }
 };
 
+export const resetClickHandlers = async (participantUid) => {
+    const resetButton = document.getElementById('resetUserBtn');
+    if(!resetButton) {
+        return;
+    }
+    resetButton.addEventListener('click', async () => {
+        try {
+            const json = await postResetUserData(participantUid);
+            closeModal();
+            if(json.code === 200) {
+                refreshParticipantAfterReset(json.data.data);
+            } else if (json.code === 404) {
+                participantRefreshError('Unable to find participant.');
+            } else {
+                participantRefreshError(json.data);
+            }
+        } catch(error) {
+            console.error('error', error);
+            participantRefreshError('Unknown error.');
+        }
+    });
+}
+
 /**
  * Handle the query.frstName and query.lastName fields.
  * Check changedUserDataForProfile the participant profile for all name types. If a name is in changedUserDataForProfile, Add it to the queryNameArray.
@@ -1487,6 +1541,30 @@ export const postUserDataUpdate = async (changedUserData) => {
         return await response.json();
     } catch (error) {
         console.error('Error in postUserDataUpdate:', error);
+        throw error;
+    }
+}
+
+export const postResetUserData = async (uid) => {
+    try {
+        const idToken = await getIdToken();
+        const response = await fetch(`${baseAPI}/dashboard?api=resetUser`, {
+            method: "POST",
+            headers:{
+                Authorization: "Bearer " + idToken,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({uid, saveToDb: 'true'})
+        });
+
+        if (!response.ok) { 
+            const error = (response.status + ": " + (await response.json()).message);
+            throw new Error(error);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error in postResetUserData:', error);
         throw error;
     }
 }

@@ -188,6 +188,10 @@ export default
     'combinedBoodUrineMouthwashSurveyStartDate': 822499427,
     'combinedBoodUrineMouthwashSurveyCompleteDate': 222161762,
 
+    'experienceSurvey': 956490759,
+    'experienceSurveyStartDate': 263355177,
+    'experienceCompleteDate': 199471989,
+
     "baselineEMR": 209454331,
     "baselineEMRflag": 101170406,
     "baselineEMRpushDate": 143523420,
@@ -329,6 +333,8 @@ export default
     'refusedFutureSamples': 352996056,
     'refusedQualityOfLifeSurvey': 936015433,
     'refusedAllFutureQualityOfLifeSurveys': 688142378,
+    'refusedExperienceSurvey': 101763809,
+    'refusedAllFutureExperienceSurveys': 525277409,
     
     'refusedAllFutureActivities': 906417725,
     'revokeHIPAA': 773707518,
@@ -487,6 +493,8 @@ export default
     'refAllFutureActivitesTimeStamp': 614264509,
     'refQualityOfLifeSurveyTimeStamp': 667960135,
     'refAllFutureQualityOfLifeSurveysTimeStamp': 953225775,
+    'refExperienceSurveyTimeStamp': 688172931,
+    'refAllFutureExperienceSurveysTimeStamp': 182718292,
 
     // remaining withdrawal
     'contactSuspended': 726389747,
