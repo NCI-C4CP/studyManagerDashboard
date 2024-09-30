@@ -370,7 +370,7 @@ export const baselineExperienceSurvey = (participant) => {
 
     const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.experienceSurvey, fieldMapping.experienceSurveyStartDate, fieldMapping.experienceCompleteDate);
 
-    const timeline = "Follow-Up 3-mo";
+    const timeline = "Cross-Sectional 2024";
     const category = "Survey";
     const item = "2024 Connect Experience";
     const setting = "N/A";
