@@ -109,7 +109,8 @@ export const hideAnimation = () => {
 
 export const urls = {
   'stage': 'dashboard-myconnect-stage.cancer.gov',
-  'prod': 'dashboard-myconnect.cancer.gov'
+  'prod': 'dashboard-myconnect.cancer.gov',
+  'dev': 'episphere.github.io'
 }
 
 let api = ``;

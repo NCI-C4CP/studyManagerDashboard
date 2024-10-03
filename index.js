@@ -68,6 +68,23 @@ window.onload = async () => {
         !firebase.apps.length ? firebase.initializeApp(stageFirebaseConfig) : firebase.app();
         window.DD_RUM && window.DD_RUM.init({ ...datadogConfig, env: 'stage' });
     } 
+    else if (isLocalDev) {
+        let localDevFirebaseConfig = null;
+        let hasError = false;
+        try {
+          const localDevConfig = await import("./config/local-dev/config.js");
+          localDevFirebaseConfig = localDevConfig.firebaseConfig;
+          if (!localDevFirebaseConfig) hasError = true;
+        } catch (error) {
+          hasError = true;
+        }
+
+        if (hasError) {
+          console.error("Local development requires firebaseConfig defined in src/local-dev/config.js.");
+          return;
+        }
+        !firebase.apps.length ? firebase.initializeApp(localDevFirebaseConfig) : firebase.app();
+    } 
     else {
         !firebase.apps.length ? firebase.initializeApp(devFirebaseConfig) : firebase.app();
         !isLocalDev && window.DD_RUM && window.DD_RUM.init({ ...datadogConfig, env: 'dev' });
