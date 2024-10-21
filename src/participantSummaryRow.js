@@ -457,12 +457,21 @@ const getSurveyStatus = (participant, surveyFlag, startDate, completeDate) => {
                 date: "N/A",
             };
         default:
-            return {
-                icon: "fa fa-times fa-2x",
-                color: "color: red",
-                itemStatus: "Not Started",
-                date: "N/A",
-            };
+            if (surveyFlag === fieldMapping.experienceSurvey && (participant[surveyFlag] === null || participant[surveyFlag] === undefined)) {
+                return {
+                    icon: "fa fa-times fa-2x",
+                    color: "color: red",
+                    itemStatus: "Not Eligible",
+                    date: "N/A",
+                };
+            }  else {
+                return {
+                    icon: "fa fa-times fa-2x",
+                    color: "color: red",
+                    itemStatus: "Not Started",
+                    date: "N/A",
+                };
+            }
     }
 };
 
