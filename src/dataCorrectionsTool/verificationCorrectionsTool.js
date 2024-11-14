@@ -1,20 +1,20 @@
-import fieldMapping from './fieldToConceptIdMapping.js';
-import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from './utils.js';
-import { renderParticipantHeader } from './participantHeader.js';
-import { keyToVerificationStatus, keyToDuplicateType, recruitmentType, updateRecruitmentType } from './idsToName.js';
-import { appState } from './stateManager.js';
-import { findParticipant } from './participantLookup.js';
+import fieldMapping from '../fieldToConceptIdMapping.js';
+import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from '../utils.js';
+import { renderParticipantHeader } from '../participantHeader.js';
+import { keyToVerificationStatus, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
+import { appState } from '../stateManager.js';
+import { findParticipant } from '../participantLookup.js';
 
 
-export const renderDataCorrectionsToolPage = (participant) => {
+export const setupVerificationCorrectionsPage = (participant) => {
     console.log("🚀 ~ renderDataCorrectionsToolPage ~ participant:", participant)
     if (participant !== undefined) {
         const isParent = localStorage.getItem('isParent')
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
         removeActiveClass('nav-link', 'active');
         document.getElementById('participantVerificationBtn').classList.add('active');
-        mainContent.innerHTML = renderVerificationTool(participant);
+        mainContent.innerHTML = renderVerificationCorrections(participant);
         let selectedResponse = {};
         dropdownTrigger('dropdownVerification', 'dropdownMenuButtonVerificationOptns', selectedResponse);
         dropdownTrigger('dropdownDuplicateType', 'dropdownMenuButtonDuplicateTypeOptns',selectedResponse);
@@ -24,7 +24,7 @@ export const renderDataCorrectionsToolPage = (participant) => {
     }
 }
 
-export const renderVerificationTool = (participant) => {
+export const renderVerificationCorrections = (participant) => {
     let template = ``;
     template = `        
                 <div id="root root-margin">

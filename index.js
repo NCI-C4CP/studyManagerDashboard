@@ -2,9 +2,11 @@ import { renderParticipantLookup } from './src/participantLookup.js';
 import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, removeActiveClass } from './src/navigationBar.js';
 import { renderTable, filterdata, renderData, addEventFilterData, activeColumns, dropdownTriggerAllParticipants, renderLookupSiteDropdown, reMapFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
-import { renderParticipantSummary } from './src/participantSummary.js';
+import { render, renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
-import { renderDataCorrectionsToolPage } from './src/dataCorrectionsTool.js';
+// import { renderDataCorrectionsToolPage } from './src/dataCorrectionsTool.js';
+import { renderDataCorrectionsSelectionToolPage } from './src/dataCorrectionsTool/dataCorrectionsToolSelection.js';
+import { setupVerificationCorrectionsPage } from './src/dataCorrectionsTool/verificationCorrectionsTool.js';
 import { renderSiteMessages } from './src/siteMessages.js';
 import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
@@ -74,6 +76,7 @@ window.onload = async () => {
         try {
           const localDevConfig = await import("./config/local-dev/config.js");
           localDevFirebaseConfig = localDevConfig.firebaseConfig;
+          console.log("🚀 ~ window.onload= ~ localDevFirebaseConfig:", localDevFirebaseConfig)
           if (!localDevFirebaseConfig) hasError = true;
         } catch (error) {
           hasError = true;
@@ -84,6 +87,8 @@ window.onload = async () => {
           return;
         }
         !firebase.apps.length ? firebase.initializeApp(localDevFirebaseConfig) : firebase.app();
+        // TODO: Remove this line 
+        if (location.host.startsWith('localhost')) firebase.functions().useFunctionsEmulator('http://localhost:5001'); 
     } 
     else {
         !firebase.apps.length ? firebase.initializeApp(devFirebaseConfig) : firebase.app();
@@ -114,9 +119,18 @@ window.onhashchange = () => {
     router();
 };
 
+const dataCorrectionsToolRoutes = [
+    '#dataCorrectionsToolSelection',
+    '#incentiveEligibilityTool',
+    '#surveyResetTool',
+    '#verificationCorrectionsTool',
+];
+
+
 const router = async () => {
     const hash = decodeURIComponent(window.location.hash);
     const route = hash || '#';
+    console.log("🚀 ~ router ~ route:", route)
     const isParent = localStorage.getItem('isParent')
     if (await userLoggedIn() || localStorage.dashboard) {
         if (route === '#home') renderDashboard();
@@ -155,15 +169,49 @@ const router = async () => {
                 renderParticipantMessages(participant);
             }
         }
-        else if (route === '#dataCorrectionsTool') {
+        else if (dataCorrectionsToolRoutes.includes(route)) {
             if (JSON.parse(localStorage.getItem("participant")) === null) {
                 alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
             }
             else {
                 let participant = JSON.parse(localStorage.getItem("participant"))
-                renderDataCorrectionsToolPage(participant);
+                console.log("🚀 ~ router ~ participant:", participant)
+
+                switch(route) {
+                    case '#dataCorrectionsToolSelection':
+                        renderDataCorrectionsSelectionToolPage(participant)
+                        break;
+                    case '#verificationCorrectionsTool':
+                        // function for 
+                        console.log("test")
+                        setupVerificationCorrectionsPage(participant)
+                        break;
+                    // case '#incentiveEligibilityTool':
+                    //     // function for 
+                    //     render ""
+                    //     break;
+                    // case '#surveyResetTool':
+                    //     // function for 
+                    //     render ""
+                    //     break;
+                    default:
+                        window.location.hash = '#dataCorrectionsToolSelection';
+                        break;
+                }
+                // renderDataCorrectionsSelectionToolPage(participant)
             }
         }
+
+
+        // else if (route === '#dataCorrectionsTool') {
+        //     if (JSON.parse(localStorage.getItem("participant")) === null) {
+        //         alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
+        //     }
+        //     else {
+        //         let participant = JSON.parse(localStorage.getItem("participant"))
+        //         renderDataCorrectionsToolPage(participant);
+        //     }
+        // }
         else if (route === '#siteMessages') renderSiteMessages();
         else if (route === '#participantWithdrawal' && isParent === 'true') {
             if (JSON.parse(localStorage.getItem("participant")) === null) {
@@ -257,6 +305,7 @@ const renderDashboard = async () => {
         animation(true);
         const idToken = await getIdToken();
         const isAuthorized = await authorize(idToken);
+        console.log("🚀 ~ renderDashboard ~ isAuthorized:", isAuthorized)
         if (isAuthorized && isAuthorized.code === 200) {
             localStorage.setItem('isParent', isAuthorized.isParent)
             localStorage.setItem('coordinatingCenter', isAuthorized.coordinatingCenter)
