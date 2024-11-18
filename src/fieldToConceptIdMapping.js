@@ -536,4 +536,11 @@ export default
         shipped: 277438316,
         received: 375535639
     },
+
+
+    surveyStatus: {
+        notStarted: 972455046,
+        started: 615768760,
+        completed: 231311385
+    }
 };

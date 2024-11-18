@@ -14,7 +14,7 @@ let selectedTool = null;
 // const selectToolDropdownText = ['Select', console.log("🚀 ~ setupContinueNavigationHandler ~ selectButton:", selectButton), 'Survey Reset', 'Incentive Eligibility'];
 
 // Render the data corrections tool selection page
-export const renderDataCorrectionsSelectionToolPage = (participant) => {
+export const setupDataCorrectionsSelectionToolPage = (participant) => {
     console.log("🚀 ~ renderDataCorrectionsToolPage ~ participant:", participant)
     if (participant !== undefined) {
         const isParent = localStorage.getItem('isParent')
@@ -24,12 +24,7 @@ export const renderDataCorrectionsSelectionToolPage = (participant) => {
         mainContent.innerHTML = renderDataCorrectionsSelectionContent(participant);
 
         let selectedResponse = {};
-        // dropdownTrigger('dropdownVerification', 'dropdownMenuButtonVerificationOptns', selectedResponse);
-        // dropdownTrigger('dropdownDuplicateType', 'dropdownMenuButtonDuplicateTypeOptns',selectedResponse);
-        // dropdownTrigger('dropdownUpdateRecruitType', 'dropdownMenuButtonUpdateRecruitTypeOptns', selectedResponse);
-        // viewOptionsSelected(participant);
-        // resetChanges(participant);
-
+        
         setupContinueNavigationHandler();
         setupDropdownSelectionHandler();
     }
@@ -41,7 +36,6 @@ const renderDataCorrectionsSelectionContent = (participant) => {
     return `
         <div id="root root-margin">
             <div class="container-fluid">
-                <div class="col-lg">
                     ${renderParticipantHeader(participant)}
 
                     <div id="alert_placeholder"></div>
@@ -100,11 +94,11 @@ const setupContinueNavigationHandler = () => {
         // console.log("🚀 ~ continueBtn.addEventListener ~ selectButtonText:", selectedButtonType, typeof selectedButtonType)
         // verificationCorrections
         if (selectedButtonType === 'verificationCorrections') {
-            console.log('#verificationCorrrectionsTool')
-            window.location.hash = '#verificationCorrrectionsTool';
+            console.log('#verificationCorrrectionsTool');
+            window.location.hash = '#verificationCorrectionsTool';
         } else if (selectedButtonType === 'surveyReset') {
             console.log('#surveyResetTool')
-            // window.location.hash = '#surveyResetTool
+            window.location.hash = '#surveyResetTool';
         } else  if (selectedButtonType === 'incentiveEligibility') {
             console.log('#incentiveEligibilityTool')
             // window.location.hash = '#incentiveEligibilityTool';

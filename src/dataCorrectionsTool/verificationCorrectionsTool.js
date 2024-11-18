@@ -265,7 +265,7 @@ const clickHandler = async (selectedOptions) => {
 
 const reloadVerificationToolPage = (participant, message, type) => {
     showAnimation();
-    renderDataCorrectionsToolPage(participant);
+    setupVerificationCorrectionsPage(participant);
     triggerNotificationBanner(message, type);
     hideAnimation();
 }

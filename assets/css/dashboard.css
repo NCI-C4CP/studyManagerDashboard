@@ -344,3 +344,19 @@ table {
 #appVersion {
     font-size: 0.8rem;
 }
+
+.smallerHeading {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.norcToolNote {
+    font-size: 1rem; 
+    font-weight: 700;
+    margin-top: 0.8rem;
+}
+
+.norcToolTypeHeader {
+    font-size: 1.3rem;
+    font-weight: 700;
+}
