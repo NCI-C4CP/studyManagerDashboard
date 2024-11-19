@@ -1,4 +1,4 @@
-// import fieldMapping from './fieldToConceptIdMapping.js';
+import fieldMapping from '../fieldToConceptIdMapping.js';
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
 // import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from './utils.js';
 import { renderParticipantHeader } from '../participantHeader.js';
@@ -54,7 +54,7 @@ const renderDataCorrectionsSelectionContent = (participant) => {
                             <p class="font-weight-bold" style="font-size:1.2rem;"> Please select the tool you would like to use: </p>
                             <div class="btn-group dropright">
                             <!-- Todo: Add dropdown color later -->
-                                <button type="button" class="btn btn-secondary dropdown-toggle selectButton" data-toggle="dropdown" aria-expanded="false">
+                                <button type="button" class="btn btn-info dropdown-toggle selectButton" data-toggle="dropdown" aria-expanded="false">
                                     Select
                                 </button>
                                 <div id="dropdownToolsMenu" class="dropdown-menu">
@@ -101,7 +101,7 @@ const setupContinueNavigationHandler = () => {
             window.location.hash = '#surveyResetTool';
         } else  if (selectedButtonType === 'incentiveEligibility') {
             console.log('#incentiveEligibilityTool')
-            // window.location.hash = '#incentiveEligibilityTool';
+            window.location.hash = '#incentiveEligibilityTool';
         }
     });
 }

@@ -1,4 +1,4 @@
-import fieldMapping from '../fieldToConceptIdMapping.js';
+import fieldMapping from '../fieldToConceptIdMapping.js'; // change to conceptMapping
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
 // import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from './utils.js';
 import { renderParticipantHeader } from '../participantHeader.js';
@@ -15,6 +15,13 @@ import { renderParticipantHeader } from '../participantHeader.js';
 let selectedSurveyType = null;
 let surveyName = "";
 let surveyStatus = "";
+
+
+const statusMapping = {
+    "972455046": "Not Started",
+    "615768760": "Started",
+    "231311385": "Completed",
+}
 
 
 export const setupSurveyResetToolPage = (participant) => {
@@ -52,11 +59,10 @@ const renderDataCorrectionsSelectionContent = (participant) => {
                     <div class="col my-2">
                         <h2 class="norcToolTypeHeader"> Survey Status Reset </h2>
                         <p id="surveyNameText" class="infoLabel">Survey Name: </p>          
-                        <p id="surveytStatusText" class="infoLabel">Survey Status: </p>
-                        <!- Add button after update survey status on same line-->
+                        <p id="surveyStatusText" class="infoLabel">Survey Status: </p>
 
                         <div style="display:flex">
-                            <p class="infoLabel">Update Survey Status</p>    
+                            <p class="infoLabel">Update Survey Status:</p>    
                             <div class="btn-group dropright">
                                 <button type="button" class="btn btn-info dropdown-toggle selectButton" data-toggle="dropdown" aria-expanded="false"  style="margin-left: 1rem;">
                                     Select
@@ -144,17 +150,12 @@ const handleSurveyTypeChange = (participant) => {
 const updateSurveyStatusTextContent = (participant, selectedSurveyType) => {
     console.log("🚀 ~ updateSurveyStatusTextContent ~ participant:", participant)
     const surveyNameElement = document.getElementById('surveyNameText');
-    const surveyStatusElement = document.getElementById('surveytStatusText');
+    const surveyStatusElement = document.getElementById('surveyStatusText');
     // get the survey status from the participant object store into object
+
     const participantSurveyStatus = {
         "ssn": participant[fieldMapping.ssnStatusFlag],
     };
-
-    const statusMapping = {
-        "972455046": "Not Started",
-        "615768760": "Started",
-        "231311385": "Completed",
-    }
 
     console.log("🚀 ~ updateSurveyStatusTextContent ~ participantSurveyStatus:", participantSurveyStatus)
 
@@ -188,7 +189,7 @@ const clearSurveySelection = () => {
     clearButton.addEventListener('click', () => {
         const surveyNameElement = document.getElementById('surveyNameText');
         if (!surveyNameElement) return;
-        const surveyStatusElement = document.getElementById('surveytStatusText');
+        const surveyStatusElement = document.getElementById('surveyStatusText');
         if (!surveyStatusElement) return
         const selectButton = document.querySelector('.selectButton');
         if (!selectButton) return;

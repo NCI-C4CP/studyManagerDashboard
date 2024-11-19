@@ -8,6 +8,7 @@ import { renderParticipantMessages } from './src/participantMessages.js';
 import { setupDataCorrectionsSelectionToolPage } from './src/dataCorrectionsTool/dataCorrectionsToolSelection.js';
 import { setupVerificationCorrectionsPage } from './src/dataCorrectionsTool/verificationCorrectionsTool.js';
 import { setupSurveyResetToolPage } from './src/dataCorrectionsTool/surveyResetTool.js';
+import { setupIncentiveEligibilityToolPage } from './src/dataCorrectionsTool/incentiveEligibilityTool.js';
 import { renderSiteMessages } from './src/siteMessages.js';
 import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
@@ -187,14 +188,13 @@ const router = async () => {
                         console.log("test")
                         setupVerificationCorrectionsPage(participant)
                         break;
-                        case '#surveyResetTool':
-                            // function for 
-                            setupSurveyResetToolPage(participant)
-                            break;
-                    // case '#incentiveEligibilityTool':
-                    //     // function for 
-                    //     render ""
-                    //     break;
+                    case '#surveyResetTool':
+                        // function for 
+                        setupSurveyResetToolPage(participant)
+                        break;
+                    case '#incentiveEligibilityTool':
+                        setupIncentiveEligibilityToolPage(participant)
+                        break;
                     default:
                         window.location.hash = '#dataCorrectionsToolSelection';
                         break;
