@@ -145,11 +145,23 @@ const handleBackToToolSelect = () => {
 
 
 const setIncentiveEligibleInputDefaultValue = () => { 
+    // const dateOfEligibility = document.getElementById('dateOfEligibility');
+    // if (!dateOfEligibility) return;
+    // const today = new Date().toLocaleDateString('en-CA');
+    // dateOfEligibility.value = today;
+    // dateOfEligibility.max = today;
     const dateOfEligibility = document.getElementById('dateOfEligibility');
     if (!dateOfEligibility) return;
-    const today = new Date().toLocaleDateString('en-CA');
-    dateOfEligibility.value = today;
-    dateOfEligibility.max = today;
+    
+    // Get date in user's timezone, but formatted as YYYY-MM-DD
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+    
+    dateOfEligibility.value = formattedDate;
+    dateOfEligibility.max = formattedDate;
 };
 
 

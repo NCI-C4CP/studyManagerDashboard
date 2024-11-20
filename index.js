@@ -184,12 +184,10 @@ const router = async () => {
                         setupDataCorrectionsSelectionToolPage(participant)
                         break;
                     case '#verificationCorrectionsTool':
-                        // function for 
                         console.log("test")
                         setupVerificationCorrectionsPage(participant)
                         break;
                     case '#surveyResetTool':
-                        // function for 
                         setupSurveyResetToolPage(participant)
                         break;
                     case '#incentiveEligibilityTool':
@@ -199,7 +197,6 @@ const router = async () => {
                         window.location.hash = '#dataCorrectionsToolSelection';
                         break;
                 }
-                // renderDataCorrectionsSelectionToolPage(participant)
             }
         }
 
