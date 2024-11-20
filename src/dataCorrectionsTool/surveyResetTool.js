@@ -1,12 +1,10 @@
 import fieldMapping from '../fieldToConceptIdMapping.js'; // change to conceptMapping
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
-// import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from './utils.js';
 import { renderParticipantHeader } from '../participantHeader.js';
-// import { keyToVerificationStatus, keyToDuplicateType, recruitmentType, updateRecruitmentType } from './idsToName.js';
-// import { appState } from './stateManager.js';
 import { findParticipant } from '../participantLookup.js';
-import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation } from '../utils.js';
+import { baseAPI, getIdToken, hideAnimation, showAnimation } from '../utils.js';
 import { handleBackToToolSelect } from './dataCorrectionsHelpers.js';
+import { triggerNotificationBanner } from '../utils.js';
 
 let selectedSurvey = null;
 const statusMapping = {
@@ -15,7 +13,7 @@ const statusMapping = {
     "231311385": "Completed",
 }
 
-const surveyModalText = {
+const surveyModalBody = {
     "ssn": "Are you sure you want to reset the survey status for the SSN survey?",
 }
 
@@ -30,7 +28,7 @@ export const setupSurveyResetToolPage = (participant) => {
         handleBackToToolSelect();
         clearSurveySelection();
         submitSurveyStatusReset();
-        // handleSurveyReset();
+        disableSubmitButton();
     }
 }
 
@@ -41,7 +39,7 @@ const renderDataCorrectionsSelectionContent = (participant) => {
                 ${renderParticipantHeader(participant)}
 
                 <!-- Alert Placeholder -->
-                <div id="alertPlaceholder" style="margin-top: 20px;"></div>
+                <div id="alert_placeholder"></div>
                 <div class="row">
                     <div class="col">
                         <h1 class="smallerHeading">Data Corrections Tool</h1>
@@ -105,7 +103,7 @@ const renderDataCorrectionsSelectionContent = (participant) => {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="confirmResetButton">Confirm</button>
+                    <button type="button" class="btn btn-primary" id="confirmResetButton" data-dismiss="modal">Confirm</button>
                 </div>
                 </div>
             </div>
@@ -178,10 +176,12 @@ const updateSurveyStatusTextContent = (participant, selectedSurvey) => {
     if (selectedSurvey === 'ssn') {
         surveyNameElement.textContent = 'Survey Name: SSN Survey';
         surveyStatusElement.textContent = `Survey Status: ${statusMapping[participantSurveyStatus.ssn] || ''} `;
+        enableSubmitButton();
 
     } else if (selectedSurvey === null) {
         surveyNameElement.textContent = 'Survey Name: ';
         surveyStatusElement.textContent = 'Survey Status: ';
+        disableSubmitButton();
     }
 };
 
@@ -199,29 +199,34 @@ const clearSurveySelection = () => {
         if (!surveyStatusElement) return
         const selectButton = document.querySelector('.selectButton');
         if (!selectButton) return;
+        const submitButton = document.getElementById('submitButton');
+        if (!submitButton) return;
 
         surveyNameElement.textContent = 'Survey Name: ';
         surveyStatusElement.textContent = 'Survey Status: ';
         selectButton.textContent = 'Select';
         selectedSurvey = null;
+        submitButton.disabled = true;
+
     });
-}
+};
 
 // Create a function to GET the participant data and update in localStorage
 
 
 const submitSurveyStatusReset = () => {
     const submitButton = document.getElementById('submitButton');
-    if (!submitButton) return;
     const confirmResetButton = document.getElementById('confirmResetButton');
+    if (!submitButton || !confirmResetButton) return;
     console.log("🚀 ~ submitSurveyStatusReset ~ confirmResetButton:", confirmResetButton)
     console.log("selectedSurvey", selectedSurvey);
 
     submitButton.addEventListener('click', async () => {
         if (selectedSurvey === null) return;
         setupModalContent(selectedSurvey);
+    });
 
-        if (confirmResetButton) {
+    if (confirmResetButton) {
             confirmResetButton.addEventListener('click', async () => { 
                 try {
                     // handle reset for each survey type
@@ -229,26 +234,24 @@ const submitSurveyStatusReset = () => {
                     const response = await resetParticipantSurvey(selectedSurvey);
                     console.log("🚀 ~ submitButton.addEventListener ~ response:", response);
                     
-                    if (response.status === 200) {
-                        showAlert("Survey has been successfully reset.", "success");
+                    if (response.code === 200 || response.data) {
                         localStorage.setItem('participant', JSON.stringify(response.data));
                         updateSurveyStatusTextContent(response.data, selectedSurvey);
-                    } else {
-                        showAlert(`Failed to reset survey: ${response.message}`, "danger");
+                        triggerNotificationBanner("Survey has been successfully reset!", "success", 10000);
                     }
                 }   catch (error) { 
                     console.error(`Failed to reset survey: ${error.message}`);
+                    triggerNotificationBanner(`${error.message}`, "danger", 10000);
                 }            
             });
-        }
-    });
-}
+    }
+};
 
 const setupModalContent = (survey) => { 
     console.log("🚀 ~ setupModalContent ~ survey:", survey)
     const modalBody = document.querySelector('.modal-body');
     if (!modalBody) return;
-    modalBody.textContent = surveyModalText[survey];
+    modalBody.textContent = surveyModalBody[survey];
 }
 
 /**
@@ -261,7 +264,6 @@ const setupModalContent = (survey) => {
 const resetParticipantSurvey = async (selectedSurvey) => { 
     const participant = JSON.parse(localStorage.getItem('particpant'));
     const connectId = participant['Connect_ID'];
-    console.log("🚀 ~ resetParticipantSurvey ~ participant:", participant)
 
     try {
         const idToken = await getIdToken();
@@ -276,10 +278,8 @@ const resetParticipantSurvey = async (selectedSurvey) => {
                 survey: selectedSurvey 
             }),
         });
-
-        console.log("🚀 ~ resetParticipantSurvey ~ response:", response)
         if (!response.ok) {
-            const error = (response.status + ": " + (await response.json()).message);
+            const error = (response.status + " Error" + ": " + (await response.json()).message);
             throw new Error(error);
         }
 
@@ -288,4 +288,16 @@ const resetParticipantSurvey = async (selectedSurvey) => {
         console.error("Failed to reset participant survey: ", error);
         throw error;
     }
+};
+
+const disableSubmitButton = () => { 
+    const submitButton = document.getElementById('submitButton');
+    if (!submitButton) return;
+    submitButton.disabled = true;
+}
+
+const enableSubmitButton = () => { 
+    const submitButton = document.getElementById('submitButton');
+    if (!submitButton) return;
+    submitButton.disabled = false;
 }

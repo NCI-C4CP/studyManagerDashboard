@@ -135,7 +135,7 @@ export const conceptToSiteMapping = {
   13: 'NCI'
 }
 
-export const triggerNotificationBanner = (message, type) => {
+export const triggerNotificationBanner = (message, type, timeout) => {
   const alertList = document.getElementById("alert_placeholder");
   if (alertList) {
       alertList.innerHTML = `
@@ -145,6 +145,20 @@ export const triggerNotificationBanner = (message, type) => {
                       <span aria-hidden="true">&times;</span>
                   </button>
           </div>`;
+  
+  
+  // Automatically remove the alert after 5 seconds
+  if (!timeout) return;
+  setTimeout(() => {
+    const alertElement = alertList.querySelector('.alert');
+    if (alertElement) {
+        alertElement.classList.remove('show'); // Remove 'show' class to initiate fade-out
+        // Listen for the end of the fade transition, then remove the alert element
+        alertElement.addEventListener('transitionend', () => {
+            alertElement.remove();
+        });
+    }
+  }, timeout);
   }
 }
 
