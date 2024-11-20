@@ -2,6 +2,7 @@ import fieldMapping from '../fieldToConceptIdMapping.js';
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
 // import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from './utils.js';
 import { renderParticipantHeader } from '../participantHeader.js';
+import { handleBackToToolSelect } from './dataCorrectionsHelpers.js';
 
 console.log('fieldMapping', fieldMapping);
 
@@ -131,18 +132,6 @@ const updatePaymentRoundTextContent = (participant, selectedPaymentRound) => {
     // Disable inputs and set value of input to the date of eligibility
     // Add note to page that participant is already incentive eligible
 }
-
-
-const handleBackToToolSelect = () => {
-    const backToToolSelectButton = document.getElementById('backToToolSelect');
-    if (!backToToolSelectButton) return;
-
-    backToToolSelectButton.addEventListener('click', () => {
-       location.hash = '#dataCorrectionsToolSelection';
-    });
-}
-
-
 
 const setIncentiveEligibleInputDefaultValue = () => { 
     // const dateOfEligibility = document.getElementById('dateOfEligibility');

@@ -5,24 +5,19 @@ import { renderParticipantHeader } from '../participantHeader.js';
 // import { keyToVerificationStatus, keyToDuplicateType, recruitmentType, updateRecruitmentType } from './idsToName.js';
 // import { appState } from './stateManager.js';
 import { findParticipant } from '../participantLookup.js';
+import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation } from '../utils.js';
+import { handleBackToToolSelect } from './dataCorrectionsHelpers.js';
 
-
-// dataCorrectionsToolSelection
-// incentiveEligibilityTool
-// surveyResetTool
-// verificationCorrrectionsTool
-
-let selectedSurveyType = null;
-let surveyName = "";
-let surveyStatus = "";
-
-
+let selectedSurvey = null;
 const statusMapping = {
     "972455046": "Not Started",
     "615768760": "Started",
     "231311385": "Completed",
 }
 
+const surveyModalText = {
+    "ssn": "Are you sure you want to reset the survey status for the SSN survey?",
+}
 
 export const setupSurveyResetToolPage = (participant) => {
     if (participant !== undefined) {
@@ -35,17 +30,18 @@ export const setupSurveyResetToolPage = (participant) => {
         handleBackToToolSelect();
         clearSurveySelection();
         submitSurveyStatusReset();
+        // handleSurveyReset();
     }
 }
-
 
 const renderDataCorrectionsSelectionContent = (participant) => {
     return `
         <div id="root root-margin">
             <div class="container-fluid" style="padding: 0 0.9rem">
-
                 ${renderParticipantHeader(participant)}
 
+                <!-- Alert Placeholder -->
+                <div id="alertPlaceholder" style="margin-top: 20px;"></div>
                 <div class="row">
                     <div class="col">
                         <h1 class="smallerHeading">Data Corrections Tool</h1>
@@ -86,27 +82,36 @@ const renderDataCorrectionsSelectionContent = (participant) => {
                                 <button type="button" class="btn btn-danger" id="clearSurveySelect" style="margin-left: 0.5rem;">Clear</button>
                             </div>
                             <div style="margin-left: 3rem;">
-                                <button type="button" class="btn btn-primary" id="submitButton">Submit</button>
+                                <button type="button" class="btn btn-primary" id="submitButton" data-toggle="modal" data-target="#modalConfirmReset">Submit</button>
                             </div>
                         </div>
                     </div>
                 </div>    
             </div>
         </div>
+
+        <!-- Confirmation Modal -->
+        <div class="modal fade" id="modalConfirmReset" tabindex="-1" aria-labelledby="confirSurveyResetModal" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmModalHeader">Confirm Survey Reset</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmResetButton">Confirm</button>
+                </div>
+                </div>
+            </div>
+        </div>
     `;
 }
-
-
-
-/*
-Create a function as an event handler for the dropdown menu items
-1. User selection will populate the survey status field
- - On load it's select default (nothing shows) 
- - After user selects, text will populate on the field 
-
-*/
-
-
 
 
 const handleSurveyTypeChange = (participant) => { 
@@ -130,71 +135,55 @@ const handleSurveyTypeChange = (participant) => {
     // use text content to change the status field
     for (let option of dropdownSurveyOptions) {
         option.addEventListener('click', async (e) => {
-            // selectedSurveyType = e.target.textContent.trim();
-            selectedSurveyType = e.target.dataset.survey;
-            console.log(selectedSurveyType);
-            if (selectedSurveyType === 'ssn') {
+            // selectedSurvey = e.target.textContent.trim();
+            selectedSurvey = e.target.dataset.survey;
+            console.log(selectedSurvey);
+            if (selectedSurvey === 'ssn') {
                 selectButton.textContent = e.target.textContent;
-                selectedSurveyType = e.target.dataset.survey;
-                console.log("🚀 ~ surveyDropdown.addEventListener ~ selectedSurveyType:", selectedSurveyType)
+                selectedSurvey = e.target.dataset.survey;
+                console.log("🚀 ~ surveyDropdown.addEventListener ~ selectedSurvey:", selectedSurvey)
                 // console.log("🚀 ~ surveyDropdown.addEventListener ~ selectedSurveyTypeText:", selectedSurveyTypeText)
                 try {
                     query = `connectId=${participantConnectId}`
-                    updateSurveyStatusTextContent(participant, selectedSurveyType);
+                    // updateSurveyStatusTextContent(participant, selectedSurvey);
+                    showAnimation();
                     const response =  await findParticipant(query);
+                    hideAnimation();
                     console.log("🚀 ~ response", response)
                     const latestParticipant = response.data[0];
                     // console.log("🚀 latestParticipant", latestParticipant)
-                    localStorage.setItem(' set latest participant', JSON.stringify(latestParticipant));
-                    updateSurveyStatusTextContent(latestParticipant, selectedSurveyType);
+                    localStorage.setItem('particpant', JSON.stringify(latestParticipant));
+                    updateSurveyStatusTextContent(latestParticipant, selectedSurvey);
                 } catch (error) {
                     console.error(`Failed to fetch participant data for Connect ID ${participantConnectId}: `, error);
                 }
             } else {
                 selectButton.textContent = e.target.textContent;
-                selectedSurveyType = null;
+                selectedSurvey = null;
+                updateSurveyStatusTextContent(participant, selectedSurvey);
             }
-
-
         });
     }
 }
 
 
-/**
- * 
-*/
-const updateSurveyStatusTextContent = (participant, selectedSurveyType) => {
-    // console.log("🚀 ~ updateSurveyStatusTextContent ~ participant:", participant)
+const updateSurveyStatusTextContent = (participant, selectedSurvey) => {
     const surveyNameElement = document.getElementById('surveyNameText');
     const surveyStatusElement = document.getElementById('surveyStatusText');
-    // get the survey status from the participant object store into object
 
     const participantSurveyStatus = {
         "ssn": participant[fieldMapping.ssnStatusFlag],
     };
 
-    // console.log("🚀 ~ updateSurveyStatusTextContent ~ participantSurveyStatus:", participantSurveyStatus)
-
-    if (selectedSurveyType === 'ssn') {
+    if (selectedSurvey === 'ssn') {
         surveyNameElement.textContent = 'Survey Name: SSN Survey';
         surveyStatusElement.textContent = `Survey Status: ${statusMapping[participantSurveyStatus.ssn] || ''} `;
 
-    } else if (selectedSurveyType === null) {
+    } else if (selectedSurvey === null) {
         surveyNameElement.textContent = 'Survey Name: ';
         surveyStatusElement.textContent = 'Survey Status: ';
     }
-}
-
-
-const handleBackToToolSelect = () => {
-    const backToToolSelectButton = document.getElementById('backToToolSelect');
-    if (!backToToolSelectButton) return;
-
-    backToToolSelectButton.addEventListener('click', () => {
-       location.hash = '#dataCorrectionsToolSelection';
-    });
-}
+};
 
 /**
  *  Clears the survey status selection back to default and clears the text content
@@ -214,28 +203,89 @@ const clearSurveySelection = () => {
         surveyNameElement.textContent = 'Survey Name: ';
         surveyStatusElement.textContent = 'Survey Status: ';
         selectButton.textContent = 'Select';
-        selectedSurveyType = null;
+        selectedSurvey = null;
     });
 }
 
 // Create a function to GET the participant data and update in localStorage
 
 
-/**
- * Submit the survey status reset
- * 1. Check if survey type is selected
- * 2
-*/
-
 const submitSurveyStatusReset = () => {
     const submitButton = document.getElementById('submitButton');
     if (!submitButton) return;
-    console.log("selectedSurveyType", selectedSurveyType);
-    if (selectedSurveyType === null) return;
+    const confirmResetButton = document.getElementById('confirmResetButton');
+    console.log("🚀 ~ submitSurveyStatusReset ~ confirmResetButton:", confirmResetButton)
+    console.log("selectedSurvey", selectedSurvey);
 
-    if (selectedSurveyType === 'ssn') {
-        submitButton.addEventListener('click', () => {
-            console.log(`clicked ${selectedSurveyType}`)
+    submitButton.addEventListener('click', async () => {
+        if (selectedSurvey === null) return;
+        setupModalContent(selectedSurvey);
+
+        if (confirmResetButton) {
+            confirmResetButton.addEventListener('click', async () => { 
+                try {
+                    // handle reset for each survey type
+                    // const participant = JSON.parse(localStorage.getItem('participant'));
+                    const response = await resetParticipantSurvey(selectedSurvey);
+                    console.log("🚀 ~ submitButton.addEventListener ~ response:", response);
+                    
+                    if (response.status === 200) {
+                        showAlert("Survey has been successfully reset.", "success");
+                        localStorage.setItem('participant', JSON.stringify(response.data));
+                        updateSurveyStatusTextContent(response.data, selectedSurvey);
+                    } else {
+                        showAlert(`Failed to reset survey: ${response.message}`, "danger");
+                    }
+                }   catch (error) { 
+                    console.error(`Failed to reset survey: ${error.message}`);
+                }            
+            });
+        }
+    });
+}
+
+const setupModalContent = (survey) => { 
+    console.log("🚀 ~ setupModalContent ~ survey:", survey)
+    const modalBody = document.querySelector('.modal-body');
+    if (!modalBody) return;
+    modalBody.textContent = surveyModalText[survey];
+}
+
+/**
+ * Reset the participant survey status for the selected survey
+ * @param {string} selectedSurvey - the survey to reset
+ * @param {object} participant - the participant object
+ * @returns {Promise<object>} - the updated participant object
+ * 
+*/
+const resetParticipantSurvey = async (selectedSurvey) => { 
+    const participant = JSON.parse(localStorage.getItem('particpant'));
+    const connectId = participant['Connect_ID'];
+    console.log("🚀 ~ resetParticipantSurvey ~ participant:", participant)
+
+    try {
+        const idToken = await getIdToken();
+        const response = await fetch(`${baseAPI}/dashboard?api=resetParticipantSurvey`, {
+            method: "POST",
+            headers: {
+                Authorization: "Bearer " + idToken,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ 
+                connectId: connectId,
+                survey: selectedSurvey 
+            }),
         });
+
+        console.log("🚀 ~ resetParticipantSurvey ~ response:", response)
+        if (!response.ok) {
+            const error = (response.status + ": " + (await response.json()).message);
+            throw new Error(error);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Failed to reset participant survey: ", error);
+        throw error;
     }
 }

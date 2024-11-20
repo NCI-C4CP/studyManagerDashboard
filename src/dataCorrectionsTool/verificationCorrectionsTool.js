@@ -5,6 +5,7 @@ import { renderParticipantHeader } from '../participantHeader.js';
 import { keyToVerificationStatus, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
 import { appState } from '../stateManager.js';
 import { findParticipant } from '../participantLookup.js';
+import { handleBackToToolSelect } from './dataCorrectionsHelpers.js';
 
 
 export const setupVerificationCorrectionsPage = (participant) => {
@@ -21,6 +22,7 @@ export const setupVerificationCorrectionsPage = (participant) => {
         dropdownTrigger('dropdownUpdateRecruitType', 'dropdownMenuButtonUpdateRecruitTypeOptns', selectedResponse);
         viewOptionsSelected(participant);
         resetChanges(participant);
+        handleBackToToolSelect();
     }
 }
 
@@ -93,17 +95,21 @@ export const renderVerificationCorrections = (participant) => {
                                         </ul>
                                 </div>
                                 </div>
-                                <div style="display:inline-block; margin-top:20px;">
-                                    <button type="button" class="btn btn-danger" id="cancelChanges">Cancel</button>
-                                    <button type="button" data-toggle="modal" data-target="#modalShowSelectedData"
-                                        class="btn btn-primary next-btn" id="submitCorrection">Submit</button>
+                                <div class="d-flex mt-5">
+                                    <div>
+                                        <button type="button" class="btn btn-secondary" id="backToToolSelect"><- Back</button>
+                                        <button type="button" class="btn btn-danger" id="cancelChanges">Cancel</button>
+                                    </div>
+                                    <div style="margin-left: 3rem;">
+                                        <button type="button" data-toggle="modal" data-target="#modalShowSelectedData"
+                                            class="btn btn-primary next-btn" id="submitCorrection">Submit</button>
+                                    </div>
                                 </div>
-                                </div>
+                            </div>
                         </div>
                     </div>
-                               
                 </div>`
-           
+          
         template += ` <div class="modal fade" id="modalShowSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
             <div class="modal-content sub-div-shadow">
@@ -112,8 +118,8 @@ export const renderVerificationCorrections = (participant) => {
             </div>
         </div>
     </div>`
-    return template;
-}
+    return template;                                    
+};
 
 const dropdownTrigger = (buttonId, menuId, response) => {
     let keyName = 'Select'
@@ -261,7 +267,7 @@ const clickHandler = async (selectedOptions) => {
         console.error('An error occurred:', error);
         triggerNotificationBanner('Try again later.', 'danger');
         }
-    }
+};
 
 const reloadVerificationToolPage = (participant, message, type) => {
     showAnimation();
