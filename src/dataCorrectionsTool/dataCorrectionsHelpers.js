@@ -1,4 +1,3 @@
-
 /**
 * When back button clicked, navigates user back to the data corrections tool selection page.
 * @returns {void}

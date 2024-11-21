@@ -198,6 +198,7 @@ export default
 
     "baselinePaymentFlag": 117044491,
     "paymentRoundup": 130371375,
+    "paymentRound": 130371375,
     "baselinePayment": 266600170,
     "eligiblePayment": 731498909,
     "paymentIssued": 648936790,

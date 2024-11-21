@@ -1,14 +1,15 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
-// import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from './utils.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 import { handleBackToToolSelect } from './dataCorrectionsHelpers.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from '../utils.js';
 
-console.log('fieldMapping', fieldMapping);
+// console.log('fieldMapping', fieldMapping);
 
-let paymentRound = null;
+let participantPaymentRound = null;
+let isEligibleForIncentiveUpdate = null;
 
-const statusMappiong = {
+const statusMapping = {
 
 }
 
@@ -23,8 +24,8 @@ export const setupIncentiveEligibilityToolPage = (participant) => {
         handleBackToToolSelect();
         clearPaymentRoundSelect();
         setIncentiveEligibleInputDefaultValue();
+        toggleSubmitButton();
     }
-
 };
 
 
@@ -88,7 +89,7 @@ const renderIncentiveEligibilityToolContent = (participant) => {
                                 <button type="button" class="btn btn-danger" id="clearPaymentRoundButton" style="margin-left: 0.5rem;">Clear</button>
                             </div>
                             <div style="margin-left: 3rem;">
-                                <button type="button" class="btn btn-primary">Submit</button>
+                                <button type="button" class="btn btn-primary" id="submitButton">Submit</button>
                             </div>
                         </div>
                     </div>
@@ -98,28 +99,94 @@ const renderIncentiveEligibilityToolContent = (participant) => {
 };
 
 
-const handlePaymentRoundSelect = () => {
+/**
+ * Handle the payment round selection dropdown
+*/
+const handlePaymentRoundSelect = (participant) => {
     const paymentRoundElement = document.getElementById('dropdownPaymentMenu');
     if (!paymentRoundElement) return;
 
     const dropdownPaymentOptions = paymentRoundElement.children;
     if (!dropdownPaymentOptions) return;
 
+    const incentiveStatusText = document.getElementById('incentiveStatusText');
+    if (!incentiveStatusText) return;
+
+    const isIncentiveEligbleNote = document.getElementById('isIncentiveEligbleNote');
+    if (!isIncentiveEligbleNote) return;
+
     const selectButton = document.querySelector('.selectButton');
     if (!selectButton) return;
 
-    for (let option of dropdownPaymentOptions) {
-        option.addEventListener('click', (e) => {
-            paymentRound = e.target.dataset.payment;
-            console.log("🚀 ~ option.addEventListener ~ paymentRound:", paymentRound)
+    const { paymentRound, baselinePayment, eligiblePayment, yes, no } = fieldMapping; 
 
-            if (paymentRound === 'baseline') {
+    for (let option of dropdownPaymentOptions) {
+        option.addEventListener('click', async (e) => {
+            participantPaymentRound = e.target.dataset.payment;
+            console.log("🚀 ~ option.addEventListener ~ participantPaymentRound:", participantPaymentRound)
+
+            if (participantPaymentRound === 'baseline') { // change to conceptId
                 selectButton.textContent = e.target.textContent;
+                // incentiveStatusText.textContent = 'Incentive Eligible Status: Yes'; // Save for check if they meet conditions eligible conditions and meet conditions (normal surveys and blood given) (Payment Round, Date of Eligibiliy and Incentive Eligible Status)
+                // isIncentiveEligbleNote.innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible.</span>`;
+                // Check if participant is already incentive eligible (Flags) AND other incentive eligible conditions
+
+                // set thye payment round to the selected payment round
+                participantPaymentRound = e.target.dataset.payment;
+                console.log("🚀 ~ option.addEventListener ~ participantPaymentRound:", participantPaymentRound)
+
+                try {
+                    const isParticipantEligibleIncentive = await checkParticipantForEligibleIncentive(participant, participantPaymentRound); // might rename variable later 
+                    console.log("🚀 ~ option.addEventListener ~ isParticipantEligibleIncentive", isParticipantEligibleIncentive)
+
+                    // set participant data in localStorage
+                    // localStorage.setItem('participant', JSON.stringify(isParticipantEligibleIncentive.participantData)); // leading to errors
+                    // toggles submit button to either active or inactive
+
+                    // check if isParticipantEligibleIncentive.isEligibleForIncentive is true AND current participant data has "130371375.266600170.731498909" value to "NO"
+                    
+                    const isParticpantEligibleForPayment = participant[paymentRound][baselinePayment][eligiblePayment];
+
+                    console.log("🚀 ~ option.addEventListener ~ isParticpantEligibleForPayment:", isParticpantEligibleForPayment)
+                    
+                    isEligibleForIncentiveUpdate = isParticipantEligibleIncentive['isEligibleForIncentive'];
+                    console.log("🚀 ~ option.addEventListener ~ isEligibleForIncentiveUpdate:", isEligibleForIncentiveUpdate)
+
+                    console.log(`participant['130371375.266600170.731498909'] === 'NO'`, isParticpantEligibleForPayment)
+
+                    
+
+                    if (isEligibleForIncentiveUpdate === true && isParticpantEligibleForPayment === no) {
+                        // toggle UI to make submit button active 
+                        toggleSubmitButton(isEligibleForIncentiveUpdate);
+                    } else {
+                        // toggle UI to make submit button inactive
+                        // show note that particpant is not eligible for payment incentive update
+                    }
+                    // toggleSubmitButton(isEligibleForIncentiveUpdate);
+                    // set to new data localStorage 
+                } catch (error) { 
+                    console.error("Failed to check if participant is already incentive eligible: ", error);
+                }
+                
 
             } else {
+                // revert back participantPaymentRound and isEligibleForIncentiveUpdate to null 
+                
+
+
+                // console.log("🚀 ~ option.addEventListener ~ paymentRound, baselinePayment, eligiblePayment:", paymentRound, baselinePayment, eligiblePayment)
+                
+                // console.log("test value", participant[paymentRound][baselinePayment]);
+                participantPaymentRound = null;
+                isEligibleForIncentiveUpdate = null;
                 selectButton.textContent = e.target.textContent;
+                setIncentiveEligibleInputDefaultValue();
+                isIncentiveEligbleNote.innerHTML = ``;
+
             }
         });
+                    
     }
 };
 
@@ -131,26 +198,20 @@ const updatePaymentRoundTextContent = (participant, selectedPaymentRound) => {
     // eligibile put "Date of Eligibility" value
     // Disable inputs and set value of input to the date of eligibility
     // Add note to page that participant is already incentive eligible
+    checkParticipantForEligibleIncentive(selectedPaymentRound)
 }
 
 const setIncentiveEligibleInputDefaultValue = () => { 
-    // const dateOfEligibility = document.getElementById('dateOfEligibility');
-    // if (!dateOfEligibility) return;
-    // const today = new Date().toLocaleDateString('en-CA');
-    // dateOfEligibility.value = today;
-    // dateOfEligibility.max = today;
     const dateOfEligibility = document.getElementById('dateOfEligibility');
-    if (!dateOfEligibility) return;
-    
-    // Get date in user's timezone, but formatted as YYYY-MM-DD
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}`;
-    
-    dateOfEligibility.value = formattedDate;
-    dateOfEligibility.max = formattedDate;
+    if (dateOfEligibility) {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}`;
+        dateOfEligibility.value = formattedDate;
+        dateOfEligibility.max = formattedDate;
+    }
 };
 
 
@@ -164,35 +225,84 @@ const clearPaymentRoundSelect = () => {
     if (!isIncentiveEligibleNote) return;
     const selectButton = document.querySelector('.selectButton');
     if (!selectButton) return;
-
-
-
-
-    /*
-    Clear - Incentive Eligibility Status:
-    - Payment Round: button text 
-    - Date of Eligibility: input value to empty
-    - Update date of eligibility: input value to today's date
-    
-    */ 
     clearButton.addEventListener('click', () => {
-        isIncentiveEligibleNote.textContent = '';
-        selectButton.textContent = 'Select';
-        paymentRound = null;
-        setIncentiveEligibleInputDefaultValue();
+        setParticipantPaymentRound();
     });
 };
 
+const setParticipantPaymentRound = () => { 
+    const clearButton = document.getElementById('clearPaymentRoundButton');
+    if (!clearButton) return;
+    const isIncentiveEligibleNote = document.getElementById('isIncentiveEligbleNote');
+    if (!isIncentiveEligibleNote) return;
+    const selectButton = document.querySelector('.selectButton');
+    if (!selectButton) return;
 
+    isIncentiveEligibleNote.textContent = '';
+    selectButton.textContent = 'Select';
+    participantPaymentRound = null;
+    setIncentiveEligibleInputDefaultValue();
+}
 
 
 // TODO: Add function to check if participant is already incentive eligible, display message and disable input fields
 /*
 Note participant is already incentive eligible 
 
-<span>
-    <i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> 
-    This participant is already incentive eligible.
-</span>
-
 */ 
+
+const toggleSubmitButton = (isEligibleForIncentiveUpdate) => { 
+    console.log("🚀 ~ toggleSubmitButton ~ isEligibleForIncentiveUpdate:", isEligibleForIncentiveUpdate)
+    const submitButton = document.getElementById('submitButton');
+    // submitButton.disabled = true;
+    if (submitButton) {
+        if (isEligibleForIncentiveUpdate) {
+            submitButton.removeAttribute('disabled');
+        } else {
+            submitButton.disabled = true;
+        }
+    } 
+}
+
+
+/**
+ * Check if participant is already incentive eligible (Flags)
+ * Async function to check if participant is already incentive eligible (Flags) and will return incentive eligilbility status and participant data
+ * @param {Object} participant - Participant object
+ * @param {String} selectedPaymentRound - Selected payment round  
+ * @returns {Object} - Response object { isEligibleForIncentive: Boolean, participantData: Object }
+*/
+const checkParticipantForEligibleIncentive = async (participant, selectedPaymentRound) => { 
+    // Check if participant is already incentive eligible (Flags) AND other incentive eligible conditions
+    // if yes, display message and disable input fields
+    // if no, enable input fields
+    
+    const participantObj = participant;
+    const connectId = participantObj['Connect_ID'];
+
+    try {
+        const idToken = await getIdToken();
+        const response = await fetch(`${baseAPI}/dashboard?api=checkParticipantForEligibleIncentive`, {
+            method: "POST",
+            headers: {
+                Authorization: "Bearer " + idToken,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ 
+                connectId: connectId,
+                payment: selectedPaymentRound 
+            }),
+        });
+        if (!response.ok) {
+            const error = (response.status + " Error" + ": " + (await response.json()).message);
+            throw new Error(error);
+        }
+
+        const responseObj = await response.json();
+        console.log("🚀 ~ checkParticipantForEligibleIncentive ~ responseObj:", responseObj)
+        return responseObj;
+    } catch (error) {
+        console.error("Failed to reset participant survey: ", error);
+        throw error;
+    }
+};

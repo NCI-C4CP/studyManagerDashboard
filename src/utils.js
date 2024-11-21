@@ -146,14 +146,11 @@ export const triggerNotificationBanner = (message, type, timeout) => {
                   </button>
           </div>`;
   
-  
-  // Automatically remove the alert after 5 seconds
   if (!timeout) return;
   setTimeout(() => {
     const alertElement = alertList.querySelector('.alert');
     if (alertElement) {
-        alertElement.classList.remove('show'); // Remove 'show' class to initiate fade-out
-        // Listen for the end of the fade transition, then remove the alert element
+        alertElement.classList.remove('show');
         alertElement.addEventListener('transitionend', () => {
             alertElement.remove();
         });
