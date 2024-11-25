@@ -86,9 +86,7 @@ window.onload = async () => {
           console.error("Local development requires firebaseConfig defined in src/local-dev/config.js.");
           return;
         }
-        !firebase.apps.length ? firebase.initializeApp(localDevFirebaseConfig) : firebase.app();
-        // TODO: Remove this line 
-        if (location.host.startsWith('localhost')) firebase.functions().useFunctionsEmulator('http://localhost:5001'); 
+        !firebase.apps.length ? firebase.initializeApp(localDevFirebaseConfig) : firebase.app(); 
     } 
     else {
         !firebase.apps.length ? firebase.initializeApp(devFirebaseConfig) : firebase.app();
