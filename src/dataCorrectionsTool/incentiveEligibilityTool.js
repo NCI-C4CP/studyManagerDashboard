@@ -148,23 +148,12 @@ const handlePaymentRoundSelect = (participant) => {
     for (let option of dropdownPaymentOptions) {
         option.addEventListener('click', async (e) => {
             participantPaymentRound = e.target.dataset.payment;
-            // console.log("🚀 ~ option.addEventListener ~ participantPaymentRound:", participantPaymentRound)
-
             if (participantPaymentRound === fieldMapping['baseline'].toString()) {
-                // console.log("test")
-                // console.log("🚀 ~ option.addEventListener ~ participantPaymentRound:", participantPaymentRound)
                 selectButton.textContent = e.target.textContent;
-                // incentiveStatusText.textContent = 'Incentive Eligible Status: Yes'; // Save for check if they meet conditions eligible conditions and meet conditions (normal surveys and blood given) (Payment Round, Date of Eligibiliy and Incentive Eligible Status)
-                // Check if participant is already incentive eligible (Flags) AND other incentive eligible conditions
-
-                // set thye payment round to the selected payment round
-                // participantPaymentRound = e.target.dataset.payment;
-                // console.log("🚀 ~ option.addEventListener ~ participantPaymentRound:", participantPaymentRound)
 
                 try {
                     showAnimation();
-                    const isParticipantEligibleIncentiveResponse = await checkParticipantForEligibleIncentive(participant, participantPaymentRound); // might rename variable later 
-                    // console.log("🚀 ~ option.addEventListener ~ isParticipantEligibleIncentive", isParticipantEligibleIncentiveResponse)
+                    const isParticipantEligibleIncentiveResponse = await checkParticipantForEligibleIncentive(participant, participantPaymentRound);
                     hideAnimation();
 
                     const { isEligibleForIncentive, participantData} = isParticipantEligibleIncentiveResponse.data; 
@@ -176,7 +165,6 @@ const handlePaymentRoundSelect = (participant) => {
                     console.log("🚀 ~ option.addEventListener ~ isEligibleForIncentiveUpdate:", isEligibleForIncentiveUpdate);
 
                     if (isEligibleForIncentiveUpdate) {
-                        // toggle UI to make submit button active 
                         toggleSubmitButton(isEligibleForIncentiveUpdate);
                         handleParticipantPaymentTextContent(participantData, isEligibleForIncentiveUpdate);
                         dateOfEligibilityInput.disabled = false;
@@ -184,13 +172,9 @@ const handlePaymentRoundSelect = (participant) => {
                         toggleSubmitButton();
                         handleParticipantPaymentTextContent(participantData, isEligibleForIncentiveUpdate);
                         dateOfEligibilityInput.disabled = true;    
-                        // toggle UI to make submit button inactive
-                        // show note that particpant is not eligible for payment incentive update
                     }
                     setupModalContent(participantPaymentRound);
                     dateOfEligibilityInput.textContent = setIncentiveEligibleInputDefaultValue();
-                    // toggleSubmitButton(isEligibleForIncentiveUpdate);
-                    // set to new data localStorage 
                 } catch (error) { 
                     console.error("Failed to check if participant is already incentive eligible: ", error);
                 }
@@ -322,7 +306,6 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
                         document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${humanReadableMDYTimeZoneOffset(currentParticipantData[paymentRound][baseline][baselinePaymentDate])}`; // TODO: Add flexibility for other payment rounds
                         document.getElementById('dateOfEligibility').textContent = setIncentiveEligibleInputDefaultValue();
                         document.getElementById('dateOfEligibility').disabled = true;
-                        // toggleSubmitButton(); TODO - Remove Later for test
                     }
                 } catch (error) { 
                     console.error("Failed to update participant incentive eligibility: ", error);
@@ -425,7 +408,6 @@ const updateParticipantIncentiveEligibility = async (participant, selectedPaymen
         }
 
         const responseObj = await response.json();
-        console.log("🚀 ~ updateParticipantIncentiveEligibility ~ responseObj:", responseObj)
         return responseObj;
     } catch (error) { 
         console.error("Failed to update participant incentive eligibility: ", error);

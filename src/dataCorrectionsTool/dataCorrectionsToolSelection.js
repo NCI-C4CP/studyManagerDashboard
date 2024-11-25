@@ -1,7 +1,6 @@
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 
-// Render the data corrections tool selection page
 export const setupDataCorrectionsSelectionToolPage = (participant) => {
     console.log("🚀 ~ renderDataCorrectionsToolPage ~ participant:", participant)
     if (participant !== undefined) {
@@ -61,12 +60,9 @@ const renderDataCorrectionsSelectionContent = (participant) => {
 
 const setupContinueNavigationHandler = () => {
     const continueBtn = document.querySelector('.continueButton');
-    if (!continueBtn) return;
-
     const selectButton = document.querySelector('.selectButton');
-    if (!selectButton) return;
+    if (!continueBtn || !selectButton) return;
     
-
     continueBtn.addEventListener('click', () => {
         const selectButton = document.querySelector('.selectButton');
         const selectedButtonType = selectButton.getAttribute('data-tool');
