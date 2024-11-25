@@ -38,7 +38,7 @@ const renderIncentiveEligibilityToolContent = (participant) => {
                 ${renderParticipantHeader(participant)}
                 ${displayDataCorrectionsNavbar()}
                 <!-- Alert Placeholder -->
-                <div id="alert_placeholder"></div>
+                <div id="alert_placeholder" class="dataCorrectionsAlert"></div>
 
                 <div class="row">
                     <div class="col">

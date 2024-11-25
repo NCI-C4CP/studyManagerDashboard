@@ -41,7 +41,7 @@ const renderDataCorrectionsSelectionContent = (participant) => {
                 ${displayDataCorrectionsNavbar()}
 
                 <!-- Alert Placeholder -->
-                <div id="alert_placeholder"></div>
+                <div id="alert_placeholder" class="dataCorrectionsAlert"></div>
                 <div class="row">
                     <div class="col">
                         <h1 class="smallerHeading">Data Corrections Tool</h1>

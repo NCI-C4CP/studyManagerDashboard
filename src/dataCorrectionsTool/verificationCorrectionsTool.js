@@ -34,7 +34,7 @@ export const renderVerificationCorrections = (participant) => {
                     <div class="col-lg">
                     ${renderParticipantHeader(participant)}
                     ${displayDataCorrectionsNavbar()}
-                    <div id="alert_placeholder"></div>
+                    <div id="alert_placeholder" class="dataCorrectionsAlert"></div>
                         <div class="row form-row m-3">
                             <div>                    
                                 <h4><b>Data Corrections Tool</b></h4>

@@ -16,7 +16,7 @@ export const displayDataCorrectionsNavbar =  () => {
                 <div class="navTabsDataCorrectionsContainer .d-flex">
                     <ul class="btn-group" id="dataCorrectionsTabsGroup">
                         <li>
-                            <a class="dataCorrectionLink active" id="verificationCorrectionsTool" href="#verificationCorrectionsTool">Verification Corrections</a>
+                            <a class="dataCorrectionLink" id="verificationCorrectionsTool" href="#verificationCorrectionsTool">Verification Corrections</a>
                         </li>
 
                         <li>
@@ -27,26 +27,17 @@ export const displayDataCorrectionsNavbar =  () => {
                         </li>
                     </ul>
                 </div>
-                <div class="dataCorrectionsNavLine"></div>
             </div>`;
 };
 
 export const setActiveDataCorrectionsTab = () => {
-    const dataCorrectionsTabs = document.getElementById('dataCorrectionsTabs');
+    const dataCorrectionsTabs = document.getElementById('dataCorrectionsTabsGroup');
     if (!dataCorrectionsTabs) return;
 
-    const currentHash = location.hash;
-    console.log("🚀 ~ setActiveDataCorrectionsTab ~ currentHash:", currentHash)
-    // const activeLink = document.querySelector(`a[href="${currentHash}"]`); 
-    // console.log("🚀 ~ setActiveDataCorrectionsTab ~ activeLink:", activeLink)
-    // dataCorrectionsTabs.addEventListener('click', (event) => {
-    //     // Remove active class from all buttons
-    //     // add active class to only the link that was clicked based on hash
+    document.getElementsByName('dataCorrectionLink').forEach((link) => { 
+        link.classList.remove('active');
+    });
 
-    //     const dataCorrectionButtons = document.querySelectorAll('.dataCorrectionLink');
-    //     dataCorrectionButtons.forEach((link) => {
-    //         link.classList.remove('active');
-    //     });
-    //     event.target.classList.add('active');
-    // });
+    const activeLink = document.querySelector(`a[href="${location.hash}"]`); 
+    if (activeLink) activeLink.classList.add('active');
 };    
