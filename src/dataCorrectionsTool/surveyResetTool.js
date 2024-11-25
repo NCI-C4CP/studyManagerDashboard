@@ -20,7 +20,7 @@ const surveyModalBody = {
 
 export const setupSurveyResetToolPage = (participant) => {
     if (participant !== undefined) {
-        const isParent = localStorage.getItem; 
+        const isParent = localStorage.getItem('isParent');
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
         removeActiveClass('nav-link', 'active');
         document.getElementById('participantVerificationBtn').classList.add('active');
@@ -141,7 +141,7 @@ const handleSurveyTypeChange = (participant) => {
                     const response =  await findParticipant(query);
                     hideAnimation();
                     const latestParticipant = response.data[0];
-                    localStorage.setItem('particpant', JSON.stringify(latestParticipant));
+                    localStorage.setItem('participant', JSON.stringify(latestParticipant));
                     updateSurveyStatusTextContent(latestParticipant, selectedSurvey);
                 } catch (error) {
                     console.error(`Failed to fetch participant data for Connect ID ${participantConnectId}: `, error);
@@ -244,7 +244,7 @@ const setupModalContent = (survey) => {
  * 
 */
 const resetParticipantSurvey = async (selectedSurvey) => { 
-    const participant = JSON.parse(localStorage.getItem('particpant'));
+    const participant = JSON.parse(localStorage.getItem('participant'));
     const connectId = participant['Connect_ID'];
 
     try {

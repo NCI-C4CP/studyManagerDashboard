@@ -391,6 +391,7 @@ table {
     margin-bottom: -1px;
     padding: 0.5rem 1rem;
     transition: all 0.8s ease;
+    font-weight: 500;
 }
 
 #dataCorrectionsTabsGroup li .dataCorrectionLink:hover {
