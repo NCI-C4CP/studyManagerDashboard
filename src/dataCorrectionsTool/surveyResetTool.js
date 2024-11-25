@@ -7,6 +7,7 @@ import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorr
 import { triggerNotificationBanner } from '../utils.js';
 
 let selectedSurvey = null;
+
 const statusMapping = {
     "972455046": "Not Started",
     "615768760": "Started",
@@ -137,7 +138,6 @@ const handleSurveyTypeChange = (participant) => {
         option.addEventListener('click', async (e) => {
             // selectedSurvey = e.target.textContent.trim();
             selectedSurvey = e.target.dataset.survey;
-            console.log(selectedSurvey);
             if (selectedSurvey === 'ssn') {
                 selectButton.textContent = e.target.textContent;
                 selectedSurvey = e.target.dataset.survey;
@@ -149,7 +149,6 @@ const handleSurveyTypeChange = (participant) => {
                     showAnimation();
                     const response =  await findParticipant(query);
                     hideAnimation();
-                    console.log("🚀 ~ response", response)
                     const latestParticipant = response.data[0];
                     // console.log("🚀 latestParticipant", latestParticipant)
                     localStorage.setItem('particpant', JSON.stringify(latestParticipant));
@@ -164,7 +163,7 @@ const handleSurveyTypeChange = (participant) => {
             }
         });
     }
-}
+};
 
 
 const updateSurveyStatusTextContent = (participant, selectedSurvey) => {
@@ -212,9 +211,6 @@ const clearSurveySelection = () => {
 
     });
 };
-
-// Create a function to GET the participant data and update in localStorage
-
 
 const submitSurveyStatusReset = () => {
     const submitButton = document.getElementById('submitButton');
