@@ -9,7 +9,6 @@ import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorr
 
 
 export const setupVerificationCorrectionsPage = (participant) => {
-    console.log("🚀 ~ renderDataCorrectionsToolPage ~ participant:", participant)
     if (participant !== undefined) {
         const isParent = localStorage.getItem('isParent')
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
@@ -120,7 +119,7 @@ export const renderVerificationCorrections = (participant) => {
             </div>
         </div>
     </div>`
-    return template;                                    
+    return template;                       
 };
 
 const dropdownTrigger = (buttonId, menuId, response) => {
