@@ -78,7 +78,6 @@ window.onload = async () => {
         try {
           const localDevConfig = await import("./config/local-dev/config.js");
           localDevFirebaseConfig = localDevConfig.firebaseConfig;
-          console.log("🚀 ~ window.onload= ~ localDevFirebaseConfig:", localDevFirebaseConfig)
           if (!localDevFirebaseConfig) hasError = true;
         } catch (error) {
           hasError = true;

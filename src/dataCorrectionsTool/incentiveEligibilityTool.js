@@ -1,7 +1,7 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
-import { handleBackToToolSelect } from './dataCorrectionsHelpers.js';
+import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from '../utils.js';
 // import { humanReadableMDY } from '../utils.js';
 
@@ -25,6 +25,7 @@ export const setupIncentiveEligibilityToolPage = (participant) => {
         setIncentiveEligibleInputDefaultValue();
         toggleSubmitButton();
         handleSubmitButton(participant);
+        setActiveDataCorrectionsTab();
         // confirmIncentiveEligibilityUpdate(participant);
     }
 };
@@ -35,6 +36,7 @@ const renderIncentiveEligibilityToolContent = (participant) => {
             <div class="container-fluid" style="padding: 0 0.9rem">
 
                 ${renderParticipantHeader(participant)}
+                ${displayDataCorrectionsNavbar()}
                 <!-- Alert Placeholder -->
                 <div id="alert_placeholder"></div>
 

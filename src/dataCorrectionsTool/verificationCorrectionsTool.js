@@ -5,7 +5,7 @@ import { renderParticipantHeader } from '../participantHeader.js';
 import { keyToVerificationStatus, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
 import { appState } from '../stateManager.js';
 import { findParticipant } from '../participantLookup.js';
-import { handleBackToToolSelect } from './dataCorrectionsHelpers.js';
+import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 
 
 export const setupVerificationCorrectionsPage = (participant) => {
@@ -23,6 +23,7 @@ export const setupVerificationCorrectionsPage = (participant) => {
         viewOptionsSelected(participant);
         resetChanges(participant);
         handleBackToToolSelect();
+        setActiveDataCorrectionsTab();
     }
 }
 
@@ -32,8 +33,9 @@ export const renderVerificationCorrections = (participant) => {
                 <div id="root root-margin">
                     <div class="col-lg">
                     ${renderParticipantHeader(participant)}
+                    ${displayDataCorrectionsNavbar()}
                     <div id="alert_placeholder"></div>
-                        <div class="row form-row">
+                        <div class="row form-row m-3">
                             <div>                    
                                 <h4><b>Data Corrections Tool</b></h4>
                                 <span style="position:relative; font-size: 15px; top:2px;"><b>Note: This tool should only be used to make corrections to participant data post-verification. 

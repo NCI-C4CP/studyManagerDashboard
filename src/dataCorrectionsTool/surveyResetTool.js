@@ -3,7 +3,7 @@ import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 import { findParticipant } from '../participantLookup.js';
 import { baseAPI, getIdToken, hideAnimation, showAnimation } from '../utils.js';
-import { handleBackToToolSelect } from './dataCorrectionsHelpers.js';
+import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 import { triggerNotificationBanner } from '../utils.js';
 
 let selectedSurvey = null;
@@ -29,6 +29,7 @@ export const setupSurveyResetToolPage = (participant) => {
         clearSurveySelection();
         submitSurveyStatusReset();
         disableSubmitButton();
+        setActiveDataCorrectionsTab(); 
     }
 }
 
@@ -37,6 +38,7 @@ const renderDataCorrectionsSelectionContent = (participant) => {
         <div id="root root-margin">
             <div class="container-fluid" style="padding: 0 0.9rem">
                 ${renderParticipantHeader(participant)}
+                ${displayDataCorrectionsNavbar()}
 
                 <!-- Alert Placeholder -->
                 <div id="alert_placeholder"></div>
