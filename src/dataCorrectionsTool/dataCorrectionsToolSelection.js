@@ -2,7 +2,6 @@ import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 
 export const setupDataCorrectionsSelectionToolPage = (participant) => {
-    console.log("🚀 ~ renderDataCorrectionsToolPage ~ participant:", participant)
     if (participant !== undefined) {
         const isParent = localStorage.getItem('isParent')
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);

@@ -5,7 +5,6 @@ import { nameToKeyObj } from './idsToName.js';
 
 export function renderParticipantLookup(){
     const isParent = localStorage.getItem('isParent')
-    console.log("🚀 ~ renderParticipantLookup ~ isParent:", isParent)
     document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantLookupBtn').classList.add('active');
@@ -200,7 +199,6 @@ const alertTrigger = () => {
 export const performSearch = async (query, sitePref, failedElem) => {
     showAnimation();
     const response = await findParticipant(query);
-    console.log("🚀 ~ performSearch ~ response:", response)
     hideAnimation();
     if(response.code === 200 && response.data.length > 0) {
         const mainContent = document.getElementById('mainContent')

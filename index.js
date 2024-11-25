@@ -130,7 +130,6 @@ const dataCorrectionsToolRoutes = [
 const router = async () => {
     const hash = decodeURIComponent(window.location.hash);
     const route = hash || '#';
-    console.log("🚀 ~ router ~ route:", route)
     const isParent = localStorage.getItem('isParent')
     if (await userLoggedIn() || localStorage.dashboard) {
         if (route === '#home') renderDashboard();
@@ -174,15 +173,13 @@ const router = async () => {
                 alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
             }
             else {
-                let participant = JSON.parse(localStorage.getItem("participant"))
-                console.log("🚀 ~ router ~ participant:", participant)
+                let participant = JSON.parse(localStorage.getItem("participant"));
 
                 switch(route) {
                     case '#dataCorrectionsToolSelection':
                         setupDataCorrectionsSelectionToolPage(participant)
                         break;
                     case '#verificationCorrectionsTool':
-                        console.log("test")
                         setupVerificationCorrectionsPage(participant)
                         break;
                     case '#surveyResetTool':

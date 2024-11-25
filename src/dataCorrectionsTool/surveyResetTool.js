@@ -230,8 +230,7 @@ const submitSurveyStatusReset = () => {
     }
 };
 
-const setupModalContent = (survey) => { 
-    console.log("🚀 ~ setupModalContent ~ survey:", survey)
+const setupModalContent = (survey) => {
     const modalBody = document.querySelector('.modal-body');
     if (!modalBody) return;
     modalBody.textContent = surveyModalBody[survey];
