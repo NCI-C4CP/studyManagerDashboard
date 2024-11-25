@@ -1,4 +1,4 @@
-import fieldMapping from '../fieldToConceptIdMapping.js'; // change to conceptMapping
+import fieldMapping from '../fieldToConceptIdMapping.js';
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 import { findParticipant } from '../participantLookup.js';
@@ -12,11 +12,11 @@ const statusMapping = {
     "972455046": "Not Started",
     "615768760": "Started",
     "231311385": "Completed",
-}
+};
 
 const surveyModalBody = {
     "ssn": "Are you sure you want to reset the survey status for the SSN survey?",
-}
+};
 
 export const setupSurveyResetToolPage = (participant) => {
     if (participant !== undefined) {
@@ -32,7 +32,7 @@ export const setupSurveyResetToolPage = (participant) => {
         disableSubmitButton();
         setActiveDataCorrectionsTab(); 
     }
-}
+};
 
 const renderDataCorrectionsSelectionContent = (participant) => {
     return `
@@ -112,45 +112,35 @@ const renderDataCorrectionsSelectionContent = (participant) => {
             </div>
         </div>
     `;
-}
+};
 
 
 const handleSurveyTypeChange = (participant) => { 
     const surveyDropdown = document.getElementById('dropdownSurveyMenu');
     if (!surveyDropdown) return;
-    console.log(surveyDropdown);
 
     const dropdownSurveyOptions = document.querySelector('#dropdownSurveyMenu').children;
     if (!dropdownSurveyOptions) return;
-    console.log("🚀 ~ handleSurveyTypeChange ~ dropdownSurveyOptions:", dropdownSurveyOptions)
 
     const selectButton = document.querySelector('.selectButton');
     if (!selectButton) return;
 
     const participantConnectId = participant['Connect_ID'];
-    console.log("🚀 ~ handleSurveyTypeChange ~ participantConnectId:", participantConnectId)
 
     let query;
 
-    // click event listener for dropdown menu items
-    // use text content to change the status field
     for (let option of dropdownSurveyOptions) {
         option.addEventListener('click', async (e) => {
-            // selectedSurvey = e.target.textContent.trim();
             selectedSurvey = e.target.dataset.survey;
             if (selectedSurvey === 'ssn') {
                 selectButton.textContent = e.target.textContent;
                 selectedSurvey = e.target.dataset.survey;
-                console.log("🚀 ~ surveyDropdown.addEventListener ~ selectedSurvey:", selectedSurvey)
-                // console.log("🚀 ~ surveyDropdown.addEventListener ~ selectedSurveyTypeText:", selectedSurveyTypeText)
                 try {
                     query = `connectId=${participantConnectId}`
-                    // updateSurveyStatusTextContent(participant, selectedSurvey);
                     showAnimation();
                     const response =  await findParticipant(query);
                     hideAnimation();
                     const latestParticipant = response.data[0];
-                    // console.log("🚀 latestParticipant", latestParticipant)
                     localStorage.setItem('particpant', JSON.stringify(latestParticipant));
                     updateSurveyStatusTextContent(latestParticipant, selectedSurvey);
                 } catch (error) {
@@ -216,8 +206,6 @@ const submitSurveyStatusReset = () => {
     const submitButton = document.getElementById('submitButton');
     const confirmResetButton = document.getElementById('confirmResetButton');
     if (!submitButton || !confirmResetButton) return;
-    console.log("🚀 ~ submitSurveyStatusReset ~ confirmResetButton:", confirmResetButton)
-    console.log("selectedSurvey", selectedSurvey);
 
     submitButton.addEventListener('click', async () => {
         if (selectedSurvey === null) return;
@@ -227,10 +215,7 @@ const submitSurveyStatusReset = () => {
     if (confirmResetButton) {
             confirmResetButton.addEventListener('click', async () => { 
                 try {
-                    // handle reset for each survey type
-                    // const participant = JSON.parse(localStorage.getItem('participant'));
                     const response = await resetParticipantSurvey(selectedSurvey);
-                    console.log("🚀 ~ submitButton.addEventListener ~ response:", response);
                     
                     if (response.code === 200 || response.data) {
                         localStorage.setItem('participant', JSON.stringify(response.data));

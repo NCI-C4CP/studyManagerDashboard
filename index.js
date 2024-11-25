@@ -199,16 +199,6 @@ const router = async () => {
             }
         }
 
-
-        // else if (route === '#dataCorrectionsTool') {
-        //     if (JSON.parse(localStorage.getItem("participant")) === null) {
-        //         alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
-        //     }
-        //     else {
-        //         let participant = JSON.parse(localStorage.getItem("participant"))
-        //         renderDataCorrectionsToolPage(participant);
-        //     }
-        // }
         else if (route === '#siteMessages') renderSiteMessages();
         else if (route === '#participantWithdrawal' && isParent === 'true') {
             if (JSON.parse(localStorage.getItem("participant")) === null) {
@@ -302,7 +292,7 @@ const renderDashboard = async () => {
         animation(true);
         const idToken = await getIdToken();
         const isAuthorized = await authorize(idToken);
-        console.log("🚀 ~ renderDashboard ~ isAuthorized:", isAuthorized)
+
         if (isAuthorized && isAuthorized.code === 200) {
             localStorage.setItem('isParent', isAuthorized.isParent)
             localStorage.setItem('coordinatingCenter', isAuthorized.coordinatingCenter)

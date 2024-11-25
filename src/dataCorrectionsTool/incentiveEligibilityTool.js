@@ -310,9 +310,7 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
             const confirmUpdateEligibilityButton = document.getElementById('confirmUpdateEligibility');
             if (confirmUpdateEligibilityButton) {
                 try {
-                    showAnimation();
                     const updateResponse = await updateParticipantIncentiveEligibility(participant, participantPaymentRound, selectedDateValue)
-                    hideAnimation();
                     console.log("🚀 ~ submitButton.addEventListener ~ updateResponse:", updateResponse)
                     const currentParticipantData = updateResponse.data;
 
