@@ -3,7 +3,6 @@ import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from '../utils.js';
-// import { humanReadableMDY } from '../utils.js';
 
 let participantPaymentRound = null;
 let isEligibleForIncentiveUpdate = null;
@@ -22,12 +21,11 @@ export const setupIncentiveEligibilityToolPage = (participant) => {
         handlePaymentRoundSelect(participant);
         handleBackToToolSelect();
         clearPaymentRoundSelect();
-        setIncentiveEligibleInputDefaultValue();
         toggleSubmitButton();
-        confirmIncentiveEligibilityUpdate(participant);
-        setActiveDataCorrectionsTab();
         setupModalContent();
-        // confirmIncentiveEligibilityUpdate(participant);
+        setActiveDataCorrectionsTab();
+        setIncentiveEligibleInputDefaultValue();
+        confirmIncentiveEligibilityUpdate(participant);
     }
 };
 
@@ -128,34 +126,29 @@ const renderIncentiveEligibilityToolContent = (participant) => {
 
 
 /**
- * Handle the payment round selection dropdown
+ * Handles the payment round selection dropdown conetent
 */
 const handlePaymentRoundSelect = (participant) => {
     const paymentRoundElement = document.getElementById('dropdownPaymentMenu');
-    if (!paymentRoundElement) return;
-
     const dropdownPaymentOptions = paymentRoundElement.children;
-    if (!dropdownPaymentOptions) return;
-
     const incentiveStatusText = document.getElementById('incentiveStatusText');
-    if (!incentiveStatusText) return;
-
     const isIncentiveEligbleNote = document.getElementById('isIncentiveEligbleNote');
-    if (!isIncentiveEligbleNote) return;
-
     const selectButton = document.querySelector('.selectButton');
-    if (!selectButton) return;
-    
     const dateOfEligibilityInput = document.getElementById('dateOfEligibility');
-    if (!dateOfEligibilityInput) return;
+
+    if (!paymentRoundElement || 
+        !dropdownPaymentOptions || 
+        !incentiveStatusText || 
+        !isIncentiveEligbleNote || 
+        !selectButton || 
+        !dateOfEligibilityInput) return;
 
     const { paymentRound, baselinePayment, eligiblePayment, yes, no } = fieldMapping; 
 
     for (let option of dropdownPaymentOptions) {
         option.addEventListener('click', async (e) => {
-            // console.log("e",e.target.dataset)
             participantPaymentRound = e.target.dataset.payment;
-            console.log("🚀 ~ option.addEventListener ~ participantPaymentRound:", participantPaymentRound)
+            // console.log("🚀 ~ option.addEventListener ~ participantPaymentRound:", participantPaymentRound)
 
             if (participantPaymentRound === fieldMapping['baseline'].toString()) {
                 // console.log("test")
@@ -171,14 +164,13 @@ const handlePaymentRoundSelect = (participant) => {
                 try {
                     showAnimation();
                     const isParticipantEligibleIncentiveResponse = await checkParticipantForEligibleIncentive(participant, participantPaymentRound); // might rename variable later 
-                    console.log("🚀 ~ option.addEventListener ~ isParticipantEligibleIncentive", isParticipantEligibleIncentiveResponse)
+                    // console.log("🚀 ~ option.addEventListener ~ isParticipantEligibleIncentive", isParticipantEligibleIncentiveResponse)
                     hideAnimation();
 
                     const { isEligibleForIncentive, participantData} = isParticipantEligibleIncentiveResponse.data; 
                     const currentParticipantData = isParticipantEligibleIncentiveResponse.data;
                     localStorage.setItem('participant', JSON.stringify(currentParticipantData.participantData));
                     
-
                     // check if isParticipantEligibleIncentive.isEligibleForIncentive is true AND current participant data has "130371375.266600170.731498909" value to "NO"
                     isEligibleForIncentiveUpdate = isEligibleForIncentive && (participantData[paymentRound][baselinePayment][eligiblePayment] === no);
                     console.log("🚀 ~ option.addEventListener ~ isEligibleForIncentiveUpdate:", isEligibleForIncentiveUpdate);
@@ -220,33 +212,26 @@ const handlePaymentRoundSelect = (participant) => {
 
 const handleParticipantPaymentTextContent = (participant, isEligibleForIncentiveUpdate) => { 
     const incentiveStatusText = document.getElementById('incentiveStatusText');
-    if (!incentiveStatusText) return;
     const isIncentiveEligbleNote = document.getElementById('isIncentiveEligbleNote');
-    if (!isIncentiveEligbleNote) return;
     const dateOfEligibilityInput = document.getElementById('dateOfEligibility');
-    if (!dateOfEligibilityInput) return;
     const dateOfEligibilityText = document.getElementById('dateOfEligibilityText');
-    if (!dateOfEligibilityText) return;
+    if (!incentiveStatusText || !isIncentiveEligbleNote || !dateOfEligibilityInput || !dateOfEligibilityText) return;
     
     console.log("🚀 ~ handleParticipantPaymentTextContent ~ isEligibleForIncentiveUpdate:", isEligibleForIncentiveUpdate)
-        const { paymentRound, baselinePayment, eligiblePayment, yes, no, baseline, baselinePaymentDate } = fieldMapping; 
+    const { paymentRound, baseline, baselinePaymentDate } = fieldMapping; 
 
-    
     if (isEligibleForIncentiveUpdate) {
-        incentiveStatusText.textContent = 'Incentive Eligible Status: Yes'; // participant is eligible to be updated
+        incentiveStatusText.textContent = 'Incentive Eligible Status: Yes';
         dateOfEligibilityText.textContent = 'Date of Eligibility: N/A';
 
-    }
-    else if (isEligibleForIncentiveUpdate === false) {
-        incentiveStatusText.textContent = 'Incentive Eligible Status: No'; // participant is not eligible to be updated
+    } else if (isEligibleForIncentiveUpdate === false) {
+        incentiveStatusText.textContent = 'Incentive Eligible Status: No';
         dateOfEligibilityText.textContent = `Date of Eligibility: ${humanReadableMDYTimeZoneOffset(participant[paymentRound][baseline][baselinePaymentDate])}`; // TODO: Add flexibility for other payment rounds
-        // dateOfEligibilityInput.textContent = setIncentiveEligibleInputDefaultValue(); // do i need to update the time again for default?
         isIncentiveEligbleNote.innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible.</span>`;
-
     } else {
-        incentiveStatusText.textContent = 'Incentive Eligible Status: '; // participant is not eligible to be updated
+        incentiveStatusText.textContent = 'Incentive Eligible Status: ';
         dateOfEligibilityText.textContent = 'Date of Eligibility:';
-        dateOfEligibilityInput.textContent = setIncentiveEligibleInputDefaultValue(); // do i need to update the time again for default?
+        dateOfEligibilityInput.textContent = setIncentiveEligibleInputDefaultValue();
     }
 
 }
@@ -262,7 +247,6 @@ const setIncentiveEligibleInputDefaultValue = () => {
         const formattedDate = `${year}-${month}-${day}`;
         dateOfEligibilityInput.value = formattedDate;
         dateOfEligibilityInput.max = formattedDate;
-        // dateOfEligibilityInput.disabled = false;
     }
 };
 
@@ -274,15 +258,12 @@ const convertToISO8601 = (dateString) => {
 /**
  *  Clears the payment round selection back to default and clears the text content
  */
-const clearPaymentRoundSelect = () => { 
+const clearPaymentRoundSelect = () => {
     const clearButton = document.getElementById('clearPaymentRoundButton');
-    if (!clearButton) return;
     const isIncentiveEligibleNote = document.getElementById('isIncentiveEligbleNote');
-    if (!isIncentiveEligibleNote) return;
     const selectButton = document.querySelector('.selectButton');
-    if (!selectButton) return;
     const dateOfEligibilityInput = document.getElementById('dateOfEligibility');
-    if (!dateOfEligibilityInput) return;
+    if (!clearButton || !isIncentiveEligibleNote || !selectButton || !dateOfEligibilityInput) return;
 
     clearButton.addEventListener('click', () => {
         setParticipantPaymentRound();
@@ -292,13 +273,11 @@ const clearPaymentRoundSelect = () => {
 
 const setParticipantPaymentRound = () => { 
     const clearButton = document.getElementById('clearPaymentRoundButton');
-    if (!clearButton) return;
     const isIncentiveEligibleNote = document.getElementById('isIncentiveEligbleNote');
-    if (!isIncentiveEligibleNote) return;
     const selectButton = document.querySelector('.selectButton');
     const incentiveStatusText = document.getElementById('incentiveStatusText');
     const dateOfEligibilityText = document.getElementById('dateOfEligibilityText');
-    if (!selectButton) return;
+    if (!clearButton || !isIncentiveEligibleNote || !selectButton || !incentiveStatusText || !dateOfEligibilityText) return;
 
     isIncentiveEligibleNote.textContent = '';
     dateOfEligibilityText.textContent = 'Date of Eligibility:';
@@ -309,9 +288,7 @@ const setParticipantPaymentRound = () => {
 }
 
 const toggleSubmitButton = (isEligibleForIncentiveUpdate) => { 
-    // console.log("🚀 ~ toggleSubmitButton ~ isEligibleForIncentiveUpdate:", isEligibleForIncentiveUpdate)
     const submitButton = document.getElementById('submitButton');
-    // submitButton.disabled = true;
     if (submitButton) {
         if (isEligibleForIncentiveUpdate) {
             submitButton.removeAttribute('disabled');
@@ -326,11 +303,9 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
     const dateOfEligibilityInput = document.getElementById('dateOfEligibility');
 
     const { paymentRound, baseline, baselinePaymentDate } = fieldMapping;
-    
     const selectedDateValue = convertToISO8601(dateOfEligibilityInput.value);
-    console.log("🚀 ~ confirmIncentiveEligibilityUpdate ~ selectedDateValue:", selectedDateValue)
+
     if (confirmButton && dateOfEligibilityInput) {
-        // setupModalContent(participantPaymentRound);
         confirmButton.addEventListener('click', async (e) => {
             const confirmUpdateEligibilityButton = document.getElementById('confirmUpdateEligibility');
             if (confirmUpdateEligibilityButton) {
@@ -343,12 +318,13 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
 
                     if (updateResponse.code === 200) { 
                         triggerNotificationBanner("Participant incentive eligibility status updated successfully!", "success" ,10000);
-                        
-                        document.getElementById('incentiveStatusText').textContent = 'Incentive Eligible Status: No'; // participant is not eligible to be updated
+
+                        document.getElementById('incentiveStatusText').textContent = 'Incentive Eligible Status: No';
                         document.getElementById('isIncentiveEligbleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible.</span>`;
                         document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${humanReadableMDYTimeZoneOffset(currentParticipantData[paymentRound][baseline][baselinePaymentDate])}`; // TODO: Add flexibility for other payment rounds
                         document.getElementById('dateOfEligibility').textContent = setIncentiveEligibleInputDefaultValue();
                         document.getElementById('dateOfEligibility').disabled = true;
+                        // toggleSubmitButton(); TODO - Remove Later for test
                     }
                 } catch (error) { 
                     console.error("Failed to update participant incentive eligibility: ", error);
@@ -359,12 +335,14 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
     }
 }
 
-
-// Convert ISO to human readable date, adjusting for timezone
+/**
+ * Convert ISO8601 date to human readable date, adjusting for timezone
+ * @param {String} participantDate - ISO8601 date string
+ * @returns {String} - Human readable date string (MM/DD/YYYY)
+*/
 const humanReadableMDYTimeZoneOffset = (participantDate) => {
     if (!participantDate) return 'N/A';
     const date = new Date(participantDate);
-    // Add timezone offset to prevent date shift
     const userTimezoneOffset = date.getTimezoneOffset() * 60000;
     const adjustedDate = new Date(date.getTime() + userTimezoneOffset);
     return adjustedDate.toLocaleDateString();
@@ -372,13 +350,11 @@ const humanReadableMDYTimeZoneOffset = (participantDate) => {
 
 
 const setupModalContent = (participantPaymentRound) => {
-    console.log("🚀 ~ setupModalContent ~ participantPaymentRound:", participantPaymentRound)
     const paymentRoundType = conceptIdToPaymentRoundMapping[participantPaymentRound];
-    console.log("🚀 ~ setupModalContent ~ paymentRoundType:", paymentRoundType)
     const modalBody = document.querySelector('.modal-body');
     if (!modalBody) return;
     modalBody.textContent = `Are you sure you want to update the participant's incentive eligibility status for ${paymentRoundType}?`;
-}
+};
 
 /**
  * Check if participant is already incentive eligible (Flags)
@@ -388,10 +364,6 @@ const setupModalContent = (participantPaymentRound) => {
  * @returns {Object} - Response object { isEligibleForIncentive: Boolean, participantData: Object }
 */
 const checkParticipantForEligibleIncentive = async (participant, selectedPaymentRound) => { 
-    // Check if participant is already incentive eligible (Flags) AND other incentive eligible conditions
-    // if yes, display message and disable input fields
-    // if no, enable input fields
-    
     const participantObj = participant;
     const connectId = participantObj['Connect_ID'];
 

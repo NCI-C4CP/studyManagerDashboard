@@ -390,7 +390,7 @@ table {
     color: #222;
     margin-bottom: -1px;
     padding: 0.5rem 1rem;
-    transition: all 0.3s ease;
+    transition: all 0.8s ease;
 }
 
 #dataCorrectionsTabsGroup li .dataCorrectionLink:hover {
