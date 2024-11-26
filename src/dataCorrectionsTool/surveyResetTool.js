@@ -117,7 +117,7 @@ const renderDataCorrectionsSelectionContent = (participant) => {
 
 const handleSurveyTypeChange = (participant) => { 
     const surveyDropdown = document.getElementById('dropdownSurveyMenu');
-    const dropdownSurveyOptions = surveyDropdown.children;
+    const dropdownSurveyOptions = surveyDropdown?.children;
     const selectButton = document.querySelector('.selectButton');
     if (!surveyDropdown || !dropdownSurveyOptions || !selectButton) return;
 
