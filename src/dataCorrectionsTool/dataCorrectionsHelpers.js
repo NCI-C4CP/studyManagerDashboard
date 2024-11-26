@@ -13,7 +13,7 @@ export const handleBackToToolSelect = () => {
 
 export const displayDataCorrectionsNavbar =  () => {
     return `<div class="mt-4">
-                <div class="navTabsDataCorrectionsContainer .d-flex">
+                <div class="navTabsDataCorrectionsContainer">
                     <ul class="btn-group" id="dataCorrectionsTabsGroup">
                         <li>
                             <a class="dataCorrectionLink" id="verificationCorrectionsTool" href="#verificationCorrectionsTool">Verification Corrections</a>
@@ -33,8 +33,8 @@ export const displayDataCorrectionsNavbar =  () => {
 export const setActiveDataCorrectionsTab = () => {
     const dataCorrectionsTabs = document.getElementById('dataCorrectionsTabsGroup');
     if (!dataCorrectionsTabs) return;
-
-    document.getElementsByName('dataCorrectionLink').forEach((link) => { 
+    
+    document.querySelectorAll(".dataCorrectionLink").forEach((link) => { 
         link.classList.remove('active');
     });
 

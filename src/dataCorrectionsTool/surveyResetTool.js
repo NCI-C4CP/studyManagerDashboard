@@ -117,16 +117,11 @@ const renderDataCorrectionsSelectionContent = (participant) => {
 
 const handleSurveyTypeChange = (participant) => { 
     const surveyDropdown = document.getElementById('dropdownSurveyMenu');
-    if (!surveyDropdown) return;
-
-    const dropdownSurveyOptions = document.querySelector('#dropdownSurveyMenu').children;
-    if (!dropdownSurveyOptions) return;
-
+    const dropdownSurveyOptions = surveyDropdown.children;
     const selectButton = document.querySelector('.selectButton');
-    if (!selectButton) return;
+    if (!surveyDropdown || !dropdownSurveyOptions || !selectButton) return;
 
     const participantConnectId = participant['Connect_ID'];
-
     let query;
 
     for (let option of dropdownSurveyOptions) {

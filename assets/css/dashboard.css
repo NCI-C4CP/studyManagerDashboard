@@ -416,3 +416,31 @@ table {
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
 }
+
+/*
+Responsive data corrections nav link display
+*/
+@media (max-width:636px) {
+    #dataCorrectionsTabsGroup {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    #dataCorrectionsTabsGroup li {
+        display: block;
+        padding: 0.4rem;
+    }
+
+    #dataCorrectionsTabsGroup li .dataCorrectionLink {
+        display: block;
+        text-align: center;
+        margin-bottom: 0;
+    }
+    
+    #dataCorrectionsTabsGroup li:first-child .dataCorrectionLink,
+    #dataCorrectionsTabsGroup li:last-child .dataCorrectionLink,
+    #dataCorrectionsTabsGroup li .dataCorrectionLink {
+        border-radius: 10px;
+    }
+}

@@ -217,18 +217,13 @@ const handleParticipantPaymentTextContent = (participant, isEligibleForIncentive
     }
 
 }
-    
 
 const setIncentiveEligibleInputDefaultValue = () => { 
     const dateOfEligibilityInput = document.getElementById('dateOfEligibility');
     if (dateOfEligibilityInput) {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const formattedDate = `${year}-${month}-${day}`;
-        dateOfEligibilityInput.value = formattedDate;
-        dateOfEligibilityInput.max = formattedDate;
+        const currentDate = new Date().toLocaleDateString("en-CA", {timeZone:"America/New_York"}); // MM/DD/YYYY
+        dateOfEligibilityInput.value = currentDate;
+        dateOfEligibilityInput.max = currentDate;
     }
 };
 

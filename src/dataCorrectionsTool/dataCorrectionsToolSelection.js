@@ -63,9 +63,8 @@ const setupContinueNavigationHandler = () => {
     if (!continueBtn || !selectButton) return;
     
     continueBtn.addEventListener('click', () => {
-        const selectButton = document.querySelector('.selectButton');
         const selectedButtonType = selectButton.getAttribute('data-tool');
-        if (!selectedButtonType || !selectButton) return;
+        if (!selectedButtonType) return;
 
         if (selectedButtonType === 'verificationCorrections') {
             window.location.hash = '#verificationCorrectionsTool';
