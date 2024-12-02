@@ -188,7 +188,7 @@ const handlePaymentRoundSelect = (participant) => {
                 dateOfEligibilityInput.disabled = false;
                 handleParticipantPaymentTextContent(participant, isEligibleForIncentiveUpdate);
             }
-        });         
+        });
     }
 };
 

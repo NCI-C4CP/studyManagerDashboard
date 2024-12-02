@@ -119,7 +119,7 @@ export const renderVerificationCorrections = (participant) => {
             </div>
         </div>
     </div>`
-    return template;                       
+    return template;
 };
 
 const dropdownTrigger = (buttonId, menuId, response) => {
