@@ -1,36 +1,40 @@
-import fieldMapping from './fieldToConceptIdMapping.js';
-import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from './utils.js';
-import { renderParticipantHeader } from './participantHeader.js';
-import { keyToVerificationStatus, keyToDuplicateType, recruitmentType, updateRecruitmentType } from './idsToName.js';
-import { appState } from './stateManager.js';
-import { findParticipant } from './participantLookup.js';
+import fieldMapping from '../fieldToConceptIdMapping.js';
+import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from '../utils.js';
+import { renderParticipantHeader } from '../participantHeader.js';
+import { keyToVerificationStatus, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
+import { appState } from '../stateManager.js';
+import { findParticipant } from '../participantLookup.js';
+import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 
 
-export const renderDataCorrectionsToolPage = (participant) => {
+export const setupVerificationCorrectionsPage = (participant) => {
     if (participant !== undefined) {
         const isParent = localStorage.getItem('isParent')
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
         removeActiveClass('nav-link', 'active');
         document.getElementById('participantVerificationBtn').classList.add('active');
-        mainContent.innerHTML = renderVerificationTool(participant);
+        mainContent.innerHTML = renderVerificationCorrections(participant);
         let selectedResponse = {};
         dropdownTrigger('dropdownVerification', 'dropdownMenuButtonVerificationOptns', selectedResponse);
         dropdownTrigger('dropdownDuplicateType', 'dropdownMenuButtonDuplicateTypeOptns',selectedResponse);
         dropdownTrigger('dropdownUpdateRecruitType', 'dropdownMenuButtonUpdateRecruitTypeOptns', selectedResponse);
         viewOptionsSelected(participant);
         resetChanges(participant);
+        handleBackToToolSelect();
+        setActiveDataCorrectionsTab();
     }
 }
 
-export const renderVerificationTool = (participant) => {
+export const renderVerificationCorrections = (participant) => {
     let template = ``;
     template = `        
                 <div id="root root-margin">
                     <div class="col-lg">
                     ${renderParticipantHeader(participant)}
-                    <div id="alert_placeholder"></div>
-                        <div class="row form-row">
+                    ${displayDataCorrectionsNavbar()}
+                    <div id="alert_placeholder" class="dataCorrectionsAlert"></div>
+                        <div class="row form-row m-3">
                             <div>                    
                                 <h4><b>Data Corrections Tool</b></h4>
                                 <span style="position:relative; font-size: 15px; top:2px;"><b>Note: This tool should only be used to make corrections to participant data post-verification. 
@@ -92,17 +96,21 @@ export const renderVerificationTool = (participant) => {
                                         </ul>
                                 </div>
                                 </div>
-                                <div style="display:inline-block; margin-top:20px;">
-                                    <button type="button" class="btn btn-danger" id="cancelChanges">Cancel</button>
-                                    <button type="button" data-toggle="modal" data-target="#modalShowSelectedData"
-                                        class="btn btn-primary next-btn" id="submitCorrection">Submit</button>
+                                <div class="d-flex mt-5">
+                                    <div>
+                                        <button type="button" class="btn btn-secondary" id="backToToolSelect"><- Back</button>
+                                        <button type="button" class="btn btn-danger" id="cancelChanges">Cancel</button>
+                                    </div>
+                                    <div style="margin-left: 3rem;">
+                                        <button type="button" data-toggle="modal" data-target="#modalShowSelectedData"
+                                            class="btn btn-primary next-btn" id="submitCorrection">Submit</button>
+                                    </div>
                                 </div>
-                                </div>
+                            </div>
                         </div>
                     </div>
-                               
                 </div>`
-           
+          
         template += ` <div class="modal fade" id="modalShowSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
             <div class="modal-content sub-div-shadow">
@@ -112,7 +120,7 @@ export const renderVerificationTool = (participant) => {
         </div>
     </div>`
     return template;
-}
+};
 
 const dropdownTrigger = (buttonId, menuId, response) => {
     let keyName = 'Select'
@@ -260,11 +268,11 @@ const clickHandler = async (selectedOptions) => {
         console.error('An error occurred:', error);
         triggerNotificationBanner('Try again later.', 'danger');
         }
-    }
+};
 
 const reloadVerificationToolPage = (participant, message, type) => {
     showAnimation();
-    renderDataCorrectionsToolPage(participant);
+    setupVerificationCorrectionsPage(participant);
     triggerNotificationBanner(message, type);
     hideAnimation();
 }

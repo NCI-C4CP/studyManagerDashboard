@@ -344,3 +344,103 @@ table {
 #appVersion {
     font-size: 0.8rem;
 }
+
+.smallerHeading {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.norcToolNote {
+    font-size: 1rem; 
+    font-weight: 700;
+    margin-top: 0.8rem;
+    margin-bottom: 1rem;
+}
+
+.norcToolTypeHeader {
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.navTabsDataCorrectionsContainercontainer {
+    position: relative;
+    padding-bottom: 1px;
+}
+
+.dataCorrectionsAlert {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+#dataCorrectionsTabsGroup {
+    width: max-content;
+    margin-bottom: 0;
+    padding: 0rem;
+}
+
+#dataCorrectionsTabsGroup li {
+    text-decoration: none;
+    outline: none;
+    cursor: pointer;
+    display: inline-block;
+}
+
+#dataCorrectionsTabsGroup li .dataCorrectionLink {
+    border: 1px solid #222;
+    color: #222;
+    margin-bottom: -1px;
+    padding: 0.5rem 1rem;
+    transition: all 0.8s ease;
+    font-weight: 500;
+}
+
+#dataCorrectionsTabsGroup li .dataCorrectionLink:hover {
+    background-color: #B8DFF7;
+    color: #222;
+    box-shadow: 0 2px 4px rgba(13, 110, 253, 0.1);
+    text-decoration: none;
+}
+
+#dataCorrectionsTabsGroup li .dataCorrectionLink.active {
+    background-color: #B8DFF7;
+    color: #222;
+    box-shadow: none;
+}
+
+#dataCorrectionsTabsGroup li:first-child .dataCorrectionLink{
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+
+#dataCorrectionsTabsGroup li:last-child .dataCorrectionLink {
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+}
+
+/*
+Responsive data corrections nav link display
+*/
+@media (max-width:636px) {
+    #dataCorrectionsTabsGroup {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    #dataCorrectionsTabsGroup li {
+        display: block;
+        padding: 0.4rem;
+    }
+
+    #dataCorrectionsTabsGroup li .dataCorrectionLink {
+        display: block;
+        text-align: center;
+        margin-bottom: 0;
+    }
+    
+    #dataCorrectionsTabsGroup li:first-child .dataCorrectionLink,
+    #dataCorrectionsTabsGroup li:last-child .dataCorrectionLink,
+    #dataCorrectionsTabsGroup li .dataCorrectionLink {
+        border-radius: 10px;
+    }
+}

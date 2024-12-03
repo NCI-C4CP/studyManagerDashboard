@@ -198,12 +198,13 @@ export default
 
     "baselinePaymentFlag": 117044491,
     "paymentRoundup": 130371375,
+    "paymentRound": 130371375,
     "baselinePayment": 266600170,
     "eligiblePayment": 731498909,
     "paymentIssued": 648936790,
     "datePaymentIssued": 297462035,
-    "norcIssuePayment": 222373868,
-    "baselinePaymentDate": 787567527,
+    "norcPaymentEligibility": 222373868,
+    "eligiblePaymentRoundTimestamp": 787567527,
     "refusedBaselinePayment": 648228701,
     "refusedBaselinePaymentDate": 438636757,
 
@@ -536,4 +537,11 @@ export default
         shipped: 277438316,
         received: 375535639
     },
+
+
+    surveyStatus: {
+        notStarted: 972455046,
+        started: 615768760,
+        completed: 231311385
+    }
 };

@@ -4,7 +4,10 @@ import { renderTable, filterdata, renderData, addEventFilterData, activeColumns,
 import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
-import { renderDataCorrectionsToolPage } from './src/dataCorrectionsTool.js';
+import { setupDataCorrectionsSelectionToolPage } from './src/dataCorrectionsTool/dataCorrectionsToolSelection.js';
+import { setupVerificationCorrectionsPage } from './src/dataCorrectionsTool/verificationCorrectionsTool.js';
+import { setupSurveyResetToolPage } from './src/dataCorrectionsTool/surveyResetTool.js';
+import { setupIncentiveEligibilityToolPage } from './src/dataCorrectionsTool/incentiveEligibilityTool.js';
 import { renderSiteMessages } from './src/siteMessages.js';
 import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
@@ -83,7 +86,7 @@ window.onload = async () => {
           console.error("Local development requires firebaseConfig defined in src/local-dev/config.js.");
           return;
         }
-        !firebase.apps.length ? firebase.initializeApp(localDevFirebaseConfig) : firebase.app();
+        !firebase.apps.length ? firebase.initializeApp(localDevFirebaseConfig) : firebase.app(); 
     } 
     else {
         !firebase.apps.length ? firebase.initializeApp(devFirebaseConfig) : firebase.app();
@@ -113,6 +116,14 @@ window.onload = async () => {
 window.onhashchange = () => {
     router();
 };
+
+const dataCorrectionsToolRoutes = [
+    '#dataCorrectionsToolSelection',
+    '#incentiveEligibilityTool',
+    '#surveyResetTool',
+    '#verificationCorrectionsTool',
+];
+
 
 const router = async () => {
     const hash = decodeURIComponent(window.location.hash);
@@ -155,15 +166,33 @@ const router = async () => {
                 renderParticipantMessages(participant);
             }
         }
-        else if (route === '#dataCorrectionsTool') {
+        else if (dataCorrectionsToolRoutes.includes(route)) {
             if (JSON.parse(localStorage.getItem("participant")) === null) {
                 alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
             }
             else {
-                let participant = JSON.parse(localStorage.getItem("participant"))
-                renderDataCorrectionsToolPage(participant);
+                let participant = JSON.parse(localStorage.getItem("participant"));
+
+                switch(route) {
+                    case '#dataCorrectionsToolSelection':
+                        setupDataCorrectionsSelectionToolPage(participant)
+                        break;
+                    case '#verificationCorrectionsTool':
+                        setupVerificationCorrectionsPage(participant)
+                        break;
+                    case '#surveyResetTool':
+                        setupSurveyResetToolPage(participant)
+                        break;
+                    case '#incentiveEligibilityTool':
+                        setupIncentiveEligibilityToolPage(participant)
+                        break;
+                    default:
+                        window.location.hash = '#dataCorrectionsToolSelection';
+                        break;
+                }
             }
         }
+
         else if (route === '#siteMessages') renderSiteMessages();
         else if (route === '#participantWithdrawal' && isParent === 'true') {
             if (JSON.parse(localStorage.getItem("participant")) === null) {
@@ -257,6 +286,7 @@ const renderDashboard = async () => {
         animation(true);
         const idToken = await getIdToken();
         const isAuthorized = await authorize(idToken);
+
         if (isAuthorized && isAuthorized.code === 200) {
             localStorage.setItem('isParent', isAuthorized.isParent)
             localStorage.setItem('coordinatingCenter', isAuthorized.coordinatingCenter)
