@@ -203,7 +203,6 @@ export default
     "eligiblePayment": 731498909,
     "paymentIssued": 648936790,
     "datePaymentIssued": 297462035,
-    "norcIssuePayment": 222373868,
     "norcPaymentEligibility": 222373868,
     "baselinePaymentDate": 787567527,
     "refusedBaselinePayment": 648228701,
