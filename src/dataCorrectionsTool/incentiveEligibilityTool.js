@@ -162,9 +162,8 @@ const handlePaymentRoundSelect = (participant) => {
 
                     const isNORCPaymentEligible = participantData?.[paymentRound]?.[baselinePayment]?.[norcPaymentEligibility] === no;
                     const isIncentiveEligible = participantData?.[paymentRound]?.[baselinePayment]?.[eligiblePayment] === no;
-                    const isEligibleForIncentiveUpdate = isNORCPaymentEligible || isIncentiveEligible;
 
-                    if (isEligibleForIncentiveUpdate) {
+                    if (isNORCPaymentEligible && isIncentiveEligible) {
                         toggleSubmitButton(isEligibleForIncentiveUpdate);
                         handleParticipantPaymentTextContent(participantData, isEligibleForIncentiveUpdate);
                         dateOfEligibilityInput.disabled = false;
