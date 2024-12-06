@@ -162,17 +162,22 @@ const handleSurveyTypeChange = (participant) => {
     }
 };
 
-
-const updateSurveyStatusTextContent = (participant, selectedSurvey) => {
+const updateSurveyStatusTextContent = (participant, selectedSurvey, statusCode) => {
     const surveyNameElement = document.getElementById('surveyNameText');
     const surveyStatusElement = document.getElementById('surveyStatusText');
 
     const participantSurveyStatus = {
         "ssn": participant[fieldMapping.ssnStatusFlag],
     };
+
+    const { surveyStatus } = fieldMapping;
     if (selectedSurvey === 'ssn') {
         surveyNameElement.textContent = 'Survey Name: SSN Survey';
         surveyStatusElement.textContent = `Survey Status: ${statusMapping[participantSurveyStatus.ssn] || ''} `;
+
+        if (statusCode === 200) { 
+            surveyStatusElement.textContent = `Survey Status: ${statusMapping[surveyStatus["notStarted"]]}`;
+        }
     } else if (selectedSurvey === null) {
         surveyNameElement.textContent = 'Survey Name: ';
         surveyStatusElement.textContent = 'Survey Status: ';
@@ -206,7 +211,8 @@ const clearSurveySelection = () => {
 const submitSurveyStatusReset = () => {
     const submitButton = document.getElementById('submitButton');
     const confirmResetButton = document.getElementById('confirmResetButton');
-    if (!submitButton || !confirmResetButton) return;
+    const surveyStatusElement = document.getElementById('surveyStatusText');
+    if (!submitButton || !confirmResetButton || !surveyStatusElement) return;
 
     submitButton.addEventListener('click', async () => {
         if (selectedSurvey === null) return;
@@ -220,7 +226,7 @@ const submitSurveyStatusReset = () => {
                     
                     if (response.code === 200 || response.data) {
                         localStorage.setItem('participant', JSON.stringify(response.data));
-                        updateSurveyStatusTextContent(response.data, selectedSurvey);
+                        updateSurveyStatusTextContent(response.data, selectedSurvey, response.code);
                         displayAlreadyResetNote();
                         triggerNotificationBanner("Survey has been successfully reset!", "success", 10000);
                         disableSubmitButton();
