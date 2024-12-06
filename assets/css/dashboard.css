@@ -372,6 +372,11 @@ table {
     margin-bottom: 1rem;
 }
 
+p.norcToolDropdownInfoText {
+    font-style: italic;
+    margin-bottom: 2rem;
+}
+
 #dataCorrectionsTabsGroup {
     width: max-content;
     margin-bottom: 0;

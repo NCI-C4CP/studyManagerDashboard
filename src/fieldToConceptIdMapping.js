@@ -94,9 +94,9 @@ export default
 
     'prefPhone': 127547625,
 
-    "notStarted": 0,
-    "started": 1,
-    "submitted": 2,
+    "notStarted": 972455046,
+    "started": 615768760,
+    "submitted": 231311385,
 
     "notYetEligible1": 789467219,
     "notStarted1": 972455046,
