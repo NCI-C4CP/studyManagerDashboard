@@ -358,7 +358,7 @@ const renderFormInModal = (participant, changedOption, conceptId, participantKey
     const renderText = textFieldMappingsArray.includes(parseInt(conceptId));
     const renderDay = conceptId == fieldMapping.birthDay;
     const renderMonth = conceptId == fieldMapping.birthMonth;
-    const renderState = conceptId == fieldMapping.state;
+    const renderState = conceptId == fieldMapping.state || conceptId == fieldMapping.physicalState;
     const renderSuffix = conceptId == fieldMapping.suffix;
     const renderLanguage = conceptId == fieldMapping.preferredLanguage;
     const elementId = `fieldModified${conceptId}`;
