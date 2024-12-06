@@ -192,6 +192,10 @@ export default
     'experienceSurveyStartDate': 263355177,
     'experienceCompleteDate': 199471989,
 
+    'cancerScreeningHistorySurveyStatus': 176068627,
+    'cancerScreeningHistorySurveyStartDate': 609630315,
+    'cancerScreeningHistorySurveyCompletedDate': 389890053,
+
     "baselineEMR": 209454331,
     "baselineEMRflag": 101170406,
     "baselineEMRpushDate": 143523420,
@@ -335,6 +339,7 @@ export default
     'refusedAllFutureQualityOfLifeSurveys': 688142378,
     'refusedExperienceSurvey': 101763809,
     'refusedAllFutureExperienceSurveys': 525277409,
+    'refusedCancerScreeningHistorySurvey': 671903816,
     
     'refusedAllFutureActivities': 906417725,
     'revokeHIPAA': 773707518,
@@ -495,6 +500,7 @@ export default
     'refAllFutureQualityOfLifeSurveysTimeStamp': 953225775,
     'refExperienceSurveyTimeStamp': 688172931,
     'refAllFutureExperienceSurveysTimeStamp': 182718292,
+    'refCancerScreeningHistorySurveyTimeStamp': 957406695,
 
     // remaining withdrawal
     'contactSuspended': 726389747,

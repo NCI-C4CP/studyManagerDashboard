@@ -82,6 +82,12 @@ export const renderParticipantWithdrawalLandingPage = () => {
                                             2024 Connect Experience Survey (but willing to do other future surveys)
                                         </label>
                                         <br />
+                                        <input class="form-check-input" name="options" type="checkbox" value="Cancer Screening History Survey (but willing to do other future surveys)"
+                                        data-optionKey=${fieldMapping.refusedCancerScreeningHistorySurvey} id="refusedCancerScreeningHistorySurveyCheck">
+                                        <label class="form-check-label" for="refusedCancerScreeningHistorySurveyCheck">
+                                          Cancer Screening History Survey (but willing to do other future surveys)
+                                        </label>
+                                        <br />
                                         <input class="form-check-input" name="options" type="checkbox" value="All future Connect Experience Surveys (but willing to do other future surveys)" 
                                         data-optionKey=${fieldMapping.refusedAllFutureExperienceSurveys} id="refusedAllFutureExperienceSurveysCheck">
                                         <label class="form-check-label" for="refusedAllFutureExperienceSurveysCheck">
@@ -503,6 +509,9 @@ const sendResponses = async (finalOptions, retainOptions, requestedHolder, sourc
         }
         else if (parseInt(x.dataset.optionkey) ===  fieldMapping.refusedAllFutureExperienceSurveys) {
             setRefusalTimeStamp(sendRefusalData, x.dataset.optionkey, fieldMapping.refAllFutureExperienceSurveysTimeStamp);
+        }
+        else if (parseInt(x.dataset.optionkey) ===  fieldMapping.refusedCancerScreeningHistorySurvey) {
+            setRefusalTimeStamp(sendRefusalData, x.dataset.optionkey, fieldMapping.refCancerScreeningHistorySurveyTimeStamp);
         }
         else {
             sendRefusalData[x.dataset.optionkey] = fieldMapping.yes
