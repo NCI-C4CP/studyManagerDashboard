@@ -54,7 +54,7 @@ const renderDataCorrectionsSelectionContent = (participant) => {
 
                 <div class="row">
                     <div class="col my-2">
-                        <h2 class="norcToolTypeHeader"> Survey Status Reset </h2>
+                        <h2 class="norcToolTypeHeader"> Survey Status Reset Tool</h2>
                         <p class="norcToolDropdownInfoText">
                             Please select the survey to be reset below. A survey reset means that the survey data and answers will be <span style="text-decoration:underline;">permanently deleted</span>, and the survey status flag will be reset to 'not started'.
                         </p>
@@ -70,7 +70,7 @@ const renderDataCorrectionsSelectionContent = (participant) => {
                                 </div>    
                             </div>
                         </div>
-                        <p class="font-weight-bold mt-5">Current Survey Status</p>
+                        <p class="font-weight-bold mt-5">Current Survey Status:</p>
                         <p id="surveyNameText" class="infoLabel">Survey Name: </p>          
                         <p id="surveyStatusText" class="infoLabel">Survey Status: </p>
                         <p id="isSurveyAlreadyResetNote" class="font-weight-bold"></p>
