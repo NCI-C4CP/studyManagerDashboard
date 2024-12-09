@@ -2,7 +2,7 @@ import fieldMapping from '../fieldToConceptIdMapping.js';
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner } from '../utils.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner, humanReadableTimeZoneOffsetFormat } from '../utils.js';
 import { findParticipant } from '../participantLookup.js';
 
 let participantPaymentRound = null;
@@ -311,23 +311,6 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
         });
     }
 }
-
-/**
- * Convert ISO8601 date to human readable date, adjusting for timezone
- * @param {String} participantDate - ISO8601 date string
- * @param {boolean} formatToYearMonthDay
- * @returns {String} - Human readable date string (MM/DD/YYYY) or YYYY-MM-DD (true)
- * YYYY-MM-DD format is for Date Picker value
-*/
-const humanReadableTimeZoneOffsetFormat = (participantDate, formatToYearMonthDay) => {
-    if (!participantDate) return 'N/A';
-    const date = new Date(participantDate);
-    const year = date.getUTCFullYear();
-    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-    const day = String(date.getUTCDate()).padStart(2, "0");
-
-    return formatToYearMonthDay ? `${year}-${month}-${day}` : `${month}/${day}/${year}`;
-};
 
 const setupModalContent = (participantPaymentRound) => {
     const paymentRoundType = conceptIdToPaymentRoundMapping[participantPaymentRound];

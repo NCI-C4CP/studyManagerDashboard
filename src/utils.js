@@ -47,6 +47,23 @@ setTimeout(() => {
 }, 50);
 }
 
+/**
+ * Convert ISO8601 date to human readable date, adjusting for timezone
+ * @param {String} participantDate - ISO8601 date string
+ * @param {boolean} formatToYearMonthDay - Optional flag to format date to YYYY-MM-DD
+ * @returns {String} - Human readable date string (MM/DD/YYYY) or YYYY-MM-DD (true)
+ * 
+*/
+export const humanReadableTimeZoneOffsetFormat = (participantDate, formatToYearMonthDay) => {
+  if (!participantDate) return 'N/A';
+  const date = new Date(participantDate);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+
+  return formatToYearMonthDay ? `${year}-${month}-${day}` : `${month}/${day}/${year}`;
+};
+
 import { keyToNameObj } from './idsToName.js';
 
 export const siteKeyToName = (key) => {
@@ -116,6 +133,7 @@ export const urls = {
 let api = ``;
 if(location.host === urls.prod) api = 'https://api-myconnect.cancer.gov';
 else if(location.host === urls.stage) api = 'https://api-myconnect-stage.cancer.gov';
+else if(location.host.startsWith('localhost')) api = 'http://localhost:5001/nih-nci-dceg-connect-dev/us-central1';
 else api = 'https://us-central1-nih-nci-dceg-connect-dev.cloudfunctions.net';
 export const baseAPI = api;
 
