@@ -152,7 +152,6 @@ const handlePaymentRoundSelect = (participant) => {
                     const response = await findParticipant(query);
                     hideAnimation();
                     const participantData = response.data[0];
-                    console.log("participantData: ", participantData);
                     localStorage.setItem('participant', JSON.stringify(participantData));
 
                     const isNORCPaymentEligible = participantData?.[paymentRound]?.[baselinePayment]?.[norcPaymentEligibility] === no;
@@ -276,7 +275,6 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
             const selectedDateValue = selectedDateOfEligibility ? convertToISO8601(selectedDateOfEligibility) : convertToISO8601(dateOfEligibilityInput.value);
             if (confirmUpdateEligibilityButton) {
                 try {
-                    console.log("Confirm button and date of eligibility input found")
                     const updateResponse = await updateParticipantIncentiveEligibility(participant, participantPaymentRound, selectedDateValue);
                     const currentParticipantData = updateResponse.data;
 
