@@ -1,9 +1,9 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
-import { humanReadableMDY } from './utils.js';
+import { formatUTCDate } from './utils.js';
 import { keyToNameObj } from './idsToName.js';
 
 export const renderParticipantHeader = (participant) => {
-  const readableVerificationDate = humanReadableMDY(participant[fieldMapping.verficationDate]);
+  const readableVerificationDate = formatUTCDate(participant[fieldMapping.verficationDate]);
   let verificationHtmlStr = "";
   if (participant[fieldMapping.verifiedFlag] === fieldMapping.verified) {
     verificationHtmlStr = `<span><b>Verified</b></span>: ${readableVerificationDate}`;
@@ -25,7 +25,7 @@ export const renderParticipantHeader = (participant) => {
         <span><b>DOB Yr</b></span>: ${participant[fieldMapping.birthYear] || ""} &nbsp;
         ${
           participant[fieldMapping.consentFlag] === fieldMapping.yes
-          ? `<span><b>Consented</b></span>: ${humanReadableMDY(participant[fieldMapping.consentDate])}`
+          ? `<span><b>Consented</b></span>: ${formatUTCDate(participant[fieldMapping.consentDate])}`
           : "<span><b>Not Consented</b></span>: N/A"
         } &nbsp;
         ${verificationHtmlStr} &nbsp;
@@ -69,7 +69,7 @@ export const getParticipantStatus = (participant) => {
 
 export const getParticipantSuspendedDate = (participant) => {
     if (participant[fieldMapping.suspendContact] !== "" && participant[fieldMapping.suspendContact] !== undefined ) {
-        let suspendContactRequestedFrom  = humanReadableMDY(participant[fieldMapping.startDateSuspendedContact]);
+        let suspendContactRequestedFrom  = formatUTCDate(participant[fieldMapping.startDateSuspendedContact]);
         let suspendedDate = participant[fieldMapping.suspendContact];
         return `<span><b>Suspended Contact </b></span>: From:  ${suspendContactRequestedFrom}  To:  ${suspendedDate}`;
     }
