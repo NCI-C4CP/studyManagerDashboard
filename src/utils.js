@@ -22,6 +22,23 @@ export const humanReadableY = () => {
   return currentYear;
 } // 2021
 
+/**
+ * Convert ISO8601 date to human readable date
+ * @param {String} participantDate - ISO8601 date string
+ * @param {boolean} formatToYearMonthDay - Optional flag to format date to YYYY-MM-DD
+ * @returns {String} - Human readable date string (MM/DD/YYYY) or YYYY-MM-DD (true)
+ * 
+*/
+export const formatUTCDate = (participantDate, formatToYearMonthDay) => {
+  if (!participantDate) return 'N/A';
+  const date = new Date(participantDate);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+
+  return formatToYearMonthDay ? `${year}-${month}-${day}` : `${month}/${day}/${year}`;
+};
+
 // Function prevents the user from internal navigation if unsaved changes are present
 export const internalNavigatorHandler = (counter) => {
 setTimeout(() => {
@@ -46,23 +63,6 @@ setTimeout(() => {
   })
 }, 50);
 }
-
-/**
- * Convert ISO8601 date to human readable date, adjusting for timezone
- * @param {String} participantDate - ISO8601 date string
- * @param {boolean} formatToYearMonthDay - Optional flag to format date to YYYY-MM-DD
- * @returns {String} - Human readable date string (MM/DD/YYYY) or YYYY-MM-DD (true)
- * 
-*/
-export const humanReadableTimeZoneOffsetFormat = (participantDate, formatToYearMonthDay) => {
-  if (!participantDate) return 'N/A';
-  const date = new Date(participantDate);
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-
-  return formatToYearMonthDay ? `${year}-${month}-${day}` : `${month}/${day}/${year}`;
-};
 
 import { keyToNameObj } from './idsToName.js';
 

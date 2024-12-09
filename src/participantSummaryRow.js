@@ -1,4 +1,4 @@
-import { humanReadableMDY, humanReadableTimeZoneOffsetFormat } from './utils.js';
+import { humanReadableMDY, formatUTCDate } from './utils.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 
 export const userProfile = (participant) => {
@@ -422,7 +422,7 @@ export const baselinePayment = (participantModule) => {
         participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.eligiblePayment] === fieldMapping.yes
     ) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Payment", "N/A", "Eligible", 
-            humanReadableTimeZoneOffsetFormat(participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.eligiblePaymentRoundTimestamp]),
+            formatUTCDate(participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.eligiblePaymentRoundTimestamp]),
             "N/A", "N/A", checkIncentiveIssued(participantModule)
     );
     } else {

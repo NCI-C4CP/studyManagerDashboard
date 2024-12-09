@@ -2,7 +2,7 @@ import fieldMapping from '../fieldToConceptIdMapping.js';
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner, humanReadableTimeZoneOffsetFormat } from '../utils.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner, formatUTCDate } from '../utils.js';
 import { findParticipant } from '../participantLookup.js';
 
 let participantPaymentRound = null;
@@ -207,9 +207,9 @@ const handleParticipantPaymentTextContent = (participant, isEligibleForIncentive
 
     } else if (isEligibleForIncentiveUpdate === false) {
         incentiveStatusText.textContent = 'Incentive Eligibility Status: No';
-        dateOfEligibilityText.textContent = `Date of Eligibility: ${humanReadableTimeZoneOffsetFormat(participant?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
+        dateOfEligibilityText.textContent = `Date of Eligibility: ${formatUTCDate(participant?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
         isIncentiveEligibleNote.innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
-        // dateOfEligibilityInput.value = humanReadableTimeZoneOffsetFormat(participant?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp], true);
+        // dateOfEligibilityInput.value = formatUTCDate(participant?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp], true);
 
     } else {
         incentiveStatusText.textContent = 'Incentive Eligibility Status: ';
@@ -297,8 +297,8 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
 
                         document.getElementById('incentiveStatusText').textContent = 'Incentive Eligibility Status: No';
                         document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible.</span>`;
-                        document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${humanReadableTimeZoneOffsetFormat(currentParticipantData?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
-                        // document.getElementById('dateOfEligibilityInput').textContent = humanReadableTimeZoneOffsetFormat(currentParticipantData[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp], true);
+                        document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${formatUTCDate(currentParticipantData?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
+                        // document.getElementById('dateOfEligibilityInput').textContent = formatUTCDate(currentParticipantData[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp], true);
                         // document.getElementById('dateOfEligibilityInput').disabled = true;
                         removeSetDateOfEligibilityContent();
                         toggleSubmitButton();
