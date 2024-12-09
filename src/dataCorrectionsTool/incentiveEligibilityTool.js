@@ -26,9 +26,7 @@ export const setupIncentiveEligibilityToolPage = (participant) => {
         toggleSubmitButton();
         setupModalContent();
         setActiveDataCorrectionsTab();
-        // setIncentiveEligibleInputDefaultValue();
         handleDatePickerSelection();
-        // confirmIncentiveEligibilityUpdate(participant);
     }
 };
 
@@ -171,7 +169,6 @@ const handlePaymentRoundSelect = (participant) => {
                     } else {
                         toggleSubmitButton();
                         handleParticipantPaymentTextContent(participantData, isEligibleForIncentiveUpdate);
-                        // dateOfEligibilityInput.disabled = true;
                     }
                     setupModalContent(participantPaymentRound);
                 } catch (error) {
@@ -182,10 +179,8 @@ const handlePaymentRoundSelect = (participant) => {
                 participantPaymentRound = null;
                 isEligibleForIncentiveUpdate = null;
                 selectButton.textContent = e.target.textContent;
-                // setIncentiveEligibleInputDefaultValue();
                 removeSetDateOfEligibilityContent();
                 isIncentiveEligibleNote.innerHTML = ``;
-                // dateOfEligibilityInput.disabled = false;
                 handleParticipantPaymentTextContent(participant, isEligibleForIncentiveUpdate);
             }
         });
@@ -195,7 +190,6 @@ const handlePaymentRoundSelect = (participant) => {
 const handleParticipantPaymentTextContent = (participant, isEligibleForIncentiveUpdate) => { 
     const incentiveStatusText = document.getElementById('incentiveStatusText');
     const isIncentiveEligibleNote = document.getElementById('isIncentiveEligibleNote');
-    // const dateOfEligibilityInput = document.getElementById('dateOfEligibilityInput');
     const dateOfEligibilityText = document.getElementById('dateOfEligibilityText');
     if (!incentiveStatusText || !isIncentiveEligibleNote) return;
     
@@ -209,15 +203,12 @@ const handleParticipantPaymentTextContent = (participant, isEligibleForIncentive
         incentiveStatusText.textContent = 'Incentive Eligibility Status: No';
         dateOfEligibilityText.textContent = `Date of Eligibility: ${formatUTCDate(participant?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
         isIncentiveEligibleNote.innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
-        // dateOfEligibilityInput.value = formatUTCDate(participant?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp], true);
 
     } else {
         incentiveStatusText.textContent = 'Incentive Eligibility Status: ';
         dateOfEligibilityText.textContent = 'Date of Eligibility:';
-        // dateOfEligibilityInput.textContent = setIncentiveEligibleInputDefaultValue();
     }
-
-}
+};
 
 const setIncentiveEligibleInputDefaultValue = () => { 
     const dateOfEligibilityInput = document.getElementById('dateOfEligibilityInput');
@@ -240,12 +231,10 @@ const clearPaymentRoundSelect = () => {
     const clearButton = document.getElementById('clearPaymentRoundButton');
     const isIncentiveEligibleNote = document.getElementById('isIncentiveEligibleNote');
     const selectButton = document.querySelector('.selectButton');
-    // const dateOfEligibilityInput = document.getElementById('dateOfEligibilityInput');
     if (!clearButton || !isIncentiveEligibleNote || !selectButton) return;
 
     clearButton.addEventListener('click', () => {
         setParticipantPaymentRound();
-        // dateOfEligibilityInput.disabled = false;
         removeSetDateOfEligibilityContent();
     });
 };
@@ -264,7 +253,7 @@ const setParticipantPaymentRound = () => {
     participantPaymentRound = null;
     setIncentiveEligibleInputDefaultValue();
     incentiveStatusText.textContent = 'Incentive Eligibility Status: ';
-}
+};
 
 const toggleSubmitButton = (isEligibleForIncentiveUpdate) => { 
     const submitButton = document.getElementById('submitButton');
@@ -278,7 +267,6 @@ const toggleSubmitButton = (isEligibleForIncentiveUpdate) => {
 
 const confirmIncentiveEligibilityUpdate = (participant) => { 
     const confirmButton = document.getElementById('confirmUpdateEligibility');
-    // const dateOfEligibilityInput = document.getElementById('dateOfEligibilityInput');
     const { paymentRound, baseline, eligiblePaymentRoundTimestamp } = fieldMapping;
 
     if (confirmButton && dateOfEligibilityInput) {
@@ -298,8 +286,6 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
                         document.getElementById('incentiveStatusText').textContent = 'Incentive Eligibility Status: No';
                         document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible.</span>`;
                         document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${formatUTCDate(currentParticipantData?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
-                        // document.getElementById('dateOfEligibilityInput').textContent = formatUTCDate(currentParticipantData[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp], true);
-                        // document.getElementById('dateOfEligibilityInput').disabled = true;
                         removeSetDateOfEligibilityContent();
                         toggleSubmitButton();
                     }
@@ -338,14 +324,14 @@ const displaySetDateOfEligibilityContent = () => {
         setDateOfEligibilityContainer.innerHTML = `<p>Set Date of Eligibility:</p>
             <input type="date" id="dateOfEligibilityInput" class="form-control"  max="9999-12-31" style="margin-left: 1rem; width:14rem;">`;
     }
-}
+};
 
 const removeSetDateOfEligibilityContent = () => { 
     const setDateOfEligibilityContainer = document.getElementById('setDateOfEligibilityContainer');
     if (setDateOfEligibilityContainer) {
         setDateOfEligibilityContainer.innerHTML = '';
     }
-}
+};
 
 /**
  * Update participant incentive eligibility ands returns updated data on success
