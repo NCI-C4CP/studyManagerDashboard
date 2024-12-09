@@ -15,7 +15,7 @@ const statusMapping = {
 };
 
 const surveyModalBody = {
-    "ssn": "Are you sure you want to reset the survey status for the SSN survey?",
+    [fieldMapping.ssnStatusFlag]: "Are you sure you want to reset the survey status for the SSN survey?",
 };
 
 export const setupSurveyResetToolPage = (participant) => {
@@ -66,7 +66,7 @@ const renderDataCorrectionsSelectionContent = (participant) => {
                                 </button>
                                 <div id="dropdownSurveyMenu" class="dropdown-menu">
                                     <a class="dropdown-item">Select</a>
-                                    <a class="dropdown-item" data-survey="ssn">SSN Survey</a>
+                                    <a class="dropdown-item" data-survey=${fieldMapping.ssnStatusFlag}>SSN Survey</a>
                                 </div>    
                             </div>
                         </div>
@@ -129,16 +129,17 @@ const handleSurveyTypeChange = (participant) => {
 
     for (let option of dropdownSurveyOptions) {
         option.addEventListener('click', async (e) => {
-            selectedSurvey = e.target.dataset.survey;
-            if (selectedSurvey === 'ssn') {
+            selectedSurvey = Number(e.target.dataset.survey);
+            
+            if (selectedSurvey === ssnStatusFlag) {
                 selectButton.textContent = e.target.textContent;
-                selectedSurvey = e.target.dataset.survey;
+                selectedSurvey = Number(e.target.dataset.survey);
                 try {
                     query = `connectId=${participantConnectId}`
                     showAnimation();
                     const response = await findParticipant(query);
                     hideAnimation();
-                    const participantData = response.data[0]; // todo change to participantData
+                    const participantData = response.data[0];
                     localStorage.setItem('participant', JSON.stringify(participantData));
 
                     if (participantData[ssnStatusFlag] === notStarted) { 
@@ -165,15 +166,15 @@ const handleSurveyTypeChange = (participant) => {
 const updateSurveyStatusTextContent = (participant, selectedSurvey, statusCode) => {
     const surveyNameElement = document.getElementById('surveyNameText');
     const surveyStatusElement = document.getElementById('surveyStatusText');
+    const { surveyStatus, ssnStatusFlag } = fieldMapping;
 
     const participantSurveyStatus = {
-        "ssn": participant[fieldMapping.ssnStatusFlag],
+        [ssnStatusFlag]: participant[ssnStatusFlag],
     };
 
-    const { surveyStatus } = fieldMapping;
-    if (selectedSurvey === 'ssn') {
+    if (selectedSurvey === ssnStatusFlag) {
         surveyNameElement.textContent = 'Survey Name: SSN Survey';
-        surveyStatusElement.textContent = `Survey Status: ${statusMapping[participantSurveyStatus.ssn] || ''} `;
+        surveyStatusElement.textContent = `Survey Status: ${statusMapping[participantSurveyStatus[ssnStatusFlag]] || ''} `;
 
         if (statusCode === 200) { 
             surveyStatusElement.textContent = `Survey Status: ${statusMapping[surveyStatus["notStarted"]]}`;
@@ -271,7 +272,7 @@ const enableSubmitButton = () => {
 
 /**
  * Reset the participant survey status for the selected survey
- * @param {string} selectedSurvey - the survey to reset
+ * @param {number} selectedSurvey - the survey to reset, Ex. selectedSurvey = ssnStatusFlag (126331570)
  * @param {object} participant - the participant object
  * @returns {Promise<object>} - the updated participant object
  * 
@@ -290,7 +291,7 @@ const resetParticipantSurvey = async (selectedSurvey) => {
             },
             body: JSON.stringify({ 
                 connectId: connectId,
-                survey: selectedSurvey 
+                survey: selectedSurvey
             }),
         });
         if (!response.ok) {
