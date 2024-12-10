@@ -4,23 +4,23 @@ import fieldMapping from './fieldToConceptIdMapping.js';
 import { userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey, 
     baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineBloodSample, baselineUrineSample, baselineBiospecSurvey, baselineMenstrualSurvey,
     baselineMouthwashSample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
-    baselineExperienceSurvey} from './participantSummaryRow.js';
+    baselineExperienceSurvey, cancerScreeningHistorySurvey} from './participantSummaryRow.js';
 import { humanReadableMDY, conceptToSiteMapping, pdfCoordinatesMap } from './utils.js';
 
-const { PDFDocument, StandardFonts } = PDFLib
+const { PDFDocument, StandardFonts } = PDFLib;
 
 document.body.scrollTop = document.documentElement.scrollTop = 0;
 
 export const renderParticipantSummary = (participant) => {
-    const isParent = localStorage.getItem('isParent')
+    const isParent = localStorage.getItem('isParent');
     document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantSummaryBtn').classList.add('active');
     if (participant !== null) {
-        mainContent.innerHTML = render(participant);
-        downloadCopyHandler(participant)
+        document.querySelector("#mainContent").innerHTML = render(participant);
+        downloadCopyHandler(participant);
     }
-}
+};
 
 export const render = (participant) => {
     if (!participant) {
@@ -101,6 +101,9 @@ export const render = (participant) => {
                                 </tr>
                                 <tr class="row-color-survey-light">
                                     ${baselineExperienceSurvey(participant)}
+                                </tr>
+                                <tr class="row-color-survey-dark">
+                                    ${cancerScreeningHistorySurvey(participant)}
                                 </tr>
                                 <tr class="row-color-sample-dark">
                                     ${baselineBloodSample(participant)}

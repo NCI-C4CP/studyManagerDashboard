@@ -28,22 +28,30 @@ let saveFlag = false;
 let counter = 0;
 
 if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./serviceWorker.js").catch((error) => {
-        console.error("Service worker registration failed.", error);
-        return;
+  navigator.serviceWorker
+    .register("./serviceWorker.js")
+    .then((registration) => {
+      registration.onupdatefound = () => {
+        const sw = registration.installing;
+        if (sw) {
+          sw.onstatechange = () => sw.state === "activated" && sw.postMessage({ action: "getAppVersion" });
+        }
+      };
+    })
+    .catch((err) => {
+      console.error("Service worker registration failed.", err);
     });
 
-    navigator.serviceWorker.ready.then(() => {
-        if (navigator.serviceWorker.controller) {
-            navigator.serviceWorker.controller.postMessage({ action: "getAppVersion" });
-        }
-    });
+  navigator.serviceWorker.ready.then(() => {
+    const sw = navigator.serviceWorker.controller;
+    sw && sw.postMessage({ action: "getAppVersion" });
+  });
 
-    navigator.serviceWorker.addEventListener("message", (event) => {
-        if (event.data.action === "sendAppVersion") {
-            document.getElementById("appVersion").textContent = event.data.payload;
-        }
-    });
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data.action === "sendAppVersion") {
+      document.getElementById("appVersion").textContent = event.data.payload;
+    }
+  });
 }
 
 const datadogConfig = {
@@ -83,7 +91,7 @@ window.onload = async () => {
         }
 
         if (hasError) {
-          console.error("Local development requires firebaseConfig defined in src/local-dev/config.js.");
+          console.error("Local development requires firebaseConfig defined in /config/local-dev/config.js.");
           return;
         }
         !firebase.apps.length ? firebase.initializeApp(localDevFirebaseConfig) : firebase.app(); 
