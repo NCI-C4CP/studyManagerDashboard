@@ -190,16 +190,16 @@ const handleParticipantPaymentTextContent = (participant, isEligibleForIncentive
     const incentiveStatusText = document.getElementById('incentiveStatusText');
     const isIncentiveEligibleNote = document.getElementById('isIncentiveEligibleNote');
     const dateOfEligibilityText = document.getElementById('dateOfEligibilityText');
-    if (!incentiveStatusText || !isIncentiveEligibleNote) return;
+    if (!incentiveStatusText || !isIncentiveEligibleNote || !dateOfEligibilityText) return;
     
     const { paymentRound, baseline, eligiblePaymentRoundTimestamp } = fieldMapping; 
 
     if (isEligibleForIncentiveUpdate) {
-        incentiveStatusText.textContent = 'Incentive Eligibility Status: Yes';
+        incentiveStatusText.textContent = 'Incentive Eligibility Status: Not Eligible';
         dateOfEligibilityText.textContent = 'Date of Eligibility: N/A';
 
     } else if (isEligibleForIncentiveUpdate === false) {
-        incentiveStatusText.textContent = 'Incentive Eligibility Status: No';
+        incentiveStatusText.textContent = 'Incentive Eligibility Status: Eligibile';
         dateOfEligibilityText.textContent = `Date of Eligibility: ${formatUTCDate(participant?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
         isIncentiveEligibleNote.innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
 
@@ -279,9 +279,9 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
                     const currentParticipantData = updateResponse.data;
 
                     if (updateResponse.code === 200) { 
-                        triggerNotificationBanner("Participant incentive eligibility status updated successfully!", "success" ,10000);
+                        triggerNotificationBanner("Participant incentive eligibility status updated successfully!", "success" ,14000);
 
-                        document.getElementById('incentiveStatusText').textContent = 'Incentive Eligibility Status: No';
+                        document.getElementById('incentiveStatusText').textContent = 'Incentive Eligibility Status: Eligible';
                         document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible.</span>`;
                         document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${formatUTCDate(currentParticipantData?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
                         removeSetDateOfEligibilityContent();
@@ -289,7 +289,7 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
                     }
                 } catch (error) { 
                     console.error("Failed to update participant incentive eligibility: ", error);
-                    triggerNotificationBanner(`${error.message}`, 'danger', 10000);
+                    triggerNotificationBanner(`${error.message}`, 'danger', 14000);
                 } 
             }
         });
