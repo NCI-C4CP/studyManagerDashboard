@@ -133,7 +133,6 @@ const handleSurveyTypeChange = (participant) => {
             
             if (selectedSurvey === ssnStatusFlag) {
                 selectButton.textContent = e.target.textContent;
-                selectedSurvey = Number(e.target.dataset.survey);
                 try {
                     query = `connectId=${participantConnectId}`
                     showAnimation();
@@ -146,6 +145,7 @@ const handleSurveyTypeChange = (participant) => {
                         displayAlreadyResetNote();
                         disableSubmitButton();
                     } else { 
+                        removeAlreadyResetNote();
                         enableSubmitButton();
                     }
                     updateSurveyStatusTextContent(participantData, selectedSurvey);
