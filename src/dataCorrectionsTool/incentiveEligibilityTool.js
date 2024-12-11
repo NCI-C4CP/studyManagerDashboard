@@ -197,6 +197,7 @@ const handleParticipantPaymentTextContent = (participant, isEligibleForIncentive
     if (isEligibleForIncentiveUpdate) {
         incentiveStatusText.textContent = 'Incentive Eligibility Status: Not Eligible';
         dateOfEligibilityText.textContent = 'Date of Eligibility: N/A';
+        isIncentiveEligibleNote.innerHTML = ``;
 
     } else if (isEligibleForIncentiveUpdate === false) {
         incentiveStatusText.textContent = 'Incentive Eligibility Status: Eligibile';
@@ -206,6 +207,7 @@ const handleParticipantPaymentTextContent = (participant, isEligibleForIncentive
     } else {
         incentiveStatusText.textContent = 'Incentive Eligibility Status: ';
         dateOfEligibilityText.textContent = 'Date of Eligibility:';
+        isIncentiveEligibleNote.innerHTML = ``;
     }
 };
 
@@ -282,7 +284,7 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
                         triggerNotificationBanner("Participant incentive eligibility status updated successfully!", "success" ,14000);
 
                         document.getElementById('incentiveStatusText').textContent = 'Incentive Eligibility Status: Eligible';
-                        document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible.</span>`;
+                        document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
                         document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${formatUTCDate(currentParticipantData?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
                         removeSetDateOfEligibilityContent();
                         toggleSubmitButton();
