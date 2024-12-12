@@ -56,6 +56,12 @@ export default
     "city":703385619,    
     "state":634434746,
     "zip":892050548,
+    "physicalAddress1":207908218,
+    "physicalAddress2":224392018,
+    "physicalCity":451993790,    
+    "physicalState":187799450,
+    "physicalZip":449168732,
+    "isPOBox":250235523,
     "healthcareProvider":827220437,
     "ssnOnFile": 454067894,
     "timeProfileSubmitted": 430551721,
@@ -191,6 +197,10 @@ export default
     'experienceSurvey': 956490759,
     'experienceSurveyStartDate': 263355177,
     'experienceCompleteDate': 199471989,
+
+    'cancerScreeningHistorySurveyStatus': 176068627,
+    'cancerScreeningHistorySurveyStartDate': 609630315,
+    'cancerScreeningHistorySurveyCompletedDate': 389890053,
 
     "baselineEMR": 209454331,
     "baselineEMRflag": 101170406,
@@ -336,6 +346,7 @@ export default
     'refusedAllFutureQualityOfLifeSurveys': 688142378,
     'refusedExperienceSurvey': 101763809,
     'refusedAllFutureExperienceSurveys': 525277409,
+    'refusedCancerScreeningHistorySurvey': 671903816,
     
     'refusedAllFutureActivities': 906417725,
     'revokeHIPAA': 773707518,
@@ -496,6 +507,7 @@ export default
     'refAllFutureQualityOfLifeSurveysTimeStamp': 953225775,
     'refExperienceSurveyTimeStamp': 688172931,
     'refAllFutureExperienceSurveysTimeStamp': 182718292,
+    'refCancerScreeningHistorySurveyTimeStamp': 957406695,
 
     // remaining withdrawal
     'contactSuspended': 726389747,
