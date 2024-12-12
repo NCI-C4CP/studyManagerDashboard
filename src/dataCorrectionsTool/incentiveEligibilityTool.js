@@ -143,7 +143,7 @@ const handlePaymentRoundSelect = (participant) => {
     const { paymentRound, baselinePayment, eligiblePayment, norcPaymentEligibility, no } = fieldMapping; 
 
     for (let option of dropdownPaymentOptions) {
-        option.addEventListener('click', async (e) => {
+        option.addEventListener('click', async (e) => { // TODO: Add gaurd to prevent multiple event listeners from being added
             participantPaymentRound = e.target.dataset.payment;
             if (participantPaymentRound === fieldMapping['baseline'].toString()) {
                 selectButton.textContent = e.target.textContent;

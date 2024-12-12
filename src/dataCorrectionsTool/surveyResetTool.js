@@ -128,7 +128,7 @@ const handleSurveyTypeChange = (participant) => {
     let query;
 
     for (let option of dropdownSurveyOptions) {
-        option.addEventListener('click', async (e) => {
+        option.addEventListener('click', async (e) => { // TODO: Add gaurd to prevent multiple event listeners from being added
             selectedSurvey = Number(e.target.dataset.survey);
             
             if (selectedSurvey === ssnStatusFlag) {
