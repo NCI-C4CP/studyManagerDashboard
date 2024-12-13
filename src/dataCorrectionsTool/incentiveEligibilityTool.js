@@ -281,7 +281,7 @@ const confirmIncentiveEligibilityUpdate = (participant) => {
 
                     if (updateResponse.code === 200) { 
                         triggerNotificationBanner("Participant incentive eligibility status updated successfully!", "success" ,14000);
-
+                        localStorage.setItem('participant', JSON.stringify(currentParticipantData));
                         document.getElementById('incentiveStatusText').textContent = 'Incentive Eligibility Status: Eligible';
                         document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
                         document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${formatUTCDate(currentParticipantData?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
