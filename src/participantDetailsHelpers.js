@@ -265,6 +265,48 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'zip',
             isRequired: true
         },
+        { field: fieldMapping.isPOBox,
+            label: 'Mailing address is PO Box',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'permissionSelector',
+            isRequired: false
+        },
+        { field: fieldMapping.physicalAddress1,
+            label: 'Physical Address Line 1 (if different from Mailing address)',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'address',
+            isRequired: true
+        },
+        { field: fieldMapping.physicalAddress2,
+            label: 'Physical Address Line 2 (if different from Mailing address)',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'address',
+            isRequired: false
+        },
+        { field: fieldMapping.physicalCity,
+            label: 'Physical City (if different from Mailing address)',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'text',
+            isRequired: true
+        },
+        { field: fieldMapping.physicalState,
+            label: 'Physical State (if different from Mailing address)',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'state',
+            isRequired: true
+        },
+        { field: fieldMapping.physicalZip,
+            label: 'Physical Zip (if different from Mailing address)',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'zip',
+            isRequired: true
+        },
         { field: fieldMapping.birthMonth,
             label: 'Birth Month',
             editable: !isParticipantDataDestroyed && !isParticipantVerified,
@@ -915,7 +957,7 @@ const getUITextForUpdatedValue = (newValue, conceptIdArray) => {
         return suffixToTextMap.get(parseInt(newValue));
     } else if (conceptIdArray.toString().includes(fieldMapping.preferredLanguage.toString())) {
         return languageToTextMap.get(parseInt(newValue));
-    } else if (conceptIdArray.some(id => [fieldMapping.canWeText.toString(), fieldMapping.voicemailMobile.toString(), fieldMapping.voicemailHome.toString(), fieldMapping.voicemailOther.toString()].includes(id.toString()))) {
+    } else if (conceptIdArray.some(id => [fieldMapping.canWeText.toString(), fieldMapping.voicemailMobile.toString(), fieldMapping.voicemailHome.toString(), fieldMapping.voicemailOther.toString(), fieldMapping.isPOBox.toString()].includes(id.toString()))) {
         return newValue === fieldMapping.yes.toString() ? "Yes" : "No";
     } else {
         return newValue;

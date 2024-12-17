@@ -155,7 +155,6 @@ const addEventSearch = () => {
         if (params.size === 0) {
             return alert('Please enter at least one field to search');
         };
-
         performSearch(params.toString(), sitePref, "search-failed");
     })
 };

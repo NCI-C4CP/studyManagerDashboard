@@ -56,6 +56,12 @@ export default
     "city":703385619,    
     "state":634434746,
     "zip":892050548,
+    "physicalAddress1":207908218,
+    "physicalAddress2":224392018,
+    "physicalCity":451993790,    
+    "physicalState":187799450,
+    "physicalZip":449168732,
+    "isPOBox":250235523,
     "healthcareProvider":827220437,
     "ssnOnFile": 454067894,
     "timeProfileSubmitted": 430551721,
@@ -94,9 +100,9 @@ export default
 
     'prefPhone': 127547625,
 
-    "notStarted": 0,
-    "started": 1,
-    "submitted": 2,
+    "notStarted": 972455046,
+    "started": 615768760,
+    "submitted": 231311385,
 
     "notYetEligible1": 789467219,
     "notStarted1": 972455046,
@@ -192,18 +198,23 @@ export default
     'experienceSurveyStartDate': 263355177,
     'experienceCompleteDate': 199471989,
 
+    'cancerScreeningHistorySurveyStatus': 176068627,
+    'cancerScreeningHistorySurveyStartDate': 609630315,
+    'cancerScreeningHistorySurveyCompletedDate': 389890053,
+
     "baselineEMR": 209454331,
     "baselineEMRflag": 101170406,
     "baselineEMRpushDate": 143523420,
 
     "baselinePaymentFlag": 117044491,
     "paymentRoundup": 130371375,
+    "paymentRound": 130371375,
     "baselinePayment": 266600170,
     "eligiblePayment": 731498909,
     "paymentIssued": 648936790,
     "datePaymentIssued": 297462035,
-    "norcIssuePayment": 222373868,
-    "baselinePaymentDate": 787567527,
+    "norcPaymentEligibility": 222373868,
+    "eligiblePaymentRoundTimestamp": 787567527,
     "refusedBaselinePayment": 648228701,
     "refusedBaselinePaymentDate": 438636757,
 
@@ -335,6 +346,7 @@ export default
     'refusedAllFutureQualityOfLifeSurveys': 688142378,
     'refusedExperienceSurvey': 101763809,
     'refusedAllFutureExperienceSurveys': 525277409,
+    'refusedCancerScreeningHistorySurvey': 671903816,
     
     'refusedAllFutureActivities': 906417725,
     'revokeHIPAA': 773707518,
@@ -495,6 +507,7 @@ export default
     'refAllFutureQualityOfLifeSurveysTimeStamp': 953225775,
     'refExperienceSurveyTimeStamp': 688172931,
     'refAllFutureExperienceSurveysTimeStamp': 182718292,
+    'refCancerScreeningHistorySurveyTimeStamp': 957406695,
 
     // remaining withdrawal
     'contactSuspended': 726389747,
@@ -536,4 +549,11 @@ export default
         shipped: 277438316,
         received: 375535639
     },
+
+
+    surveyStatus: {
+        notStarted: 972455046,
+        started: 615768760,
+        completed: 231311385
+    }
 };

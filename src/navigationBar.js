@@ -45,7 +45,7 @@ export const dashboardNavBarLinks = (isParent) => {
         </li>
         ${(helpDesk === 'true' || coordinatingCenter === 'true') ?
         (`<li class="nav-item" id="participantVerificationBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#dataCorrectionsTool" title="Data Corrections Tool"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-check"></i> Data Corrections Tool</span></a>
+            <a class="nav-item nav-link ws-nowrap" href="#dataCorrectionsToolSelection" title="Data Corrections Tool"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-check"></i> Data Corrections Tool</span></a>
         </li>`) : (``) }
         ${(isParent !== 'true' || coordinatingCenter === 'true') ?
         (`<li class="nav-item" id="siteMessageBtn">
