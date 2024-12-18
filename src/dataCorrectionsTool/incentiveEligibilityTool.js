@@ -267,10 +267,15 @@ const toggleSubmitButton = (isEligibleForIncentiveUpdate) => {
 };
 
 const confirmIncentiveEligibilityUpdate = (participant) => { 
-    const confirmButton = document.getElementById('confirmUpdateEligibility');
+    let confirmButton = document.getElementById('confirmUpdateEligibility');
     const { paymentRound, baseline, eligiblePaymentRoundTimestamp } = fieldMapping;
 
     if (confirmButton && dateOfEligibilityInput) {
+        // Replace button and reassign the reference to clean up event listeners
+        const newConfirmButton = confirmButton.cloneNode(true);
+        confirmButton.replaceWith(newConfirmButton);
+        confirmButton = newConfirmButton;
+
         confirmButton.addEventListener('click', async (e) => {
             const confirmUpdateEligibilityButton = document.getElementById('confirmUpdateEligibility');
             const selectedDateValue = selectedDateOfEligibility ? convertToISO8601(selectedDateOfEligibility) : convertToISO8601(dateOfEligibilityInput.value);
