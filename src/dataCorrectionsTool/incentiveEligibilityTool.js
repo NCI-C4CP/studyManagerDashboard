@@ -8,6 +8,7 @@ import { findParticipant } from '../participantLookup.js';
 let participantPaymentRound = null;
 let isEligibleForIncentiveUpdate = null;
 let selectedDateOfEligibility = null; // YYYY-MM-DD
+let handleConfirmClickWrapper = null; // reference to handleConfirmClick function
 
 const conceptIdToPaymentRoundMapping = {
     266600170: 'baseline',
@@ -143,7 +144,7 @@ const handlePaymentRoundSelect = (participant) => {
     const { paymentRound, baselinePayment, eligiblePayment, norcPaymentEligibility, no } = fieldMapping; 
 
     for (let option of dropdownPaymentOptions) {
-        option.addEventListener('click', async (e) => { // TODO: Add gaurd to prevent multiple event listeners from being added
+        option.addEventListener('click', async (e) => {
             participantPaymentRound = e.target.dataset.payment;
             if (participantPaymentRound === fieldMapping['baseline'].toString()) {
                 selectButton.textContent = e.target.textContent;
@@ -268,34 +269,43 @@ const toggleSubmitButton = (isEligibleForIncentiveUpdate) => {
 
 const confirmIncentiveEligibilityUpdate = (participant) => { 
     const confirmButton = document.getElementById('confirmUpdateEligibility');
-    const { paymentRound, baseline, eligiblePaymentRoundTimestamp } = fieldMapping;
-
     if (confirmButton && dateOfEligibilityInput) {
-        confirmButton.addEventListener('click', async (e) => {
-            const confirmUpdateEligibilityButton = document.getElementById('confirmUpdateEligibility');
-            const selectedDateValue = selectedDateOfEligibility ? convertToISO8601(selectedDateOfEligibility) : convertToISO8601(dateOfEligibilityInput.value);
-            if (confirmUpdateEligibilityButton) {
-                try {
-                    const updateResponse = await updateParticipantIncentiveEligibility(participant, participantPaymentRound, selectedDateValue);
-                    const currentParticipantData = updateResponse.data;
-
-                    if (updateResponse.code === 200) { 
-                        triggerNotificationBanner("Participant incentive eligibility status updated successfully!", "success" ,14000);
-                        localStorage.setItem('participant', JSON.stringify(currentParticipantData));
-                        document.getElementById('incentiveStatusText').textContent = 'Incentive Eligibility Status: Eligible';
-                        document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
-                        document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${formatUTCDate(currentParticipantData?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
-                        removeSetDateOfEligibilityContent();
-                        toggleSubmitButton();
-                    }
-                } catch (error) { 
-                    console.error("Failed to update participant incentive eligibility: ", error);
-                    triggerNotificationBanner(`${error.message}`, 'danger', 14000);
-                } 
-            }
-        });
+        // Check if the wrapper already exists; if not, create it
+        if (!handleConfirmClickWrapper) {
+            handleConfirmClickWrapper = () => handleConfirmClick(participant);
+        }
+        // remove and add listeners to prevent multiple listeners
+        confirmButton.removeEventListener('click', handleConfirmClickWrapper);
+        confirmButton.addEventListener('click', handleConfirmClickWrapper);
     }
-}
+};
+
+const handleConfirmClick = async (participant) => { 
+    const { paymentRound, baseline, eligiblePaymentRoundTimestamp } = fieldMapping;
+    const confirmUpdateEligibilityButton = document.getElementById('confirmUpdateEligibility');
+    const selectedDateValue = selectedDateOfEligibility ? convertToISO8601(selectedDateOfEligibility) : convertToISO8601(dateOfEligibilityInput.value);
+
+    if (confirmUpdateEligibilityButton) {
+        try {
+            const updateResponse = await updateParticipantIncentiveEligibility(participant, participantPaymentRound, selectedDateValue);
+            const currentParticipantData = updateResponse.data;
+
+            if (updateResponse.code === 200) { 
+                triggerNotificationBanner("Participant incentive eligibility status updated successfully!", "success" ,14000);
+                localStorage.setItem('participant', JSON.stringify(currentParticipantData));
+                document.getElementById('incentiveStatusText').textContent = 'Incentive Eligibility Status: Eligible';
+                document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
+                document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${formatUTCDate(currentParticipantData?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
+                removeSetDateOfEligibilityContent();
+            }
+        } catch (error) { 
+            console.error("Failed to update participant incentive eligibility: ", error);
+            triggerNotificationBanner(`${error.message}`, 'danger', 14000);
+        } finally {
+            toggleSubmitButton();
+        }
+    }
+};
 
 const setupModalContent = (participantPaymentRound) => {
     const paymentRoundType = conceptIdToPaymentRoundMapping[participantPaymentRound];
