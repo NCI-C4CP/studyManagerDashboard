@@ -8,6 +8,7 @@ import { findParticipant } from '../participantLookup.js';
 let participantPaymentRound = null;
 let isEligibleForIncentiveUpdate = null;
 let selectedDateOfEligibility = null; // YYYY-MM-DD
+let isConfirmListenerAdded = false;
 
 const conceptIdToPaymentRoundMapping = {
     266600170: 'baseline',
@@ -143,7 +144,7 @@ const handlePaymentRoundSelect = (participant) => {
     const { paymentRound, baselinePayment, eligiblePayment, norcPaymentEligibility, no } = fieldMapping; 
 
     for (let option of dropdownPaymentOptions) {
-        option.addEventListener('click', async (e) => { // TODO: Add gaurd to prevent multiple event listeners from being added
+        option.addEventListener('click', async (e) => {
             participantPaymentRound = e.target.dataset.payment;
             if (participantPaymentRound === fieldMapping['baseline'].toString()) {
                 selectButton.textContent = e.target.textContent;
@@ -163,7 +164,11 @@ const handlePaymentRoundSelect = (participant) => {
                         displaySetDateOfEligibilityContent();
                         setIncentiveEligibleInputDefaultValue();
                         handleParticipantPaymentTextContent(participantData, isEligibleForIncentiveUpdate);
-                        confirmIncentiveEligibilityUpdate(participant);
+                        // prevent multiple event listeners from being added
+                        if (!isConfirmListenerAdded) {
+                            confirmIncentiveEligibilityUpdate(participant);
+                            isConfirmListenerAdded = true;
+                        }
                         dateOfEligibilityInput.disabled = false;
                     } else {
                         toggleSubmitButton();
@@ -267,15 +272,10 @@ const toggleSubmitButton = (isEligibleForIncentiveUpdate) => {
 };
 
 const confirmIncentiveEligibilityUpdate = (participant) => { 
-    let confirmButton = document.getElementById('confirmUpdateEligibility');
+    const confirmButton = document.getElementById('confirmUpdateEligibility');
     const { paymentRound, baseline, eligiblePaymentRoundTimestamp } = fieldMapping;
 
     if (confirmButton && dateOfEligibilityInput) {
-        // Replace button and reassign the reference to clean up event listeners
-        const newConfirmButton = confirmButton.cloneNode(true);
-        confirmButton.replaceWith(newConfirmButton);
-        confirmButton = newConfirmButton;
-
         confirmButton.addEventListener('click', async (e) => {
             const confirmUpdateEligibilityButton = document.getElementById('confirmUpdateEligibility');
             const selectedDateValue = selectedDateOfEligibility ? convertToISO8601(selectedDateOfEligibility) : convertToISO8601(dateOfEligibilityInput.value);
