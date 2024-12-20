@@ -4,23 +4,23 @@ import fieldMapping from './fieldToConceptIdMapping.js';
 import { userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey, 
     baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineBloodSample, baselineUrineSample, baselineBiospecSurvey, baselineMenstrualSurvey,
     baselineMouthwashSample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
-    baselineExperienceSurvey} from './participantSummaryRow.js';
-import { humanReadableMDY, conceptToSiteMapping, pdfCoordinatesMap } from './utils.js';
+    baselineExperienceSurvey, cancerScreeningHistorySurvey} from './participantSummaryRow.js';
+import { formatUTCDate, conceptToSiteMapping, pdfCoordinatesMap } from './utils.js';
 
-const { PDFDocument, StandardFonts } = PDFLib
+const { PDFDocument, StandardFonts } = PDFLib;
 
 document.body.scrollTop = document.documentElement.scrollTop = 0;
 
 export const renderParticipantSummary = (participant) => {
-    const isParent = localStorage.getItem('isParent')
+    const isParent = localStorage.getItem('isParent');
     document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantSummaryBtn').classList.add('active');
     if (participant !== null) {
-        mainContent.innerHTML = render(participant);
-        downloadCopyHandler(participant)
+        document.querySelector("#mainContent").innerHTML = render(participant);
+        downloadCopyHandler(participant);
     }
-}
+};
 
 export const render = (participant) => {
     if (!participant) {
@@ -102,6 +102,9 @@ export const render = (participant) => {
                                 <tr class="row-color-survey-light">
                                     ${baselineExperienceSurvey(participant)}
                                 </tr>
+                                <tr class="row-color-survey-dark">
+                                    ${cancerScreeningHistorySurvey(participant)}
+                                </tr>
                                 <tr class="row-color-sample-dark">
                                     ${baselineBloodSample(participant)}
                                 </tr>                           
@@ -139,7 +142,7 @@ const downloadCopyHandler = (participant) => {
         const lang = versionArray[3];
         a.addEventListener('click',  () => { 
             try {
-                renderDownload(participant, humanReadableMDY(participant[fieldMapping.consentDate]), `./forms/Consent/${conceptToSiteMapping[participant[fieldMapping.healthcareProvider]]}_consent_${(version || defaultVersion)}${(lang ? '_'+lang : '')}.pdf`, 
+                renderDownload(participant, formatUTCDate(participant[fieldMapping.consentDate]), `./forms/Consent/${conceptToSiteMapping[participant[fieldMapping.healthcareProvider]]}_consent_${(version || defaultVersion)}${(lang ? '_'+lang : '')}.pdf`, 
                     getHealthcareProviderCoordinates(conceptToSiteMapping[participant[fieldMapping.healthcareProvider]], 'consent', version || defaultVersion, lang || defaultLang));
             } catch (error) {
                 console.error(error);
@@ -154,7 +157,7 @@ const downloadCopyHandler = (participant) => {
         const lang = versionArray[3];
         b.addEventListener('click',  () => {  
             try {
-                renderDownload(participant, humanReadableMDY(participant[fieldMapping.hippaDate]), `./forms/HIPAA/${conceptToSiteMapping[participant[fieldMapping.healthcareProvider]]}_HIPAA_${(version || defaultVersion)}${(lang ? '_'+lang : '')}.pdf`, 
+                renderDownload(participant, formatUTCDate(participant[fieldMapping.hippaDate]), `./forms/HIPAA/${conceptToSiteMapping[participant[fieldMapping.healthcareProvider]]}_HIPAA_${(version || defaultVersion)}${(lang ? '_'+lang : '')}.pdf`, 
                     getHealthcareProviderCoordinates(conceptToSiteMapping[participant[fieldMapping.healthcareProvider]], 'hipaa', version || defaultVersion, lang || defaultLang));
              } catch (error) {
                 console.error(error);
@@ -168,7 +171,7 @@ const downloadCopyHandler = (participant) => {
         const version = versionArray[2] || 'V1.0';
         const lang = versionArray[3];
         c.addEventListener('click',  () => {  
-            renderDownload(participant, humanReadableMDY(participant[fieldMapping.dateHIPAARevoc]), `./forms/HIPAA Revocation/HIPAA_Revocation_${version}${(lang ? '_'+lang : '')}.pdf`, getRevocationCoordinates('HIPAA',version,lang || 'Eng'), 'hipaarevoc');
+            renderDownload(participant, formatUTCDate(participant[fieldMapping.dateHIPAARevoc]), `./forms/HIPAA Revocation/HIPAA_Revocation_${version}${(lang ? '_'+lang : '')}.pdf`, getRevocationCoordinates('HIPAA',version,lang || 'Eng'), 'hipaarevoc');
         })
     }
     const d = document.getElementById('downloadCopyDataDestroy');
@@ -177,7 +180,7 @@ const downloadCopyHandler = (participant) => {
         const version = versionArray[2] || 'V1.0';
         const lang = versionArray[3];
         d.addEventListener('click',  () => {  
-            renderDownload(participant, humanReadableMDY(participant[fieldMapping.dateDataDestroy]), `./forms/Data Destruction/Data_Destruction_${version}${(lang ? '_'+lang : '')}.pdf`, getRevocationCoordinates('Data',version,lang || 'Eng'), 'datadestruction');
+            renderDownload(participant, formatUTCDate(participant[fieldMapping.dateDataDestroy]), `./forms/Data Destruction/Data_Destruction_${version}${(lang ? '_'+lang : '')}.pdf`, getRevocationCoordinates('Data',version,lang || 'Eng'), 'datadestruction');
         })
     }
  
@@ -308,7 +311,7 @@ const consentHandler = (participant) => {
                     <td>Agreement</td>
                     <td>Consent</td>
                     <td>Signed</td>
-                    <td>${participant[fieldMapping.consentDate] && humanReadableMDY(participant[fieldMapping.consentDate])}</td>
+                    <td>${participant[fieldMapping.consentDate] && formatUTCDate(participant[fieldMapping.consentDate])}</td>
                     <td>${participant[fieldMapping.consentVersion]}</td>
                     <td>N/A</td>
                     <td><a style="color: blue; text-decoration: underline; cursor: pointer;" target="_blank" id="downloadCopy">Download Link</a></td>
@@ -338,7 +341,7 @@ const hippaHandler = (participant) => {
                     <td>Agreement</td>
                     <td>HIPAA</td>
                     <td>Signed</td>
-                    <td>${participant[fieldMapping.hippaDate] && humanReadableMDY(participant[fieldMapping.hippaDate])}</td>
+                    <td>${participant[fieldMapping.hippaDate] && formatUTCDate(participant[fieldMapping.hippaDate])}</td>
                     <td>${participant[fieldMapping.hipaaVersion]}</td>
                     <td>N/A</td>
                     <td><a style="color: blue; text-decoration: underline; cursor: pointer;" target="_blank" id="downloadCopyHIPAA">Download Link</a></td>
@@ -367,7 +370,7 @@ const hipaaRevocation = (participant) => {
                         <td>Agreement</td>
                         <td>HIPAA Revoc Form</td>
                         <td>Signed</td>
-                        <td>${(participant[fieldMapping.dateHIPAARevoc] !== undefined) ? humanReadableMDY(participant[fieldMapping.dateHIPAARevoc]) : `N/A`}</td>
+                        <td>${(participant[fieldMapping.dateHIPAARevoc] !== undefined) ? formatUTCDate(participant[fieldMapping.dateHIPAARevoc]) : `N/A`}</td>
                         <td>${(participant[fieldMapping.versionHIPAARevoc] !== undefined) ? participant[fieldMapping.versionHIPAARevoc] : `N/A`}</td>
                         <td>N/A</td>
                         <td><a style="color: blue; text-decoration: underline;" target="_blank" id="downloadCopyHipaaRevoc">Download Link</a></td>
@@ -377,7 +380,7 @@ const hipaaRevocation = (participant) => {
                         <td>Agreement</td>
                         <td>HIPAA Revoc Form</td>
                         <td>Not Signed</td>
-                        <td>${(participant[fieldMapping.dateHIPAARevoc] !== undefined) ? humanReadableMDY(participant[fieldMapping.dateHIPAARevoc]) : `N/A`}</td>
+                        <td>${(participant[fieldMapping.dateHIPAARevoc] !== undefined) ? formatUTCDate(participant[fieldMapping.dateHIPAARevoc]) : `N/A`}</td>
                         <td>${(participant[fieldMapping.versionHIPAARevoc] !== undefined) ? participant[fieldMapping.versionHIPAARevoc] : `N/A`}</td>
                         <td>N/A</td>
                         <td style="color: grey; text-decoration: underline;">Download Link</td>` 
@@ -406,7 +409,7 @@ const dataDestroy = (participant) => {
                             <td>Agreement</td>
                             <td>Data Destroy Form</td>
                             <td>Signed</td>
-                            <td>${(participant[fieldMapping.dateDataDestroy] !== undefined) ? humanReadableMDY(participant[fieldMapping.dateDataDestroy]) : `N/A`}</td>
+                            <td>${(participant[fieldMapping.dateDataDestroy] !== undefined) ? formatUTCDate(participant[fieldMapping.dateDataDestroy]) : `N/A`}</td>
                             <td>${(participant[fieldMapping.versionDataDestroy] !== undefined) ? participant[fieldMapping.versionDataDestroy] : `N/A` }</td>      
                             <td>N/A</td>
                             <td><a style="color: blue; text-decoration: underline;" target="_blank" id="downloadCopyDataDestroy">Download Link</a></td>
@@ -416,7 +419,7 @@ const dataDestroy = (participant) => {
                         <td>Agreement</td>
                         <td>Data Destroy Form</td>
                         <td>Not Signed</td>
-                        <td>${(participant[fieldMapping.dateDataDestroy] !== undefined) ? humanReadableMDY(participant[fieldMapping.dateDataDestroy]) : `N/A`}</td>
+                        <td>${(participant[fieldMapping.dateDataDestroy] !== undefined) ? formatUTCDate(participant[fieldMapping.dateDataDestroy]) : `N/A`}</td>
                         <td>${(participant[fieldMapping.versionDataDestroy] !== undefined) ? participant[fieldMapping.versionDataDestroy] : `N/A` }</td>      
                         <td>N/A</td>
                         <td style="color: grey; text-decoration: underline;">Download Link</td>

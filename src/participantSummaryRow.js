@@ -1,4 +1,4 @@
-import { humanReadableMDY } from './utils.js';
+import { formatUTCDate } from './utils.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 
 export const userProfile = (participant) => {
@@ -8,7 +8,7 @@ export const userProfile = (participant) => {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "User Profile", "N/A", "N/A", "N/A", "N", "N/A");
     } else if (participant[fieldMapping.userProfileFlag] === fieldMapping.yes) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Enrollment", "N/A", "User Profile", "Submitted",
-                                    humanReadableMDY(participant[fieldMapping.userProfileDateTime]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.userProfileDateTime]), "N/A", "N", "N/A");
     } else {
       template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "User Profile", "Not Submitted", "N/A", "N/A", "N/A", "N/A");
     }
@@ -23,19 +23,19 @@ export const verificationStatus = (participant) => {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "Verification", "N/A", "N/A", "N/A", "N", "N/A");
     } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.verified) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Enrollment", "N/A", "Verification Status", "Verified",
-        humanReadableMDY(participant[fieldMapping.verficationDate]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.verficationDate]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.cannotBeVerified) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Enrollment", "N/A", "Verification Status", "Can't be Verified",
-        humanReadableMDY(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
     } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.notYetVerified) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Enrollment", "N/A", "Verification Status", "Not yet Verified",
         "N/A", "N/A", "N", "N/A");
     } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate) {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "Verification Status", "Duplicate",
-        humanReadableMDY(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
     } else {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Enrollment", "N/A", "Verification Status", "Outreach Timed Out",
-        humanReadableMDY(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
     }
     
     return template;
@@ -173,10 +173,10 @@ export const baselineBOHSurvey = (participant) => {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "BOH", "N/A", "N/A", "N/A", "Y", "N/A");
     } else if (participant[fieldMapping.bohStatusFlag1] === fieldMapping.submitted1) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Survey", "BOH", "Submitted",
-        humanReadableMDY(participant[fieldMapping.bohCompletedDate1]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.bohCompletedDate1]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.bohStatusFlag1] === fieldMapping.started1) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Baseline", "Survey", "BOH", "Started",
-        humanReadableMDY(participant[fieldMapping.bohStartDate1]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.bohStartDate1]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.bohStatusFlag1] === fieldMapping.notStarted1) {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "BOH", "Not Started", "N/A", "N/A", "N", "N/A");
     } else {
@@ -194,10 +194,10 @@ export const baselineMRESurvey = (participant) => {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "MRE", "N/A", "N/A", "N/A", "Y", "N/A");
     } else if (participant[fieldMapping.mreStatusFlag1] === fieldMapping.submitted1) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Survey", "MRE", "Submitted",
-        humanReadableMDY(participant[fieldMapping.mreCompletedDate1]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.mreCompletedDate1]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.mreStatusFlag1] === fieldMapping.started1) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Baseline", "Survey", "MRE", "Started",
-        humanReadableMDY(participant[fieldMapping.mreStartDate1]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.mreStartDate1]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.mreStatusFlag1] === fieldMapping.notStarted1) {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "MRE", "Not Started", "N/A", "N/A", "N", "N/A");
     } else {
@@ -215,10 +215,10 @@ export const baselineSASSurvey = (participant) => {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "SAS", "N/A", "N/A", "N/A", "Y", "N/A");
     } else if (participant[fieldMapping.sasStatusFlag1] === fieldMapping.submitted1) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Survey", "SAS", "Submitted",
-        humanReadableMDY(participant[fieldMapping.sasCompletedDate1]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.sasCompletedDate1]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.sasStatusFlag1] === fieldMapping.started1) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Baseline", "Survey", "SAS", "Started",
-        humanReadableMDY(participant[fieldMapping.sasStartDate1]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.sasStartDate1]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.sasStatusFlag1] === fieldMapping.notStarted1) {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "SAS", "Not Started", "N/A", "N/A", "N", "N/A");
     } else {
@@ -236,10 +236,10 @@ export const baselineLAWSurvey = (participant) => {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "LAW", "N/A", "N/A", "N/A", "Y", "N/A");
     } else if (participant[fieldMapping.lawStausFlag1] === fieldMapping.submitted1) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Survey", "LAW", "Submitted",
-        humanReadableMDY(participant[fieldMapping.lawCompletedDate1]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.lawCompletedDate1]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.lawStausFlag1] === fieldMapping.started1) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Baseline", "Survey", "LAW", "Started",
-        humanReadableMDY(participant[fieldMapping.lawStartDate1]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.lawStartDate1]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.lawStausFlag1] === fieldMapping.notStarted1) {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "LAW", "Not Started", "N/A", "N/A", "N", "N/A");
     } else {
@@ -267,10 +267,10 @@ export const baselineCOVIDSurvey = (participant) => {
 
     if (participant[fieldMapping.covidFlag] === fieldMapping.submitted1) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Survey", "COVID", "Submitted",
-        humanReadableMDY(participant[fieldMapping.covidCompletedDate]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.covidCompletedDate]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.covidFlag] === fieldMapping.started1) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Baseline", "Survey", "COVID", "Started",
-        humanReadableMDY(participant[fieldMapping.covidStartDate]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.covidStartDate]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.covidFlag] === fieldMapping.notStarted1) {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "COVID", "Not Started", "N/A", "N/A", "N", "N/A");
     } else {
@@ -291,10 +291,10 @@ export const baselineBiospecSurvey = (participant) => {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "Blood/Urine/Mouthwash", "N/A", "N/A", "N/A", "N", "N/A");
     } else if (participant[fieldMapping.combinedBoodUrineMouthwashSurvey] === fieldMapping.submitted1) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Survey", "Blood/Urine/Mouthwash", "Submitted",
-        humanReadableMDY(participant[fieldMapping.combinedBoodUrineMouthwashSurveyCompleteDate]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.combinedBoodUrineMouthwashSurveyCompleteDate]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.combinedBoodUrineMouthwashSurvey] === fieldMapping.started1) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Baseline", "Survey", "Blood/Urine/Mouthwash", "Started",
-        humanReadableMDY(participant[fieldMapping.combinedBoodUrineMouthwashSurveyStartDate]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.combinedBoodUrineMouthwashSurveyStartDate]), "N/A", "N", "N/A");
     } else {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "Blood/Urine/Mouthwash", "Not Started", "N/A", "N/A", "N", "N/A");
     }
@@ -312,10 +312,10 @@ export const baselineBloodUrineSurvey = (participant) => {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "Clinical Blood/Urine", "N/A", "N/A", "N/A", "N", "N/A");
     } else if (participant[fieldMapping.bloodUrineSurveyFlag] === fieldMapping.submitted1) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Survey", "Clinical Blood/Urine", "Submitted",
-        humanReadableMDY(participant[fieldMapping.bloodUrineSurveyCompletedDate]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.bloodUrineSurveyCompletedDate]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.bloodUrineSurveyFlag] === fieldMapping.started1) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Baseline", "Survey", "Clinical Blood/Urine", "Started",
-        humanReadableMDY(participant[fieldMapping.bloodUrineSurveyStartedDate]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.bloodUrineSurveyStartedDate]), "N/A", "N", "N/A");
     } else {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "Clinical Blood/Urine", "Not Started", "N/A", "N/A", "N", "N/A");
     }
@@ -333,10 +333,10 @@ export const baselineMouthwashSurvey = (participantModule) => {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "Home Mouthwash", "N/A", "N/A", "N/A", "N", "N/A");
     } else if (participantModule[fieldMapping.mouthwashSurveyFlag] === fieldMapping.submitted1) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Survey", "Home Mouthwash", "Submitted",
-        humanReadableMDY(participantModule[fieldMapping.mouthwashSurveyCompletedDate]), "N/A", "N", "N/A");
+        formatUTCDate(participantModule[fieldMapping.mouthwashSurveyCompletedDate]), "N/A", "N", "N/A");
     } else if (participantModule[fieldMapping.mouthwashSurveyFlag] === fieldMapping.started1) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Baseline", "Survey", "Home Mouthwash", "Started",
-        humanReadableMDY(participantModule[fieldMapping.mouthwashSurveyStartedDate]), "N/A", "N", "N/A");
+        formatUTCDate(participantModule[fieldMapping.mouthwashSurveyStartedDate]), "N/A", "N", "N/A");
     } else {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "Home Mouthwash", "Not Started", "N/A", "N/A", "N", "N/A");
     }
@@ -380,15 +380,27 @@ export const baselineExperienceSurvey = (participant) => {
     return getTemplateRow(icon, color, timeline, category, item, itemStatus, date, setting, refused, extra);
 };
 
+export const cancerScreeningHistorySurvey = (data) => {
+    const refusedAllFutureSurveys = data[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
+    const refusedAllFutureActivities = data[fieldMapping.refusedAllFutureActivities];
+    const refusedCancerScreeningHistorySurvey = data[fieldMapping.refusalOptions]?.[fieldMapping.refusedCancerScreeningHistorySurvey];
+    const refused = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedCancerScreeningHistorySurvey === fieldMapping.yes ? "Y" : "N";
+    let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.cancerScreeningHistorySurveyStatus, fieldMapping.cancerScreeningHistorySurveyStartDate, fieldMapping.cancerScreeningHistorySurveyCompletedDate);
+
+    if (!data[fieldMapping.cancerScreeningHistorySurveyStatus]) itemStatus = "Not Eligible";
+
+    return getTemplateRow(icon, color, "Follow-Up 9-mo", "Survey", "Cancer Screening History", itemStatus, date, "N/A", refused, "N/A");
+};
+
 export const baselineMenstrualSurvey = (participant) => {
     let template = ``;
 
     if (participant[fieldMapping.menstrualFlag] === fieldMapping.submitted1) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Survey", "Menstrual Cycle", "Submitted",
-        humanReadableMDY(participant[fieldMapping.menstrualDateTimeCompleted]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.menstrualDateTimeCompleted]), "N/A", "N", "N/A");
     } else if (participant[fieldMapping.menstrualFlag] === fieldMapping.started1) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Baseline", "Survey", "Menstrual Cycle", "Started",
-        humanReadableMDY(participant[fieldMapping.menstrualDateTimeStart]), "N/A", "N", "N/A");
+        formatUTCDate(participant[fieldMapping.menstrualDateTimeStart]), "N/A", "N", "N/A");
     } else {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "Menstrual Cycle", "Not Started", "N/A", "N/A", "N", "N/A");
     }
@@ -404,7 +416,7 @@ export const baselineEMR = (participantModule) => {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "EMR", "N/A", "Not Pushed", "N/A", "N/A", "N", "N/A");
     } else if (baselineEMR[fieldMapping.baselineEMRflag] === fieldMapping.yes) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "EMR", "N/A", "Pushed",
-        humanReadableMDY(baselineEMR[fieldMapping.baselineEMRpushDate]), "N/A", "N/A", "N/A");
+        formatUTCDate(baselineEMR[fieldMapping.baselineEMRpushDate]), "N/A", "N/A", "N/A");
     } else {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "EMR", "N/A", "Not Pushed", "N/A", "N/A", "N/A", "N/A");
     }
@@ -422,8 +434,8 @@ export const baselinePayment = (participantModule) => {
         participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.eligiblePayment] === fieldMapping.yes
     ) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Payment", "N/A", "Eligible", 
-                                    humanReadableMDY(participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.baselinePaymentDate]),
-                                        "N/A", "N/A", checkIncentiveIssued(participantModule)
+            formatUTCDate(participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.eligiblePaymentRoundTimestamp]),
+            "N/A", "N/A", checkIncentiveIssued(participantModule)
     );
     } else {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Payment", "N/A", "Not Eligible", "N/A", "N/A", "N/A", checkIncentiveIssued(participantModule)
@@ -440,14 +452,14 @@ const getSurveyStatus = (participant, surveyFlag, startDate, completeDate) => {
                 icon: "fa fa-check fa-2x",
                 color: "color: green",
                 itemStatus: "Submitted",
-                date: humanReadableMDY(participant[completeDate]),
+                date: formatUTCDate(participant[completeDate]),
             };
         case fieldMapping.started1:
             return {
                 icon: "fa fa-hashtag fa-2x",
                 color: "color: orange",
                 itemStatus: "Started",
-                date: humanReadableMDY(participant[startDate]),
+                date: formatUTCDate(participant[startDate]),
             };
         case fieldMapping.notYetEligible1:
             return {
@@ -478,9 +490,9 @@ const getSurveyStatus = (participant, surveyFlag, startDate, completeDate) => {
 const checkIncentiveIssued = (participantModule) => {
     return participantModule[fieldMapping.paymentRoundup] &&
     (participantModule[fieldMapping.paymentRoundup][fieldMapping.biospecimenFollowUp][fieldMapping.paymentIssued] === (fieldMapping.yes)) ? 
-    `Issued on ${humanReadableMDY(participantModule[fieldMapping.paymentRoundup][fieldMapping.biospecimenFollowUp][fieldMapping.datePaymentIssued])}`: 
+    `Issued on ${formatUTCDate(participantModule[fieldMapping.paymentRoundup][fieldMapping.biospecimenFollowUp][fieldMapping.datePaymentIssued])}`: 
     (participantModule[fieldMapping.paymentRoundup]?.[fieldMapping.biospecimenFollowUp]?.[fieldMapping.refusedBaselinePayment] === (fieldMapping.yes)) ? 
-    `Declined on ${humanReadableMDY(participantModule[fieldMapping.paymentRoundup][fieldMapping.biospecimenFollowUp][fieldMapping.refusedBaselinePaymentDate])}`:
+    `Declined on ${formatUTCDate(participantModule[fieldMapping.paymentRoundup][fieldMapping.biospecimenFollowUp][fieldMapping.refusedBaselinePaymentDate])}`:
     `N/A`
 }
 
@@ -517,11 +529,11 @@ const setSampleDateTime = (biospecimenRow, biospecimenFlag, researchDateTime, cl
         
          (biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][biospecimenFlag]) === (fieldMapping.biospecimenResearch) ?  
             (   
-                biospecimenSampleDateTime += humanReadableMDY(biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][researchDateTime])
+                biospecimenSampleDateTime += formatUTCDate(biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][researchDateTime])
             ) : 
         (biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][biospecimenFlag]) === (fieldMapping.biospecimenClinical) ?
             (
-                biospecimenSampleDateTime += humanReadableMDY(biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][clinicalDateTime])
+                biospecimenSampleDateTime += formatUTCDate(biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][clinicalDateTime])
             ) : ``
     )   
     return biospecimenSampleDateTime;

@@ -22,6 +22,23 @@ export const humanReadableY = () => {
   return currentYear;
 } // 2021
 
+/**
+ * Convert ISO8601 date to human readable date
+ * @param {String} participantDate - ISO8601 date string
+ * @param {boolean} formatToYearMonthDay - Optional flag to format date to YYYY-MM-DD
+ * @returns {String} - Human readable date string (MM/DD/YYYY) or YYYY-MM-DD (true)
+ * 
+*/
+export const formatUTCDate = (participantDate, formatToYearMonthDay) => {
+  if (!participantDate) return 'N/A';
+  const date = new Date(participantDate);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
+
+  return formatToYearMonthDay ? `${year}-${month}-${day}` : `${month}/${day}/${year}`;
+};
+
 // Function prevents the user from internal navigation if unsaved changes are present
 export const internalNavigatorHandler = (counter) => {
 setTimeout(() => {
@@ -133,7 +150,7 @@ export const conceptToSiteMapping = {
   13: 'NCI'
 }
 
-export const triggerNotificationBanner = (message, type) => {
+export const triggerNotificationBanner = (message, type, timeout) => {
   const alertList = document.getElementById("alert_placeholder");
   if (alertList) {
       alertList.innerHTML = `
@@ -143,6 +160,17 @@ export const triggerNotificationBanner = (message, type) => {
                       <span aria-hidden="true">&times;</span>
                   </button>
           </div>`;
+  
+  if (!timeout) return;
+  setTimeout(() => {
+    const alertElement = alertList.querySelector('.alert');
+    if (alertElement) {
+        alertElement.classList.remove('show');
+        alertElement.addEventListener('transitionend', () => {
+            alertElement.remove();
+        });
+    }
+  }, timeout);
   }
 }
 
