@@ -658,7 +658,7 @@ const getLoginRemovalSwitchPackage = (processType, participantAuthenticationEmai
     const switchPackage = {};
     const changedOption = {};
     if (processType === 'removeEmail') {
-        const placeholderForEmailRemoval = `noreply${participantUid}@episphere.github.io`;
+        const placeholderForEmailRemoval = `noreply${participantUid}@NCI-C4CP.github.io`;
         switchPackage['email'] = placeholderForEmailRemoval;
         switchPackage['flag'] = 'updateEmail';
         changedOption[fieldMapping.accountEmail] = placeholderForEmailRemoval;
