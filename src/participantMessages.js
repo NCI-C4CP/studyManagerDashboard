@@ -46,7 +46,12 @@ export const render = async (participant) => {
   } else {
     for (const message of messages.data) {
       let messageTitle = `Email (${message.notification.title})`;
-      const messageBody = message.notification.body.replace(/<style[^>]*>.*?<\/style>/gs, "");
+      let messageBody = message.notification.body;
+      let previous;
+      do {
+        previous = messageBody;
+        messageBody = messageBody.replace(/<style[^>]*>.*?<\/style>/gs, "");
+      } while (messageBody !== previous);
       if (message.notificationType === "sms") {
         messageTitle = "SMS Message";
       }
