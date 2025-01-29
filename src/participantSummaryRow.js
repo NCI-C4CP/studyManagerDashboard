@@ -436,14 +436,57 @@ export const baselinePayment = (participantModule) => {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Payment", "N/A", "Eligible", 
             formatUTCDate(participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.eligiblePaymentRoundTimestamp]),
             "N/A", "N/A", checkIncentiveIssued(participantModule)
-    );
+        );
     } else {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Payment", "N/A", "Not Eligible", "N/A", "N/A", "N/A", checkIncentiveIssued(participantModule)
-    );
+        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Payment", "N/A", "Not Eligible", "N/A", "N/A", "N/A", checkIncentiveIssued(participantModule));
+    }
+
+    return template;
 }
 
-return template;
+export const baselinePhysActReport = (participantModule, reports) => {
+    let reportData;
+    if (reports && reports.physActReport) {
+        reportData = reports.physActReport;
+    }
+
+    let icon, iconColor, status, date, refused, extra;
+    if (reportData) {
+        icon = "fa fa-check fa-2x";
+        iconColor = "color: green";
+        status = 'Available';
+        date =  reportData['d_416831581'] ? formatUTCDate(reportData['d_416831581']) : 'N/A';
+        if (participantModule[fieldMapping.reports.physicalActivityReport] && participantModule[fieldMapping.reports.physicalActivityReport][fieldMapping.reports.physicalActivity.status]) {
+            switch (participantModule[fieldMapping.reports.physicalActivityReport][fieldMapping.reports.physicalActivity.status]) {
+                case fieldMapping.reports.unread:
+                    refused = 'Unread';
+                    break;
+                case fieldMapping.reports.viewed:
+                    refused = 'Viewed';
+                    break;
+                case fieldMapping.reports.declined:
+                    refused = 'Declined';
+                    break;
+                default:
+                    refused = 'N/A';
+            }
+        } else {
+            refused = 'N/A';
+        }
+        extra = '<a style="color: blue; text-decoration: underline; cursor: pointer;" target="_blank" id="downloadPhysActReport">Download Link</a>'
+    } else {
+        icon = "fa fa-times fa-2x";
+        iconColor = "color: red";
+        status = 'Unvailable';
+        date = 'N/A';
+        refused = 'N/A';
+        extra = '<span style="color: grey; text-decoration: underline;">Download Link</span>'
+    }
+
+    let template = getTemplateRow(icon, iconColor, "Baseline", "ROI", "Phys Act", status, date, "N/A", refused, extra);
+    return template
 }
+
 
 const getSurveyStatus = (participant, surveyFlag, startDate, completeDate) => {
     switch (participant[surveyFlag]) {

@@ -555,5 +555,18 @@ export default
         notStarted: 972455046,
         started: 615768760,
         completed: 231311385
+    },
+
+    reports: {
+        knownReports: 794047378,
+        physicalActivityReport: 686238347,
+        physicalActivity: {
+            status: 446235715,
+            viewedTS: 749055145,
+            declinedTS: 295732360
+        },
+        unread: 702641611,
+        viewed: 469323437,
+        declined: 746038746
     }
 };
