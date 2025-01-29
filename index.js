@@ -486,8 +486,7 @@ const retrievePhysicalActivityReport = async (participant) => {
     if (!participant || !participant.state || !participant.state.uid) {
         return null;
     }
-    let baseAPI = 'http://localhost:8080';
-
+    
     try {
         const idToken = await getIdToken();
         const response = await fetch(`${baseAPI}/dashboard?api=retrievePhysicalActivityReport&uid=${participant.state.uid}`, {
