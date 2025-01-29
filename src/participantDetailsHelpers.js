@@ -231,88 +231,88 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: false
         },
         { field: fieldMapping.address1,
-            label: 'Address Line 1',
+            label: 'Mailing Address Line 1',
             editable: !isParticipantDataDestroyed,
             display: true,
             validationType: 'address',
             isRequired: true
         },
         { field: fieldMapping.address2,
-            label: 'Address Line 2',
+            label: 'Mailing Address Line 2',
             editable: !isParticipantDataDestroyed,
             display: true,
             validationType: 'address',
             isRequired: false
         },
         { field: fieldMapping.city,
-            label: 'City',
+            label: 'Mailing Address City',
             editable: !isParticipantDataDestroyed,
             display: true,
             validationType: 'text',
             isRequired: true
         },
         { field: fieldMapping.state,
-            label: 'State',
+            label: 'Mailing Address State',
             editable: !isParticipantDataDestroyed,
             display: true,
             validationType: 'state',
             isRequired: true
         },
         { field: fieldMapping.zip,
-            label: 'Zip',
+            label: 'Mailing Address Zip',
             editable: !isParticipantDataDestroyed,
             display: true,
             validationType: 'zip',
             isRequired: true
         },
-        // { field: fieldMapping.isPOBox,
-        //     label: 'Mailing address is PO Box',
-        //     editable: !isParticipantDataDestroyed,
-        //     display: true,
-        //     validationType: 'permissionSelector',
-        //     isRequired: false
-        // },
-        // { field: fieldMapping.physicalAddress1,
-        //     label: 'Physical Address Line 1 (if different from Mailing address)',
-        //     editable: !isParticipantDataDestroyed,
-        //     display: true,
-        //     validationType: 'address',
-        //     isRequired: true
-        // },
-        // { field: fieldMapping.physicalAddress2,
-        //     label: 'Physical Address Line 2 (if different from Mailing address)',
-        //     editable: !isParticipantDataDestroyed,
-        //     display: true,
-        //     validationType: 'address',
-        //     isRequired: false
-        // },
-        // { field: fieldMapping.physicalCity,
-        //     label: 'Physical City (if different from Mailing address)',
-        //     editable: !isParticipantDataDestroyed,
-        //     display: true,
-        //     validationType: 'text',
-        //     isRequired: true
-        // },
-        // { field: fieldMapping.physicalState,
-        //     label: 'Physical State (if different from Mailing address)',
-        //     editable: !isParticipantDataDestroyed,
-        //     display: true,
-        //     validationType: 'state',
-        //     isRequired: true
-        // },
-        // { field: fieldMapping.physicalZip,
-        //     label: 'Physical Zip (if different from Mailing address)',
-        //     editable: !isParticipantDataDestroyed,
-        //     display: true,
-        //     validationType: 'zip',
-        //     isRequired: true
-        // },
+        { field: fieldMapping.isPOBox,
+            label: 'Mailing Address is PO Box',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'permissionSelector',
+            isRequired: false
+        },
+        { field: fieldMapping.physicalAddress1,
+            label: 'Physical Address Line 1 (if different from mailing address)',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'address',
+            isRequired: false
+        },
+        { field: fieldMapping.physicalAddress2,
+            label: 'Physical Address Line 2 (if different from mailing address)',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'address',
+            isRequired: false
+        },
+        { field: fieldMapping.physicalCity,
+            label: 'Physical City (if different from mailing address)',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'text',
+            isRequired: false
+        },
+        { field: fieldMapping.physicalState,
+            label: 'Physical State (if different from mailing address)',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'state',
+            isRequired: false
+        },
+        { field: fieldMapping.physicalZip,
+            label: 'Physical Zip (if different from mailing address)',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'zip',
+            isRequired: false
+        },
         { field: fieldMapping.birthMonth,
             label: 'Birth Month',
             editable: !isParticipantDataDestroyed && !isParticipantVerified,
             display: !isParticipantVerified,
             validationType: 'month',
-            isRequired: true
+            isRequired: false
         },
         { field: fieldMapping.birthDay,
             label: 'Birth Day',
@@ -658,7 +658,7 @@ const getLoginRemovalSwitchPackage = (processType, participantAuthenticationEmai
     const switchPackage = {};
     const changedOption = {};
     if (processType === 'removeEmail') {
-        const placeholderForEmailRemoval = `noreply${participantUid}@episphere.github.io`;
+        const placeholderForEmailRemoval = `noreply${participantUid}@NCI-C4CP.github.io`;
         switchPackage['email'] = placeholderForEmailRemoval;
         switchPackage['flag'] = 'updateEmail';
         changedOption[fieldMapping.accountEmail] = placeholderForEmailRemoval;
@@ -1530,6 +1530,12 @@ const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
         fieldMapping.city,
         fieldMapping.state,
         fieldMapping.zip,
+        fieldMapping.isPOBox,
+        fieldMapping.physicalAddress1,
+        fieldMapping.physicalAddress2,
+        fieldMapping.physicalCity,
+        fieldMapping.physicalState,
+        fieldMapping.physicalZip
     ];
 
     keys.forEach((key) => {
