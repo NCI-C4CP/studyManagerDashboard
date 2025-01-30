@@ -11,7 +11,7 @@ export const renderPhysicalActivityReportPDF = async (reports, language) => {
     let aerobicImage;
     let aerobicTitle;
     let aerobicBody;
-    switch (parseInt(currentReport['d_449038410'], 10)) {
+    switch (parseInt(currentReport['d_'+fieldMapping.reports.physicalActivity.aerobicActivity], 10)) {
         case 104593854:
             aerobicImage = './reports/physicalActivity/report-dial-low.png';
             aerobicTitle = "physicalActivityNotMeetingTitle";
@@ -31,7 +31,7 @@ export const renderPhysicalActivityReportPDF = async (reports, language) => {
     let muscleImage;
     let muscleTitle;
     let muscleBody;
-    switch (parseInt(currentReport['d_205380968'], 10)) {
+    switch (parseInt(currentReport['d_'+fieldMapping.reports.physicalActivity.muscleActivity], 10)) {
         case fieldMapping.yes:
             muscleImage = './reports/physicalActivity/smile.png';
             muscleTitle = "physicalActivityMuscleYesTitle";
@@ -125,8 +125,8 @@ export const renderPhysicalActivityReportPDF = async (reports, language) => {
             dateX = 112;
             break;
     }
-    if (currentReport['d_416831581']) {
-        let reportTime = currentReport['d_416831581'];
+    if (currentReport['d_'+fieldMapping.reports.physicalActivity.reportTS]) {
+        let reportTime = currentReport['d_'+fieldMapping.reports.physicalActivity.reportTS];
         let dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
         editPage.drawText(replaceUnsupportedPDFCharacters(translateDate(reportTime, language, dateOptions), helveticaFont), {
             x: dateX,

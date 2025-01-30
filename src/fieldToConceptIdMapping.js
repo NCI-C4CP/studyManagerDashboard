@@ -563,7 +563,10 @@ export default
         physicalActivity: {
             status: 446235715,
             viewedTS: 749055145,
-            declinedTS: 295732360
+            declinedTS: 295732360,
+            aerobicActivity: 449038410,
+            muscleActivity: 205380968,
+            reportTS: 416831581
         },
         unread: 702641611,
         viewed: 469323437,

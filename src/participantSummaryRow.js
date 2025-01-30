@@ -455,7 +455,7 @@ export const baselinePhysActReport = (participantModule, reports) => {
         icon = "fa fa-check fa-2x";
         iconColor = "color: green";
         status = 'Available';
-        date =  reportData['d_416831581'] ? formatUTCDate(reportData['d_416831581']) : 'N/A';
+        date =  reportData['d_'+fieldMapping.reports.physicalActivity.reportTS] ? formatUTCDate(reportData['d_'+fieldMapping.reports.physicalActivity.reportTS]) : 'N/A';
         if (participantModule[fieldMapping.reports.physicalActivityReport] && participantModule[fieldMapping.reports.physicalActivityReport][fieldMapping.reports.physicalActivity.status]) {
             switch (participantModule[fieldMapping.reports.physicalActivityReport][fieldMapping.reports.physicalActivity.status]) {
                 case fieldMapping.reports.unread:
