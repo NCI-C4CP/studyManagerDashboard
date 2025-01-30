@@ -12,17 +12,17 @@ export const renderPhysicalActivityReportPDF = async (reports, language) => {
     let aerobicTitle;
     let aerobicBody;
     switch (parseInt(currentReport['d_'+fieldMapping.reports.physicalActivity.aerobicActivity], 10)) {
-        case 104593854:
+        case fieldMapping.reports.physicalActivity.aerobicActivityNotMeeting:
             aerobicImage = './reports/physicalActivity/report-dial-low.png';
             aerobicTitle = "physicalActivityNotMeetingTitle";
             aerobicBody = 'physicalActivityNotMeeting';
             break;
-        case 682636404:
+        case fieldMapping.reports.physicalActivity.aerobicActivityMeeting:
             aerobicImage = './reports/physicalActivity/report-dial-med.png';
             aerobicTitle = "physicalActivityMeetingTitle";
             aerobicBody = 'physicalActivityMeeting';
             break;
-        case 948593796:
+        case fieldMapping.reports.physicalActivity.aerobicActivityExceeding:
             aerobicImage = './reports/physicalActivity/report-dial-high.png';
             aerobicTitle = "physicalActivityExceedingTitle";
             aerobicBody = 'physicalActivityExceeding';

@@ -566,7 +566,10 @@ export default
             declinedTS: 295732360,
             aerobicActivity: 449038410,
             muscleActivity: 205380968,
-            reportTS: 416831581
+            reportTS: 416831581,
+            aerobicActivityNotMeeting: 104593854,
+            aerobicActivityMeeting:  682636404,
+            aerobicActivityExceeding: 948593796
         },
         unread: 702641611,
         viewed: 469323437,
