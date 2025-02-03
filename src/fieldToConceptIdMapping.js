@@ -555,5 +555,24 @@ export default
         notStarted: 972455046,
         started: 615768760,
         completed: 231311385
+    },
+
+    reports: {
+        knownReports: 794047378,
+        physicalActivityReport: 686238347,
+        physicalActivity: {
+            status: 446235715,
+            viewedTS: 749055145,
+            declinedTS: 295732360,
+            aerobicActivity: 449038410,
+            muscleActivity: 205380968,
+            reportTS: 416831581,
+            aerobicActivityNotMeeting: 104593854,
+            aerobicActivityMeeting:  682636404,
+            aerobicActivityExceeding: 948593796
+        },
+        unread: 702641611,
+        viewed: 469323437,
+        declined: 746038746
     }
 };
