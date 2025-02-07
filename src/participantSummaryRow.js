@@ -477,7 +477,7 @@ export const baselinePhysActReport = (participantModule, reports) => {
     } else {
         icon = "fa fa-times fa-2x";
         iconColor = "color: red";
-        status = 'Unvailable';
+        status = 'Unavailable';
         date = 'N/A';
         refused = 'N/A';
         extra = '<span style="color: grey; text-decoration: underline;">Download Link</span>'
