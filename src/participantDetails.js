@@ -74,10 +74,10 @@ export const render = (participant, changedOption) => {
             const variableLabel = row.label;
             const variableValue = participant[conceptId];
             const valueToRender = getFieldValues(variableValue, conceptId);
-            const loginEditMemoRowBackgroundColor = conceptId === 'Login Update Memo' ? '#f5f5f5' : null;
+            const rowBackgroundColor = row.isHeading ? '#f5f5f5' : null;
             const buttonToRender = getButtonToRender(variableLabel, conceptId, participant[fieldMapping.dataDestroyCategorical]);
             template += `
-                <tr class="detailedRow" style="text-align: left; background-color: ${loginEditMemoRowBackgroundColor}" id="${conceptId}row">
+                <tr class="detailedRow" style="text-align: left; background-color: ${rowBackgroundColor}" id="${conceptId}row">
                     <th scope="row">
                         <div class="mb-3">
                             <label class="form-label">
@@ -358,7 +358,7 @@ const renderFormInModal = (participant, changedOption, conceptId, participantKey
     const renderText = textFieldMappingsArray.includes(parseInt(conceptId));
     const renderDay = conceptId == fieldMapping.birthDay;
     const renderMonth = conceptId == fieldMapping.birthMonth;
-    const renderState = conceptId == fieldMapping.state || conceptId == fieldMapping.physicalState;
+    const renderState = [fieldMapping.state, fieldMapping.physicalState, fieldMapping.altState].some(id => id == conceptId);
     const renderSuffix = conceptId == fieldMapping.suffix;
     const renderLanguage = conceptId == fieldMapping.preferredLanguage;
     const elementId = `fieldModified${conceptId}`;
