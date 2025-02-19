@@ -1141,8 +1141,6 @@ const getUITextForUpdatedValue = (newValue, conceptIdArray) => {
         return languageToTextMap.get(parseInt(newValue));
     } else if (conceptIdArray.some(id => [fieldMapping.canWeText.toString(), fieldMapping.voicemailMobile.toString(), fieldMapping.voicemailHome.toString(), fieldMapping.voicemailOther.toString(), fieldMapping.isPOBox.toString(), fieldMapping.isPOBoxAltAddress.toString()].includes(id.toString()))) {
         return newValue === fieldMapping.yes.toString() ? "Yes" : "No";
-    } else if (conceptIdArray.some(id => [fieldMapping.state.toString(), fieldMapping.physicalState.toString(), fieldMapping.altState.toString()].includes(id.toString()) && newValue === 'NA')) {
-        return '';
     } else {
         return newValue;
     }
@@ -1601,14 +1599,6 @@ const findChangedUserDataValues = (newUserData, existingUserData) => {
 
     newUserData = cleanPhoneNumber(newUserData);
 
-    // If state fields are 'NA', set them to empty strings
-    const stateFields = [fieldMapping.state, fieldMapping.altState];
-    stateFields.forEach(field => {
-        if (field in newUserData && newUserData[field] === 'NA') {
-            newUserData[field] = '';
-        }
-    });
-
     const altAddressFields = [
         fieldMapping.altAddress1,
         fieldMapping.altAddress2,
@@ -1631,7 +1621,7 @@ const findChangedUserDataValues = (newUserData, existingUserData) => {
         // Check if any field has a non-empty value after all updates
         const hasAltAddressData = altAddressFields.some(field => {
             const activeAltAddressValue = getDoesAltAddressExistValue(field);
-            return activeAltAddressValue && activeAltAddressValue !== '';
+            return activeAltAddressValue && activeAltAddressValue !== '' && activeAltAddressValue !== 'NA';
         });
 
         changedUserDataForProfile[fieldMapping.doesAltAddressExist] =
