@@ -98,6 +98,8 @@ export const getFieldValues = (variableValue, conceptId) => {
         [fieldMapping.cellPhone]: formattedPhoneValue,
         [fieldMapping.homePhone]: formattedPhoneValue,
         [fieldMapping.otherPhone]: formattedPhoneValue,
+        [fieldMapping.altContactMobilePhone]: formattedPhoneValue,
+        [fieldMapping.altContactHomePhone]: formattedPhoneValue,
         'Change Login Phone': formattedPhoneValue
     }
 
@@ -390,7 +392,7 @@ export const getImportantRows = (participant, changedOption) => {
         },
         {
             field: fieldMapping.isPOBoxAltAddress,
-            label: 'Mailing Address is PO Box',
+            label: 'Alternate Address is PO Box',
             editable: !isParticipantDataDestroyed,
             display: true,
             validationType: 'permissionSelector',
@@ -1080,7 +1082,9 @@ const forceDataTypesForFirestore = (changedOption) => {
         fieldMapping.voicemailMobile, 
         fieldMapping.voicemailHome, 
         fieldMapping.voicemailOther,
-        fieldMapping.preferredLanguage
+        fieldMapping.preferredLanguage,
+        fieldMapping.isPOBox,
+        fieldMapping.isPOBoxAltAddress
     ];
     
     const fieldsToString = [
@@ -1135,7 +1139,7 @@ const getUITextForUpdatedValue = (newValue, conceptIdArray) => {
         return suffixToTextMap.get(parseInt(newValue));
     } else if (conceptIdArray.toString().includes(fieldMapping.preferredLanguage.toString())) {
         return languageToTextMap.get(parseInt(newValue));
-    } else if (conceptIdArray.some(id => [fieldMapping.canWeText.toString(), fieldMapping.voicemailMobile.toString(), fieldMapping.voicemailHome.toString(), fieldMapping.voicemailOther.toString(), fieldMapping.isPOBox.toString()].includes(id.toString()))) {
+    } else if (conceptIdArray.some(id => [fieldMapping.canWeText.toString(), fieldMapping.voicemailMobile.toString(), fieldMapping.voicemailHome.toString(), fieldMapping.voicemailOther.toString(), fieldMapping.isPOBox.toString(), fieldMapping.isPOBoxAltAddress.toString()].includes(id.toString()))) {
         return newValue === fieldMapping.yes.toString() ? "Yes" : "No";
     } else {
         return newValue;
@@ -1594,6 +1598,35 @@ const findChangedUserDataValues = (newUserData, existingUserData) => {
     const keysToSkipIfNull = [fieldMapping.canWeText.toString(), fieldMapping.voicemailMobile.toString(), fieldMapping.voicemailHome.toString(), fieldMapping.voicemailOther.toString()];
 
     newUserData = cleanPhoneNumber(newUserData);
+
+    const altAddressFields = [
+        fieldMapping.altAddress1,
+        fieldMapping.altAddress2,
+        fieldMapping.altCity,
+        fieldMapping.altState,
+        fieldMapping.altZip
+    ];
+
+    // Check if any alt address fields are being modified. Only proceed with alt address checks if fields are being modified.
+    const isAltAddressModified = altAddressFields.some(field => field in newUserData);
+    if (isAltAddressModified) {
+        // Determine whether the alternate address exists based on the new and existing data
+        const getDoesAltAddressExistValue = (field) => {
+            if (field in newUserData) {
+                return newUserData[field];
+            }
+            return existingUserData[field] || '';
+        };
+
+        // Check if any field has a non-empty value after all updates
+        const hasAltAddressData = altAddressFields.some(field => {
+            const activeAltAddressValue = getDoesAltAddressExistValue(field);
+            return activeAltAddressValue && activeAltAddressValue !== '' && activeAltAddressValue !== 'NA';
+        });
+
+        changedUserDataForProfile[fieldMapping.doesAltAddressExist] =
+            hasAltAddressData ? fieldMapping.yes : fieldMapping.no;
+    }
 
     Object.keys(newUserData).forEach(key => {
         if (newUserData[key] !== existingUserData[key]) {

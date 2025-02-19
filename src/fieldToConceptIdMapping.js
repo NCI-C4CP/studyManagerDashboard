@@ -65,6 +65,7 @@ export default
     "physicalZip":449168732,
     "isPOBox":250235523,
     // Alternate address
+    "doesAltAddressExist": 646504105,
     "altAddress1": 284580415,
     "altAddress2": 728926441,
     "altCity": 907038282,
