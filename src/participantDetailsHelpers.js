@@ -1768,6 +1768,7 @@ const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
         fieldMapping.altCity,
         fieldMapping.altState,
         fieldMapping.altZip,
+        fieldMapping.isPOBoxAltAddress,
     ];
 
     keys.forEach((key) => {
