@@ -266,6 +266,12 @@ table {
 .row-color-emr-light td {
     background-color: rgb(192, 224, 228); 
 }
+.row-color-roi-dark td {
+    background-color: rgb(250, 229, 185); 
+}
+.row-color-roi-light td {
+    background-color: rgb(250, 237, 207); 
+}
 
 .ws-nowrap {
     white-space: nowrap;

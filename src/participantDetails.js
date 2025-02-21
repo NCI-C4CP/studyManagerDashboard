@@ -39,7 +39,6 @@ export const renderParticipantDetails = (participant, changedOption) => {
     localStorage.setItem("participant", JSON.stringify(participant));
     changeParticipantDetail(participant,  changedOption, originalHTML);
     resetParticipantConfirm();
-    editAltContact(participant);
     viewParticipantSummary(participant);
     renderReturnSearchResults();
     attachUpdateLoginMethodListeners(participant[fieldMapping.accountEmail], participant[fieldMapping.accountPhone], participant.token, participant.state.uid);
@@ -74,10 +73,10 @@ export const render = (participant, changedOption) => {
             const variableLabel = row.label;
             const variableValue = participant[conceptId];
             const valueToRender = getFieldValues(variableValue, conceptId);
-            const loginEditMemoRowBackgroundColor = conceptId === 'Login Update Memo' ? '#f5f5f5' : null;
+            const rowBackgroundColor = row.isHeading ? '#f5f5f5' : null;
             const buttonToRender = getButtonToRender(variableLabel, conceptId, participant[fieldMapping.dataDestroyCategorical]);
             template += `
-                <tr class="detailedRow" style="text-align: left; background-color: ${loginEditMemoRowBackgroundColor}" id="${conceptId}row">
+                <tr class="detailedRow" style="text-align: left; background-color: ${rowBackgroundColor}" id="${conceptId}row">
                     <th scope="row">
                         <div class="mb-3">
                             <label class="form-label">
@@ -191,114 +190,6 @@ const getButtonToRender = (variableLabel, conceptId, participantIsDataDestroyed)
     `;
 };
 
-// For alternate contact details. Would be updates once concept ids for alt details are ready
-const editAltContact = (participant) => {
-    const a = document.getElementById('altContact');
-    if (a) {
-        a.addEventListener('click',  () => {
-        altContactHandler(participant);
-        })
-    }   
-}
-
-const altContactHandler = (participant) => {
-    const header = document.getElementById('modalHeader');
-    const body = document.getElementById('modalBody');
-    header.innerHTML = `<h5>Alternate Contact Details</h5><button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`
-    let template = '<div>'
-    template += `
-            <br />
-            <span id='fieldName' data-fieldName='First Name'><strong>Name</strong></span> : <input type="text" name="newName" id="newName" data-currrentFName=${participant.Module1 && participant.Module1.ALTCONTACT1.ALTCONTACT1_FNAME} value=${participant.Module1 && participant.Module1.ALTCONTACT1.ALTCONTACT1_FNAME} />
-            <br />
-            <span id='fieldLName' data-fieldLName='Last Name'><strong>Last Name</strong></span> : <input type="text" name="newLName" id="newLName" data-currrentLName=${participant.Module1 && participant.Module1.ALTCONTACT1.ALTCONTACT1_LNAME} value=${participant.Module1 && participant.Module1.ALTCONTACT1.ALTCONTACT1_LNAME} />
-            <br />
-            <span id='fieldRelationship' data-fieldRelationship='relationship'><strong>Relationship</strong></span> : <input type="text" name="newRelationship" id="newRelationship" />
-            <br />
-            <span id='fieldHome' data-fieldHome='home'><strong>Home Number</strong></span> : <input type="text" name="newHome" id="newHome" data-currentHome=${participant.Module1 && participant.Module1.ALTCONTACT2.ALTCONTACT2_HOME} value=${participant.Module1 && participant.Module1.ALTCONTACT2.ALTCONTACT2_HOME} />
-            <br />
-            <span id='fieldMobile' data-fieldMobile='mobile'><strong>Mobile Number</strong></span> : <input type="text" name="newMobile" id="newMobile" data-currentMobile=${participant.Module1 && participant.Module1.ALTCONTACT2.ALTCONTACT2_MOBILE} value=${participant.Module1 && participant.Module1.ALTCONTACT2.ALTCONTACT2_MOBILE} />
-            <br />
-            <span id='fieldEmail' data-fieldEmail='email'><strong>Email</strong></span> : <input type="text" name="newEmail" id="newEmail" data-currentEmail=${participant.Module1 && participant.Module1.ALTCONTACT2.ALTCONTACT2_EMAIL} value="${participant.Module1 && participant.Module1.ALTCONTACT2.ALTCONTACT2_EMAIL}" />
-            <br />
-
-            <div style="display:inline-block;">
-                <button type="submit" class="btn btn-danger" data-dismiss="modal" target="_blank">Cancel</button>
-                <button type="button" class="btn btn-primary" id="altDetailsSubmit">Submit</button>
-            </div>
-        </div>`
-    body.innerHTML = template;
-    saveAltResponse( participant);
-    viewParticipantSummary(participant)
-}
-
-const saveAltResponse = (participant) => {
-    const a = document.getElementById('altDetailsSubmit')
-    a.addEventListener('click', (e) => {
-        e.preventDefault()
-        let changedModuleOption = {};
-        let altNewName = document.getElementById('newName').value;
-        let altCurrentName = getDataAttributes(document.getElementById('newName'));
-        changedModuleOption['Name'] = altNewName;
-
-        let altNewLName = document.getElementById('newLName').value;
-        let altCurrentLName = getDataAttributes(document.getElementById('newLName'));
-        changedModuleOption['Last Name'] = altNewLName;
-
-        let newRelationship = document.getElementById('newRelationship').value;
-        changedModuleOption['Relationship'] = newRelationship;
-
-
-        let altCurrentHome = getDataAttributes(document.getElementById('newHome'));
-        let newHome = document.getElementById('newHome').value;
-        changedModuleOption['Home'] = newHome;
-
-        let altCurrentMobile = getDataAttributes(document.getElementById('newMobile'));
-        let newMobile = document.getElementById('newMobile').value;
-        changedModuleOption['Mobile'] = newMobile;
-
-        let newEmail = document.getElementById('newEmail').value;
-        let altCurrentEmail = getDataAttributes(document.getElementById('newEmail'));
-        changedModuleOption['Email'] = newEmail;
-
-        for (let key in changedModuleOption) {
-            changedModuleOption[key] === '' ?
-                delete changedModuleOption[key] : ''
-        }
-        
-        closeModal();
-      
-        let editedElement;
-        const a = Array.from(document.getElementsByClassName('detaileAltRow'))
-        a.forEach(element =>
-            editedElement = element
-        )
-
-        let updatedEditedValue = editedElement.querySelectorAll("td")[0];
-        if (altNewName !== '' && altNewLName !== '') {
-            updatedEditedValue.innerHTML = altNewName +" "+ altNewLName;
-        }
-        else if (altNewName !== '') {
-            updatedEditedValue.innerHTML = altNewName +" "+ altCurrentLName.currrentlname;
-        }
-        else if (altNewLName !== '') {
-            updatedEditedValue.innerHTML = altCurrentName.currrentfname +" "+ altNewLName;
-        }
-
-        updatedEditedValue = editedElement.querySelectorAll("td")[1];
-        updatedEditedValue.innerHTML = newRelationship !== '' ? newRelationship : null
-
-        updatedEditedValue = editedElement.querySelectorAll("td")[2];
-        updatedEditedValue.innerHTML = newHome !== '' ? newHome : altCurrentHome.currenthome
-
-        updatedEditedValue = editedElement.querySelectorAll("td")[3];
-        updatedEditedValue.innerHTML = newMobile !== '' ? newMobile : altCurrentMobile.currentmobile
-
-        updatedEditedValue = editedElement.querySelectorAll("td")[4];
-        updatedEditedValue.innerHTML = newEmail !== '' ? newEmail : altCurrentEmail.currentemail
-      
-    })
-}
-
 const renderBackToSearchDivAndButton = () => {
     return `
         <div class="float-left">
@@ -358,7 +249,7 @@ const renderFormInModal = (participant, changedOption, conceptId, participantKey
     const renderText = textFieldMappingsArray.includes(parseInt(conceptId));
     const renderDay = conceptId == fieldMapping.birthDay;
     const renderMonth = conceptId == fieldMapping.birthMonth;
-    const renderState = conceptId == fieldMapping.state || conceptId == fieldMapping.physicalState;
+    const renderState = [fieldMapping.state, fieldMapping.physicalState, fieldMapping.altState].some(id => id == conceptId);
     const renderSuffix = conceptId == fieldMapping.suffix;
     const renderLanguage = conceptId == fieldMapping.preferredLanguage;
     const elementId = `fieldModified${conceptId}`;
