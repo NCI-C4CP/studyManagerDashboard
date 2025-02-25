@@ -4,25 +4,27 @@ import fieldMapping from './fieldToConceptIdMapping.js';
 import { userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey, 
     baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineBloodSample, baselineUrineSample, baselineBiospecSurvey, baselineMenstrualSurvey,
     baselineMouthwashSample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
-    baselineExperienceSurvey, cancerScreeningHistorySurvey} from './participantSummaryRow.js';
+    baselineExperienceSurvey, cancerScreeningHistorySurvey, baselinePhysActReport} from './participantSummaryRow.js';
 import { formatUTCDate, conceptToSiteMapping, pdfCoordinatesMap } from './utils.js';
+import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
 
 const { PDFDocument, StandardFonts } = PDFLib;
 
 document.body.scrollTop = document.documentElement.scrollTop = 0;
 
-export const renderParticipantSummary = (participant) => {
+export const renderParticipantSummary = (participant, reports) => {
     const isParent = localStorage.getItem('isParent');
     document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantSummaryBtn').classList.add('active');
     if (participant !== null) {
-        document.querySelector("#mainContent").innerHTML = render(participant);
+        document.querySelector("#mainContent").innerHTML = render(participant, reports);
         downloadCopyHandler(participant);
+        downloadReportHandler(participant, reports);
     }
 };
 
-export const render = (participant) => {
+export const render = (participant, reports) => {
     if (!participant) {
         return `
             <div class="container-fluid">
@@ -120,6 +122,9 @@ export const render = (participant) => {
                                 <tr class="row-color-emr-light">
                                     ${baselineEMR(participant)}
                                 </tr>
+                                <tr class="row-color-roi-dark">
+                                    ${baselinePhysActReport(participant, reports)}
+                                </tr>
                                 ${participant[fieldMapping.revokeHIPAA] === fieldMapping.yes ? 
                                     (`<tr class="row-color-enrollment-dark"> ${hipaaRevocation(participant)} </tr>`) : (``)}
                                 ${participant[fieldMapping.destroyData] === fieldMapping.yes ? 
@@ -184,6 +189,33 @@ const downloadCopyHandler = (participant) => {
         })
     }
  
+}
+
+const downloadReportHandler = (participant, reports) => {
+    
+    let lang;
+    switch (participant[fieldMapping.preferredLanguage]) {
+        case fieldMapping.language.en:
+            lang = 'en';
+            break;
+        case fieldMapping.language.es:
+            lang = 'es';
+            break;
+        default:
+            lang = 'en';
+            break;
+    }
+    const a = document.getElementById('downloadPhysActReport');
+    if (a) {
+        a.addEventListener('click',  () => { 
+            try {
+                renderPhysicalActivityReportPDF(reports, lang);
+            } catch (error) {
+                console.error(error);
+                alert('An error has occured generating the pdf please contact support')
+            }
+        })
+    }
 }
 
 const getHealthcareProviderCoordinates = (healthcareProvider, source, version, lang) => {

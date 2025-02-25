@@ -1,3 +1,10 @@
+import en from "../i18n/en.js";
+import es from "../i18n/es.js";
+
+const i18n = {
+    es, en
+};
+
 export const getCurrentTimeStamp = () => {
   const date = new Date(new Date().toISOString());
   const timeStamp = date.toLocaleString('en-US',  {month: 'long'}) + ' ' + date.getDate() + ',' + date.getFullYear() + ' ' + 
@@ -354,3 +361,102 @@ export const pdfCoordinatesMap = {
   }
 }
 
+/**
+ * Returns the translation for a given language or the fall back language of english
+ * 
+ * @param {String[]} keys 
+ * @param {String} language 
+ * @param {int} keyIndex 
+ * @param {Object} translationObj 
+ * @returns String
+ */
+export const translateText = (keys, language, keyIndex, translationObj) => { 
+  if (!language) {
+      language = 'en';
+  }
+
+  if (typeof keys === 'string') {
+      keys = keys.split('.');
+  }
+
+  if (!keyIndex) {
+      keyIndex = 0;
+  }
+
+  if (!translationObj) {
+      //Fallback to english if the language doesn't exist
+      translationObj = i18n[language] ? i18n[language] : i18n['en'];
+  }
+  if ((keyIndex + 1) === keys.length) {
+      if (!translationObj[keys[keyIndex]]) {
+          if (language !== 'en') {
+              //If the languange is not English then return english as the fallback
+              return translateText(keys, 'en');
+          } else {
+              return null;
+          }
+      } else {
+          return translationObj[keys[keyIndex]];
+      }
+  } else {
+      if (translationObj[keys[keyIndex]]) {
+          let nextIndexKey = keyIndex + 1;
+          return translateText(keys, language, nextIndexKey, translationObj[keys[keyIndex]]);
+      } else {
+          if (language !== 'en') {
+              //If the language is not english then return english as the fallback
+              return translateText(keys, 'en');
+          } else {
+              //IF the langauge is already english then retun null because there is no matching translation  
+              return null;
+          }
+      }
+  }
+}
+
+/**
+ * Returns a formatted Date based on the language and options
+ * 
+ * @param {string} timestamp
+ * @param {string} language
+ * @param {Object} options - Same as Intl.DateTimeFormat() constructor
+ */
+export const translateDate = (timestamp, language, options) => {
+  if (!language) {
+    language = 'en';
+  }
+
+  let date;
+  if (typeof timestamp === 'string' && /^[0-9]+$/.test(timestamp)) {
+      date = new Date(parseInt(timestamp, 10));
+  } else if (typeof timestamp === 'number') {
+      date = new Date(timestamp);
+  } else {
+      date = new Date(Date.parse(timestamp));
+  }
+  return date.toLocaleDateString(language, options);
+}
+
+/* Checks for each code point whether the given font supports it.
+If not, tries to remove diacritics from said code point.
+If that doesn't work either, replaces the unsupported character with '?'. */
+export function replaceUnsupportedPDFCharacters(string, font) {
+  if (!string) return;
+  const charSet = font.getCharacterSet()
+  const codePoints = []
+  for (const codePointStr of string) {
+      const codePoint = codePointStr.codePointAt(0);
+      if (!charSet.includes(codePoint)) {
+          const withoutDiacriticsStr = codePointStr.normalize('NFD').replace(/\p{Diacritic}/gu, '');
+          const withoutDiacritics = withoutDiacriticsStr.charCodeAt(0);
+          if (charSet.includes(withoutDiacritics)) {
+              codePoints.push(withoutDiacritics);
+          } else {
+              codePoints.push('?'.codePointAt(0));
+          }
+      } else {
+          codePoints.push(codePoint)
+      }
+  }
+  return String.fromCodePoint(...codePoints);
+ }
