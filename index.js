@@ -4,6 +4,7 @@ import { renderTable, filterdata, renderData, addEventFilterData, activeColumns,
 import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
+import { renderReplacementKitRequest } from './src/replaceHomeCollectionKit.js';
 import { setupDataCorrectionsSelectionToolPage } from './src/dataCorrectionsTool/dataCorrectionsToolSelection.js';
 import { setupVerificationCorrectionsPage } from './src/dataCorrectionsTool/verificationCorrectionsTool.js';
 import { setupSurveyResetToolPage } from './src/dataCorrectionsTool/surveyResetTool.js';
@@ -172,6 +173,15 @@ const router = async () => {
             else {
                 let participant = JSON.parse(localStorage.getItem("participant"))
                 renderParticipantMessages(participant);
+            }
+        }
+        else if (route === '#replaceHomeCollectionKit') {
+            if (JSON.parse(localStorage.getItem("participant")) === null) {
+                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
+            }
+            else {
+                let participant = JSON.parse(localStorage.getItem("participant"))
+                renderReplacementKitRequest(participant);
             }
         }
         else if (dataCorrectionsToolRoutes.includes(route)) {
