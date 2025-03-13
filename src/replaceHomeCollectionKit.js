@@ -159,8 +159,7 @@ const bindEventRequestReplacementButton = (connectId, token) => {
 
 const refreshParticipantAfterReplacement = async (token) => {
     let alertList = document.getElementById('alert_placeholder');
-    let template = '';
-    template += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
+    const template = `<div class="alert alert-warning alert-dismissible fade show" role="alert">
                     Success! Replacement requested. Refreshing this page.
                     <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
