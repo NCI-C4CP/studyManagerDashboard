@@ -33,8 +33,8 @@ const render = (participant) => {
         `
     } else {
         
-        const kitStatus = participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwash]?.[fieldMapping.kitStatus];
-        const kitStatus1 = participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL1]?.[fieldMapping.kitStatus];
+        const initialKitStatus = participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwash]?.[fieldMapping.kitStatus];
+        const replacementKit1Status = participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL1]?.[fieldMapping.kitStatus];
 
         let resetTextTemplate = ``;
         // Is the user's address valid?
@@ -45,7 +45,7 @@ const render = (participant) => {
             (!physicalAddressLineOne || poBoxRegex.test(physicalAddressLineOne)) &&
             (!mailingAddressLineOne || poBoxRegex.test(mailingAddressLineOne))
         ) {
-            resetTextTemplate = `<div>Participant address is invalid; cannot send home MW kit.</div>`;
+            resetTextTemplate = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
         } else {
             if(participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL2]) {
                 // If two replacements, they are out of replacement kits; prevent further.
@@ -53,7 +53,7 @@ const render = (participant) => {
             } else if(participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL1]) {
     
                 // If one replacement, mark as eligible for second replacement
-                switch(kitStatus1) {
+                switch(replacementKit1Status) {
                     case undefined:
                     case null:
                     case fieldMapping.kitStatusValues.pending: {
@@ -74,10 +74,10 @@ const render = (participant) => {
                         resetTextTemplate = renderReplacementScreen(true);
                         break;
                     default:
-                        resetTextTemplate = '<div>Unrecognized kit status ' + kitStatus1 + '</div>';
+                        resetTextTemplate = '<div>Unrecognized kit status ' + replacementKit1Status + '</div>';
                 }
             } else if(participant?.[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwash]) {
-                switch(kitStatus) {
+                switch(initialKitStatus) {
                     case undefined:
                     case null:
                     case fieldMapping.kitStatusValues.pending: {
@@ -98,7 +98,7 @@ const render = (participant) => {
                         resetTextTemplate =  renderReplacementScreen(true);
                         break;
                     default:
-                        resetTextTemplate = '<div>Unrecognized kit status ' + kitStatus + '/<div>';
+                        resetTextTemplate = '<div>Unrecognized kit status ' + initialKitStatus + '/<div>';
                 }
             } else {
                 resetTextTemplate = '<div>This participant is not yet eligible for a home mouthwash kit OR their initial home mouthwash kit has not yet been sent</div>';
