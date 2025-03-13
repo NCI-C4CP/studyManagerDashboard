@@ -46,6 +46,17 @@ export const formatUTCDate = (participantDate, formatToYearMonthDay) => {
   return formatToYearMonthDay ? `${year}-${month}-${day}` : `${month}/${day}/${year}`;
 };
 
+/**
+ * Convert  human readable date to ISO8601 date
+ * @param {String} participantDate - human readable date
+ * @returns {String} - ISO8601 date
+ * 
+*/
+export const convertToISO8601 = (dateString) => {
+  const date = new Date(dateString);
+  return date.toISOString();
+};
+
 // Function prevents the user from internal navigation if unsaved changes are present
 export const internalNavigatorHandler = (counter) => {
 setTimeout(() => {
