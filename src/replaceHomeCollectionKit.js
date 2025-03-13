@@ -41,16 +41,16 @@ const render = (participant) => {
         const poBoxRegex = /^(?:P\.?\s*O\.?\s*(?:Box|B\.?)?|Post\s+Office\s+(?:Box|B\.?)?)\s*(\s*#?\s*\d*)((?:\s+(.+))?$)$/i;
         const physicalAddressLineOne = participant[fieldMapping.physicalAddress1];
         const mailingAddressLineOne = participant[fieldMapping.address1];
-        if(
+        if (
             (!physicalAddressLineOne || poBoxRegex.test(physicalAddressLineOne)) &&
             (!mailingAddressLineOne || poBoxRegex.test(mailingAddressLineOne))
         ) {
             resetTextTemplate = `<div>Participant address is invalid; cannot send home MW kit.</div>`;
         } else {
-            if(participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL2]) {
+            if (participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL2]) {
                 // If two replacements, they are out of replacement kits; prevent further.
                 resetTextTemplate = `<div>Participant has already used supported number of replacement kits.</div>`;
-            } else if(participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL1]) {
+            } else if (participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL1]) {
     
                 // If one replacement, mark as eligible for second replacement
                 switch(kitStatus1) {
@@ -76,7 +76,7 @@ const render = (participant) => {
                     default:
                         resetTextTemplate = '<div>Unrecognized kit status ' + kitStatus1 + '</div>';
                 }
-            } else if(participant?.[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwash]) {
+            } else if (participant?.[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwash]) {
                 switch(kitStatus) {
                     case undefined:
                     case null:
@@ -140,7 +140,7 @@ const render = (participant) => {
 
 const bindEventRequestReplacementButton = (connectId, token) => {
     const requestReplacementButton = document.getElementById('requestReplacementKitBtn');
-    if(requestReplacementButton) {
+    if (requestReplacementButton) {
         requestReplacementButton.addEventListener('click', async () => {
             try {
                 await requestReplacementKit(connectId);
@@ -181,7 +181,7 @@ const reloadParticipantData = async (token) => {
     const query = `token=${token}`;
     // Errors handled in refreshParticipantAfterReplacement
     const {data, code} = await findParticipant(query);
-    if(code !== 200) {
+    if (code !== 200) {
         throw new Error(code + ' error reloading participant');
     }
     const reloadedParticipant = data[0];
