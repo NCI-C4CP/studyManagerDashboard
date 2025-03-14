@@ -510,6 +510,7 @@ export default
     'activeToPassive': 965707001,
     'criteriumNotMet': 539025306,
     'criteriumMet': 427405444,
+    'eligibilityStatusChanged': 696650324,
 
     // refusal auto timestamps
     'refBaselineSurveyTimeStamp': 982105411,
