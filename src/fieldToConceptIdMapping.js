@@ -546,12 +546,14 @@ export default
     928145508 : 'User Profile Complete' ,
     959657954 : 'Verification Complete',
     850536553 : 'Cannot Be Verified' ,
-	364179400 : 'Verified - mimimally Enrolled',
+	364179400 : 'Verified - minimally Enrolled',
     485892221 : 'Fully Enrolled',
 
     collectionDetails: 173836415,
     baseline: 266600170,
     bioKitMouthwash: 319972665,
+    bioKitMouthwashBL1: 541483796,
+    bioKitMouthwashBL2: 641006239,
     kitReceivedTime: 826941471,
     kitShippedTime: 661940160,
     uniqeKitAssemblyId: 687158491,
@@ -562,6 +564,7 @@ export default
     kitStatus: 221592017,
     kitStatusValues: {
         pending: 517216441,
+        initialized: 728267588,
         addressPrinted: 849527480,
         assigned: 241974920,
         shipped: 277438316,
