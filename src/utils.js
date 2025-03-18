@@ -48,13 +48,21 @@ export const formatUTCDate = (participantDate, formatToYearMonthDay) => {
 
 /**
  * Convert  human readable date to ISO8601 date
- * @param {String} participantDate - human readable date
+ * @param {String} dateString - human readable date
+ * @param {boolean} useEST - If true then use midnight EST otherwise use UTC
  * @returns {String} - ISO8601 date
  * 
 */
-export const convertToISO8601 = (dateString) => {
-  const date = new Date(dateString);
-  return date.toISOString();
+export const convertToISO8601 = (dateString, useEST) => {
+  let dateObj = new Date(dateString);
+  if (useEST) {
+    const formattedString = dateObj.toLocaleString('en-US', { timeZone: 'America/New_York', timeZoneName: 'longOffset' })
+    const matches = formattedString.match(/([+-]\d+):(\d+)$/);
+    if (matches) {
+      dateObj = new Date(dateString+'T00:00:00.000'+matches[0]);
+    }
+  }
+  return dateObj.toISOString();
 };
 
 // Function prevents the user from internal navigation if unsaved changes are present
