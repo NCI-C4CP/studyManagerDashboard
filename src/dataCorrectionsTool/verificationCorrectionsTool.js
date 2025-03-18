@@ -79,7 +79,7 @@ export const renderVerificationCorrections = (participant) => {
                                             <li><a class="dropdown-item" data-cid=${fieldMapping.notActiveSignedAsPassive} id="notActivSgndPssve">Not Active recruit signed in as Passive recruit</a></li>
                                             <li><a class="dropdown-item" data-cid=${fieldMapping.notActiveSignedAsActive} id="notActivSgndActiv">Not Active recruit signed in as an Active recruit</a></li>
                                             <li><a class="dropdown-item" data-cid=${fieldMapping.alreadyEnrolled} id="alrEnrlld">Participant already enrolled</a></li>
-                                            <li><a class="dropdown-item" data-cid=${fieldMapping.eligibilityStatusChanged} id="eligChanged">Change in eligibility status</a></li>
+                                             ${participant[fieldMapping.verifiedFlag] === fieldMapping.cannotBeVerified ? `<li><a class="dropdown-item" data-cid=${fieldMapping.eligibilityStatusChanged} id="eligChanged">Change in eligibility status</a></li>` : ''}
                                         </ul>
                                     </div>
                                     <h6><b>Recruit Type</b></h6>
@@ -166,12 +166,13 @@ const disableDuplicateTypeBtn = (selectedOption) => {
 const enableVerificationDate = (selectedOption, response) => {
 
     const verificationDateContainer = document.getElementById('verificationDateContainer');
-    if (selectedOption.cid == fieldMapping.verified.toString()) {
+    if (selectedOption.cid == fieldMapping.verified.toString() || selectedOption.cid == fieldMapping.cannotBeVerified.toString()) {
         verificationDateContainer.style.display = 'block';
         const verificationDateInput = document.getElementById('verificationDateInput');
         const currentDate = new Date().toLocaleDateString("en-CA", {timeZone:"America/New_York"}); // MM/DD/YYYY
         verificationDateInput.value = currentDate;
-        response[fieldMapping.verficationDate] = convertToISO8601(currentDate);
+        verificationDateInput.max = currentDate;
+        response[fieldMapping.verficationDate] = convertToISO8601(currentDate, true);
         verificationDateInput.removeEventListener('change', handleDatePickerChange);
         verificationDateInput.addEventListener('change', handleDatePickerChange);
     } else {
@@ -182,7 +183,7 @@ const enableVerificationDate = (selectedOption, response) => {
 
 const handleDatePickerChange = (e) => {
     const selectedOptions = appState.getState().correctedOptions;
-    selectedOptions[fieldMapping.verficationDate] = convertToISO8601(e.target.value);
+    selectedOptions[fieldMapping.verficationDate] = convertToISO8601(e.target.value, true);
     appState.setState({'correctedOptions': selectedOptions})
 }
 
