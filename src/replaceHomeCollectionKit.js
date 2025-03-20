@@ -1,6 +1,7 @@
 import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
 import { renderParticipantHeader } from './participantHeader.js';
 import { findParticipant, renderLookupResultsTable } from './participantLookup.js';
+import { renderParticipantDetails } from './participantDetails.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
 import { baseAPI, getIdToken, hideAnimation, showAnimation } from './utils.js';
 
@@ -143,9 +144,11 @@ const bindEventRequestReplacementButton = (connectId, token) => {
     if (requestReplacementButton) {
         requestReplacementButton.addEventListener('click', async () => {
             try {
+                showAnimation();
                 await requestReplacementKit(connectId);
                 // Notify user of success and refresh the participant data
                 await refreshParticipantAfterReplacement(token);
+                hideAnimation();
             } catch(err) {
                 console.error('err', err);
                 alert('Error: There was an error requesting a replacement. Please try again.');
@@ -158,25 +161,26 @@ const bindEventRequestReplacementButton = (connectId, token) => {
 }
 
 const refreshParticipantAfterReplacement = async (token) => {
-    let alertList = document.getElementById('alert_placeholder');
-    const template = `<div class="alert alert-warning alert-dismissible fade show" role="alert">
-                    Success! Replacement requested. Refreshing this page.
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    </div>`
-    hideAnimation();
     try {
-        await reloadParticipantData(token);
+        let participant = await reloadParticipantData(token);
+        let changedOption = {};
+        // Navigate to the participant details page after 3 seconds
+        renderParticipantDetails(participant, changedOption);
+        let alertList = document.getElementById('alert_placeholder');
+        const template = `<div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        Success! Replacement requested.
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        </div>`
+        alertList.innerHTML = template;
     } catch (err) {
         console.error('err', err);
         alert('The replacement kit was successfully requested, but refreshing the participant information failed. Participant data displayed may be stale.');
     }
-    alertList.innerHTML = template;
 }
 
 const reloadParticipantData = async (token) => {
-    showAnimation();
     const query = `token=${token}`;
     // Errors handled in refreshParticipantAfterReplacement
     const {data, code} = await findParticipant(query);
@@ -184,8 +188,7 @@ const reloadParticipantData = async (token) => {
         throw new Error(code + ' error reloading participant');
     }
     const reloadedParticipant = data[0];
-    renderReplacementKitRequest(reloadedParticipant);
-    hideAnimation();
+    return reloadedParticipant;
 }
 
 const requestReplacementKit = async (connectId) => {
