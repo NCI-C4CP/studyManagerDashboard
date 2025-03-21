@@ -1,3 +1,5 @@
+import { urls } from './utils.js';
+
 export const renderNavBarLinks = () => {
     return `
         <li class="nav-item active">
@@ -47,6 +49,12 @@ export const dashboardNavBarLinks = (isParent) => {
         (`<li class="nav-item" id="participantVerificationBtn">
             <a class="nav-item nav-link ws-nowrap" href="#dataCorrectionsToolSelection" title="Data Corrections Tool"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-check"></i> Data Corrections Tool</span></a>
         </li>`) : (``) }
+        ${(coordinatingCenter === 'true' && 
+            (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.host.toLowerCase() === urls.dev /* Lock to dev for now */)
+        ) ?
+            (`<li class="nav-item" id="replaceHomeCollectionBtn">
+                <a class="nav-item nav-link ws-nowrap" href="#replaceHomeCollectionKit" title="Home Collection Kit Request"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-home"></i> Home Collection Kit Replacement</span></a>
+            </li>`) : (``) }
         ${(isParent !== 'true' || coordinatingCenter === 'true') ?
         (`<li class="nav-item" id="siteMessageBtn">
             <a class="nav-item nav-link ws-nowrap" href="#siteMessages" title="Site Messages"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-comments""></i> Site Messages</span></a>
