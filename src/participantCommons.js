@@ -810,6 +810,8 @@ const tableTemplate = (data, showButtons) => {
                 template += `<td>${participant['state'][fieldMapping.duplicateType.toString()] ? `Passive recruit signed in as Active recruit` : ``}</td>`
                 : ( participant['state'][fieldMapping.duplicateType.toString()] === fieldMapping.activeSignedAsPassive ) ?
                 template += `<td>${participant['state'][fieldMapping.duplicateType.toString()] ? `Active recruit signed in as Passive recruit` : ``}</td>`
+                : ( participant['state'][fieldMapping.duplicateType.toString()] === fieldMapping.eligibilityStatusChanged ) ?
+                template += `<td>${participant['state'][fieldMapping.duplicateType.toString()] ? `Change in eligibility status` : ``}</td>`
                 :  template += `<td></td>`
             )
             : (x === fieldMapping.updateRecruitType.toString()) ? (
