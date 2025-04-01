@@ -1,5 +1,5 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
-import { render, renderParticipantDetails } from './participantDetails.js';
+import { changeParticipantDetail, render, renderParticipantDetails } from './participantDetails.js';
 import { findParticipant, renderLookupResultsTable } from './participantLookup.js';
 import { renderParticipantSummary } from './participantSummary.js';
 import { appState } from './stateManager.js';
@@ -661,9 +661,11 @@ export const renderReturnSearchResults = () => {
 }};
 
 export const resetChanges = (participant, originalHTML) => {
-    const a = document.getElementById("cancelChanges");
+    const upperCancelButton = document.getElementById("cancelChangesUpper");
+    const lowerCancelButton = document.getElementById("cancelChangesLower");
     let template = '';
-    a.addEventListener("click", () => {
+
+    const handleCancelChanges = () => {
         if ( appState.getState().unsavedChangesTrack.saveFlag === false ) {
             mainContent.innerHTML = originalHTML;
             renderParticipantDetails(participant, {});
@@ -681,7 +683,16 @@ export const resetChanges = (participant, originalHTML) => {
         else {  
             alert('No changes to save or cancel');
         }
-    })   
+    };
+
+    // Attach event listeners
+    if (upperCancelButton) {
+        upperCancelButton.addEventListener("click", handleCancelChanges);
+    }
+
+    if (lowerCancelButton) {
+        lowerCancelButton.addEventListener("click", handleCancelChanges);
+    }
 }
 
 /**
@@ -1037,10 +1048,17 @@ export const refreshParticipantAfterUpdate = async (participant) => {
  * @param {object} changedOption - object containing the participant's updated data points
  * @param {HTMLElement} editedElement - the currently edited HTML element
  */
+
 export const saveResponses = (participant, changedOption, editedElement, conceptId) => {
     let conceptIdArray = [];
-    const a = document.getElementById('formResponse')
-    a.addEventListener('submit', e => {
+    const formResponse = document.getElementById('formResponse');
+
+    // Rm existing event listeners
+    const newForm = formResponse.cloneNode(true);
+    formResponse.parentNode.replaceChild(newForm, formResponse);
+
+    // Add fresh listener
+    newForm.addEventListener('submit', e => {
         e.preventDefault()
         const modifiedData = getDataAttributes(document.getElementById(`fieldModified${conceptId}`));
         conceptIdArray.push(modifiedData.fieldconceptid);
@@ -1068,6 +1086,23 @@ export const saveResponses = (participant, changedOption, editedElement, concept
                 updateUIValues(editedElement, newValueElement.value, conceptIdArray);
                 changedOption = forceDataTypesForFirestore(changedOption);
                 closeModal();
+
+                // Reattach all event listeners after each edit. Timeout ensures DOM is updated.
+                setTimeout(() => {
+                    const originalHTML = document.getElementById('mainContent').innerHTML;
+                    changeParticipantDetail(participant, changedOption, originalHTML);
+
+                    // Increment the changes counter in the app state
+                    const currentState = appState.getState();
+                    if (currentState.unsavedChangesTrack) {
+                        appState.setState({
+                            unsavedChangesTrack: {
+                                saveFlag: false,
+                                counter: currentState.unsavedChangesTrack.counter + 1
+                            }
+                        });
+                    }
+                }, 100);
             }
         } else {
             showAlreadyExistsNoteInModal();

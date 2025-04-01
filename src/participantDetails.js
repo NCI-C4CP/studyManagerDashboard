@@ -62,7 +62,7 @@ export const render = (participant, changedOption) => {
             <div id="alert_placeholder"></div>
             ${renderParticipantHeader(participant)}     
             ${renderBackToSearchDivAndButton()}
-            ${renderCancelChangesAndSaveChangesButtons()}
+            ${renderCancelChangesAndSaveChangesButtons('Upper')}
             ${renderResetUserButton(participant?.state?.uid)}
             ${renderDetailsTableHeader()}
         `;
@@ -99,7 +99,7 @@ export const render = (participant, changedOption) => {
         template += `
                     </tbody>
                 </table>
-                ${renderCancelChangesAndSaveChangesButtons()}
+                ${renderCancelChangesAndSaveChangesButtons('Lower')}
             </div>
         </div>
         `;
@@ -132,35 +132,48 @@ const resetParticipantConfirm = () => {
     }
 }
 
-const changeParticipantDetail = (participant, changedOption, originalHTML) => {
+export const changeParticipantDetail = (participant, changedOption, originalHTML) => {
     const detailedRow = Array.from(document.getElementsByClassName('detailedRow'));
     if (detailedRow) {
+        // Rm existing listeners
+        document.querySelectorAll('.showMore').forEach(btn => {
+            btn.replaceWith(btn.cloneNode(true));
+        });
+
+        // New listeners for buttons
         detailedRow.forEach(element => {
-            let editRow = element.getElementsByClassName('showMore')[0];
-            const values = editRow;
-            let data = getDataAttributes(values);
-            editRow && editRow.addEventListener('click', () => {
-                const header = document.getElementById('modalHeader');
-                const body = document.getElementById('modalBody');
-                const conceptId = data.participantconceptid;
-                const participantKey = data.participantkey;
-                const modalLabel = getModalLabel(participantKey);
-                const participantValue = data.participantvalue;
-                header.innerHTML = `
-                    <h5>Edit ${modalLabel}</h5>
-                    <button type="button" class="modal-close-btn" id="closeModal" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`
-                let template = `
-                    <div>
-                        ${renderFormInModal(participant, changedOption, conceptId, participantKey, modalLabel, participantValue)}
-                    </div>`
-                body.innerHTML = template;
-                showSaveNoteInModal(conceptId);
-                saveResponses(participant, changedOption, element, conceptId);
-                resetChanges(participant, originalHTML);   
-            });
-        })
+            const editButton = element.querySelector('.showMore');
+            if (editButton) {
+                editButton.addEventListener('click', function (e) {
+                    const data = getDataAttributes(this);
+                    // Delay slightly to let Bootstrap modal open first
+                    setTimeout(() => {
+                        const header = document.getElementById('modalHeader');
+                        const body = document.getElementById('modalBody');
+                        const conceptId = data.participantconceptid;
+                        const participantKey = data.participantkey;
+                        const modalLabel = getModalLabel(participantKey);
+                        const participantValue = data.participantvalue;
+
+                        header.innerHTML = `
+                            <h5>Edit ${modalLabel}</h5>
+                            <button type="button" class="modal-close-btn" id="closeModal" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
+
+                        let template = `
+                            <div>
+                                ${renderFormInModal(participant, changedOption, conceptId, participantKey, modalLabel, participantValue)}
+                            </div>`;
+
+                        body.innerHTML = template;
+                        showSaveNoteInModal(conceptId);
+                        saveResponses(participant, changedOption, element, conceptId);
+                        resetChanges(participant, originalHTML);
+                    }, 100);
+                });
+            }
+        });
     }
-}
+};
 
 /**
  * Render the edit button for the participant details based on the variable
@@ -293,10 +306,10 @@ const renderShowMoreDataModal = () => {
     `;
 };
 
-const renderCancelChangesAndSaveChangesButtons = () => {
+const renderCancelChangesAndSaveChangesButtons = (position) => {
     return `
         <div class="float-right" style="display:inline-block;">
-            <button type="button" id="cancelChanges" class="btn btn-danger">Cancel Changes</button>
+            <button type="button" id="cancelChanges${position}" class="btn btn-danger">Cancel Changes</button>
             &nbsp;
             <button type="submit" id="updateMemberData" class="updateMemberData btn btn-primary">Save Changes</button>
         </div>
