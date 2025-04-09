@@ -105,7 +105,6 @@ window.onload = async () => {
     !isLocalDev && window.DD_RUM && window.DD_RUM.startSessionReplayRecording();
 
     router();
-    await getMappings();
     localStorage.setItem("flags", JSON.stringify(saveFlag));
     localStorage.setItem("counters", JSON.stringify(counter));
     activityCheckController();
@@ -1225,13 +1224,6 @@ const renderParticipantsNotSignedIn = async () => {
     if (response.code === 401) {
         clearLocalStorage();
     }
-}
-
-// todo: add data to `fieldToConceptIdMapping.js` and remove this function
-const getMappings = async () => {
-    const response = await fetch('https://raw.githubusercontent.com/episphere/conceptGithubActions/master/aggregate.json');
-    const mappings = await response.json();
-    localStorage.setItem("conceptIdMapping", JSON.stringify(mappings));
 }
 
 const activityCheckController = () => {

@@ -479,3 +479,14 @@ export function replaceUnsupportedPDFCharacters(string, font) {
   }
   return String.fromCodePoint(...codePoints);
  }
+
+// Ensure that the date is a valid ISO 8601 string
+export function timestampValidation(iso8601String) {
+  if (iso8601String) {
+    const dateObj = new Date(iso8601String);
+    if (!isNaN(dateObj.getTime())) {
+      return dateObj.toLocaleString();
+    }
+  }
+  return '';
+}

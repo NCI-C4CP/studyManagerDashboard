@@ -234,13 +234,13 @@ export const baselineLAWSurvey = (participant) => {
 
     if (refusedSurveyOption === fieldMapping.yes) {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "LAW", "N/A", "N/A", "N/A", "Y", "N/A");
-    } else if (participant[fieldMapping.lawStausFlag1] === fieldMapping.submitted1) {
+    } else if (participant[fieldMapping.lawStatusFlag1] === fieldMapping.submitted1) {
         template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Survey", "LAW", "Submitted",
         formatUTCDate(participant[fieldMapping.lawCompletedDate1]), "N/A", "N", "N/A");
-    } else if (participant[fieldMapping.lawStausFlag1] === fieldMapping.started1) {
+    } else if (participant[fieldMapping.lawStatusFlag1] === fieldMapping.started1) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Baseline", "Survey", "LAW", "Started",
         formatUTCDate(participant[fieldMapping.lawStartDate1]), "N/A", "N", "N/A");
-    } else if (participant[fieldMapping.lawStausFlag1] === fieldMapping.notStarted1) {
+    } else if (participant[fieldMapping.lawStatusFlag1] === fieldMapping.notStarted1) {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "LAW", "Not Started", "N/A", "N/A", "N", "N/A");
     } else {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "LAW", "N/A", "N/A", "N/A", "N", "N/A");

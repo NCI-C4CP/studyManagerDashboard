@@ -813,7 +813,7 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
         cleanedPhoneNumber = cleanedPhoneNumber.replace(/\D/g, '').trim();
         switchPackage['phone'] = cleanedPhoneNumber;
         switchPackage['flag'] = 'updatePhone';
-        changedOption[fieldMapping.signInMechansim] = 'phone';
+        changedOption[fieldMapping.signInMechanism] = 'phone';
         changedOption[fieldMapping.accountPhone] = `+1`+ cleanedPhoneNumber;
     } else if (emailField &&  emailField.value === document.getElementById('confirmEmail').value) {
         if (!validEmailFormat.test(emailField.value)) {
@@ -822,7 +822,7 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
         }
         switchPackage['email'] = emailField.value;
         switchPackage['flag'] = 'updateEmail';
-        changedOption[fieldMapping.signInMechansim] = 'password';
+        changedOption[fieldMapping.signInMechanism] = 'password';
         changedOption[fieldMapping.accountEmail] = emailField.value;
     } else {
         alert(`Your entered inputs don't match`);
@@ -830,7 +830,7 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
     }
 
     if ((phoneField && phoneField.value && participantAuthenticationEmail && !participantAuthenticationEmail.startsWith('noreply')) || (emailField && emailField.value && !emailField.value.startsWith('noreply') && participantAuthenticationPhone)) {
-        changedOption[fieldMapping.signInMechansim] = 'passwordAndPhone';
+        changedOption[fieldMapping.signInMechanism] = 'passwordAndPhone';
     }
 
     return { switchPackage, changedOption };
@@ -844,12 +844,12 @@ const getLoginRemovalSwitchPackage = (processType, participantAuthenticationEmai
         switchPackage['email'] = placeholderForEmailRemoval;
         switchPackage['flag'] = 'updateEmail';
         changedOption[fieldMapping.accountEmail] = placeholderForEmailRemoval;
-        changedOption[fieldMapping.signInMechansim] = 'phone';
+        changedOption[fieldMapping.signInMechanism] = 'phone';
     } else if (processType === 'removePhone') {
         switchPackage['email'] = participantAuthenticationEmail;
         switchPackage['flag'] = 'replaceSignin';
         changedOption[fieldMapping.accountPhone] = '';
-        changedOption[fieldMapping.signInMechansim] = 'password';
+        changedOption[fieldMapping.signInMechanism] = 'password';
     }
     return { switchPackage, changedOption };
 };
