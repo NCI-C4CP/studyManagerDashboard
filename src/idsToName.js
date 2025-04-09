@@ -216,6 +216,126 @@ export const searchBubbleMap = new Map([
     [fieldMapping.reinvitationDate, 'D/T Reinvitation'],
 ]);
 
+const verificationStatusMapping = {
+    [fieldMapping.notYetVerified]: 'Not Yet Verified',
+    [fieldMapping.outreachTimedout]: 'Out Reach Timed Out',
+    [fieldMapping.verified]: 'Verified',
+    [fieldMapping.cannotBeVerified]: 'Can Not Be Verified',
+    [fieldMapping.duplicate]: 'Duplicate'
+};
+
+const participationStatusMapping = {
+    [fieldMapping.noRefusal]: 'No Refusal',
+    [fieldMapping.refusedSome]: 'Refused Some',
+    [fieldMapping.refusedAll]: 'Refused All',
+    [fieldMapping.revokeHIPAAOnly]: 'Revoke HIPAA Only',
+    [fieldMapping.withdrewConsent]: 'Withdrew Consent',
+    [fieldMapping.destroyDataStatus]: 'Destroy Data',
+    [fieldMapping.deceased]: 'Deceased',
+    [fieldMapping.dataDestroyed]: 'Data Destroyed'
+};
+
+const surveyStatusMapping = {
+    [fieldMapping.submitted1]: 'Submitted',
+    [fieldMapping.started1]: 'Started'
+};
+
+const ageRangeMapping = {
+    [fieldMapping.ageRange1]: '30-34',
+    [fieldMapping.ageRange2]: '35-39',
+    [fieldMapping.ageRange3]: '40-45',
+    [fieldMapping.ageRange4]: '46-50',
+    [fieldMapping.ageRange5]: '51-55',
+    [fieldMapping.ageRange6]: '56-60',
+    [fieldMapping.ageRange7]: '61-65',
+    [fieldMapping.ageRange8]: '66-70',
+};
+
+const sexMapping = {
+    [fieldMapping.female]: 'Female',
+    [fieldMapping.male]: 'Male'
+};
+
+const raceMapping = {
+
+    // Sanford
+    [fieldMapping.africanAmericanSH]: 'African American',
+    [fieldMapping.americanIndianSH]: 'American Indian or Alaskan Native',
+    [fieldMapping.asianSH]: 'Asian',
+    [fieldMapping.whiteSH]: 'Caucasian/White',
+    [fieldMapping.hispanicLBSH]: 'Hispanic/Latino/Black',
+    [fieldMapping.hispanicLDSH]: 'Hispanic/Latino/Declined',
+    [fieldMapping.hispanicLWSH]: 'Hispanic/Latino/White',
+    [fieldMapping.nativeHawaiianSH]: 'Native Hawaiian/Pacific Islander',
+    [fieldMapping.nativeHawaiianPISH]: 'Pacific Islander',
+    [fieldMapping.blankSH]: 'Blank',
+    [fieldMapping.declinedSH]: 'Declined',
+
+    // HFH
+    [fieldMapping.africanAmericanHF]: 'African American',
+    [fieldMapping.whiteHF]: 'Caucasian/White',
+    [fieldMapping.otherHF]: 'Other',
+
+    // BSWH
+    [fieldMapping.whiteNonHispanic]: 'White non-Hispanic',
+    [fieldMapping.blackNonHispanic]: 'Black non-Hispanic',
+    [fieldMapping.hispanicLatino]: 'Hispanic/Latino',
+    [fieldMapping.asian]: 'Asian',
+    [fieldMapping.americanIndianOrAlaskanNative]: 'American Indian or Alaskan Native',
+    [fieldMapping.nativeHawaiianOrOtherPacificIslander]: 'Native Hawaiian or Other Pacific Islander',
+    [fieldMapping.multiRacial]: 'Multi-racial',
+
+    // Additional
+    [fieldMapping.white]: 'White',
+    [fieldMapping.other]: 'Other',
+};
+
+const campaignTypeMapping = {
+    [fieldMapping.random]: 'Random',
+    [fieldMapping.screeningAppointment]: 'Screening Appointment',
+    [fieldMapping.nonScreeningAppointment]: 'Non Screening Appointment',
+    [fieldMapping.demographicGroup]: 'Demographic Group',
+    [fieldMapping.agingOutofStudy]: 'Aging Out of Study',
+    [fieldMapping.geographicGroup]: 'Geographic Group',
+    [fieldMapping.postScreeningAppointment]: 'Post Screening Appointment',
+    [fieldMapping.technologyAdapters]: 'Technology Adapters',
+    [fieldMapping.lowIncomeAreas]: 'Low Income Areas/Health Professional Shortage Areas',
+    [fieldMapping.researchRegistry]: 'Research Registry',
+    [fieldMapping.popUp]: 'Pop up',
+    [fieldMapping.noneOftheAbove]: 'None of the Above',
+    [fieldMapping.other]: 'Other'
+};
+
+const enrollmentStatusMapping = {
+    [fieldMapping.signedInEnrollment]: 'Signed In',
+    [fieldMapping.consentedEnrollment]: 'Consented',
+    [fieldMapping.userProfileCompleteEnrollment]: 'User Profile Complete',
+    [fieldMapping.verificationCompleteEnrollment]: 'Verification Complete',
+    [fieldMapping.cannotBeVerifiedEnrollment]: 'Cannot Be Verified',
+    [fieldMapping.verifiedMimimallyEnrolledEnrollment]: 'Verified Mimimally Enrolled',
+    [fieldMapping.fullyEnrolledEnrollment]: 'Fully Enrolled'
+};
+
+const preferredLanguageMapping = {
+    [fieldMapping.language.en]: 'English',
+    [fieldMapping.language.es]: 'Spanish'
+};
+
+const duplicateTypeMapping = {
+    [fieldMapping.notActiveSignedAsPassive]: 'Not Active recruit signed in as Passive recruit',
+    [fieldMapping.alreadyEnrolled]: 'Already Enrolled',
+    [fieldMapping.notActiveSignedAsActive]: 'Not Active recruit signed in as Active recruit',
+    [fieldMapping.passiveSignedAsActive]: 'Passive recruit signed in as Active recruit',
+    [fieldMapping.activeSignedAsPassive]: 'Active recruit signed in as Passive recruit',
+    [fieldMapping.eligibilityStatusChanged]: 'Change in eligibility status'
+};
+
+const updateRecruitTypeMapping = {
+    [fieldMapping.passiveToActive]: 'Passive To Active',
+    [fieldMapping.activeToPassive]: 'Active To Passive',
+    [fieldMapping.noChangeNeeded]: 'No Change Needed'
+};
+
 /**
  * Maps participant data to human-readable text based on concept ID.
  * Primary use: participant results table.
@@ -243,7 +363,6 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
     let stateValue = '';
     if (rawValue === null || rawValue === undefined) {
         stateValue = participant?.state?.[conceptID];
-        if (stateValue) console.log('stateValue', stateValue);
     }
 
     // Handle cases based on conceptID
@@ -285,30 +404,13 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
 
         // Verification Status
         case fieldMapping.verifiedFlag: {
-            const statusMap = {
-                [fieldMapping.notYetVerified]: 'Not Yet Verified',
-                [fieldMapping.outreachTimedout]: 'Out Reach Timed Out',
-                [fieldMapping.verified]: 'Verified',
-                [fieldMapping.cannotBeVerified]: 'Can Not Be Verified',
-                [fieldMapping.duplicate]: 'Duplicate'
-            };
-            return statusMap[rawValue] ?? (rawValue ? 'Unknown Status' : '');
+            return verificationStatusMapping[rawValue] ?? (rawValue ? 'Unknown Status' : '');
         }
 
         // Participation Status
         case fieldMapping.participationStatus: {
             if (rawValue === '') return 'No Refusal';
-            const statusMap = {
-                [fieldMapping.noRefusal]: 'No Refusal',
-                [fieldMapping.refusedSome]: 'Refused Some',
-                [fieldMapping.refusedAll]: 'Refused All',
-                [fieldMapping.revokeHIPAAOnly]: 'Revoke HIPAA Only',
-                [fieldMapping.withdrewConsent]: 'Withdrew Consent',
-                [fieldMapping.destroyDataStatus]: 'Destroy Data',
-                [fieldMapping.deceased]: 'Deceased',
-                [fieldMapping.dataDestroyed]: 'Data Destroyed'
-            };
-            return statusMap[rawValue] ?? 'ERROR';
+            return participationStatusMapping[rawValue] ?? 'ERROR';
         }
 
         // Survey Status
@@ -316,11 +418,7 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         case fieldMapping.mreStatusFlag1:
         case fieldMapping.lawStatusFlag1:
         case fieldMapping.sasStatusFlag1: {
-            const statusMap = {
-                [fieldMapping.submitted1]: 'Submitted',
-                [fieldMapping.started1]: 'Started'
-            };
-            return statusMap[rawValue] ?? 'Not Started';
+            return surveyStatusMapping[rawValue] ?? 'Not Started';
         }
 
         // Refusal Flags (nested)
@@ -347,34 +445,17 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
 
         // Study ID
         case 'studyId':
-            console.log('studyId', participant?.state?.studyId);
-            console.log('studyId', participant?.['state']?.['studyId']);
             return participant?.state?.studyId ?? '';
 
         // Site reported age
         case fieldMapping.siteReportedAge: {
-            const ageMap = {
-                [fieldMapping.ageRange1]: '30-34',
-                [fieldMapping.ageRange2]: '35-39',
-                [fieldMapping.ageRange3]: '40-45',
-                [fieldMapping.ageRange4]: '46-50',
-                [fieldMapping.ageRange5]: '51-55',
-                [fieldMapping.ageRange6]: '56-60',
-                [fieldMapping.ageRange7]: '61-65',
-                [fieldMapping.ageRange8]: '66-70',
-            };
-            return ageMap[stateValue] ?? (stateValue ? 'ERROR' : '');
+            return ageRangeMapping[stateValue] ?? (stateValue ? 'ERROR' : '');
         }
 
         // Site reported sex
         case fieldMapping.siteReportedSex:
         case fieldMapping.sanfordReportedSex: {
-            const sexMap = {
-                [fieldMapping.female]: 'Female',
-                [fieldMapping.male]: 'Male'
-            };
-            console.log('sexMap[stateValue]', sexMap[stateValue]);
-            return sexMap[stateValue] ?? (stateValue ? 'Unavailable/Unknown' : '');
+            return sexMapping[stateValue] ?? (stateValue ? 'Unavailable/Unknown' : '');
         }
 
         // Site reported race
@@ -382,39 +463,7 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         case fieldMapping.sanfordReportedRace:
         case fieldMapping.henryFReportedRace:
         case fieldMapping.bswhReportedRaceEthnicity: {
-            const raceMap = {
-
-                [fieldMapping.white]: 'White',
-                [fieldMapping.other]: 'Other',
-                
-                // Sanford
-                [fieldMapping.africanAmericanSH]: 'African American',
-                [fieldMapping.americanIndianSH]: 'American Indian or Alaskan Native',
-                [fieldMapping.asianSH]: 'Asian',
-                [fieldMapping.whiteSH]: 'Caucasian/White',
-                [fieldMapping.hispanicLBSH]: 'Hispanic/Latino/Black',
-                [fieldMapping.hispanicLDSH]: 'Hispanic/Latino/Declined',
-                [fieldMapping.hispanicLWSH]: 'Hispanic/Latino/White',
-                [fieldMapping.nativeHawaiianSH]: 'Native Hawaiian/Pacific Islander',
-                [fieldMapping.nativeHawaiianPISH]: 'Pacific Islander',
-                [fieldMapping.blankSH]: 'Blank',
-                [fieldMapping.declinedSH]: 'Declined',
-
-                // HFH
-                [fieldMapping.africanAmericanHF]: 'African American',
-                [fieldMapping.whiteHF]: 'Caucasian/White',
-                [fieldMapping.otherHF]: 'Other',
-
-                // BSWH
-                [fieldMapping.whiteNonHispanic]: 'White non-Hispanic',
-                [fieldMapping.blackNonHispanic]: 'Black non-Hispanic',
-                [fieldMapping.hispanicLatino]: 'Hispanic/Latino',
-                [fieldMapping.asian]: 'Asian',
-                [fieldMapping.americanIndianOrAlaskanNative]: 'American Indian or Alaskan Native',
-                [fieldMapping.nativeHawaiianOrOtherPacificIslander]: 'Native Hawaiian or Other Pacific Islander',
-                [fieldMapping.multiRacial]: 'Multi-racial',
-            };
-            return raceMap[stateValue] ?? (stateValue ? 'Unavailable/Unknown' : '');
+            return raceMapping[stateValue] ?? (stateValue ? 'Unavailable/Unknown' : '');
         }
 
         // Pre-consent
@@ -426,28 +475,10 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         // Campaign and reinvitation types
         case fieldMapping.campaignType:
         case fieldMapping.reinvitationCampaignType: {
-            const typeMap = {
-                [fieldMapping.random]: 'Random',
-                [fieldMapping.screeningAppointment]: 'Screening Appointment',
-                [fieldMapping.nonScreeningAppointment]: 'Non Screening Appointment',
-                [fieldMapping.demographicGroup]: 'Demographic Group',
-                [fieldMapping.agingOutofStudy]: 'Aging Out of Study',
-                [fieldMapping.geographicGroup]: 'Geographic Group',
-                [fieldMapping.postScreeningAppointment]: 'Post Screening Appointment',
-                [fieldMapping.technologyAdapters]: 'Technology Adapters',
-                [fieldMapping.lowIncomeAreas]: 'Low Income Areas/Health Professional Shortage Areas',
-                [fieldMapping.researchRegistry]: 'Research Registry',
-                [fieldMapping.popUp]: 'Pop up',
-                [fieldMapping.noneOftheAbove]: 'None of the Above',
-                [fieldMapping.other]: 'Other'
-            };
-
             if (rawValue) {
-                console.log('typeMap[rawValue]', typeMap[rawValue]);
-                return typeMap[rawValue] ?? 'Unavailable/Unknown';
+                return campaignTypeMapping[rawValue] ?? 'Unavailable/Unknown';
             } else if (stateValue) {
-                console.log('typeMap[stateValue]', typeMap[stateValue]);
-                return typeMap[stateValue] ?? 'Unavailable/Unknown';
+                return campaignTypeMapping[stateValue] ?? 'Unavailable/Unknown';
             } else {
                 return '';
             }
@@ -455,25 +486,12 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
 
         // @deprecated. Enrollment status. Data exists in prod.
         case fieldMapping.enrollmentStatus: {
-            const statusMap = {
-                [fieldMapping.signedInEnrollment]: 'Signed In',
-                [fieldMapping.consentedEnrollment]: 'Consented',
-                [fieldMapping.userProfileCompleteEnrollment]: 'User Profile Complete',
-                [fieldMapping.verificationCompleteEnrollment]: 'Verification Complete',
-                [fieldMapping.cannotBeVerifiedEnrollment]: 'Cannot Be Verified',
-                [fieldMapping.verifiedMimimallyEnrolledEnrollment]: 'Verified Mimimally Enrolled',
-                [fieldMapping.fullyEnrolledEnrollment]: 'Fully Enrolled'
-            };
-            return statusMap[rawValue] ?? '';
+            return enrollmentStatusMapping[rawValue] ?? '';
         }
 
         // Preferred Language
         case fieldMapping.preferredLanguage: {
-            const langMap = {
-                [fieldMapping.language.en]: 'English',
-                [fieldMapping.language.es]: 'Spanish'
-            };
-            return langMap[rawValue] ?? '';
+            return preferredLanguageMapping[rawValue] ?? '';
         }
 
         // Verification Method
@@ -483,25 +501,12 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
 
         // Duplicate Types
         case fieldMapping.duplicateType: {
-            const typeMap = {
-                [fieldMapping.notActiveSignedAsPassive]: 'Not Active recruit signed in as Passive recruit',
-                [fieldMapping.alreadyEnrolled]: 'Already Enrolled',
-                [fieldMapping.notActiveSignedAsActive]: 'Not Active recruit signed in as Active recruit',
-                [fieldMapping.passiveSignedAsActive]: 'Passive recruit signed in as Active recruit',
-                [fieldMapping.activeSignedAsPassive]: 'Active recruit signed in as Passive recruit',
-                [fieldMapping.eligibilityStatusChanged]: 'Change in eligibility status'
-            };
-            return typeMap[stateValue] ?? '';
+            return duplicateTypeMapping[stateValue] ?? '';
         }
 
         // Recruitment type updates
         case fieldMapping.updateRecruitType: {
-            const typeMap = {
-                [fieldMapping.passiveToActive]: 'Passive To Active',
-                [fieldMapping.activeToPassive]: 'Active To Passive',
-                [fieldMapping.noChangeNeeded]: 'No Change Needed'
-            };
-            return typeMap[stateValue] ?? (stateValue === undefined || stateValue === null ? '' : 'No Change Needed');
+            return updateRecruitTypeMapping[stateValue] ?? (stateValue === undefined || stateValue === null ? '' : 'No Change Needed');
         }
 
         // Match Status Flags
