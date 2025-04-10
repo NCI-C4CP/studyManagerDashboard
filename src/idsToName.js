@@ -82,7 +82,7 @@ export const recruitmentType = {
     180583933 : 'Inactive'
 }
 
-// Ordered Headers that always appear in the participant results table
+// Ordered headers that always appear in the participant results table
 export const tableHeaderMap = new Map([
     [fieldMapping.fName, 'First Name (UP)'],
     [fieldMapping.mName, 'Middle Name (UP)'],
@@ -115,7 +115,7 @@ export const searchBubbleMap = new Map([
     [fieldMapping.campaignType, 'Campaign'],
     [fieldMapping.signedInFlag, 'Signed-in'],
     [fieldMapping.signinDate, 'D/T First Sign-in'],
-    [fieldMapping.pinEntered, 'Pin Entered'],
+    [fieldMapping.pinEntered, 'PIN Entered'],
     [fieldMapping.noPin, 'No PIN'],
     [fieldMapping.consentFlag, 'Consent Sub'],
     [fieldMapping.consentDate, 'D/T Consent Sub'],
@@ -257,7 +257,6 @@ const sexMapping = {
 };
 
 const raceMapping = {
-
     // Sanford
     [fieldMapping.africanAmericanSH]: 'African American',
     [fieldMapping.americanIndianSH]: 'American Indian or Alaskan Native',
@@ -344,6 +343,7 @@ const updateRecruitTypeMapping = {
  * @param {Object} participant - the fetched participant object.
  * @returns {string} - the mapped text.
  */
+
 export function participantConceptIDToTextMapping(rawValue, conceptID, participant) {
 
     // Handle Object type: display JSON
@@ -373,7 +373,7 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
 
         // Account Email
         case fieldMapping.accountEmail:
-            return rawValue.toString().startsWith('noreply') ? '' : rawValue;
+            return rawValue?.toString().startsWith('noreply') ? '' : rawValue;
 
         // Date Formatting
         case fieldMapping.signinDate:
