@@ -113,7 +113,7 @@ const collectionTime =
     extra: kitStatusStr ? "Kit " + kitStatusStr : "N/A",
   };
 
-  const setting = homeMouthwashData?.[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash
+  const setting = homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash
         ? 'Home'
         : 'Research';
 
