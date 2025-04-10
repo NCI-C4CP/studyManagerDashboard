@@ -541,13 +541,15 @@ export default
     uniqeKitAssemblyId: 687158491,
     kitType: 379252329,
     kitTypeValues: {
-        mouthwash: 390351864
+        mouthwash: 390351864,
+        homeMouthwash: 976461859
     },
     kitStatus: 221592017,
     kitStatusValues: {
         pending: 517216441,
         initialized: 728267588,
         addressPrinted: 849527480,
+        addressUndeliverable: 332067457,
         assigned: 241974920,
         shipped: 277438316,
         received: 375535639

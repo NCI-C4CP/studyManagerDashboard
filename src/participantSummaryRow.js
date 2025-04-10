@@ -92,7 +92,8 @@ const kitStatusCidToString = {
 export const baselineMouthwashSample = (participantModule) => {
   const homeMouthwashData =
     participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwash] || {};
-  const collectionTime =
+const collectionTime =
+    homeMouthwashData?.[fieldMapping.kitReceivedTime] ||
     participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.mouthwashDateTime] ||
     "";
   const [yyyy, mm, dd] = collectionTime.split("T")[0].split("-");
@@ -112,6 +113,10 @@ export const baselineMouthwashSample = (participantModule) => {
     extra: kitStatusStr ? "Kit " + kitStatusStr : "N/A",
   };
 
+  const setting = homeMouthwashData?.[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash
+        ? 'Home'
+        : 'Research';
+
   const baselineMouthwashCollected = participantModule[fieldMapping.mouthwash];
   if (baselineMouthwashCollected === fieldMapping.yes) {
     displayedFields = {
@@ -119,7 +124,7 @@ export const baselineMouthwashSample = (participantModule) => {
       icon: {faIcon: "fa fa-check fa-2x", style: "color: green"},
       status: "Collected",
       date: collectionDate,
-      setting: "Research",
+      setting
     };
   }
 
@@ -130,7 +135,7 @@ export const baselineMouthwashSample = (participantModule) => {
       icon: {faIcon: "fa fa-times fa-2x", style: "color: red"},
       status: "Not Collected",
       date: "N/A",
-      setting: "Home",
+      setting
     };
   }
 
@@ -142,7 +147,7 @@ export const baselineMouthwashSample = (participantModule) => {
       icon: {faIcon: "fa fa-check fa-2x", style: "color: green"},
       status: "Collected",
       date: collectionDate,
-      setting: "Home",
+      setting
     };
   }
 
@@ -164,6 +169,167 @@ export const baselineMouthwashSample = (participantModule) => {
     displayedFields.extra
   );
 };
+
+export const baselineMouthwashR1Sample = (participantModule) => {
+    const homeMouthwashData =
+      participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL1] || {};
+    
+    const collectionTime =
+      homeMouthwashData?.[fieldMapping.kitReceivedTime] ||
+      "";
+    const [yyyy, mm, dd] = collectionTime.split("T")[0].split("-");
+  
+    let collectionDate = "N/A";
+    if (yyyy && mm && dd) {
+      collectionDate = `${mm}/${dd}/${yyyy}`;
+    }
+  
+    const kitStatusStr = kitStatusCidToString[homeMouthwashData[fieldMapping.kitStatus]];
+    let displayedFields = {
+      icon: {faIcon: "fa fa-times fa-2x", style: "color: red"},
+      status: "Not Collected",
+      date: "N/A",
+      setting: "N/A",
+      refused: "N",
+      extra: kitStatusStr ? "Kit " + kitStatusStr : "N/A",
+    };
+
+    const setting = homeMouthwashData?.[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash
+        ? 'Home'
+        : 'Research';
+  
+    const baselineMouthwashCollected = participantModule[fieldMapping.mouthwash];
+    if (baselineMouthwashCollected === fieldMapping.yes) {
+      displayedFields = {
+        ...displayedFields,
+        icon: {faIcon: "fa fa-check fa-2x", style: "color: green"},
+        status: "Collected",
+        date: collectionDate,
+        setting
+      };
+    }
+  
+    const isHomeMouthwash = homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash;
+    if (isHomeMouthwash) {
+      displayedFields = {
+        ...displayedFields,
+        icon: {faIcon: "fa fa-times fa-2x", style: "color: red"},
+        status: "Not Collected",
+        date: "N/A",
+        setting
+      };
+    }
+  
+    const isHomeMouthwashTubeReceived =
+      homeMouthwashData[fieldMapping.kitStatus] === fieldMapping.kitStatusValues.received;
+    if (isHomeMouthwashTubeReceived) {
+      displayedFields = {
+        ...displayedFields,
+        icon: {faIcon: "fa fa-check fa-2x", style: "color: green"},
+        status: "Collected",
+        date: collectionDate,
+        setting
+      };
+    }
+  
+    const refusedMouthwashOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedMouthwash];
+    if (refusedMouthwashOption === fieldMapping.yes) {
+      displayedFields.refused = "Y";
+    }
+  
+    return getTemplateRow(
+      displayedFields.icon.faIcon,
+      displayedFields.icon.style,
+      "Baseline",
+      "Sample",
+      "Mouthwash R1",
+      displayedFields.status,
+      displayedFields.date,
+      displayedFields.setting,
+      displayedFields.refused,
+      displayedFields.extra
+    );
+  };
+
+export const baselineMouthwashR2Sample = (participantModule) => {
+    const homeMouthwashData =
+      participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL2] || {};
+    const collectionTime =
+      homeMouthwashData?.[fieldMapping.kitReceivedTime] ||
+      "";
+    const [yyyy, mm, dd] = collectionTime.split("T")[0].split("-");
+  
+    let collectionDate = "N/A";
+    if (yyyy && mm && dd) {
+      collectionDate = `${mm}/${dd}/${yyyy}`;
+    }
+  
+    const kitStatusStr = kitStatusCidToString[homeMouthwashData[fieldMapping.kitStatus]];
+    let displayedFields = {
+      icon: {faIcon: "fa fa-times fa-2x", style: "color: red"},
+      status: "Not Collected",
+      date: "N/A",
+      setting: "N/A",
+      refused: "N",
+      extra: kitStatusStr ? "Kit " + kitStatusStr : "N/A",
+    };
+
+    const setting = homeMouthwashData?.[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash
+        ? 'Home'
+        : 'Research';
+  
+    const baselineMouthwashCollected = participantModule[fieldMapping.homeMouthwash];
+    if (baselineMouthwashCollected === fieldMapping.yes) {
+      displayedFields = {
+        ...displayedFields,
+        icon: {faIcon: "fa fa-check fa-2x", style: "color: green"},
+        status: "Collected",
+        date: collectionDate,
+        setting
+      };
+    }
+  
+    const isHomeMouthwash = homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash;
+    if (isHomeMouthwash) {
+      displayedFields = {
+        ...displayedFields,
+        icon: {faIcon: "fa fa-times fa-2x", style: "color: red"},
+        status: "Not Collected",
+        date: "N/A",
+        setting
+      };
+    }
+  
+    const isHomeMouthwashTubeReceived =
+      homeMouthwashData[fieldMapping.kitStatus] === fieldMapping.kitStatusValues.received;
+    if (isHomeMouthwashTubeReceived) {
+      displayedFields = {
+        ...displayedFields,
+        icon: {faIcon: "fa fa-check fa-2x", style: "color: green"},
+        status: "Collected",
+        date: collectionDate,
+        setting
+      };
+    }
+  
+    const refusedMouthwashOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedMouthwash];
+    if (refusedMouthwashOption === fieldMapping.yes) {
+      displayedFields.refused = "Y";
+    }
+  
+    return getTemplateRow(
+      displayedFields.icon.faIcon,
+      displayedFields.icon.style,
+      "Baseline",
+      "Sample",
+      "Mouthwash R2",
+      displayedFields.status,
+      displayedFields.date,
+      displayedFields.setting,
+      displayedFields.refused,
+      displayedFields.extra
+    );
+  };
 
 export const baselineBOHSurvey = (participant) => {
     let refusedSurveyOption = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey];

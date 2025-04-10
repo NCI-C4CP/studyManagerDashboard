@@ -3,7 +3,7 @@ import { renderParticipantHeader } from './participantHeader.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey, 
     baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineBloodSample, baselineUrineSample, baselineBiospecSurvey, baselineMenstrualSurvey,
-    baselineMouthwashSample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
+    baselineMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
     baselineExperienceSurvey, cancerScreeningHistorySurvey} from './participantSummaryRow.js';
 import { formatUTCDate, conceptToSiteMapping, pdfCoordinatesMap } from './utils.js';
 
@@ -113,6 +113,12 @@ export const render = (participant) => {
                                 </tr>
                                 <tr class="row-color-sample-dark">
                                     ${baselineMouthwashSample(participant)}
+                                </tr>
+                                <tr class="row-color-sample-light">
+                                    ${baselineMouthwashR1Sample(participant)}
+                                </tr>
+                                <tr class="row-color-sample-dark">
+                                    ${baselineMouthwashR2Sample(participant)}
                                 </tr>
                                 <tr class="row-color-payment">
                                     ${baselinePayment(participant)}
