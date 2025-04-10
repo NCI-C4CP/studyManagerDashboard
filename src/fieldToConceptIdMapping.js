@@ -51,17 +51,34 @@ export default
     "voicemailHome": 187894482,
     "voicemailMobile": 271757434,
     "voicemailOther": 983278853,
+    // Mailing address
     "address1":521824358,
     "address2":442166669,
     "city":703385619,    
     "state":634434746,
     "zip":892050548,
+    // Physical address
     "physicalAddress1":207908218,
     "physicalAddress2":224392018,
     "physicalCity":451993790,    
     "physicalState":187799450,
     "physicalZip":449168732,
     "isPOBox":250235523,
+    // Alternate address
+    "doesAltAddressExist": 646504105,
+    "altAddress1": 284580415,
+    "altAddress2": 728926441,
+    "altCity": 907038282,
+    "altState": 970839481,
+    "altZip": 379899229,
+    "isPOBoxAltAddress": 810747471,
+    // Alternate contact
+    "altContactFirstName": 661719912,
+    "altContactLastName": 801653230,
+    "altContactMobilePhone": 286149234,
+    "altContactHomePhone": 318130543,
+    "altContactEmail": 750097000,
+
     "healthcareProvider":827220437,
     "ssnOnFile": 454067894,
     "timeProfileSubmitted": 430551721,
@@ -493,6 +510,7 @@ export default
     'activeToPassive': 965707001,
     'criteriumNotMet': 539025306,
     'criteriumMet': 427405444,
+    'eligibilityStatusChanged': 696650324,
 
     // refusal auto timestamps
     'refBaselineSurveyTimeStamp': 982105411,
@@ -560,5 +578,24 @@ export default
         notStarted: 972455046,
         started: 615768760,
         completed: 231311385
+    },
+
+    reports: {
+        knownReports: 794047378,
+        physicalActivityReport: 686238347,
+        physicalActivity: {
+            status: 446235715,
+            viewedTS: 749055145,
+            declinedTS: 295732360,
+            aerobicActivity: 449038410,
+            muscleActivity: 205380968,
+            reportTS: 416831581,
+            aerobicActivityNotMeeting: 104593854,
+            aerobicActivityMeeting:  682636404,
+            aerobicActivityExceeding: 948593796
+        },
+        unread: 702641611,
+        viewed: 469323437,
+        declined: 746038746
     }
 };

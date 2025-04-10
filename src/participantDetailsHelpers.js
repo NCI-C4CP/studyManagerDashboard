@@ -98,6 +98,8 @@ export const getFieldValues = (variableValue, conceptId) => {
         [fieldMapping.cellPhone]: formattedPhoneValue,
         [fieldMapping.homePhone]: formattedPhoneValue,
         [fieldMapping.otherPhone]: formattedPhoneValue,
+        [fieldMapping.altContactMobilePhone]: formattedPhoneValue,
+        [fieldMapping.altContactHomePhone]: formattedPhoneValue,
         'Change Login Phone': formattedPhoneValue
     }
 
@@ -124,7 +126,9 @@ export const getImportantRows = (participant, changedOption) => {
     const isOtherPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.otherPhone);
     const coordinatingCenter = localStorage.getItem('coordinatingCenter');
     const helpDesk = localStorage.getItem('helpDesk');
-    const importantRowsArray = [ 
+
+    // Participant Data Rows
+    const participantDataRows = [ 
         { field: fieldMapping.lName,
             label: 'Last Name',
             editable: !isParticipantDataDestroyed,
@@ -230,6 +234,19 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'email',
             isRequired: false
         },
+    ];
+
+    // Mailing Address Rows
+    const mailingAddressRows = [
+        {
+            field: 'Mailing Address',
+            label: 'Mailing Address',
+            editable: false,
+            display: true,
+            validationType: 'none',
+            isRequired: false,
+            isHeading: true,
+        },
         { field: fieldMapping.address1,
             label: 'Mailing Address Line 1',
             editable: !isParticipantDataDestroyed,
@@ -272,6 +289,19 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'permissionSelector',
             isRequired: false
         },
+    ];
+
+    // Physical Address Rows
+    const physicalAddressRows = [
+        {
+            field: 'Physical Address',
+            label: 'Physical Address',
+            editable: false,
+            display: true,
+            validationType: 'none',
+            isRequired: false,
+            isHeading: true,
+        },
         { field: fieldMapping.physicalAddress1,
             label: 'Physical Address Line 1 (if different from mailing address)',
             editable: !isParticipantDataDestroyed,
@@ -307,6 +337,133 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'zip',
             isRequired: false
         },
+    ];
+    
+    // Alternate Address Rows
+    const alternateAddressRows = [
+        {
+            field: 'Alternate Address',
+            label: 'Alternate Address (For any other mailing addresses you have)',
+            editable: false,
+            display: true,
+            validationType: 'none',
+            isRequired: false,
+            isHeading: true,
+        },
+        {
+            field: fieldMapping.altAddress1,
+            label: 'Alternate Address Line 1',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'address',
+            isRequired: false,
+        },
+        {
+            field: fieldMapping.altAddress2,
+            label: 'Alternate Address Line 2',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'address',
+            isRequired: false,
+        },
+        {
+            field: fieldMapping.altCity,
+            label: 'Alternate City',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'text',
+            isRequired: false,
+        },
+        {
+            field: fieldMapping.altState,
+            label: 'Alternate State',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'state',
+            isRequired: false,
+        },
+        {
+            field: fieldMapping.altZip,
+            label: 'Alternate Zip',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'zip',
+            isRequired: false,
+        },
+        {
+            field: fieldMapping.isPOBoxAltAddress,
+            label: 'Alternate Address is PO Box',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'permissionSelector',
+            isRequired: false
+        },
+    ];
+
+    // Alternate Contact Rows
+    const alternateContactRows = [
+        {
+            field: 'Alternate Contact',
+            label: 'Alternate Contact (To help us get in touch with you if we lose contact)',
+            editable: false,
+            display: true,
+            validationType: 'none',
+            isRequired: false,
+            isHeading: true,
+        },
+        {
+            field: fieldMapping.altContactFirstName,
+            label: 'Alternate Contact First Name',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'text',
+            isRequired: false,            
+        },
+        {
+            field: fieldMapping.altContactLastName,
+            label: 'Alternate Contact Last Name',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'text',
+            isRequired: false,
+        },
+        {
+            field: fieldMapping.altContactMobilePhone,
+            label: 'Alternate Contact Mobile Phone',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'phoneNumber',
+            isRequired: false,
+        },
+        {
+            field: fieldMapping.altContactHomePhone,
+            label: 'Alternate Contact Home Phone',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'phoneNumber',
+            isRequired: false,
+        },
+        {
+            field: fieldMapping.altContactEmail,
+            label: 'Alternate Contact Email Address',
+            editable: !isParticipantDataDestroyed,
+            display: true,
+            validationType: 'email',
+            isRequired: false,
+        },
+    ];
+
+    // Birth Date Rows
+    const birthDateRows = [
+        {
+            field: 'Date of Birth',
+            label: 'Date of Birth',
+            editable: false,
+            display: !isParticipantVerified,
+            validationType: 'none',
+            isRequired: false,
+            isHeading: true,
+        },
         { field: fieldMapping.birthMonth,
             label: 'Birth Month',
             editable: !isParticipantDataDestroyed && !isParticipantVerified,
@@ -327,7 +484,20 @@ export const getImportantRows = (participant, changedOption) => {
             display: !isParticipantVerified,
             validationType: 'year',
             isRequired: true
-        } ,
+        },
+    ];
+
+    // Connect ID and Preferred Language Rows
+    const identificationRows = [
+        {
+            field: 'Identification and Language Settings',
+            label: 'Identification and Language Settings',
+            editable: false,
+            display: true,
+            validationType: 'none',
+            isRequired: false,
+            isHeading: true,
+        },
         { field: 'Connect_ID',
             label: 'Connect ID',
             editable: false,
@@ -344,13 +514,15 @@ export const getImportantRows = (participant, changedOption) => {
         },
     ];
 
+    // Authentication Data Rows
     const loginChangeInfoArray = [
         { field: 'Login Update Memo',
-            label: 'Save any User Profile edits before making Login Changes',
+            label: 'Login Settings (Save any profile edits before making login changes)',
             editable: false,
             display: true,
             validationType: 'none',
-            isRequired: false
+            isRequired: false,
+            isHeading: true,
         },
         { field: `Change Login Email`,
             label: 'Email Login',
@@ -366,12 +538,22 @@ export const getImportantRows = (participant, changedOption) => {
         }
     ];
 
+    // Concatenate all rows. Only display login rows for authorized users
     const userLoginEmail = appState.getState().userSession?.email ?? '';
     const permDomains = /(nih.gov|norc.org)$/i;
-    permDomains.test(userLoginEmail.split('@')[1]) &&
-    importantRowsArray.push(...loginChangeInfoArray);
+    const shouldIncludeLoginChangeRows = permDomains.test(userLoginEmail.split('@')[1]);
+    const finalParticipantRows = [
+        ...participantDataRows,
+        ...mailingAddressRows,
+        ...physicalAddressRows,
+        ...alternateAddressRows,
+        ...alternateContactRows,
+        ...birthDateRows,
+        ...identificationRows,
+        ...(shouldIncludeLoginChangeRows ? loginChangeInfoArray : [])
+    ];
 
-    return importantRowsArray; 
+    return finalParticipantRows; 
 };
 
 /**
@@ -834,7 +1016,6 @@ export const participantRefreshError = async (errorMsg) => {
 }
 
 export const refreshParticipantAfterUpdate = async (participant) => {
-    showAnimation();
     localStorage.setItem('participant', JSON.stringify(participant));
     renderParticipantDetails(participant, {});
     appState.setState({unsavedChangesTrack:{saveFlag: false, counter: 0}})
@@ -846,7 +1027,6 @@ export const refreshParticipantAfterUpdate = async (participant) => {
                         <span aria-hidden="true">&times;</span>
                     </button>
                     </div>`
-    hideAnimation();
     alertList.innerHTML = template;
 }
 
@@ -902,7 +1082,9 @@ const forceDataTypesForFirestore = (changedOption) => {
         fieldMapping.voicemailMobile, 
         fieldMapping.voicemailHome, 
         fieldMapping.voicemailOther,
-        fieldMapping.preferredLanguage
+        fieldMapping.preferredLanguage,
+        fieldMapping.isPOBox,
+        fieldMapping.isPOBoxAltAddress
     ];
     
     const fieldsToString = [
@@ -957,7 +1139,7 @@ const getUITextForUpdatedValue = (newValue, conceptIdArray) => {
         return suffixToTextMap.get(parseInt(newValue));
     } else if (conceptIdArray.toString().includes(fieldMapping.preferredLanguage.toString())) {
         return languageToTextMap.get(parseInt(newValue));
-    } else if (conceptIdArray.some(id => [fieldMapping.canWeText.toString(), fieldMapping.voicemailMobile.toString(), fieldMapping.voicemailHome.toString(), fieldMapping.voicemailOther.toString(), fieldMapping.isPOBox.toString()].includes(id.toString()))) {
+    } else if (conceptIdArray.some(id => [fieldMapping.canWeText.toString(), fieldMapping.voicemailMobile.toString(), fieldMapping.voicemailHome.toString(), fieldMapping.voicemailOther.toString(), fieldMapping.isPOBox.toString(), fieldMapping.isPOBoxAltAddress.toString()].includes(id.toString()))) {
         return newValue === fieldMapping.yes.toString() ? "Yes" : "No";
     } else {
         return newValue;
@@ -1261,19 +1443,32 @@ export const submitClickHandler = async (participant, changedOption) => {
         button.addEventListener('click', async (e) => {
             if (Object.keys(changedOption).length === 0) {
                 alert('No changes to submit. No changes have been made. Please update the form and try again if changes are needed.');
-            } else {
+                return;
+            }
+
+            try {
+                showAnimation();
+
                 let { changedUserDataForProfile, changedUserDataForHistory } = findChangedUserDataValues(changedOption, participant);
                 if (firstNameTypes.some(firstNameKey => firstNameKey in changedUserDataForProfile)) changedUserDataForProfile = handleNameField(firstNameTypes, 'firstName', changedUserDataForProfile, participant);
                 if (lastNameTypes.some(lastNameKey => lastNameKey in changedUserDataForProfile)) changedUserDataForProfile = handleNameField(lastNameTypes, 'lastName', changedUserDataForProfile, participant);
                 if (phoneTypes.some(phoneKey => phoneKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllPhoneNoField(changedUserDataForProfile, participant);
                 if (emailTypes.some(emailKey => emailKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllEmailField(changedUserDataForProfile, participant);
-                const isSuccess = processUserDataUpdate(changedUserDataForProfile, changedUserDataForHistory, participant[fieldMapping.userProfileHistory], participant.state.uid, adminEmail, isParticipantVerified);
-                if (isSuccess) {
-                    const updatedParticipant = { ...participant, ...changedUserDataForProfile};
-                    await refreshParticipantAfterUpdate(updatedParticipant);
-                } else {
-                    alert('Error: There was an error processing your changes. Please try again.');
+                
+                const isSuccess = await processUserDataUpdate(changedUserDataForProfile, changedUserDataForHistory, participant[fieldMapping.userProfileHistory], participant.state.uid, adminEmail, isParticipantVerified);
+                if (!isSuccess) {
+                    throw new Error('Error: There was an error processing your changes. Please try again.');
                 }
+
+                const updatedParticipant = { ...participant, ...changedUserDataForProfile };
+                await refreshParticipantAfterUpdate(updatedParticipant);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error: There was an error processing your changes. Please try again.');
+
+            } finally {
+                hideAnimation();
             }
         });
     }
@@ -1404,6 +1599,35 @@ const findChangedUserDataValues = (newUserData, existingUserData) => {
 
     newUserData = cleanPhoneNumber(newUserData);
 
+    const altAddressFields = [
+        fieldMapping.altAddress1,
+        fieldMapping.altAddress2,
+        fieldMapping.altCity,
+        fieldMapping.altState,
+        fieldMapping.altZip
+    ];
+
+    // Check if any alt address fields are being modified. Only proceed with alt address checks if fields are being modified.
+    const isAltAddressModified = altAddressFields.some(field => field in newUserData);
+    if (isAltAddressModified) {
+        // Determine whether the alternate address exists based on the new and existing data
+        const getDoesAltAddressExistValue = (field) => {
+            if (field in newUserData) {
+                return newUserData[field];
+            }
+            return existingUserData[field] || '';
+        };
+
+        // Check if any field has a non-empty value after all updates
+        const hasAltAddressData = altAddressFields.some(field => {
+            const activeAltAddressValue = getDoesAltAddressExistValue(field);
+            return activeAltAddressValue && activeAltAddressValue !== '' && activeAltAddressValue !== 'NA';
+        });
+
+        changedUserDataForProfile[fieldMapping.doesAltAddressExist] =
+            hasAltAddressData ? fieldMapping.yes : fieldMapping.no;
+    }
+
     Object.keys(newUserData).forEach(key => {
         if (newUserData[key] !== existingUserData[key]) {
             changedUserDataForProfile[key] = newUserData[key];
@@ -1525,17 +1749,26 @@ const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
         fieldMapping.voicemailHome,
         fieldMapping.otherPhone,
         fieldMapping.voicemailOther,
+        // Mailing address
         fieldMapping.address1,
         fieldMapping.address2,
         fieldMapping.city,
         fieldMapping.state,
         fieldMapping.zip,
         fieldMapping.isPOBox,
+        // Physical address
         fieldMapping.physicalAddress1,
         fieldMapping.physicalAddress2,
         fieldMapping.physicalCity,
         fieldMapping.physicalState,
-        fieldMapping.physicalZip
+        fieldMapping.physicalZip,
+        // Alternate adress
+        fieldMapping.altAddress1,
+        fieldMapping.altAddress2,
+        fieldMapping.altCity,
+        fieldMapping.altState,
+        fieldMapping.altZip,
+        fieldMapping.isPOBoxAltAddress,
     ];
 
     keys.forEach((key) => {

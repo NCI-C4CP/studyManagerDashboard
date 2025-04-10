@@ -1,3 +1,10 @@
+import en from "../i18n/en.js";
+import es from "../i18n/es.js";
+
+const i18n = {
+    es, en
+};
+
 export const getCurrentTimeStamp = () => {
   const date = new Date(new Date().toISOString());
   const timeStamp = date.toLocaleString('en-US',  {month: 'long'}) + ' ' + date.getDate() + ',' + date.getFullYear() + ' ' + 
@@ -37,6 +44,25 @@ export const formatUTCDate = (participantDate, formatToYearMonthDay) => {
   const day = String(date.getUTCDate()).padStart(2, "0");
 
   return formatToYearMonthDay ? `${year}-${month}-${day}` : `${month}/${day}/${year}`;
+};
+
+/**
+ * Convert  human readable date to ISO8601 date
+ * @param {String} dateString - human readable date
+ * @param {boolean} useEST - If true then use midnight EST otherwise use UTC
+ * @returns {String} - ISO8601 date
+ * 
+*/
+export const convertToISO8601 = (dateString, useEST) => {
+  let dateObj = new Date(dateString);
+  if (useEST) {
+    const formattedString = dateObj.toLocaleString('en-US', { timeZone: 'America/New_York', timeZoneName: 'longOffset' })
+    const matches = formattedString.match(/([+-]\d+):(\d+)$/);
+    if (matches) {
+      dateObj = new Date(dateString+'T00:00:00.000'+matches[0]);
+    }
+  }
+  return dateObj.toISOString();
 };
 
 // Function prevents the user from internal navigation if unsaved changes are present
@@ -186,11 +212,19 @@ export const pdfCoordinatesMap = {
         'Eng': [{x: 90, y: 402}, {x0: 90, y0: 362}, {x1: 110, y1: 322}],
         'Span': [{x: 105, y: 392}, {x0: 105, y0: 352}, {x1: 105, y1: 312}]
       },
+      'V0.06': {
+        'Eng': [{x: 90, y: 402}, {x0: 90, y0: 362}, {x1: 110, y1: 322}],
+        'Span': [{x: 105, y: 392}, {x0: 105, y0: 352}, {x1: 105, y1: 312}]
+      },
       'V1.0': [{x: 90, y: 420}, {x0: 90, y0: 380}, {x1: 110, y1: 340}]
     },
     'HFHS': {
       'V0.02': [{x: 110, y: 380}, {x0: 110, y0: 340}, {x1: 115, y1: 300}],
       'V0.03': {
+        'Eng': [{x: 90, y: 410}, {x0: 90, y0: 370}, {x1: 110, y1: 330}],
+        'Span': [{x: 105, y: 410}, {x0: 105, y0: 370}, {x1: 105, y1: 330}]
+      },
+      'V0.04': {
         'Eng': [{x: 90, y: 410}, {x0: 90, y0: 370}, {x1: 110, y1: 330}],
         'Span': [{x: 105, y: 410}, {x0: 105, y0: 370}, {x1: 105, y1: 330}]
       },
@@ -206,12 +240,20 @@ export const pdfCoordinatesMap = {
         'Eng': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}],
         'Span': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
       },
+      'V0.05': {
+        'Eng': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}],
+        'Span': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
+      },
       'V1.0': [{x: 110, y: 400}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
     },
     'KPGA': {
       'V0.02': [{x: 110, y: 400}, {x0: 110, y0: 360}, {x1: 110, y1: 320}],
       'V0.03': [{x: 110, y: 375}, {x0: 110, y0: 335}, {x1: 110, y1: 295}],
       'V0.04': {
+        'Eng': [{x: 110, y: 375}, {x0: 110, y0: 335}, {x1: 110, y1: 295}],
+        'Span': [{x: 110, y: 375}, {x0: 110, y0: 335}, {x1: 110, y1: 295}]
+      },
+      'V0.05': {
         'Eng': [{x: 110, y: 375}, {x0: 110, y0: 335}, {x1: 110, y1: 295}],
         'Span': [{x: 110, y: 375}, {x0: 110, y0: 335}, {x1: 110, y1: 295}]
       },
@@ -223,11 +265,19 @@ export const pdfCoordinatesMap = {
         'Eng': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}],
         'Span': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
       },
+      'V0.04': {
+        'Eng': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}],
+        'Span': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
+      },
       'V1.0': [{x: 110, y: 370}, {x0: 110, y0: 330}, {x1: 110, y1: 290}]
     },
     'KPNW': {
       'V0.02': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}],
       'V0.03': {
+        'Eng': [{x: 110, y: 390}, {x0: 110, y0: 350}, {x1: 110, y1: 310}],
+        'Span': [{x: 110, y: 390}, {x0: 110, y0: 350}, {x1: 110, y1: 310}]
+      },
+      'V0.04': {
         'Eng': [{x: 110, y: 390}, {x0: 110, y0: 350}, {x1: 110, y1: 310}],
         'Span': [{x: 110, y: 390}, {x0: 110, y0: 350}, {x1: 110, y1: 310}]
       },
@@ -239,11 +289,19 @@ export const pdfCoordinatesMap = {
         'Eng': [{x: 110, y: 405}, {x0: 110, y0: 365}, {x1: 115, y1: 325}],
         'Span': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
       },
+      'V0.04': {
+        'Eng': [{x: 110, y: 405}, {x0: 110, y0: 365}, {x1: 115, y1: 325}],
+        'Span': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
+      },
       'V1.0': [{x: 110, y: 420}, {x0: 110, y0: 380}, {x1: 115, y1: 345}]
     },
     'Sanford': {
       'V0.02': [{x: 120, y: 407}, {x0: 105, y0: 365}, {x1: 110, y1: 325}],
       'V0.03': {
+        'Eng': [{x: 120, y: 730}, {x0: 120, y0: 690}, {x1: 120, y1: 655}],
+        'Span': [{x: 120, y: 200}, {x0: 120, y0: 160}, {x1: 120, y1: 125}]
+      },
+      'V0.04': {
         'Eng': [{x: 120, y: 730}, {x0: 120, y0: 690}, {x1: 120, y1: 655}],
         'Span': [{x: 120, y: 200}, {x0: 120, y0: 160}, {x1: 120, y1: 125}]
       },
@@ -256,10 +314,18 @@ export const pdfCoordinatesMap = {
         'Eng': [ {x: 110, y: 410} , {x0: 110, y0: 370} , {x1: 115, y1: 330} ],
         'Span': [ {x: 110, y: 410} , {x0: 110, y0: 370} , {x1: 115, y1: 330} ]
       },
+      'V0.06': {
+        'Eng': [ {x: 110, y: 410} , {x0: 110, y0: 370} , {x1: 115, y1: 330} ],
+        'Span': [ {x: 110, y: 410} , {x0: 110, y0: 370} , {x1: 115, y1: 330} ]
+      },
       'V1.0': [{x: 110, y: 380} , {x0: 110, y0: 342} , {x1: 115, y1: 305}]
     },
     'BSWH': {
         'V0.02': {
+          'Eng': [{x: 110, y: 405} , {x0: 110, y0: 365} , {x1: 115, y1: 328}],
+          'Span': [{x: 110, y: 405} , {x0: 110, y0: 365} , {x1: 115, y1: 328}]
+        },
+        'V0.03': {
           'Eng': [{x: 110, y: 405} , {x0: 110, y0: 365} , {x1: 115, y1: 328}],
           'Span': [{x: 110, y: 405} , {x0: 110, y0: 365} , {x1: 115, y1: 328}]
         }
@@ -354,3 +420,102 @@ export const pdfCoordinatesMap = {
   }
 }
 
+/**
+ * Returns the translation for a given language or the fall back language of english
+ * 
+ * @param {String[]} keys 
+ * @param {String} language 
+ * @param {int} keyIndex 
+ * @param {Object} translationObj 
+ * @returns String
+ */
+export const translateText = (keys, language, keyIndex, translationObj) => { 
+  if (!language) {
+      language = 'en';
+  }
+
+  if (typeof keys === 'string') {
+      keys = keys.split('.');
+  }
+
+  if (!keyIndex) {
+      keyIndex = 0;
+  }
+
+  if (!translationObj) {
+      //Fallback to english if the language doesn't exist
+      translationObj = i18n[language] ? i18n[language] : i18n['en'];
+  }
+  if ((keyIndex + 1) === keys.length) {
+      if (!translationObj[keys[keyIndex]]) {
+          if (language !== 'en') {
+              //If the languange is not English then return english as the fallback
+              return translateText(keys, 'en');
+          } else {
+              return null;
+          }
+      } else {
+          return translationObj[keys[keyIndex]];
+      }
+  } else {
+      if (translationObj[keys[keyIndex]]) {
+          let nextIndexKey = keyIndex + 1;
+          return translateText(keys, language, nextIndexKey, translationObj[keys[keyIndex]]);
+      } else {
+          if (language !== 'en') {
+              //If the language is not english then return english as the fallback
+              return translateText(keys, 'en');
+          } else {
+              //IF the langauge is already english then retun null because there is no matching translation  
+              return null;
+          }
+      }
+  }
+}
+
+/**
+ * Returns a formatted Date based on the language and options
+ * 
+ * @param {string} timestamp
+ * @param {string} language
+ * @param {Object} options - Same as Intl.DateTimeFormat() constructor
+ */
+export const translateDate = (timestamp, language, options) => {
+  if (!language) {
+    language = 'en';
+  }
+
+  let date;
+  if (typeof timestamp === 'string' && /^[0-9]+$/.test(timestamp)) {
+      date = new Date(parseInt(timestamp, 10));
+  } else if (typeof timestamp === 'number') {
+      date = new Date(timestamp);
+  } else {
+      date = new Date(Date.parse(timestamp));
+  }
+  return date.toLocaleDateString(language, options);
+}
+
+/* Checks for each code point whether the given font supports it.
+If not, tries to remove diacritics from said code point.
+If that doesn't work either, replaces the unsupported character with '?'. */
+export function replaceUnsupportedPDFCharacters(string, font) {
+  if (!string) return;
+  const charSet = font.getCharacterSet()
+  const codePoints = []
+  for (const codePointStr of string) {
+      const codePoint = codePointStr.codePointAt(0);
+      if (!charSet.includes(codePoint)) {
+          const withoutDiacriticsStr = codePointStr.normalize('NFD').replace(/\p{Diacritic}/gu, '');
+          const withoutDiacritics = withoutDiacriticsStr.charCodeAt(0);
+          if (charSet.includes(withoutDiacritics)) {
+              codePoints.push(withoutDiacritics);
+          } else {
+              codePoints.push('?'.codePointAt(0));
+          }
+      } else {
+          codePoints.push(codePoint)
+      }
+  }
+  return String.fromCodePoint(...codePoints);
+ }

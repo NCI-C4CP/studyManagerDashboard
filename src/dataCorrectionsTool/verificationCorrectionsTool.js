@@ -1,6 +1,6 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner } from '../utils.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner, formatUTCDate, convertToISO8601 } from '../utils.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 import { keyToVerificationStatus, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
 import { appState } from '../stateManager.js';
@@ -56,6 +56,14 @@ export const renderVerificationCorrections = (participant) => {
                                             <li><a class="dropdown-item" data-cid=${fieldMapping.duplicate} id="dup">Duplicate</a></li>
                                         </ul>
                                     </div>
+                                    <div id="verificationDateContainer" style="display: none">
+                                        <h6><b>Verification Date</b></h6>
+                                        <p>- Current Verification Date: <b>${participant[fieldMapping.verficationDate] ? formatUTCDate(participant[fieldMapping.verficationDate]) : 'N/A'}</b></p>
+                                        <div class="d-flex">
+                                            <p>- Set Date of Verification:</p>
+                                             <input type="date" id="verificationDateInput" class="form-control"  max="9999-12-31" style="margin-left: 1rem; width:14rem;">
+                                        </div>
+                                    </div>
                                     <h6><b>Duplicate Type</b></h6>
                                     <span style="font-size: 12px;"><b>Note: Duplicate type variable should only be updated with prior approval from CCC.</b></span>
                                     <p>- Current Duplicate Type: <b>${keyToDuplicateType[participant['state'][fieldMapping.duplicateType]] || ``}</b></p>
@@ -71,6 +79,7 @@ export const renderVerificationCorrections = (participant) => {
                                             <li><a class="dropdown-item" data-cid=${fieldMapping.notActiveSignedAsPassive} id="notActivSgndPssve">Not Active recruit signed in as Passive recruit</a></li>
                                             <li><a class="dropdown-item" data-cid=${fieldMapping.notActiveSignedAsActive} id="notActivSgndActiv">Not Active recruit signed in as an Active recruit</a></li>
                                             <li><a class="dropdown-item" data-cid=${fieldMapping.alreadyEnrolled} id="alrEnrlld">Participant already enrolled</a></li>
+                                             ${participant[fieldMapping.verifiedFlag] === fieldMapping.cannotBeVerified ? `<li><a class="dropdown-item" data-cid=${fieldMapping.eligibilityStatusChanged} id="eligChanged">Change in eligibility status</a></li>` : ''}
                                         </ul>
                                     </div>
                                     <h6><b>Recruit Type</b></h6>
@@ -134,6 +143,7 @@ const dropdownTrigger = (buttonId, menuId, response) => {
                 const selectedOption = getDataAttributes(e.target);
                 if (buttonId === 'dropdownVerification') {
                     disableDuplicateTypeBtn(selectedOption);
+                    enableVerificationDate(selectedOption, response);
                     response[fieldMapping.verifiedFlag] = selectedOption.cid === 'select' ? selectedOption.cid : parseInt(selectedOption.cid)
                 }
                 if (buttonId === 'dropdownDuplicateType') {
@@ -151,6 +161,30 @@ const dropdownTrigger = (buttonId, menuId, response) => {
 const disableDuplicateTypeBtn = (selectedOption) => {
     const dropdownDuplicateTypeBtn = document.getElementById('dropdownDuplicateType');
     dropdownDuplicateTypeBtn.disabled = selectedOption.cid !== fieldMapping.duplicate.toString();
+}
+
+const enableVerificationDate = (selectedOption, response) => {
+
+    const verificationDateContainer = document.getElementById('verificationDateContainer');
+    if (selectedOption.cid == fieldMapping.verified.toString() || selectedOption.cid == fieldMapping.cannotBeVerified.toString()) {
+        verificationDateContainer.style.display = 'block';
+        const verificationDateInput = document.getElementById('verificationDateInput');
+        const currentDate = new Date().toLocaleDateString("en-CA", {timeZone:"America/New_York"}); // MM/DD/YYYY
+        verificationDateInput.value = currentDate;
+        verificationDateInput.max = currentDate;
+        response[fieldMapping.verficationDate] = convertToISO8601(currentDate, true);
+        verificationDateInput.removeEventListener('change', handleDatePickerChange);
+        verificationDateInput.addEventListener('change', handleDatePickerChange);
+    } else {
+        verificationDateContainer.style.display = 'none';
+        delete response[fieldMapping.verficationDate];
+    }
+}
+
+const handleDatePickerChange = (e) => {
+    const selectedOptions = appState.getState().correctedOptions;
+    selectedOptions[fieldMapping.verficationDate] = convertToISO8601(e.target.value, true);
+    appState.setState({'correctedOptions': selectedOptions})
 }
 
 export const viewOptionsSelected = (participant) => {
@@ -208,6 +242,9 @@ const renderSelectedOptions = (selectedOptions) => {
     let template = ``
     if (selectedOptions[fieldMapping.verifiedFlag]) {
         template += `- Update Verification Type : ${keyToVerificationStatus[selectedOptions[fieldMapping.verifiedFlag]]} <br />`
+    }
+    if (selectedOptions[fieldMapping.verficationDate]) {
+        template += `- Update Verification Date : ${formatUTCDate(selectedOptions[fieldMapping.verficationDate])} <br />`
     }
     if (selectedOptions[`state.${fieldMapping.duplicateType}`]) {
         template += `- Update Duplicate Type : ${keyToDuplicateType[selectedOptions[`state.${fieldMapping.duplicateType}`]] || selectedOptions[`state.${fieldMapping.duplicateType}`]} <br />`

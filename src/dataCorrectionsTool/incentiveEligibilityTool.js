@@ -2,7 +2,7 @@ import fieldMapping from '../fieldToConceptIdMapping.js';
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner, formatUTCDate } from '../utils.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner, formatUTCDate, convertToISO8601 } from '../utils.js';
 import { findParticipant } from '../participantLookup.js';
 
 let participantPaymentRound = null;
@@ -219,11 +219,6 @@ const setIncentiveEligibleInputDefaultValue = () => {
         dateOfEligibilityInput.value = currentDate;
         dateOfEligibilityInput.max = currentDate;
     }
-};
-
-const convertToISO8601 = (dateString) => {
-    const date = new Date(dateString);
-    return date.toISOString();
 };
 
 /**
