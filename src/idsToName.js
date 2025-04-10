@@ -31,7 +31,7 @@ export const keyToShortNameObj =
     300267574 : "KP HI",
     327912200 : "KP GA",
     472940358: "Baylor Scott & White Health",
-    1000: "All"
+    1000: "All Sites"
 
 }
 
