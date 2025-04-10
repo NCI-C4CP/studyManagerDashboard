@@ -186,7 +186,7 @@ const bindEventRequestReplacementButton = (connectId, token) => {
                         <button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     `
                 body.innerHTML = `<div>
-                    Please wait while we refresh the participant and navigate to the participant details page.
+                    Please wait while we refresh the participant information and navigate to the participant details page.
                 </div>`
 
                 // Notify user of success and refresh the participant data
