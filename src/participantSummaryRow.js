@@ -93,7 +93,7 @@ export const baselineMouthwashSample = (participantModule) => {
   const homeMouthwashData =
     participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwash] || {};
 const collectionTime =
-    homeMouthwashData?.[fieldMapping.kitReceivedTime] ||
+    homeMouthwashData[fieldMapping.kitReceivedTime] ||
     participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.mouthwashDateTime] ||
     "";
   const [yyyy, mm, dd] = collectionTime.split("T")[0].split("-");
