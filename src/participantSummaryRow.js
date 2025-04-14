@@ -82,7 +82,9 @@ export const baselineUrineSample = (participantModule) => {
 }
 
 const kitStatusCidToString = {
+  728267588: "Initialized",
   517216441: "Pending",
+  332067457: "Address Undeliverable",
   849527480: "Address Printed",
   241974920: "Assigned",
   277438316: "Shipped",
@@ -93,8 +95,7 @@ const mouthwashSampleTemplate = (participantModule, path, itemName) => {
     const homeMouthwashData =
         participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[path] || {};
     const collectionTime =
-        homeMouthwashData[fieldMapping.kitReceivedTime] ||
-        (path === fieldMapping.bioKitMouthwash && participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.mouthwashDateTime]) ||
+        participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.mouthwashDateTime] ||
         "";
 
     const [yyyy, mm, dd] = collectionTime.split("T")[0].split("-");
@@ -104,58 +105,26 @@ const mouthwashSampleTemplate = (participantModule, path, itemName) => {
         collectionDate = `${mm}/${dd}/${yyyy}`;
     }
     
-    const kitStatusStr = kitStatusCidToString[homeMouthwashData[fieldMapping.kitStatus]];
-    let displayedFields = {
-        icon: {faIcon: "fa fa-times fa-2x", style: "color: red"},
-        status: "Not Collected",
-        date: "N/A",
-        setting: "N/A",
-        refused: "N",
-        extra: kitStatusStr ? "Kit " + kitStatusStr : "N/A",
-    };
-    
+    const kitStatusCid = homeMouthwashData[fieldMapping.kitStatus];
+    const kitStatusStr = kitStatusCidToString[kitStatusCid];
     const setting = homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash
             ? 'Home'
             : 'Research';
-    
-    const baselineMouthwashCollected = participantModule[fieldMapping.mouthwash];
-    if (baselineMouthwashCollected === fieldMapping.yes) {
-        displayedFields = {
-        ...displayedFields,
-        icon: {faIcon: "fa fa-check fa-2x", style: "color: green"},
-        status: "Collected",
-        date: collectionDate,
-        setting
-        };
-    }
-    
-    const isHomeMouthwash = homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.mouthwash;
-    if (isHomeMouthwash) {
-        displayedFields = {
-        ...displayedFields,
-        icon: {faIcon: "fa fa-times fa-2x", style: "color: red"},
-        status: "Not Collected",
-        date: "N/A",
-        setting
-        };
-    }
-    
-    const isHomeMouthwashTubeReceived =
-        homeMouthwashData[fieldMapping.kitStatus] === fieldMapping.kitStatusValues.received;
-    if (isHomeMouthwashTubeReceived) {
-        displayedFields = {
-        ...displayedFields,
-        icon: {faIcon: "fa fa-check fa-2x", style: "color: green"},
-        status: "Collected",
-        date: collectionDate,
-        setting
-        };
-    }
-    
+    const isCollected = setting === "Home" ?
+        kitStatusCid === fieldMapping.kitStatusValues.received :
+        participantModule[fieldMapping.mouthwash] === fieldMapping.yes;
     const refusedMouthwashOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedMouthwash];
-    if (refusedMouthwashOption === fieldMapping.yes) {
-        displayedFields.refused = "Y";
-    }
+
+    let displayedFields = {
+        icon: isCollected ? 
+            {faIcon: "fa fa-check fa-2x", style: "color: green"} :
+            {faIcon: "fa fa-times fa-2x", style: "color: red"},
+        status: isCollected ? "Collected" : "Not Collected",
+        date: isCollected ? collectionDate : "N/A",
+        setting: isCollected ? setting : "N/A",
+        refused: refusedMouthwashOption ? "Y" : "N",
+        extra: kitStatusStr ? "Kit " + kitStatusStr : "N/A",
+    };
     
     return getTemplateRow(
         displayedFields.icon.faIcon,
