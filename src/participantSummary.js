@@ -13,8 +13,7 @@ const { PDFDocument, StandardFonts } = PDFLib;
 document.body.scrollTop = document.documentElement.scrollTop = 0;
 
 export const renderParticipantSummary = (participant, reports) => {
-    const isParent = localStorage.getItem('isParent');
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
+    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantSummaryBtn').classList.add('active');
     if (participant !== null) {

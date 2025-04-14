@@ -16,8 +16,7 @@ const conceptIdToPaymentRoundMapping = {
 
 export const setupIncentiveEligibilityToolPage = (participant) => { 
     if (participant !== undefined) {
-        const isParent = localStorage.getItem('isParent');
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
+        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
         removeActiveClass('nav-link', 'active');
         document.getElementById('participantVerificationBtn').classList.add('active');
         mainContent.innerHTML = renderIncentiveEligibilityToolContent(participant);

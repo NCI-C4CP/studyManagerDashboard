@@ -1,5 +1,7 @@
 import en from "../i18n/en.js";
 import es from "../i18n/es.js";
+import { nameToKeyObj } from './idsToName.js';
+import { appState } from './stateManager.js';
 
 const i18n = {
     es, en
@@ -518,7 +520,83 @@ export function replaceUnsupportedPDFCharacters(string, font) {
       }
   }
   return String.fromCodePoint(...codePoints);
- }
+}
+
+export const sortByKey = (arr, key) => {
+	return arr.sort((a, b) => {
+		if (a[key] > b[key]) return 1;
+		if (b[key] > a[key]) return -1;
+		return 0;
+	});
+}
+
+/**
+ * Fetches participant data based on the provided query parameters.
+ * 
+ * @async
+ * @function getParticipants
+ * @returns {Promise<Object>} A promise that resolves to the API response containing:
+ *   - code: HTTP status code (200 for success)
+ *   - data: Array of participant objects
+ *   - message: Response message (if applicable)
+ * @throws {Error} If the API request fails
+ */
+export const getParticipants = async () => {
+	
+	const { participantTypeFilter, siteCode, startDateFilter, endDateFilter, cursorHistory, pageNumber, direction } = appState.getState();
+  appState.setState({direction: ``});
+
+	const params = new URLSearchParams();
+	params.append('api', 'getParticipants');
+  params.append('limit', 50);
+	params.append('type', participantTypeFilter || 'all');
+
+	if (siteCode && siteCode !== nameToKeyObj.allResults) {
+		params.append('site', siteCode);
+	}
+
+	if (startDateFilter) {
+		params.append('from', `${startDateFilter}T00:00:00.000Z`);
+	}
+
+	if (endDateFilter) {
+		params.append('to', `${endDateFilter}T23:59:59.999Z`);
+	}
+
+  if (pageNumber > 1) {
+      params.append('cursor', cursorHistory[pageNumber - 2]);
+  }
+
+	const url = `${baseAPI}/dashboard?${params.toString()}`;
+	
+	try {
+		const token = await getIdToken();
+		const response = await fetch(url, {
+			method: 'GET',
+			headers: {
+				Authorization: `Bearer ${token}`,
+			}
+		});
+
+    const responseObj = await response.json();
+
+    if (responseObj.cursor) {
+      if (direction === 'previous') cursorHistory.pop();
+      
+      cursorHistory[pageNumber - 1] = responseObj.cursor;
+      appState.setState({cursorHistory});
+    }
+
+		return responseObj;
+	}
+	catch (error) {
+		console.error("Error fetching participants:", error);
+		return error;
+	}
+}
+
+export const resetPagination = () => { appState.setState({cursorHistory: [], pageNumber: 1});}
+export const resetFilters = () => { appState.setState({participantTypeFilter: '', siteCode: '', startDateFilter: '', endDateFilter: ''});}
 
 // Ensure that the date is a valid ISO 8601 string
 export function timestampValidation(iso8601String) {

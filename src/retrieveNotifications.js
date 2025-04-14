@@ -4,8 +4,7 @@ import { getSchemaHtmlStr, handleEmailPreview } from './storeNotifications.js';
 import { appState } from './stateManager.js';
 
 export const renderRetrieveNotificationSchema = async (showDrafts = false) => {
-  const isParent = localStorage.getItem("isParent");
-  document.getElementById("navBarLinks").innerHTML = dashboardNavBarLinks(isParent);
+  document.getElementById("navBarLinks").innerHTML = dashboardNavBarLinks();
   removeActiveClass("nav-link", "active");
   const notificationsAnchor = document.getElementById("notifications");
   notificationsAnchor && notificationsAnchor.classList.add("active");
