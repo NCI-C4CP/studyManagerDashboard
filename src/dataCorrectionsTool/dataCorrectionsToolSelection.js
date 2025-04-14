@@ -3,8 +3,7 @@ import { renderParticipantHeader } from '../participantHeader.js';
 
 export const setupDataCorrectionsSelectionToolPage = (participant) => {
     if (participant !== undefined) {
-        const isParent = localStorage.getItem('isParent')
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
+        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
         removeActiveClass('nav-link', 'active');
         document.getElementById('participantVerificationBtn').classList.add('active');
         mainContent.innerHTML = renderDataCorrectionsSelectionContent(participant);        

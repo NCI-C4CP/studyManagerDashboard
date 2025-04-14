@@ -8,7 +8,8 @@ export const renderNavBarLinks = () => {
     `;
 }
 
-export const dashboardNavBarLinks = (isParent) => {
+export const dashboardNavBarLinks = () => {
+    const isParent = localStorage.getItem('isParent');
     const coordinatingCenter = localStorage.getItem('coordinatingCenter');
     const helpDesk = localStorage.getItem('helpDesk');
     return `

@@ -1,18 +1,16 @@
 import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
-import { renderTable, filterdata, filterBySiteKey, renderData, addEventFilterData, activeColumns } from './participantCommons.js';
+import { renderTable, filterdata, filterBySiteKey, renderData, activeColumns } from './participantCommons.js';
 import { internalNavigatorHandler, getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls } from './utils.js';
 import { nameToKeyObj } from './idsToName.js';
 
 export function renderParticipantLookup(){
-    const isParent = localStorage.getItem('isParent')
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
+    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantLookupBtn').classList.add('active');
     localStorage.removeItem("participant");
     let counter = 0;
     internalNavigatorHandler(counter)
     mainContent.innerHTML = renderParticipantSearch();
-    renderLookupSiteDropdown();
     addEventSearch();
     addEventSearchId();
     triggerLookup();
@@ -54,7 +52,7 @@ export function renderParticipantSearch() {
                                 <label class="col-form-label search-label">Email</label>
                                 <input class="form-control" type="email" id="email" placeholder="Enter Email"/>
                             </div>
-                            <div class="form-group dropdown" id="siteDropdownLookup" hidden>
+                            <div class="form-group dropdown" id="siteDropdownLookup" ${localStorage.getItem('dropDownstatusFlag') === 'false' ? `hidden` : ``}>
                                 <label class="col-form-label search-label">Site Preference </label> &nbsp;
                                 <button class="btn btn-primary btn-lg dropdown-toggle" type="button" id="dropdownSites" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     Filter by Site
@@ -216,7 +214,6 @@ export const performSearch = async (query, sitePref, failedElem) => {
             }
         }
         mainContent.innerHTML = renderTable(filterRawData, 'participantLookup');
-        addEventFilterData(filterRawData);
         renderData(filterRawData);
         activeColumns(filterRawData);
         const element = document.getElementById('back-to-search');
@@ -244,12 +241,6 @@ export const findParticipant = async (query) => {
         }
     });
     return await response.json();
-}
-
-const renderLookupSiteDropdown = () => {
-    let dropDownstatusFlag = localStorage.getItem('dropDownstatusFlag');
-    if (dropDownstatusFlag === 'true') {
-        document.getElementById("siteDropdownLookup").hidden = false }
 }
 
 export const renderLookupResultsTable = () => {
