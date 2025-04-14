@@ -113,6 +113,8 @@ export const searchBubbleMap = new Map([
     [fieldMapping.henryFReportedRace, 'HFH Reported Race'],
     [fieldMapping.bswhReportedRaceEthnicity, 'BSWH Reported R/E'],
     [fieldMapping.campaignType, 'Campaign'],
+    [fieldMapping.reinvitationCampaignType, 'Reinvitation Type'],
+    [fieldMapping.reinvitationDate, 'D/T Reinvitation'],
     [fieldMapping.signedInFlag, 'Signed-in'],
     [fieldMapping.signinDate, 'D/T First Sign-in'],
     [fieldMapping.pinEntered, 'PIN Entered'],
@@ -212,8 +214,6 @@ export const searchBubbleMap = new Map([
     [fieldMapping.dateDataDestroyRequested, 'D/T Data Dest Req'],
     [fieldMapping.dateDataDestroy, 'D/T Data Dest Signed'],
     [fieldMapping.suspendContact, 'Suspend Contact Until D/T'],
-    [fieldMapping.reinvitationCampaignType, 'Reinvitation Type'],
-    [fieldMapping.reinvitationDate, 'D/T Reinvitation'],
 ]);
 
 const verificationStatusMapping = {
