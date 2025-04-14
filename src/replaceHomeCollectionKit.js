@@ -142,7 +142,7 @@ const render = (participant) => {
             </div>
             ${renderParticipantHeader(participant)}
             <div><h2>Home Mouthwash Replacement Kits</h1></div>
-            ${renderReplacementScreen()}
+            ${resetTextTemplate}
             ${renderBackToSearchDivAndButton()}
             
         `;
