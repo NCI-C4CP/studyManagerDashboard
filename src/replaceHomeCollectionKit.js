@@ -19,7 +19,22 @@ export const renderReplacementKitRequest = (participant) => {
 const renderReplacementScreen = (kitAlreadyReceived) => {
     return `<div>Request a Home Mouthwash Replacement Kit</div>
                 <div><span class="text-danger">NOTE:</span> Make sure you have verified the mailing address with the participant before entering this request and have updated the address in the User Profile if needed.
-</div>${kitAlreadyReceived ? '<div><span class="text-danger">A home mouthwash kit for this participant has already been received. Please confirm the need for a replacement kit before clicking Request Replacement below.</span></div>' : ''}<div><button id="requestReplacementKitBtn" class="btn btn-primary">Request Replacement</button></div>`;
+</div>${
+    kitAlreadyReceived ? 
+        '<div><span class="text-danger">A home mouthwash kit for this participant has already been received. Please confirm the need for a replacement kit before clicking Request Replacement below.</span></div>' : 
+        ''
+    }
+    <div>
+        <button
+            id="requestReplacementKitBtn"
+            class="btn btn-primary"
+            data-toggle="modal" 
+            data-target="#modalSuccess"
+            name="modalResetParticipant"
+        >
+            Request Replacement
+        </button>
+    </div>`;
 }
 
 const render = (participant) => {
@@ -60,6 +75,10 @@ const render = (participant) => {
                         resetTextTemplate = '<div>This participant is not eligible for a second replacement home mouthwash kit</div>';
                         break;
                     }
+                    case fieldMapping.kitStatusValues.addressUndeliverable: {
+                        resetTextTemplate = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
+                        break;
+                    }
                     case fieldMapping.kitStatusValues.initialized:
                     case fieldMapping.kitStatusValues.addressPrinted:
                     case fieldMapping.kitStatusValues.assigned: {
@@ -82,6 +101,10 @@ const render = (participant) => {
                     case null:
                     case fieldMapping.kitStatusValues.pending: {
                         resetTextTemplate = '<div>This participant is not yet eligible for a home mouthwash kit</div>';
+                        break;
+                    }
+                    case fieldMapping.kitStatusValues.addressUndeliverable: {
+                        resetTextTemplate = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
                         break;
                     }
                     case fieldMapping.kitStatusValues.initialized:
@@ -109,9 +132,17 @@ const render = (participant) => {
         template += `
             <div id="root" > 
             <div id="alert_placeholder"></div>
+            <div class="modal fade" id="modalSuccess" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                    <div class="modal-content sub-div-shadow">
+                        <div class="modal-header" id="modalHeader"></div>
+                        <div class="modal-body" id="modalBody"></div>
+                    </div>
+                </div>
+            </div>
             ${renderParticipantHeader(participant)}
             <div><h2>Home Mouthwash Replacement Kits</h1></div>
-            ${resetTextTemplate}
+            ${renderReplacementScreen()}
             ${renderBackToSearchDivAndButton()}
             
         `;
@@ -144,13 +175,26 @@ const bindEventRequestReplacementButton = (connectId, token) => {
         requestReplacementButton.addEventListener('click', async () => {
             try {
                 showAnimation();
+
                 await requestReplacementKit(connectId);
+
+                const header = document.getElementById('modalHeader');
+                const body = document.getElementById('modalBody');  
+                header.innerHTML = `
+                        <h5>Success! Replacement requested.</h5>
+                        <button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    `
+                body.innerHTML = `<div>
+                    Please wait while we refresh the participant information and navigate to the participant details page.
+                </div>`
+
                 // Notify user of success and refresh the participant data
                 await refreshParticipantAfterReplacement(token);
                 hideAnimation();
             } catch(err) {
                 console.error('err', err);
                 alert('Error: There was an error requesting a replacement. Please try again.');
+                hideAnimation();
             }
             
 
@@ -159,20 +203,20 @@ const bindEventRequestReplacementButton = (connectId, token) => {
 
 }
 
+const closeModal = () => {
+    const modalClose = document.getElementById('modalSuccess');
+    modalClose.querySelector('#closeModal').click();
+};
+
 const refreshParticipantAfterReplacement = async (token) => {
     try {
         let participant = await reloadParticipantData(token);
         let changedOption = {};
         // Navigate to the participant details page after 3 seconds
-        renderParticipantDetails(participant, changedOption);
-        let alertList = document.getElementById('alert_placeholder');
-        const template = `<div class="alert alert-warning alert-dismissible fade show" role="alert">
-                        Success! Replacement requested.
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                        </div>`
-        alertList.innerHTML = template;
+        setTimeout(() => {
+            closeModal();
+            window.location.href = '#participantDetails';
+        }, 3000);
     } catch (err) {
         console.error('err', err);
         alert('The replacement kit was successfully requested, but refreshing the participant information failed. Participant data displayed may be stale.');
