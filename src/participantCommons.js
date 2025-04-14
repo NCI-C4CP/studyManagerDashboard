@@ -285,7 +285,7 @@ export const reRenderMainTable = async () => {
     showAnimation();
 
     const response = await getParticipants();
-    const data = sortByKey(response.data, '827220437');
+    const data = sortByKey(response.data, fieldMapping.healthcareProvider);
     
     hideAnimation();
 

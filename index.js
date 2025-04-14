@@ -1037,7 +1037,7 @@ const renderParticipants = async (type) => {
 
     appState.setState({ participantTypeFilter: type, siteCode: `` });
     const response = await getParticipants();
-    const data = sortByKey(response.data, '827220437');
+    const data = sortByKey(response.data, fieldMapping.healthcareProvider);
 
     if (response.code === 200) {
 

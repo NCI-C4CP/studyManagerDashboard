@@ -528,8 +528,6 @@ export const getParticipants = async () => {
   }
 
 	const url = `${baseAPI}/dashboard?${params.toString()}`;
-	// const url = `http://localhost:8080/dashboard?${params.toString()}`;
-	console.log(url);
 	
 	try {
 		const token = await getIdToken();
