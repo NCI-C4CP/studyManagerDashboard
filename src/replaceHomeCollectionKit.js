@@ -61,6 +61,11 @@ const render = (participant) => {
             (!mailingAddressLineOne || poBoxRegex.test(mailingAddressLineOne))
         ) {
             resetTextTemplate = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
+        } else if (participant[fieldMapping.withdrawConsent] == fieldMapping.yes
+        ) {
+            resetTextTemplate = `<div>Participant has withdrawn from the study.</div>`;
+        } else if ( participant[fieldMapping.participantDeceased] == fieldMapping.yes) {
+            resetTextTemplate = `<div>Participant is deceased.</div>`;
         } else {
             if (participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL2]) {
                 // If two replacements, they are out of replacement kits; prevent further.
