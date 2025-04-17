@@ -92,6 +92,8 @@ const kitStatusCidToString = {
 };
 
 const mouthwashSampleTemplate = (participantModule, path, itemName) => {
+    // Initial kits have some specific behavior vs. replacement kits
+    const isInitialKit = path === fieldMapping.bioKitMouthwash;
     const homeMouthwashData =
         participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[path] || {};
     const collectionTime =
@@ -109,11 +111,14 @@ const mouthwashSampleTemplate = (participantModule, path, itemName) => {
     const kitStatusStr = kitStatusCidToString[kitStatusCid];
     const setting = homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash
             ? 'Home'
-            : 'Research';
-    const isCollected = setting === "Home" ?
+            // Only initial kits can be research; replacement kits are by definition home collections
+            : (isInitialKit ? 'Research' : 'N/A');
+    const isCollected = homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash ?
         kitStatusCid === fieldMapping.kitStatusValues.received :
-        participantModule[fieldMapping.mouthwash] === fieldMapping.yes;
-    const refusedMouthwashOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedMouthwash];
+        // Only initial kits can be research; replacement kits are by definition home collections,
+        // so the participantModule result here only applies to initial kits
+        participantModule[fieldMapping.mouthwash] === fieldMapping.yes && path === fieldMapping.bioKitMouthwash;
+    const refusedMouthwashOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedMouthwash] === fieldMapping.yes;
 
     let displayedFields = {
         icon: isCollected ? 
@@ -122,7 +127,7 @@ const mouthwashSampleTemplate = (participantModule, path, itemName) => {
         status: isCollected ? "Collected" : "Not Collected",
         date: isCollected ? collectionDate : "N/A",
         setting: isCollected ? setting : "N/A",
-        refused: refusedMouthwashOption ? "Y" : "N",
+        refused: isInitialKit ? (refusedMouthwashOption ? "Y" : "N") : "N/A",
         extra: kitStatusStr ? "Kit " + kitStatusStr : "N/A",
     };
     
