@@ -272,15 +272,16 @@ export const reRenderMainTable = async () => {
 
     showAnimation();
 
+    const mainContent = document.getElementById('mainContent');
+    const type = appState.getState().participantTypeFilter;
+
     const response = await getParticipants();
     const data = sortByKey(response.data, fieldMapping.healthcareProvider);
     
     hideAnimation();
 
-    if(response.code === 200 && data.length > 0) {
+    if(response.code === 200) {
         if (data.length > 0) {
-            const mainContent = document.getElementById('mainContent');
-            const type = appState.getState().participantTypeFilter;
 
             mainContent.innerHTML = renderTable(data, type);
             renderData(data, type);
