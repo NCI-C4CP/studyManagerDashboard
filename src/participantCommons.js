@@ -272,15 +272,16 @@ export const reRenderMainTable = async () => {
 
     showAnimation();
 
+    const mainContent = document.getElementById('mainContent');
+    const type = appState.getState().participantTypeFilter;
+
     const response = await getParticipants();
     const data = sortByKey(response.data, fieldMapping.healthcareProvider);
     
     hideAnimation();
 
-    if(response.code === 200 && data.length > 0) {
+    if(response.code === 200) {
         if (data.length > 0) {
-            const mainContent = document.getElementById('mainContent');
-            const type = appState.getState().participantTypeFilter;
 
             mainContent.innerHTML = renderTable(data, type);
             renderData(data, type);
@@ -319,10 +320,10 @@ const paginationTemplate = () => {
                 </button>
                 
                 <span id="currentPageNumber" class="page-item text-primary px-4 m-0 flex-grow-1" style="min-width:120px; text-align:center;">
-                    Page: ${appState.getState().pageNumber}
+                    Page: ${pageNumber}
                 </span>
                 
-                <button id="nextLink" class="btn page-item flex-grow-1" ${cursorHistory.length === 0 ? `disabled` : ``} style="border-left:1px solid #dee2e6; min-width:120px; text-align:center;">
+                <button id="nextLink" class="btn page-item flex-grow-1" ${cursorHistory[pageNumber - 1] ? `` : `disabled`} style="border-left:1px solid #dee2e6; min-width:120px; text-align:center;">
                     Next&nbsp;
                     <i class="fa fa-arrow-right" aria-hidden="true"></i>
                 </button>
