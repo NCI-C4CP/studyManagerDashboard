@@ -384,6 +384,9 @@ const transformDataForCharts = (siteData) => {
     modulesNone: modulesNoneMetrics,
     ssn: ssnMetrics,
     biospecimen: biospecimenMetrics,
+    allCollections: allCollectionsMetrics,
+    clinicalCollections: clinicalCollectionsMetrics,
+    researchCollections: researchCollectionsMetrics,
   } = siteData;
 
   const recruitsCount = filterRecruits(recruitsCountMetrics);
@@ -422,6 +425,7 @@ const transformDataForCharts = (siteData) => {
     biospecimenMetrics,
     activeVerificationStatus.verified + passiveVerificationStatus.verified
   );
+  const collectionStats = filterCollectionMetrics(allCollectionsMetrics, clinicalCollectionsMetrics, researchCollectionsMetrics);
 
   return {
     activeRecruitsFunnel,
@@ -441,6 +445,7 @@ const transformDataForCharts = (siteData) => {
     ssnStats,
     optOutsStats,
     biospecimenStats,
+    collectionStats
   };
 };
 
@@ -721,6 +726,30 @@ const filterSsnMetrics = (participantsSsnMetrics, activeVerifiedParticipants, pa
     currentWorflowObj.ssnHalfFlagCounter = ssnHalfFlagCounter;
     currentWorflowObj.verifiedParticipants = verifiedParticipants;
     return currentWorflowObj; 
+}
+
+const filterCollectionMetrics = (allCollectionsMetrics, clinicalCollectionsMetrics, researchCollectionsMetrics) => {
+    let allCollections = 0;
+    let researchCollections = 0;
+    let clinicalCollections = 0;
+
+    if (Array.isArray(allCollectionsMetrics)) {
+        allCollections = allCollectionsMetrics.reduce((prev, current) => {
+            return prev += current.verfiedPts;
+        }, allCollections);
+    }
+    if (Array.isArray(researchCollectionsMetrics)) {
+        researchCollections = researchCollectionsMetrics.reduce((prev, current) => {
+            return prev += current.verfiedPts;
+        }, researchCollections);
+    }
+    if (Array.isArray(allCollectionsMetrics)) {
+        clinicalCollections = clinicalCollectionsMetrics.reduce((prev, current) => {
+            return prev += current.verfiedPts;
+        }, clinicalCollections);
+    }
+
+    return {allCollections, researchCollections, clinicalCollections};
 }
 
 const filterRecruitsFunnel = (data, recruit) => {
