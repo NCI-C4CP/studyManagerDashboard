@@ -1,5 +1,28 @@
 export const renderAllCharts = (inputData) => {
     const {activeRecruitsFunnel, passiveRecruitsFunnel, totalRecruitsFunnel, activeCurrentWorkflow, passiveCurrentWorkflow, totalCurrentWorkflow, genderStats, raceStats, ageStats, activeVerificationStatus, passiveVerificationStatus, denominatorVerificationStatus, recruitsCount, modulesStats, ssnStats, optOutsStats, biospecimenStats, collectionStats} = inputData;
+    
+
+    const mainContent = document.getElementById('mainContent');
+    const metricsCards = metricsCardsView({
+      activeRecruits: recruitsCount.activeCount,
+      verifiedParticipants: activeVerificationStatus.verified + passiveVerificationStatus.verified,
+      collectionStats
+    });
+    mainContent.appendChild(metricsCards);
+
+    const reportsLinkTemplate = `
+    <div class="row">
+        <div class = "col-lg-12" style="text-align: center">
+            Connect Operational and Biospecimen Weekly Metrics Reports are available on Box here: <a href="https://nih.app.box.com/folder/183923726461" target="_blank">Connect Metrics Reports</a>
+        </div>
+    </div>
+    `
+
+    const tempDiv= document.createElement('div');
+    tempDiv.innerHTML = reportsLinkTemplate;
+    mainContent.append(...tempDiv.children);
+
+    /** THIS has been commented out because of the requested removal in issue 1041.  I didn't delete the work yet because I wanted to let the end users use the new dashboard first before removing the work entirely */
     /*const chartsLayoutHTML = `
     <div class="row">
         <div class = "col-lg-4 charts">
@@ -69,17 +92,9 @@ export const renderAllCharts = (inputData) => {
     </div>
     `;*/
 
-    const mainContent = document.getElementById('mainContent');
-    const metricsCards = metricsCardsView({
-      activeRecruits: recruitsCount.activeCount,
-      verifiedParticipants: activeVerificationStatus.verified + passiveVerificationStatus.verified,
-      collectionStats
-    });
-    mainContent.appendChild(metricsCards);
-
-    // const tempDiv= document.createElement('div');
-    // tempDiv.innerHTML = chartsLayoutHTML;
-    // mainContent.append(...tempDiv.children);
+    // const tempChartsDiv= document.createElement('div');
+    // tempChartsDiv.innerHTML = chartsLayoutHTML;
+    // mainContent.append(...tempChartsDiv.children);
 
 //    renderAgeMetrics(ageStats, 'ageMetrics');
 //    renderRaceMetrics(raceStats, 'raceMetrics');
@@ -99,7 +114,7 @@ export const renderAllCharts = (inputData) => {
 }
 
 const metricsCardsView = ({activeRecruits, verifiedParticipants, collectionStats}) => {
-    const template = `
+    const row1Template = `
     <div class="metrics-card">
       <div class="card-top"></div>
       <div class="metrics-value">${activeRecruits}</div>
@@ -112,10 +127,12 @@ const metricsCardsView = ({activeRecruits, verifiedParticipants, collectionStats
       <div class="metrics-value">${verifiedParticipants}</div>
         <p class="metrics-value-description">Verified Participants</p>
     </div>
+    `;
+    const row2Template = `
     <div class="metrics-card">
       <div class="card-top"></div>
       <div class="metrics-value">${collectionStats.allCollections}</div>
-        <p class="metrics-value-description">Total of Participants with Baseline Samples Collected</p>
+        <p class="metrics-value-description">Participants with Baseline Samples Collected</p>
     </div>
     <div class="metrics-card">
       <div class="card-top"></div>
@@ -128,10 +145,16 @@ const metricsCardsView = ({activeRecruits, verifiedParticipants, collectionStats
         <p class="metrics-value-description">Research Collections</p>
     </div>
     `;
-    const rowDiv = document.createElement("div");
-    rowDiv.className = "row d-flex justify-content-center";
-    rowDiv.innerHTML = template;
-    return rowDiv;
+    const rows = document.createElement('div');
+    const row1Div = document.createElement("div");
+    row1Div.className = "row d-flex justify-content-center";
+    row1Div.innerHTML = row1Template;
+    rows.appendChild(row1Div);
+    const row2Div = document.createElement("div");
+    row2Div.className = "row d-flex justify-content-center";
+    row2Div.innerHTML = row2Template;
+    rows.appendChild(row2Div);
+    return rows;
  };
 
 const renderLabel = (count, recruitType) => {
