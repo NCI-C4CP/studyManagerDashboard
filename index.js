@@ -749,7 +749,6 @@ const filterSsnMetrics = (participantsSsnMetrics, activeVerifiedParticipants, pa
 }
 
 const filterCollectionMetrics = (allCollectionsMetrics, clinicalCollectionsMetrics, researchCollectionsMetrics) => {
-    console.log(allCollectionsMetrics, clinicalCollectionsMetrics, researchCollectionsMetrics);
     let allCollections = 0;
     let researchCollections = 0;
     let clinicalCollections = 0;
