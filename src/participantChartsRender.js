@@ -1,6 +1,6 @@
 export const renderAllCharts = (inputData) => {
-    const {activeRecruitsFunnel, passiveRecruitsFunnel, totalRecruitsFunnel, activeCurrentWorkflow, passiveCurrentWorkflow, totalCurrentWorkflow, genderStats, raceStats, ageStats, activeVerificationStatus, passiveVerificationStatus, denominatorVerificationStatus, recruitsCount, modulesStats, ssnStats, optOutsStats, biospecimenStats} = inputData;
-    const chartsLayoutHTML = `
+    const {activeRecruitsFunnel, passiveRecruitsFunnel, totalRecruitsFunnel, activeCurrentWorkflow, passiveCurrentWorkflow, totalCurrentWorkflow, genderStats, raceStats, ageStats, activeVerificationStatus, passiveVerificationStatus, denominatorVerificationStatus, recruitsCount, modulesStats, ssnStats, optOutsStats, biospecimenStats, collectionStats} = inputData;
+    /*const chartsLayoutHTML = `
     <div class="row">
         <div class = "col-lg-4 charts">
             <div class="col-lg-12 sub-div-shadow viz-div" id="funnelChart">${renderLabel(recruitsCount.activeCount, "Active")}</div>
@@ -67,39 +67,38 @@ export const renderAllCharts = (inputData) => {
             <div class="col-lg-12 sub-div-shadow viz-div" id="biospecimenMetrics"></div>
         </div>
     </div>
-    `;
+    `;*/
 
     const mainContent = document.getElementById('mainContent');
     const metricsCards = metricsCardsView({
       activeRecruits: recruitsCount.activeCount,
-      passiveRecruits: recruitsCount.passiveCount,
       verifiedParticipants: activeVerificationStatus.verified + passiveVerificationStatus.verified,
-      allModulesBlood: modulesStats.allModulesBlood,
+      collectionStats
     });
     mainContent.appendChild(metricsCards);
 
-    const tempDiv= document.createElement('div');
-    tempDiv.innerHTML = chartsLayoutHTML;
-    mainContent.append(...tempDiv.children);
+    // const tempDiv= document.createElement('div');
+    // tempDiv.innerHTML = chartsLayoutHTML;
+    // mainContent.append(...tempDiv.children);
 
-   renderAgeMetrics(ageStats, 'ageMetrics');
-   renderRaceMetrics(raceStats, 'raceMetrics');
-   renderSexMetrics(genderStats, 'sexMetrics');
-   renderActiveFunnelChart(activeRecruitsFunnel, 'funnelChart')
-   renderActiveBarChart(activeCurrentWorkflow, 'barChart');
-   renderActiveOptouts(optOutsStats, recruitsCount.activeCount, 'activeOptouts');
-   renderPassiveFunnelChart(passiveRecruitsFunnel, 'passiveFunnelChart');
-   renderPassiveBarChart(passiveCurrentWorkflow, 'passiveBarChart');
-   renderTotalFunnelChart(totalRecruitsFunnel, 'totalFunnelChart');
-   renderTotalCurrentWorkflow(totalCurrentWorkflow, 'totalBarChart');
-   renderActiveVerificationStatus(activeVerificationStatus, denominatorVerificationStatus, 'activeVerificationStatus');
-   renderPassiveVerificationStatus(passiveVerificationStatus, denominatorVerificationStatus, 'passiveVerificationStatus');
-   renderModuleChart(modulesStats, 'moduleMetrics');
-   renderSsnChart(ssnStats, 'ssnMetrics');
-   renderBiospecimenChart(biospecimenStats, ssnStats.verifiedParticipants, 'biospecimenMetrics');
+//    renderAgeMetrics(ageStats, 'ageMetrics');
+//    renderRaceMetrics(raceStats, 'raceMetrics');
+//    renderSexMetrics(genderStats, 'sexMetrics');
+//    renderActiveFunnelChart(activeRecruitsFunnel, 'funnelChart')
+//    renderActiveBarChart(activeCurrentWorkflow, 'barChart');
+//    renderActiveOptouts(optOutsStats, recruitsCount.activeCount, 'activeOptouts');
+//    renderPassiveFunnelChart(passiveRecruitsFunnel, 'passiveFunnelChart');
+//    renderPassiveBarChart(passiveCurrentWorkflow, 'passiveBarChart');
+//    renderTotalFunnelChart(totalRecruitsFunnel, 'totalFunnelChart');
+//    renderTotalCurrentWorkflow(totalCurrentWorkflow, 'totalBarChart');
+//    renderActiveVerificationStatus(activeVerificationStatus, denominatorVerificationStatus, 'activeVerificationStatus');
+//    renderPassiveVerificationStatus(passiveVerificationStatus, denominatorVerificationStatus, 'passiveVerificationStatus');
+//    renderModuleChart(modulesStats, 'moduleMetrics');
+//    renderSsnChart(ssnStats, 'ssnMetrics');
+//    renderBiospecimenChart(biospecimenStats, ssnStats.verifiedParticipants, 'biospecimenMetrics');
 }
 
-const metricsCardsView = ({activeRecruits, passiveRecruits, verifiedParticipants, allModulesBlood}) => {
+const metricsCardsView = ({activeRecruits, verifiedParticipants, collectionStats}) => {
     const template = `
     <div class="metrics-card">
       <div class="card-top"></div>
@@ -112,18 +111,23 @@ const metricsCardsView = ({activeRecruits, passiveRecruits, verifiedParticipants
       <div class="card-top"></div>
       <div class="metrics-value">${verifiedParticipants}</div>
         <p class="metrics-value-description">Verified Participants</p>
-      <p class="ratio-value">
-      <span class="hovertext" data-hover="out of Active and Passive Recruits">      
-          Response Ratio:</span>
-          ${activeRecruits + passiveRecruits === 0 || verifiedParticipants === 0 ? 0 : `${(verifiedParticipants / (activeRecruits + passiveRecruits) * 100).toFixed(1)}%`}
-      </p>
     </div>
     <div class="metrics-card">
       <div class="card-top"></div>
-      <div class="metrics-value">${allModulesBlood}</div>
-        <p class="metrics-value-description"><span class="hovertext" data-hover="All 4 Initial Survey Sections + Blood Collection">Verified Participants who Completed Baseline Survey and Blood Sample</span></p>
-        <p class="ratio-value">Completion Ratio: ${verifiedParticipants === 0 || allModulesBlood === 0 ? 0 : `${(allModulesBlood / verifiedParticipants * 100).toFixed(1)}%`}</p>
-    </div>`;
+      <div class="metrics-value">${collectionStats.allCollections}</div>
+        <p class="metrics-value-description">Total of Participants with Baseline Samples Collected</p>
+    </div>
+    <div class="metrics-card">
+      <div class="card-top"></div>
+      <div class="metrics-value">${collectionStats.clinicalCollections}</div>
+        <p class="metrics-value-description">Clinical Collections</p>
+    </div>
+    <div class="metrics-card">
+      <div class="card-top"></div>
+      <div class="metrics-value">${collectionStats.researchCollections}</div>
+        <p class="metrics-value-description">Research Collections</p>
+    </div>
+    `;
     const rowDiv = document.createElement("div");
     rowDiv.className = "row d-flex justify-content-center";
     rowDiv.innerHTML = template;
