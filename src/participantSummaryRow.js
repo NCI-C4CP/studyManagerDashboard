@@ -97,8 +97,14 @@ const mouthwashSampleTemplate = (participantModule, path, itemName) => {
     const homeMouthwashData =
         participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[path] || {};
     const collectionTime =
-        participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.mouthwashDateTime] ||
-        "";
+        (
+            homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash || !isInitialKit ?
+                // Home collection kits, including all replacement kits, use kit received time
+                participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[path]?.[fieldMapping.kitReceivedTime] :
+                // Research kits (initial kits with appropriate kit type) use kit collection time
+                participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.mouthwashDateTime]
+        )
+        || "";
 
     const [yyyy, mm, dd] = collectionTime.split("T")[0].split("-");
 
