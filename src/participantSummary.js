@@ -3,7 +3,7 @@ import { renderParticipantHeader } from './participantHeader.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey, 
     baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineBloodSample, baselineUrineSample, baselineBiospecSurvey, baselineMenstrualSurvey,
-    baselineMouthwashSample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
+    baselineMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
     baselineExperienceSurvey, cancerScreeningHistorySurvey, baselinePhysActReport} from './participantSummaryRow.js';
 import { formatUTCDate, conceptToSiteMapping, pdfCoordinatesMap } from './utils.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
@@ -13,8 +13,7 @@ const { PDFDocument, StandardFonts } = PDFLib;
 document.body.scrollTop = document.documentElement.scrollTop = 0;
 
 export const renderParticipantSummary = (participant, reports) => {
-    const isParent = localStorage.getItem('isParent');
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
+    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantSummaryBtn').classList.add('active');
     if (participant !== null) {
@@ -115,6 +114,12 @@ export const render = (participant, reports) => {
                                 </tr>
                                 <tr class="row-color-sample-dark">
                                     ${baselineMouthwashSample(participant)}
+                                </tr>
+                                <tr class="row-color-sample-light">
+                                    ${baselineMouthwashR1Sample(participant)}
+                                </tr>
+                                <tr class="row-color-sample-dark">
+                                    ${baselineMouthwashR2Sample(participant)}
                                 </tr>
                                 <tr class="row-color-payment">
                                     ${baselinePayment(participant)}

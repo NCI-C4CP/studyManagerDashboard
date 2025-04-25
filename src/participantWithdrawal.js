@@ -6,8 +6,7 @@ import { renderParticipantWithdrawalLandingPage, viewOptionsSelected, proceedToN
 
 export const renderParticipantWithdrawal = (participant) => {
     if (participant !== undefined) {
-        const isParent = localStorage.getItem('isParent')
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
+        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
         removeActiveClass('nav-link', 'active');
         document.getElementById('participantWithdrawalBtn').classList.add('active');
         mainContent.innerHTML = render(participant);
