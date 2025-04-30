@@ -121,7 +121,7 @@ const triggerLookup = () => {
     let a = document.getElementById('dropdownSites');
     if (dropdownMenuButton) {
         dropdownMenuButton.addEventListener('click', (e) => {
-            a.innerHTML = e.target.textContent;
+            a.innerHTML = escapeHTML(e.target.textContent);
             const t = getDataAttributes(e.target)
             const att = document.getElementById('dropdownSites').setAttribute("data-siteKey", t.sitekey);
         })

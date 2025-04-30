@@ -165,11 +165,12 @@ const renderCategorydDropdown = (categoriesHolder) => {
 const triggerCategories = (originalCategoriesHolder, categoryName) => {
     let a = document.getElementById('dropdownCategories');
     let dropdownMenuButton = document.getElementById('dropdownMenuButtonCategories');
-    let tempCategory = a.innerHTML = categoryName;
+    let tempCategory = a.innerHTML = escapeHTML(categoryName);
     if (dropdownMenuButton) {
         dropdownMenuButton.addEventListener('click', async (e) => {
             if (categoryName === 'Filter by Category' || categoryName === tempCategory) {
-                a.innerHTML = e.target.textContent;
+                const cleanText = escapeHTML(e.target.textContent);
+                a.innerHTML = cleanText;
                 const idToken = await getIdToken();
                 const showDrafts = appState.getState().notification?.showDrafts;
                 const response = await getNotificationSchemas(e.target.textContent, idToken, showDrafts);

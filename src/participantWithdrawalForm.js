@@ -1,5 +1,5 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken } from './utils.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, escapeHTML } from './utils.js';
 import { renderRefusalOptions, renderCauseOptions } from './participantWithdrawalRender.js';
 
 export const renderParticipantWithdrawalLandingPage = () => {
@@ -372,7 +372,7 @@ const optionsHandler = (suspendDate) => {
         </div>
     </div>`
 
-    body.innerHTML = template;
+    body.innerHTML = escapeHTML(template);
     proceedToNextPage(retainOptions, requestedHolder, suspendDate)
 } 
 
