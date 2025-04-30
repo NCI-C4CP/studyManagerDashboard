@@ -119,7 +119,9 @@ export  const renderData = (data, source) => {
     renderDataTable(data)
     addEventShowMoreInfo(data);
     if (source !== 'bubbleFilters') {
-        document.getElementById('paginationContainer').innerHTML = paginationTemplate();
+        if (source) {
+            document.getElementById('paginationContainer').innerHTML = paginationTemplate();
+        }
 
         addEventPagination();
         addEventActivePassiveFilter();
