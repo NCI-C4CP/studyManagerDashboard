@@ -314,11 +314,11 @@ export const viewOptionsSelected = () => {
     const a = document.getElementById('nextFormPage');
         if (a) {
             a.addEventListener('click',  (  ) => { 
-                const UPMonth = document.getElementById('UPMonth').value;
-                const UPDay = document.getElementById('UPDay').value;
-                const UPYear = document.getElementById('UPYear').value;
+                const UPMonth = escapeHTML(document.getElementById('UPMonth').value);
+                const UPDay = escapeHTML(document.getElementById('UPDay').value);
+                const UPYear = escapeHTML(document.getElementById('UPYear').value);
 
-                let suspendDate = escapeHTML(UPMonth +'/'+ UPDay +'/'+ UPYear);
+                let suspendDate = UPMonth +'/'+ UPDay +'/'+ UPYear;
                 optionsHandler(suspendDate);
             })
         }
