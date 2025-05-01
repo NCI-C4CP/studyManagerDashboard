@@ -317,36 +317,44 @@ export const viewOptionsSelected = () => {
                 const UPMonth = document.getElementById('UPMonth').value;
                 const UPDay = document.getElementById('UPDay').value;
                 const UPYear = document.getElementById('UPYear').value;
-                let suspendDate = UPMonth +'/'+ UPDay +'/'+ UPYear
+
+                let suspendDate = escapeHTML(UPMonth +'/'+ UPDay +'/'+ UPYear);
                 optionsHandler(suspendDate);
             })
         }
 }
 
 const optionsHandler = (suspendDate) => {
-    let retainOptions = []
-    let requestedHolder = []
+    
     const header = document.getElementById('modalHeader');
     const body = document.getElementById('modalBody');
-    let checkboxes = document.getElementsByName('options');
-    let requestedOption = document.getElementsByName('whoRequested');
-    let skipRequestedBy = false
-    header.innerHTML = `<h5>Options Selected</h5><button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`
-    let template = '<div>'
-    // if (retainOptions.length === 0 || suspendDate === '//' ) { template += `<span><b>Select requested by before proceeding!</b></span> <br />`}
-    checkboxes.forEach(x => { 
-        if (x.checked) {  
-            retainOptions.push(x)
-            retainOptions.forEach(i => i.value === 'Participant Deceased' ? skipRequestedBy = true : skipRequestedBy = false)
-            template += `<span>${x.value}</span> <br />` }
-    })
-    const a = document.getElementById('defaultRequest7');
-    a.value && requestedHolder.push(a)
+    const checkboxes = document.getElementsByName('options');
+    const requestedOption = document.getElementsByName('whoRequested');
+
+    let retainOptions = [];
+    let requestedHolder = [];
+    let skipRequestedBy = false;
+    let template = '<div>';
+
+    header.innerHTML = `<h5>Options Selected</h5><button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
+    
+    checkboxes.forEach(box => { 
+        if (box.checked) {  
+            retainOptions.push(box);
+            retainOptions.forEach(i => i.value === 'Participant Deceased' ? skipRequestedBy = true : skipRequestedBy = false);
+
+            template += `<span>${box.value}</span> <br />` 
+        }
+    });
+
+    const requestOtherText = document.getElementById('defaultRequest7');
+    requestOtherText.value && requestedHolder.push(requestOtherText);
+
     requestedOption.forEach(x => { 
         if (x.checked) {  
-            requestedHolder.push(x)
-            template += `<span>Requested by: ${x.value} </span> ${a && a.value} </br>`
-     }
+            requestedHolder.push(x);
+            template += `<span>Requested by: ${x.value} </span> ${requestOtherText && escapeHTML(requestOtherText.value)} </br>`
+        }
     })
 
     if (suspendDate !== '//') template += `<span>Suspend all contact on case until ${suspendDate}</span> <br />`
@@ -372,7 +380,7 @@ const optionsHandler = (suspendDate) => {
         </div>
     </div>`
 
-    body.innerHTML = escapeHTML(template);
+    body.innerHTML = template;
     proceedToNextPage(retainOptions, requestedHolder, suspendDate)
 } 
 
