@@ -1,5 +1,5 @@
 import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner, escapeHTML } from './utils.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner } from './utils.js';
 import { appState } from './stateManager.js';
 
 const converter = new showdown.Converter();
@@ -597,8 +597,7 @@ export const handleEmailPreview = (emailDivList = null) => {
     if (!emailBody || !emailPreview || emailBody.hasMouseEnterListener) continue;
 
     emailBody.addEventListener("mouseenter", () => {
-      const cleanText = escapeHTML(emailBody.value);
-      emailPreview.innerHTML = converter.makeHtml(cleanText);
+      emailPreview.innerHTML = converter.makeHtml(emailBody.value);
     });
     emailBody.hasMouseEnterListener = true;
   }
