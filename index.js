@@ -475,12 +475,12 @@ const renderSiteKeyList = () => {
 };
 
 const handleSiteSelection = (siteTextContent) => {
-  const siteSelectionButton = document.getElementById("dropdownSites");
-  siteSelectionButton.innerHTML = escapeHTML(siteTextContent);
-  const dropdownMenuButton = document.getElementById("dropdownMenuButtonSites");
-  dropdownMenuButton &&
-    dropdownMenuButton.addEventListener("click", (e) => {
-      reRenderDashboard(e.target.textContent, e.target.dataset.sitekey);
+    const siteSelectionButton = document.getElementById("dropdownSites");
+    siteSelectionButton.innerHTML = siteTextContent;
+
+    const dropdownMenuButton = document.getElementById("dropdownMenuButtonSites");
+    dropdownMenuButton && dropdownMenuButton.addEventListener("click", (e) => {
+        reRenderDashboard(escapeHTML(e.target.textContent), e.target.dataset.sitekey);
     });
 };
 
