@@ -25,8 +25,7 @@ export const createNotificationSchema = async () => {
 };
 
 const renderSchemaPage = async (schemaData = null) => {
-  const isParent = localStorage.getItem("isParent");
-  document.getElementById("navBarLinks").innerHTML = dashboardNavBarLinks(isParent);
+  document.getElementById("navBarLinks").innerHTML = dashboardNavBarLinks();
   removeActiveClass("nav-link", "active");
   document.getElementById("notifications").classList.add("active");
 

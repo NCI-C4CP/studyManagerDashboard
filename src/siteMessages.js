@@ -2,8 +2,7 @@ import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
 import {  baseAPI, humanReadableFromISO, getIdToken } from './utils.js';
 
 export const renderSiteMessages = async () => {
-    const isParent = localStorage.getItem('isParent')
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
+    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
     document.getElementById('siteMessageBtn').classList.add('active');
     mainContent.innerHTML = await render();

@@ -1,6 +1,6 @@
 import { renderParticipantLookup } from './src/participantLookup.js';
 import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, removeActiveClass } from './src/navigationBar.js';
-import { renderTable, filterdata, renderData, addEventFilterData, activeColumns, dropdownTriggerAllParticipants, renderLookupSiteDropdown, reMapFilters } from './src/participantCommons.js';
+import { renderTable, renderData, activeColumns, renderFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
@@ -13,7 +13,7 @@ import { renderSiteMessages } from './src/siteMessages.js';
 import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
-import { internalNavigatorHandler, getIdToken, userLoggedIn, baseAPI, urls } from './src/utils.js';
+import { internalNavigatorHandler, getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, resetPagination, resetFilters } from './src/utils.js';
 import fieldMapping from './src/fieldToConceptIdMapping.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
@@ -105,7 +105,6 @@ window.onload = async () => {
     !isLocalDev && window.DD_RUM && window.DD_RUM.startSessionReplayRecording();
 
     router();
-    await getMappings();
     localStorage.setItem("flags", JSON.stringify(saveFlag));
     localStorage.setItem("counters", JSON.stringify(counter));
     activityCheckController();
@@ -140,13 +139,13 @@ const router = async () => {
     const isParent = localStorage.getItem('isParent')
     if (await userLoggedIn() || localStorage.dashboard) {
         if (route === '#home') renderDashboard();
-        else if (route === '#participants/notyetverified') renderParticipantsNotVerified();
-        else if (route === '#participants/cannotbeverified') renderParticipantsCanNotBeVerified();
-        else if (route === '#participants/verified') renderParticipantsVerified();
-        else if (route === '#participants/all') renderParticipantsAll();
-        else if (route === '#participants/profilenotsubmitted') renderParticipantsProfileNotSubmitted();
-        else if (route === '#participants/consentnotsubmitted') renderParticipantsConsentNotSubmitted();
-        else if (route === '#participants/notsignedin') renderParticipantsNotSignedIn();
+        else if (route === '#participants/notyetverified') renderParticipants('notyetverified');
+        else if (route === '#participants/cannotbeverified') renderParticipants('cannotbeverified');
+        else if (route === '#participants/verified') renderParticipants('verified');
+        else if (route === '#participants/all') renderParticipants('all');
+        else if (route === '#participants/profilenotsubmitted') renderParticipants('profileNotSubmitted');
+        else if (route === '#participants/consentnotsubmitted') renderParticipants('consentNotSubmitted');
+        else if (route === '#participants/notsignedin') renderParticipants('notSignedIn');
         else if (route === '#participantLookup') renderParticipantLookup();
         else if (route === '#participantDetails') {
             if (JSON.parse(localStorage.getItem("participant")) === null) {
@@ -308,7 +307,7 @@ const renderActivityCheck = () => {
 
 const renderDashboard = async () => {
     if (localStorage.dashboard || await getIdToken()) {
-        animation(true);
+        showAnimation();
         const idToken = await getIdToken();
         const isAuthorized = await authorize(idToken);
 
@@ -316,27 +315,25 @@ const renderDashboard = async () => {
             localStorage.setItem('isParent', isAuthorized.isParent)
             localStorage.setItem('coordinatingCenter', isAuthorized.coordinatingCenter)
             localStorage.setItem('helpDesk', isAuthorized.helpDesk)
-            const isParent = localStorage.getItem('isParent');
-            //const coordinatingCenter = localStorage.getItem('coordinatingCenter');
-            document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
+            document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
             removeActiveClass('nav-link', 'active');
             document.getElementById('dashboardBtn').classList.add('active');
             mainContent.innerHTML = '';
             mainContent.innerHTML = renderActivityCheck();
             location.host !== urls.prod ? mainContent.innerHTML = headsupBanner() : ``
-            renderCharts(idToken, isParent);
+            renderCharts(idToken);
         }
         internalNavigatorHandler(counter); // function call to prevent internal navigation when there's unsaved changes
         if (isAuthorized.code === 401) {
             clearLocalStorage();
         }
     } else {
-        animation(false);
+        hideAnimation();
         window.location.hash = '#';
     }
 }
 
-const renderCharts = async (accessToken, isParent) => {
+const renderCharts = async (accessToken) => {
     let statsData = {};
     let currentTime = Date.now();
     const statsDataUpdateTime = appState.getState().statsDataUpdateTime ?? 0;
@@ -356,7 +353,7 @@ const renderCharts = async (accessToken, isParent) => {
     }
 
     localStorage.setItem('dropDownstatusFlag', false);
-    if (isParent === 'true') {
+    if (localStorage.getItem('isParent') === 'true') {
         localStorage.setItem('dropDownstatusFlag', true);
         const siteSelectionRow = document.createElement('div');
         siteSelectionRow.classList = ['row'];
@@ -369,7 +366,7 @@ const renderCharts = async (accessToken, isParent) => {
 
     const transformedData = transformDataForCharts(statsData);
     renderAllCharts(transformedData);
-    animation(false);
+    hideAnimation();
 };
 
 const transformDataForCharts = (siteData) => {
@@ -387,6 +384,9 @@ const transformDataForCharts = (siteData) => {
     modulesNone: modulesNoneMetrics,
     ssn: ssnMetrics,
     biospecimen: biospecimenMetrics,
+    allCollections: allCollectionsMetrics,
+    clinicalCollections: clinicalCollectionsMetrics,
+    researchCollections: researchCollectionsMetrics,
   } = siteData;
 
   const recruitsCount = filterRecruits(recruitsCountMetrics);
@@ -425,6 +425,7 @@ const transformDataForCharts = (siteData) => {
     biospecimenMetrics,
     activeVerificationStatus.verified + passiveVerificationStatus.verified
   );
+  const collectionStats = filterCollectionMetrics(allCollectionsMetrics, clinicalCollectionsMetrics, researchCollectionsMetrics);
 
   return {
     activeRecruitsFunnel,
@@ -444,6 +445,7 @@ const transformDataForCharts = (siteData) => {
     ssnStats,
     optOutsStats,
     biospecimenStats,
+    collectionStats
   };
 };
 
@@ -481,17 +483,6 @@ const handleSiteSelection = (siteTextContent) => {
       reRenderDashboard(e.target.textContent, e.target.dataset.sitekey);
     });
 };
-
-const fetchData = async (siteKey, type) => {
-    const limit = 50;
-    const response = await fetch(`${baseAPI}/dashboard?api=getParticipants&type=${type}&limit=${limit}`, {
-        method: 'GET',
-        headers: {
-            Authorization: "Bearer " + siteKey
-        }
-    });
-    return await response.json();
-}
 
 const retrievePhysicalActivityReport = async (participant) => {
     if (!participant || !participant.state || !participant.state.uid) {
@@ -557,12 +548,6 @@ const authorize = async (siteKey) => {
     return await response.json();
 
 }
-
-export const animation = (status) => {
-    if (status && document.getElementById('loadingAnimation')) document.getElementById('loadingAnimation').style.display = '';
-    if (!status && document.getElementById('loadingAnimation')) document.getElementById('loadingAnimation').style.display = 'none';
-}
-
 
 const filterGenderMetrics = (participantsGenderMetrics, activeVerifiedParticipants, passiveVerifiedParticipants) => {
     const verifiedParticipants =  activeVerifiedParticipants + passiveVerifiedParticipants
@@ -741,6 +726,30 @@ const filterSsnMetrics = (participantsSsnMetrics, activeVerifiedParticipants, pa
     currentWorflowObj.ssnHalfFlagCounter = ssnHalfFlagCounter;
     currentWorflowObj.verifiedParticipants = verifiedParticipants;
     return currentWorflowObj; 
+}
+
+const filterCollectionMetrics = (allCollectionsMetrics, clinicalCollectionsMetrics, researchCollectionsMetrics) => {
+    let allCollections = 0;
+    let researchCollections = 0;
+    let clinicalCollections = 0;
+
+    if (Array.isArray(allCollectionsMetrics)) {
+        allCollections = allCollectionsMetrics.reduce((prev, current) => {
+            return prev += current.verfiedPts;
+        }, allCollections);
+    }
+    if (Array.isArray(researchCollectionsMetrics)) {
+        researchCollections = researchCollectionsMetrics.reduce((prev, current) => {
+            return prev += current.verfiedPts;
+        }, researchCollections);
+    }
+    if (Array.isArray(allCollectionsMetrics)) {
+        clinicalCollections = clinicalCollectionsMetrics.reduce((prev, current) => {
+            return prev += current.verfiedPts;
+        }, clinicalCollections);
+    }
+
+    return {allCollections, researchCollections, clinicalCollections};
 }
 
 const filterRecruitsFunnel = (data, recruit) => {
@@ -1006,14 +1015,14 @@ const reRenderDashboard = async (siteTextContent, siteKey) => {
   const transformedData = transformDataForCharts(siteData);
   renderAllCharts(transformedData);
   handleSiteSelection(siteTextContent);
-  animation(false);
+  hideAnimation();
 };
 
 
 export const clearLocalStorage = () => {
     firebase.auth().signOut();
     internalNavigatorHandler(counter);
-    animation(false);
+    hideAnimation();
     delete localStorage.dashboard;
     delete localStorage.participant;
     delete localStorage.userSession;
@@ -1039,200 +1048,78 @@ const filterDataBySiteCode = (siteCode) => {
 
   return result;
 };
+/**
+ * Renders the participants table based on the specified filter type.
+ *
+ * @async
+ * @function renderParticipants
+ * @param {string} type - The participant filter type
+ * 
+ * @returns {Promise<void>}
+ */
+const renderParticipants = async (type) => {
+    showAnimation();
 
-const renderParticipantsNotVerified = async () => {
-    animation(true);
-    const idToken = await getIdToken();
-    const response = await fetchData(idToken, 'notyetverified');
-    response.data = response.data.sort((a, b) => (a['827220437'] > b['827220437']) ? 1 : ((b['827220437'] > a['827220437']) ? -1 : 0));
-    if (response.code === 200) {
-        const isParent = localStorage.getItem('isParent')
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
-        document.getElementById('participants').innerHTML = '<i class="fas fa-users"></i> Not Verified Participants'
-        removeActiveClass('dropdown-item', 'dd-item-active')
-        document.getElementById('notVerifiedBtn').classList.add('dd-item-active');
-        removeActiveClass('nav-link', 'active');
-        document.getElementById('participants').classList.add('active');
-        mainContent.innerHTML = renderTable(filterdata(response.data), 'notyetverified');
-        addEventFilterData(filterdata(response.data), true)
-        renderData(filterdata(response.data), isParent === 'true' ? true : false, 'notyetverified');
-        activeColumns(filterdata(response.data), true);
-        animation(false);
-    }
-    internalNavigatorHandler(counter)
-    if (response.code === 401) {
-        clearLocalStorage();
-    }
-}
+    resetFilters();
+    resetPagination();
 
-const renderParticipantsCanNotBeVerified = async () => {
-    animation(true);
-    const idToken = await getIdToken();
-    const response = await fetchData(idToken, 'cannotbeverified');
-    response.data = response.data.sort((a, b) => (a['827220437'] > b['827220437']) ? 1 : ((b['827220437'] > a['827220437']) ? -1 : 0));
+    appState.setState({ participantTypeFilter: type, siteCode: `` });
+    const response = await getParticipants();
+    const data = sortByKey(response.data, fieldMapping.healthcareProvider);
+
     if (response.code === 200) {
-        const isParent = localStorage.getItem('isParent')
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
-        document.getElementById('participants').innerHTML = '<i class="fas fa-users"></i> Cannot Be Verified Participants'
-        removeActiveClass('dropdown-item', 'dd-item-active')
-        document.getElementById('cannotVerifiedBtn').classList.add('dd-item-active');
-        removeActiveClass('nav-link', 'active');
-        document.getElementById('participants').classList.add('active');
-        const filteredData = filterdata(response.data);
-        if (filteredData.length === 0) {
-            mainContent.innerHTML = 'No Data Found!'
-            animation(false);
-            return;
-        }
-        mainContent.innerHTML = renderTable(filteredData, 'cannotbeverified');
-        addEventFilterData(filteredData);
-        renderData(filteredData, 'cannotbeverified');
-        activeColumns(filteredData);
-        animation(false);
+
+        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
+        updateActiveElements(type);
+        mainContent.innerHTML = renderTable(data, type);
+
+        renderData(data, type);
+        activeColumns(data);
+        renderFilters();
+        hideAnimation();
     }
+
     internalNavigatorHandler(counter);
     if (response.code === 401) {
         clearLocalStorage();
     }
 }
 
-const renderParticipantsVerified = async () => {
-    animation(true);
-    const idToken = await getIdToken();
-    const response = await fetchData(idToken, 'verified');
-    response.data = response.data.sort((a, b) => (a['827220437'] > b['827220437']) ? 1 : ((b['827220437'] > a['827220437']) ? -1 : 0));
-    if (response.code === 200) {
-        const isParent = localStorage.getItem('isParent')
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
-        document.getElementById('participants').innerHTML = '<i class="fas fa-users"></i> Verified Participants'
-        removeActiveClass('dropdown-item', 'dd-item-active')
-        document.getElementById('verifiedBtn').classList.add('dd-item-active');
-        removeActiveClass('nav-link', 'active');
-        document.getElementById('participants').classList.add('active');
-        mainContent.innerHTML = renderTable(filterdata(response.data), 'verified');
-        addEventFilterData(filterdata(response.data));
-        renderData(filterdata(response.data), 'verified');
-        activeColumns(filterdata(response.data));
-        animation(false);
-    }
-    internalNavigatorHandler(counter);
-    if (response.code === 401) {
-        clearLocalStorage();
-    }
-}
+/**
+ * Helper function to update active navigation elements based on participant type
+ * 
+ * @function updateActiveElements
+ * @param {string} type - The participant filter type
+ */
+const updateActiveElements = (type) => {
+    
+    const titleMap = {
+        'all': 'All Participants',
+        'notyetverified': 'Not Verified Participants',
+        'cannotbeverified': 'Cannot Be Verified Participants',
+        'verified': 'Verified Participants',
+        'profileNotSubmitted': 'Profile Not Submitted',
+        'consentNotSubmitted': 'Consent Not Submitted',
+        'notSignedIn': 'Not Signed In'
+    };
 
-const renderParticipantsAll = async () => {
-    animation(true);
-    if (appState.getState().filterHolder)reMapFilters(appState.getState().filterHolder)
-    else {
-        const idToken = await getIdToken();
-        const response = await fetchData(idToken, 'all');
-        response.data = response.data.sort((a, b) => (a['827220437'] > b['827220437']) ? 1 : ((b['827220437'] > a['827220437']) ? -1 : 0));
-        if (response.code === 200) {
-            const isParent = localStorage.getItem('isParent')
-            document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
-            document.getElementById('participants').innerHTML = '<i class="fas fa-users"></i> All Participants'
-            removeActiveClass('dropdown-item', 'dd-item-active');
-            document.getElementById('allBtn').classList.add('dd-item-active');
-            removeActiveClass('nav-link', 'active');
-            document.getElementById('participants').classList.add('active');
-            const filterRawData = filterdata(response.data)
-            mainContent.innerHTML = renderTable(filterRawData, 'participantAll');
-            addEventFilterData(filterRawData);
-            renderData(filterRawData, 'participantAll');
-            activeColumns(filterRawData);
-            renderLookupSiteDropdown();
-            dropdownTriggerAllParticipants('Filter by Site');
-        }
-        internalNavigatorHandler(counter);
-        if (response.code === 401) {
-            clearLocalStorage();
-        }
-    }
-    animation(false);
-}
+    const buttonMap = {
+        'all': 'allBtn',
+        'notyetverified': 'notVerifiedBtn',
+        'cannotbeverified': 'cannotVerifiedBtn',
+        'verified': 'verifiedBtn',
+        'profileNotSubmitted': 'profileNotSubmitted',
+        'consentNotSubmitted': 'consentNotSubmitted',
+        'notSignedIn': 'notSignedIn'
+    };
+    
+    removeActiveClass('dropdown-item', 'dd-item-active');
+    removeActiveClass('nav-link', 'active');
 
-const renderParticipantsProfileNotSubmitted = async () => {
-    animation(true);
-    const idToken = await getIdToken();
-    const response = await fetchData(idToken, 'profileNotSubmitted');
-    response.data = response.data.sort((a, b) => (a['827220437'] > b['827220437']) ? 1 : ((b['827220437'] > a['827220437']) ? -1 : 0));
-    if (response.code === 200) {
-        const isParent = localStorage.getItem('isParent')
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
-        document.getElementById('participants').innerHTML = '<i class="fas fa-users"></i> Profile Not Submitted'
-        removeActiveClass('dropdown-item', 'dd-item-active');
-        document.getElementById('profileNotSubmitted').classList.add('dd-item-active');
-        removeActiveClass('nav-link', 'active');
-        document.getElementById('participants').classList.add('active');
-        mainContent.innerHTML = renderTable(filterdata(response.data), 'profileNotSubmitted');
-        addEventFilterData(filterdata(response.data));
-        renderData(filterdata(response.data), 'profileNotSubmitted');
-        activeColumns(filterdata(response.data));
-        animation(false);
-    }
-    internalNavigatorHandler(counter);
-    if (response.code === 401) {
-        clearLocalStorage();
-    }
-}
-
-const renderParticipantsConsentNotSubmitted = async () => {
-    animation(true);
-    const idToken = await getIdToken();
-    const response = await fetchData(idToken, 'consentNotSubmitted');
-    response.data = response.data.sort((a, b) => (a['827220437'] > b['827220437']) ? 1 : ((b['827220437'] > a['827220437']) ? -1 : 0));
-    if (response.code === 200) {
-        const isParent = localStorage.getItem('isParent')
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
-        document.getElementById('participants').innerHTML = '<i class="fas fa-users"></i> Consent Not Submitted'
-        removeActiveClass('dropdown-item', 'dd-item-active');
-        document.getElementById('consentNotSubmitted').classList.add('dd-item-active');
-        removeActiveClass('nav-link', 'active');
-        document.getElementById('participants').classList.add('active');
-        mainContent.innerHTML = renderTable(filterdata(response.data), 'consentNotSubmitted');
-        addEventFilterData(filterdata(response.data));
-        renderData(filterdata(response.data), 'consentNotSubmitted');
-        activeColumns(filterdata(response.data));
-        animation(false);
-    }
-    internalNavigatorHandler(counter);
-    if (response.code === 401) {
-        clearLocalStorage();
-    }
-}
-
-const renderParticipantsNotSignedIn = async () => {
-    animation(true);
-    const idToken = await getIdToken();
-    const response = await fetchData(idToken, 'notSignedIn');
-    response.data = response.data.sort((a, b) => (a['827220437'] > b['827220437']) ? 1 : ((b['827220437'] > a['827220437']) ? -1 : 0));
-    if (response.code === 200) {
-        const isParent = localStorage.getItem('isParent')
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
-        document.getElementById('participants').innerHTML = '<i class="fas fa-users"></i> Not Signed In'
-        removeActiveClass('dropdown-item', 'dd-item-active');
-        document.getElementById('notSignedIn').classList.add('dd-item-active');
-        removeActiveClass('nav-link', 'active');
-        document.getElementById('participants').classList.add('active');
-        mainContent.innerHTML = renderTable(filterdata(response.data), 'notSignedIn');
-        addEventFilterData(filterdata(response.data));
-        renderData(filterdata(response.data), 'notSignedIn');
-        activeColumns(filterdata(response.data));
-        animation(false);
-    }
-    internalNavigatorHandler(counter);
-    if (response.code === 401) {
-        clearLocalStorage();
-    }
-}
-
-// todo: add data to `fieldToConceptIdMapping.js` and remove this function
-const getMappings = async () => {
-    const response = await fetch('https://raw.githubusercontent.com/episphere/conceptGithubActions/master/aggregate.json');
-    const mappings = await response.json();
-    localStorage.setItem("conceptIdMapping", JSON.stringify(mappings));
-}
+    document.getElementById('participants').innerHTML = `<i class="fas fa-users"></i> ${titleMap[type]}`;
+    document.getElementById('participants').classList.add('active');
+    document.getElementById(buttonMap[type])?.classList.add('dd-item-active');
+};
 
 const activityCheckController = () => {
     let time;

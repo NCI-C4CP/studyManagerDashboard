@@ -29,8 +29,7 @@ const initLoginMechanism = (participant) => {
 
 export const renderParticipantDetails = (participant, changedOption) => {
     initLoginMechanism(participant);
-    const isParent = localStorage.getItem('isParent');
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
+    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantDetailsBtn').classList.add('active');
     mainContent.innerHTML = render(participant, changedOption);
