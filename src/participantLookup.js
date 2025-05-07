@@ -1,6 +1,6 @@
 import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
 import { renderTable, filterdata, filterBySiteKey, renderData, activeColumns } from './participantCommons.js';
-import { internalNavigatorHandler, getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls } from './utils.js';
+import { internalNavigatorHandler, getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls, escapeHTML } from './utils.js';
 import { nameToKeyObj } from './idsToName.js';
 
 export function renderParticipantLookup(){

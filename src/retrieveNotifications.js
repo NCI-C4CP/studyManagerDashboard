@@ -168,20 +168,18 @@ const triggerCategories = (originalCategoriesHolder, categoryName) => {
 
     dropDownLabel.innerHTML = categoryName;
 
-    //let tempCategory = a.innerHTML = escapeHTML(categoryName);
     if (dropdownMenuButton) {
         dropdownMenuButton.addEventListener('click', async (e) => {
-            //if (categoryName === 'Filter by Category' || categoryName === tempCategory) {
-                const cleanText = escapeHTML(e.target.textContent);
-                dropDownLabel.innerHTML = cleanText;
-
+          const cleanText = escapeHTML(e.target.textContent);
+          dropDownLabel.innerHTML = cleanText;
                 
-                const showDrafts = appState.getState().notification?.showDrafts;
-                const response = await getNotificationSchemas(cleanText, showDrafts);
-                appState.setState({ notification: { showDrafts, schemaArray: response.data } });
-                document.getElementById("mainContent").innerHTML = render(response.data, showDrafts);
-                triggerSchemaEdit(originalCategoriesHolder, cleanText);
-           // }
+          const showDrafts = appState.getState().notification?.showDrafts;
+          const response = await getNotificationSchemas(cleanText, showDrafts);
+
+          appState.setState({ notification: { showDrafts, schemaArray: response.data } });
+          document.getElementById("mainContent").innerHTML = render(response.data, showDrafts);
+          
+          triggerSchemaEdit(originalCategoriesHolder, cleanText);
         })
     }
 }
