@@ -13,7 +13,7 @@ import { renderSiteMessages } from './src/siteMessages.js';
 import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
-import { internalNavigatorHandler, getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, resetPagination, resetFilters } from './src/utils.js';
+import { internalNavigatorHandler, getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, resetPagination, resetFilters, escapeHTML } from './src/utils.js';
 import fieldMapping from './src/fieldToConceptIdMapping.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
@@ -475,12 +475,12 @@ const renderSiteKeyList = () => {
 };
 
 const handleSiteSelection = (siteTextContent) => {
-  const siteSelectionButton = document.getElementById("dropdownSites");
-  siteSelectionButton.innerHTML = siteTextContent;
-  const dropdownMenuButton = document.getElementById("dropdownMenuButtonSites");
-  dropdownMenuButton &&
-    dropdownMenuButton.addEventListener("click", (e) => {
-      reRenderDashboard(e.target.textContent, e.target.dataset.sitekey);
+    const siteSelectionButton = document.getElementById("dropdownSites");
+    siteSelectionButton.innerHTML = siteTextContent;
+
+    const dropdownMenuButton = document.getElementById("dropdownMenuButtonSites");
+    dropdownMenuButton && dropdownMenuButton.addEventListener("click", (e) => {
+        reRenderDashboard(escapeHTML(e.target.textContent), e.target.dataset.sitekey);
     });
 };
 
