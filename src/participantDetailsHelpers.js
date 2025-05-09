@@ -1730,6 +1730,37 @@ const updateUserHistory = (existingDataToUpdate, userHistory, adminEmail, newSuf
     return userProfileHistoryArray;
 };
 
+/**
+ * Delete properties in fields are empty string or 'no' before write to user profile history in firestore
+ * @param {array of object} data - The data to write to history
+ * @returns {array of object} - this will write to user profile history
+ */
+
+const prepareUserHistoryData = (data) => {
+    const fields = [
+        // Physical adress
+        fieldMapping.physicalAddress1,
+        fieldMapping.physicalAddress2,
+        fieldMapping.physicalCity,
+        fieldMapping.physicalState,
+        fieldMapping.physicalZip,
+        // Alternate adress
+        fieldMapping.altAddress1,
+        fieldMapping.altAddress2,
+        fieldMapping.altCity,
+        fieldMapping.altState,
+        fieldMapping.altZip,
+        fieldMapping.isPOBoxAltAddress,
+    ];
+    fields.forEach(key => {
+        if (data[key] === '' || data[key] === fieldMapping.no) {
+            delete data[key];
+        }
+    });
+
+    return data;
+}
+
 const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
     const userHistoryMap = {};
     const keys = [
@@ -1796,7 +1827,7 @@ const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
         userHistoryMap[fieldMapping.userProfileUpdateTimestamp] = new Date().toISOString();
         userHistoryMap[fieldMapping.profileChangeRequestedBy] = adminEmail;
 
-        return userHistoryMap;
+        return prepareUserHistoryData(userHistoryMap);
     } else {
         return null;
     }
