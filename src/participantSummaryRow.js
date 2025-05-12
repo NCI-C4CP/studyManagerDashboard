@@ -378,6 +378,19 @@ export const baselineExperienceSurvey = (participant) => {
     return getTemplateRow(icon, color, timeline, category, item, itemStatus, date, setting, refused, extra);
 };
 
+export const dhqSurvey = (data) => {
+    // Note: Decision was made to not include refusal options specific to the Diet History Questionnaire
+    let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.dhqSurveyStatus, fieldMapping.dhqSurveyStartDate, fieldMapping.dhqSurveyCompletedDate);
+
+    if (!data[fieldMapping.dhqSurveyStatus]) itemStatus = "Not Eligible";
+
+    const dhqUsername = data[fieldMapping.dhqUsername];
+    const dhqStudyID = data[fieldMapping.dhqStudyID];
+    const setting = dhqUsername && dhqStudyID ? `Username: ${dhqUsername}, Study ID: ${dhqStudyID.replace('study_', ' ')}` : "N/A";
+    
+    return getTemplateRow(icon, color, "Follow-Up 6-mo", "Survey", "DHQ III", itemStatus, date, setting, "N/A", "N/A");
+};
+
 export const cancerScreeningHistorySurvey = (data) => {
     const refusedAllFutureSurveys = data[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
     const refusedAllFutureActivities = data[fieldMapping.refusedAllFutureActivities];
@@ -510,7 +523,7 @@ const getSurveyStatus = (participant, surveyFlag, startDate, completeDate) => {
                 date: "N/A",
             };
         default:
-            if (surveyFlag === fieldMapping.experienceSurvey && (participant[surveyFlag] === null || participant[surveyFlag] === undefined)) {
+            if ([fieldMapping.experienceSurvey, fieldMapping.dhqSurveyStatus].includes(surveyFlag) && (participant[surveyFlag] === null || participant[surveyFlag] === undefined)) {
                 return {
                     icon: "fa fa-times fa-2x",
                     color: "color: red",
