@@ -273,6 +273,9 @@ export default
 	"pacificIslanderSH": 965998904,
     "blankSH": 986445321,
     "declinedSH": 746038746,
+    "sanfordReportedEthnicity": 538553381,
+    "ethHispanicLatino": 628733063,
+    "ethNotHispanicLatino": 319570637,
 
     // hfhs 
     "henryFReportedRace": 684926335, 
