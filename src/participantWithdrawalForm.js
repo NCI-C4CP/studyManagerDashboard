@@ -2,7 +2,10 @@ import fieldMapping from './fieldToConceptIdMapping.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, escapeHTML } from './utils.js';
 import { renderRefusalOptions, renderCauseOptions } from './participantWithdrawalRender.js';
 
-export const renderParticipantWithdrawalLandingPage = () => {
+export const renderParticipantWithdrawalLandingPage = (participant) => {
+    if (!participant) {
+        participant = JSON.parse(localStorage.getItem("participant"));
+    }
     let template = ``;
     template = `        
                 <div class="row">
@@ -128,21 +131,21 @@ export const renderParticipantWithdrawalLandingPage = () => {
                                     <div style="position:relative; left:30px; top:2px; class="form-check">
                                         <input class="form-check-input" name="options" type="checkbox"
                                         value="Revoke HIPAA Authorization"
-                                        data-optionKey=${fieldMapping.revokeHIPAA} id="defaultCheck9">
+                                        data-optionKey=${fieldMapping.revokeHIPAA} id="defaultCheck9" ${participant && (participant[fieldMapping.revokeHIPAA] === fieldMapping.yes || participant[fieldMapping.withdrawConsent] === fieldMapping.yes || participant[fieldMapping.destroyData] === fieldMapping.yes) ? 'disabled' : ''}>
                                         <label class="form-check-label" for="defaultCheck9">
                                             Revoke HIPAA Authorization
                                         </label>
                                     </div>
                                     <div style="position:relative; left:30px; top:2px; class="form-check">
                                         <input class="form-check-input" name="options" type="checkbox" value="Withdraw Consent" 
-                                        data-optionKey=${fieldMapping.withdrawConsent} id="defaultCheck10">
+                                        data-optionKey=${fieldMapping.withdrawConsent} id="defaultCheck10" ${participant && (participant[fieldMapping.withdrawConsent] === fieldMapping.yes || participant[fieldMapping.destroyData] === fieldMapping.yes) ? 'disabled' : ''}>
                                         <label class="form-check-label" for="defaultCheck10">
                                             Withdraw Consent
                                         </label>
                                     </div>
                                     <div style="position:relative; left:30px; top:2px; class="form-check">
                                         <input class="form-check-input" name="options" type="checkbox" value="Destroy Data" 
-                                        data-optionKey=${fieldMapping.destroyData} id="defaultCheck11">
+                                        data-optionKey=${fieldMapping.destroyData} id="defaultCheck11" ${participant && participant[fieldMapping.destroyData] === fieldMapping.yes ? 'disabled' : ''}>
                                         <label class="form-check-label" for="defaultCheck11">
                                                 Destroy Data
                                         </label>
@@ -455,7 +458,7 @@ export const causeOfDeathPage = (retainOptions) => {
     renderContent.innerHTML =  template;
     addEventMonthSelection('page2Month', 'page2Day')
     document.getElementById('backToPrevPage').addEventListener('click', () => {
-        renderContent.innerHTML = renderParticipantWithdrawalLandingPage(retainOptions);
+        renderContent.innerHTML = renderParticipantWithdrawalLandingPage();
         retainPreviouslySetOptions(retainOptions);
         autoSelectOptions();
         viewOptionsSelected();
