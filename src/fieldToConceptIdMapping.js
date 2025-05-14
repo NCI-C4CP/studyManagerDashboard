@@ -219,6 +219,12 @@ export default
     'cancerScreeningHistorySurveyStartDate': 609630315,
     'cancerScreeningHistorySurveyCompletedDate': 389890053,
 
+    'dhqSurveyStatus': 692560814,
+    'dhqSurveyStartDate': 109610692,
+    'dhqSurveyCompletedDate': 610227793,
+    'dhqUsername': 148184166, 
+    'dhqStudyID': 196723965,
+
     "baselineEMR": 209454331,
     "baselineEMRflag": 101170406,
     "baselineEMRpushDate": 143523420,
