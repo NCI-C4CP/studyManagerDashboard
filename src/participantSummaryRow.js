@@ -516,21 +516,37 @@ export const baselineEMR = (participantModule) => {
 export const baselinePayment = (participantModule) => {
     let template = ``;
 
-    if (!participantModule) {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Payment", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A");
-    } else if (
-        participantModule[fieldMapping.paymentRoundup] &&
-        participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.eligiblePayment] === fieldMapping.yes
-    ) {
-        template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Payment", "N/A", "Eligible", 
-            formatUTCDate(participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.eligiblePaymentRoundTimestamp]),
-            "N/A", "N/A", checkIncentiveIssued(participantModule)
-        );
-    } else {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Payment", "N/A", "Not Eligible", "N/A", "N/A", "N/A", checkIncentiveIssued(participantModule));
+    let faIcon = "fa fa-times fa-2x";
+    let faIconColor = "color: red";
+    let status = 'N/A';
+    let date = 'N/A';
+    let setting = 'N/A';
+    let extra = 'N/A';
+    
+
+    if (participantModule) {
+        if (
+            participantModule[fieldMapping.paymentRoundup] &&
+            participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.eligiblePayment] === fieldMapping.yes
+        ) {
+            faIcon = 'fa fa-check fa-2x';
+            faIconColor = 'color: green';
+            status = 'Eligible';
+            date = formatUTCDate(participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.eligiblePaymentRoundTimestamp]);
+        } else {
+            status = 'Not Eligible';
+        }
+
+        if (
+            participantModule[fieldMapping.paymentRoundup] &&
+            participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.paymentChosen]
+        ) {
+            setting = participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.paymentChosen];
+        }
+        extra = checkIncentiveIssued(participantModule);
     }
 
-    return template;
+    return getTemplateRow(faIcon, faIconColor, "Baseline", "Payment", "N/A", status, date, setting, "N/A", extra);
 }
 
 export const baselinePhysActReport = (participantModule, reports) => {

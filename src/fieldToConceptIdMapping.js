@@ -240,6 +240,7 @@ export default
     "eligiblePaymentRoundTimestamp": 787567527,
     "refusedBaselinePayment": 648228701,
     "refusedBaselinePaymentDate": 438636757,
+    "paymentChosen": 945795905,
 
     // de-identified age
     "ageRange1": 713781738,
