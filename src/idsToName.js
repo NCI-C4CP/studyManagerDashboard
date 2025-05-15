@@ -110,6 +110,7 @@ export const searchBubbleMap = new Map([
     [fieldMapping.siteReportedSex, 'Site Reported Sex'],
     [fieldMapping.sanfordReportedSex, 'HFH Reported Sex'],
     [fieldMapping.sanfordReportedRace, 'SF Reported Race'],
+    [fieldMapping.sanfordReportedEthnicity, 'SF Reported Eth'],
     [fieldMapping.henryFReportedRace, 'HFH Reported Race'],
     [fieldMapping.bswhReportedRaceEthnicity, 'BSWH Reported R/E'],
     [fieldMapping.campaignType, 'Campaign'],
@@ -289,6 +290,15 @@ const raceMapping = {
     [fieldMapping.other]: 'Other',
 };
 
+const ethnicityMapping = {
+    // Sanford
+    [fieldMapping.ethHispanicLatino]: "Hispanic or Latino",
+    [fieldMapping.ethNotHispanicLatino]: "Not Hispanic or Latino",
+    [fieldMapping.blankSH]: "Blank",
+    [fieldMapping.declinedSH]: "Declined",
+    [fieldMapping.unavailable]: "Unavailable/Unknown"
+}
+
 const campaignTypeMapping = {
     [fieldMapping.random]: 'Random',
     [fieldMapping.screeningAppointment]: 'Screening Appointment',
@@ -464,6 +474,11 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         case fieldMapping.henryFReportedRace:
         case fieldMapping.bswhReportedRaceEthnicity: {
             return raceMapping[stateValue] ?? (stateValue ? 'Unavailable/Unknown' : '');
+        }
+
+        // Site reported ethnicity
+        case fieldMapping.sanfordReportedEthnicity: {
+            return ethnicityMapping[stateValue] ?? (stateValue ? 'Unavailable/Unknown' : '');
         }
 
         // Pre-consent
