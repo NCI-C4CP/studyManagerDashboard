@@ -282,11 +282,17 @@ export const autoSelectOptions = () => {
     const selectedPtWithdrawn = document.getElementById('defaultCheck10');
     const selectedPtDeceased = document.getElementById('messageCheckbox')
     if (selectedDestroyData) {
-        selectedDestroyData.addEventListener('change', function() {
-            let checkedValue = document.getElementById('defaultCheck10');
-            checkedValue.checked = true;
-            let checkedValue1 = document.getElementById('defaultCheck9');
-            checkedValue1.checked = true;
+        selectedDestroyData.addEventListener('change', function(e) {
+            //Sync the value of withdraw consent and revoke hippa to data destroy IF the checkboxes are not already disabled
+            let dataDestroyChecked = e.target.checked;
+            let withdrawCheckbox = document.getElementById('defaultCheck10');
+            if (!withdrawCheckbox.disabled) {
+                withdrawCheckbox.checked = dataDestroyChecked;
+            }
+            let revokeHIPAACheckbox = document.getElementById('defaultCheck9');
+            if (!revokeHIPAACheckbox.disabled) {
+                revokeHIPAACheckbox.checked = dataDestroyChecked;
+            }
           });
     }
     if (selectedPtWithdrawn) {
