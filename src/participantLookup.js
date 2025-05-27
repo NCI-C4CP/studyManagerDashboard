@@ -1,6 +1,6 @@
 import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
 import { renderTable, filterdata, filterBySiteKey, renderData, activeColumns } from './participantCommons.js';
-import { internalNavigatorHandler, getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls } from './utils.js';
+import { internalNavigatorHandler, getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls, escapeHTML } from './utils.js';
 import { nameToKeyObj } from './idsToName.js';
 
 export function renderParticipantLookup(){
@@ -117,15 +117,14 @@ export function renderParticipantSearch() {
 
 
 const triggerLookup = () => {
-    let dropdownMenuButton = document.getElementById('dropdownMenuLookupSites');
-    let a = document.getElementById('dropdownSites');
+    const dropdownMenuButton = document.getElementById('dropdownMenuLookupSites');
+    const dropdownFilter = document.getElementById('dropdownSites');
+
     if (dropdownMenuButton) {
         dropdownMenuButton.addEventListener('click', (e) => {
-            a.innerHTML = e.target.textContent;
-            const t = getDataAttributes(e.target)
-            const att = document.getElementById('dropdownSites').setAttribute("data-siteKey", t.sitekey);
-        })
-       
+            dropdownFilter.innerHTML = escapeHTML(e.target.textContent);
+            dropdownFilter.setAttribute("data-siteKey", getDataAttributes(e.target).sitekey);
+        });
     }
 }
 

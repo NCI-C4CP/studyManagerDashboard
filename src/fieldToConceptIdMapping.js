@@ -219,6 +219,12 @@ export default
     'cancerScreeningHistorySurveyStartDate': 609630315,
     'cancerScreeningHistorySurveyCompletedDate': 389890053,
 
+    'dhqSurveyStatus': 692560814,
+    'dhqSurveyStartDate': 109610692,
+    'dhqSurveyCompletedDate': 610227793,
+    'dhqUsername': 148184166, 
+    'dhqStudyID': 196723965,
+
     "baselineEMR": 209454331,
     "baselineEMRflag": 101170406,
     "baselineEMRpushDate": 143523420,
@@ -234,6 +240,7 @@ export default
     "eligiblePaymentRoundTimestamp": 787567527,
     "refusedBaselinePayment": 648228701,
     "refusedBaselinePaymentDate": 438636757,
+    "paymentChosen": 945795905,
 
     // de-identified age
     "ageRange1": 713781738,
@@ -273,6 +280,9 @@ export default
 	"pacificIslanderSH": 965998904,
     "blankSH": 986445321,
     "declinedSH": 746038746,
+    "sanfordReportedEthnicity": 538553381,
+    "ethHispanicLatino": 628733063,
+    "ethNotHispanicLatino": 319570637,
 
     // hfhs 
     "henryFReportedRace": 684926335, 
