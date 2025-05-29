@@ -1827,7 +1827,10 @@ const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
         userHistoryMap[fieldMapping.userProfileUpdateTimestamp] = new Date().toISOString();
         userHistoryMap[fieldMapping.profileChangeRequestedBy] = adminEmail;
 
-        return prepareUserHistoryData(userHistoryMap);
+        // temp pull out - adding back early June
+        // return prepareUserHistoryData(userHistoryMap);
+        
+        return userHistoryMap;
     } else {
         return null;
     }
