@@ -4,7 +4,7 @@ import fieldMapping from './fieldToConceptIdMapping.js';
 import { userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey, 
     baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineBloodSample, baselineUrineSample, baselineBiospecSurvey, baselineMenstrualSurvey,
     baselineMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
-    baselineExperienceSurvey, cancerScreeningHistorySurvey, baselinePhysActReport} from './participantSummaryRow.js';
+    baselineExperienceSurvey, cancerScreeningHistorySurvey, dhqSurvey, baselinePhysActReport} from './participantSummaryRow.js';
 import { formatUTCDate, conceptToSiteMapping, pdfCoordinatesMap } from './utils.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
 
@@ -104,6 +104,9 @@ export const render = (participant, reports) => {
                                     ${baselineExperienceSurvey(participant)}
                                 </tr>
                                 <tr class="row-color-survey-dark">
+                                    ${dhqSurvey(participant)}
+                                </tr>
+                                <tr class="row-color-survey-light">
                                     ${cancerScreeningHistorySurvey(participant)}
                                 </tr>
                                 <tr class="row-color-sample-dark">
