@@ -357,7 +357,7 @@ const buildSearchResultsTableHeader = () => {
         </thead>`;
 }
 
-const buildTableTemplate = (data, showButtons) => {
+const buildTableTemplate = (data) => {
     let template = buildSearchResultsTableHeader();
     template += '<tbody>';
 
