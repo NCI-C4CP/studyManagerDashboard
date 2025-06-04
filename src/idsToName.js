@@ -381,9 +381,13 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         case fieldMapping.healthcareProvider:
             return keyToNameObj[rawValue] ?? '';
 
+        // Account Phone
+        case fieldMapping.accountPhone:
+            return participant?.[fieldMapping.consentFlag] === fieldMapping.yes && fieldMapping.accountPhone in participant ? participant?.[fieldMapping.accountPhone] : 'N/A';
+
         // Account Email
         case fieldMapping.accountEmail:
-            return rawValue?.toString().startsWith('noreply') ? '' : rawValue;
+            return participant?.[fieldMapping.consentFlag] === fieldMapping.yes && fieldMapping.accountEmail in participant && !rawValue?.toString().startsWith('noreply') ? participant?.[fieldMapping.accountEmail] : 'N/A';
 
         // Date Formatting
         case fieldMapping.signinDate:
