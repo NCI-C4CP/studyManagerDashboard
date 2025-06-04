@@ -571,7 +571,7 @@ export default
     bioKitMouthwashBL2: 641006239,
     kitReceivedTime: 826941471,
     kitShippedTime: 661940160,
-    uniqeKitAssemblyId: 687158491,
+    uniqueKitAssemblyId: 687158491,
     kitType: 379252329,
     kitTypeValues: {
         mouthwash: 390351864,
