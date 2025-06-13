@@ -301,7 +301,7 @@ export const updateDHQReportViewedStatus = async (uid, studyID, respondentUserna
         throw new Error('Failed to update DHQ Report viewed status. Response code: ' + reportData.code);
 
     } catch (error) {
-        console.error('Error in retrieveDHQ3Report:', error);
+        console.error('Error in updateDHQReportViewedStatus:', error);
         throw error;
     }
 }
@@ -337,7 +337,7 @@ export const retrieveDHQHEIReport = async (dhqSurveyStatus, studyID, respondentU
         throw new Error('Failed to retrieve DHQ HEI Report data. Response code: ' + reportData.code);
 
     } catch (error) {
-        console.error('Error in retrieveDHQ3Report:', error);
+        console.error('Error in retrieveDHQHEIReport:', error);
         throw error;
     }
 }
