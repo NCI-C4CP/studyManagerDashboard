@@ -498,6 +498,45 @@ export const baselinePhysActReport = (participantModule, reports) => {
     return template
 }
 
+export const dhq3Report = (participantData, reports) => {
+
+    let icon, iconColor, status, date, refused, extra;
+
+    const isSurveySubmitted = participantData[fieldMapping.dhqSurveyStatus] === fieldMapping.submitted;
+    if (isSurveySubmitted) {
+        icon = "fa fa-check fa-2x";
+        iconColor = "color: green";
+        status = 'Available';
+        date = participantData[fieldMapping.dhqSurveyCompletedDate] ? formatUTCDate(participantData[fieldMapping.dhqSurveyCompletedDate]) : 'N/A';
+        
+        switch (participantData[fieldMapping.reports.dhq3.reportStatusInternal]) {
+            case fieldMapping.reports.unread:
+                refused = 'Unread';
+                break;
+            case fieldMapping.reports.viewed:
+                refused = 'Viewed';
+                break;
+            case fieldMapping.reports.declined:
+                refused = 'Declined';
+                break;
+            default:
+                refused = 'Unread';
+        }
+        
+        extra = '<a style="color: blue; text-decoration: underline; cursor: pointer;" target="_blank" id="downloadDHQHEIReport">Download Link</a>'
+
+    } else {
+        icon = "fa fa-times fa-2x";
+        iconColor = "color: red";
+        status = 'Unavailable';
+        date = 'N/A';
+        refused = 'N/A';
+        extra = '<span style="color: grey; text-decoration: underline;">Download Link</span>'
+    }
+
+    return getTemplateRow(icon, iconColor, "Baseline", "ROI", "HEI Report - DHQ III", status, date, "N/A", refused, extra);
+}
+
 
 const getSurveyStatus = (participant, surveyFlag, startDate, completeDate) => {
     switch (participant[surveyFlag]) {
