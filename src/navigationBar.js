@@ -52,7 +52,7 @@ export const dashboardNavBarLinks = () => {
         </li>`) : (``) }
         ${(helpDesk === 'true' || coordinatingCenter === 'true') ?
             (`<li class="nav-item" id="replaceHomeCollectionBtn">
-                <a class="nav-item nav-link ws-nowrap" href="#replaceHomeCollectionKit" title="Home Collection Kit Request"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-home"></i> Home Collection Kit Replacement</span></a>
+                <a class="nav-item nav-link ws-nowrap" href="#requestHomeCollectionKit" title="Home Collection Kit Request"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-home"></i>Kit Requests</span></a>
             </li>`) : (``) }
         ${(isParent !== 'true' || coordinatingCenter === 'true') ?
         (`<li class="nav-item" id="siteMessageBtn">

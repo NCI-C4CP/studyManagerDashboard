@@ -609,3 +609,14 @@ export function timestampValidation(iso8601String) {
   }
   return '';
 }
+
+/**
+ * Escape HTML characters (useful for github-advanced-security bot warnings)
+ * @param {string} str - String to escape 
+ * @returns {string} - Escaped string
+ */
+export const escapeHTML = (str) => {
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+};

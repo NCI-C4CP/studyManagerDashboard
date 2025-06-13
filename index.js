@@ -4,7 +4,7 @@ import { renderTable, renderData, activeColumns, renderFilters } from './src/par
 import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
-import { renderReplacementKitRequest } from './src/replaceHomeCollectionKit.js';
+import { renderKitRequest } from './src/requestHomeCollectionKit.js';
 import { setupDataCorrectionsSelectionToolPage } from './src/dataCorrectionsTool/dataCorrectionsToolSelection.js';
 import { setupVerificationCorrectionsPage } from './src/dataCorrectionsTool/verificationCorrectionsTool.js';
 import { setupSurveyResetToolPage } from './src/dataCorrectionsTool/surveyResetTool.js';
@@ -13,7 +13,7 @@ import { renderSiteMessages } from './src/siteMessages.js';
 import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
-import { internalNavigatorHandler, getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, resetPagination, resetFilters } from './src/utils.js';
+import { internalNavigatorHandler, getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, resetPagination, resetFilters, escapeHTML } from './src/utils.js';
 import fieldMapping from './src/fieldToConceptIdMapping.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
@@ -180,14 +180,14 @@ const router = async () => {
                 renderParticipantMessages(participant);
             }
         }
-        else if (route === '#replaceHomeCollectionKit') {
+        else if (route === '#requestHomeCollectionKit') {
             const participant = JSON.parse(localStorage.getItem("participant"));
             if (participant === null) {
                 alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
             }
             else {
                 let participant = JSON.parse(localStorage.getItem("participant"))
-                renderReplacementKitRequest(participant);
+                renderKitRequest(participant);
             }
         }
         else if (dataCorrectionsToolRoutes.includes(route)) {
@@ -475,12 +475,12 @@ const renderSiteKeyList = () => {
 };
 
 const handleSiteSelection = (siteTextContent) => {
-  const siteSelectionButton = document.getElementById("dropdownSites");
-  siteSelectionButton.innerHTML = siteTextContent;
-  const dropdownMenuButton = document.getElementById("dropdownMenuButtonSites");
-  dropdownMenuButton &&
-    dropdownMenuButton.addEventListener("click", (e) => {
-      reRenderDashboard(e.target.textContent, e.target.dataset.sitekey);
+    const siteSelectionButton = document.getElementById("dropdownSites");
+    siteSelectionButton.innerHTML = siteTextContent;
+
+    const dropdownMenuButton = document.getElementById("dropdownMenuButtonSites");
+    dropdownMenuButton && dropdownMenuButton.addEventListener("click", (e) => {
+        reRenderDashboard(escapeHTML(e.target.textContent), e.target.dataset.sitekey);
     });
 };
 

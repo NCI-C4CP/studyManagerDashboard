@@ -119,7 +119,9 @@ export  const renderData = (data, source) => {
     renderDataTable(data)
     addEventShowMoreInfo(data);
     if (source !== 'bubbleFilters') {
-        document.getElementById('paginationContainer').innerHTML = paginationTemplate();
+        if (source) {
+            document.getElementById('paginationContainer').innerHTML = paginationTemplate();
+        }
 
         addEventPagination();
         addEventActivePassiveFilter();
@@ -355,7 +357,7 @@ const buildSearchResultsTableHeader = () => {
         </thead>`;
 }
 
-const buildTableTemplate = (data, showButtons) => {
+const buildTableTemplate = (data) => {
     let template = buildSearchResultsTableHeader();
     template += '<tbody>';
 

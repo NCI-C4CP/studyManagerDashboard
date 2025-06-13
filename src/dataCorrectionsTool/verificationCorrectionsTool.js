@@ -1,6 +1,6 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
 import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner, formatUTCDate, convertToISO8601 } from '../utils.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner, formatUTCDate, convertToISO8601, escapeHTML } from '../utils.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 import { keyToVerificationStatus, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
 import { appState } from '../stateManager.js';
@@ -138,7 +138,7 @@ const dropdownTrigger = (buttonId, menuId, response) => {
         let tempKeyName = dropdownTriggerBtn.innerHTML = keyName;
         dropdownMenuButton.addEventListener('click', (e) => {
             if (keyName === 'Select' || keyName === tempKeyName) {
-                dropdownTriggerBtn.innerHTML = e.target.textContent;
+                dropdownTriggerBtn.innerHTML = escapeHTML(e.target.textContent);
                 const selectedOption = getDataAttributes(e.target);
                 if (buttonId === 'dropdownVerification') {
                     disableDuplicateTypeBtn(selectedOption);

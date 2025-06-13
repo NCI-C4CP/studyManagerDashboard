@@ -240,6 +240,7 @@ export default
     "eligiblePaymentRoundTimestamp": 787567527,
     "refusedBaselinePayment": 648228701,
     "refusedBaselinePaymentDate": 438636757,
+    "paymentChosen": 945795905,
 
     // de-identified age
     "ageRange1": 713781738,
@@ -279,6 +280,9 @@ export default
 	"pacificIslanderSH": 965998904,
     "blankSH": 986445321,
     "declinedSH": 746038746,
+    "sanfordReportedEthnicity": 538553381,
+    "ethHispanicLatino": 628733063,
+    "ethNotHispanicLatino": 319570637,
 
     // hfhs 
     "henryFReportedRace": 684926335, 
@@ -567,7 +571,7 @@ export default
     bioKitMouthwashBL2: 641006239,
     kitReceivedTime: 826941471,
     kitShippedTime: 661940160,
-    uniqeKitAssemblyId: 687158491,
+    uniqueKitAssemblyId: 687158491,
     kitType: 379252329,
     kitTypeValues: {
         mouthwash: 390351864,

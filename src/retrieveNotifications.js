@@ -1,5 +1,5 @@
 import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
-import { getIdToken, showAnimation, hideAnimation, baseAPI } from './utils.js';
+import { getIdToken, showAnimation, hideAnimation, baseAPI, escapeHTML } from './utils.js';
 import { getSchemaHtmlStr, handleEmailPreview } from './storeNotifications.js';
 import { appState } from './stateManager.js';
 
@@ -8,13 +8,15 @@ export const renderRetrieveNotificationSchema = async (showDrafts = false) => {
   removeActiveClass("nav-link", "active");
   const notificationsAnchor = document.getElementById("notifications");
   notificationsAnchor && notificationsAnchor.classList.add("active");
+
   showAnimation();
-  const idToken = await getIdToken();
-  const response = await getNotificationSchemas("all", idToken, showDrafts);
+
+  const response = await getNotificationSchemas("all", showDrafts);
   const schemaArray = response.data || [];
   document.getElementById("mainContent").innerHTML = render(schemaArray, showDrafts);
   const categoryArray = getNotificationSchemaCategories(schemaArray);
   triggerSchemaEdit(categoryArray, "Filter by Category");
+
   hideAnimation();
   appState.setState({ notification: { showDrafts, schemaArray } });
 };
@@ -57,14 +59,12 @@ const render = (schemaArray, showDrafts) => {
         </div>`;
 };
 
-const getNotificationSchemas = async (category, idToken, showDrafts) => {
+const getNotificationSchemas = async (category, showDrafts) => {
+  const idToken = await getIdToken();
   const catgStr = category !== undefined ? category : `all`;
-  let apiStr = `${baseAPI}/dashboard?api=retrieveNotificationSchema&category=${catgStr}`;
-  if (showDrafts) {
-    apiStr += "&drafts=true";
-  }
+  const url = `${baseAPI}/dashboard?api=retrieveNotificationSchema&category=${catgStr}${showDrafts ? "&drafts=true" : ""}`;
 
-  const response = await fetch(apiStr, {
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       Authorization: "Bearer " + idToken,
@@ -163,20 +163,23 @@ const renderCategorydDropdown = (categoriesHolder) => {
 }
 
 const triggerCategories = (originalCategoriesHolder, categoryName) => {
-    let a = document.getElementById('dropdownCategories');
-    let dropdownMenuButton = document.getElementById('dropdownMenuButtonCategories');
-    let tempCategory = a.innerHTML = categoryName;
+    const dropDownLabel = document.getElementById('dropdownCategories');
+    const dropdownMenuButton = document.getElementById('dropdownMenuButtonCategories');
+
+    dropDownLabel.innerHTML = categoryName;
+
     if (dropdownMenuButton) {
         dropdownMenuButton.addEventListener('click', async (e) => {
-            if (categoryName === 'Filter by Category' || categoryName === tempCategory) {
-                a.innerHTML = e.target.textContent;
-                const idToken = await getIdToken();
-                const showDrafts = appState.getState().notification?.showDrafts;
-                const response = await getNotificationSchemas(e.target.textContent, idToken, showDrafts);
-                appState.setState({ notification: { showDrafts, schemaArray: response.data } });
-                document.getElementById("mainContent").innerHTML = render(response.data, showDrafts);
-                triggerSchemaEdit(originalCategoriesHolder, e.target.textContent);
-            }
+          const cleanText = escapeHTML(e.target.textContent);
+          dropDownLabel.innerHTML = cleanText;
+                
+          const showDrafts = appState.getState().notification?.showDrafts;
+          const response = await getNotificationSchemas(cleanText, showDrafts);
+
+          appState.setState({ notification: { showDrafts, schemaArray: response.data } });
+          document.getElementById("mainContent").innerHTML = render(response.data, showDrafts);
+          
+          triggerSchemaEdit(originalCategoriesHolder, cleanText);
         })
     }
 }

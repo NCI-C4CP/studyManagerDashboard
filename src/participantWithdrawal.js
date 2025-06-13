@@ -35,7 +35,7 @@ export const render = (participant) => {
                     ${renderParticipantHeader(participant)}
                     <div id="alert_placeholder"></div>
                     <div id="formMainPage">
-                    ${renderParticipantWithdrawalLandingPage()}
+                    ${renderParticipantWithdrawalLandingPage(participant)}
                     </div>
                 </div>
                 `;
