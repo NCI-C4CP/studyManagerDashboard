@@ -228,9 +228,18 @@ const uploadPathologyReports = async () => {
     });
 
     const respJson = await resp.json();
-    if (respJson.code === 200) {
-      triggerNotificationBanner("Files uploaded successfully!", "success");
-      fileState.filenamesUploaded = respJson.data;
+    if (resp.ok) {
+      if (respJson.code === 200) {
+        triggerNotificationBanner("Files uploaded successfully!", "success");
+        fileState.filenamesUploaded = respJson.data.allFilenames;
+      } else if (respJson.code === 207) {
+        const failureFilenames = respJson.data.failureFilenames || [];
+        triggerNotificationBanner(
+          `Some files were not uccessfully uploaded<br>: ${failureFilenames.join("<br>")}`,
+          "warning"
+        );
+        fileState.filenamesUploaded = respJson.data.allFilenames;
+      }
       refreshUploadedFilenames();
       fileState.selected = [];
       refreshSelectedFiles();
