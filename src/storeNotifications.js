@@ -196,7 +196,7 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
     </div>
 
     <div class="row form-group">
-        <label class="col-form-label col-md-3">Primary Field</label>
+        <label class="col-form-label col-md-3" for="primaryFieldConceptId">Primary Field</label>
         <div class="primary-field col-md-8 p-0">
             <input id="primaryFieldConceptId" required list="dataListPrimaryField" class="form-control" ${schemaData?.primaryField ? `value="${schemaData.primaryField}"`: ""} ${readonlyCheck}>
             <datalist id="dataListPrimaryField">
@@ -206,16 +206,16 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
     </div>
     
     <div class="row form-group">
-        <label class="col-form-label col-md-3">Start Time</label>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" id="startDays" min="0" ${schemaData?.time?.start ? `value="${schemaData.time.start.day ?? 0}"` : `value="0"`} ${readonlyCheck}>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" min="0" max="23" id="startHours" ${schemaData?.time?.start ? `value="${schemaData.time.start.hour ?? 0}"` : `value="0"`} ${readonlyCheck}>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2" type="number" min="0" max="59" id="startMinutes" ${schemaData?.time?.start ? `value="${schemaData.time.start.minute ?? 0}"` : `value="0"`} ${readonlyCheck}>
+        <label class="col-form-label col-md-3" for="startDays">Start Time</label>
+        <input class="col-md-2 mr-2" id="startDays" title="days" type="number" min="0" ${schemaData?.time?.start ? `value="${schemaData.time.start.day ?? 0}"` : `value="0"`} ${readonlyCheck}>
+        <input class="col-md-2 mr-2" id="startHours" title="hours" type="number" min="0" max="23"  ${schemaData?.time?.start ? `value="${schemaData.time.start.hour ?? 0}"` : `value="0"`} ${readonlyCheck}>
+        <input class="col-md-2" id="startMinutes" title="minutes" type="number" min="0" max="59"  ${schemaData?.time?.start ? `value="${schemaData.time.start.minute ?? 0}"` : `value="0"`} ${readonlyCheck}>
     </div>
         <div class="row form-group">
-        <label class="col-form-label col-md-3">Stop Time</label>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" id="stopDays" min="1" ${schemaData?.time?.stop ? `value="${schemaData.time.stop.day ?? 2}"` : `value="2"`} ${readonlyCheck}>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2 mr-2" type="number" min="0" max="23" id="stopHours" ${schemaData?.time?.stop? `value="${schemaData.time.stop.hour ?? 0}"` : `value="0"`} ${readonlyCheck}>
-        <input required autocomplete="off" pattern="[0-9]+" class="col-md-2" type="number" min="0" max="59" id="stopMinutes" ${schemaData?.time?.stop ? `value="${schemaData.time.stop.minute ?? 0}"` : `value="0"`} ${readonlyCheck}>
+        <label class="col-form-label col-md-3" for="stopDays">Stop Time</label>
+        <input class="col-md-2 mr-2" id="stopDays" title="days" type="number" min="1" ${schemaData?.time?.stop ? `value="${schemaData.time.stop.day ?? 2}"` : `value="2"`} ${readonlyCheck}>
+        <input class="col-md-2 mr-2" id="stopHours" title="hours" type="number" min="0" max="23"  ${schemaData?.time?.stop ? `value="${schemaData.time.stop.hour ?? 0}"` : `value="0"`} ${readonlyCheck}>
+        <input class="col-md-2" id="stopMinutes" title="minutes" type="number" min="0" max="59" ${schemaData?.time?.stop ? `value="${schemaData.time.stop.minute ?? 0}"` : `value="0"`} ${readonlyCheck}>
     </div>`;
 };
 
@@ -555,6 +555,7 @@ const handleNotficationDivs = (schemaData) => {
     }
   });
 
+  // Todo: remove push notification checkbox and event listener, since push notification isn't implemented.
   const pushCheckbox = document.getElementById("pushNotificationCheckBox");
   pushCheckbox.addEventListener("click", () => {
     if (pushCheckbox.checked === true) {

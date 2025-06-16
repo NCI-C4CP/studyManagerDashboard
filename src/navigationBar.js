@@ -46,6 +46,9 @@ export const dashboardNavBarLinks = () => {
         <li class="nav-item" id="participantMessageBtn">
             <a class="nav-item nav-link ws-nowrap" href="#participantMessages" title="Participant Messages"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-envelope-open"></i> Participant Messages</span></a>
         </li>
+        ${(isParent === 'true' || coordinatingCenter === 'true') ? (`<li class="nav-item">
+            <a class="nav-item nav-link ws-nowrap" href="#pathologyReportUpload" title="Pathology Report Upload"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-upload"></i> Pathology Report Upload</span></a>
+        </li>`) : ``}
         ${(helpDesk === 'true' || coordinatingCenter === 'true') ?
         (`<li class="nav-item" id="participantVerificationBtn">
             <a class="nav-item nav-link ws-nowrap" href="#dataCorrectionsToolSelection" title="Data Corrections Tool"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-check"></i> Data Corrections Tool</span></a>
