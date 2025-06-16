@@ -46,7 +46,7 @@ export const dashboardNavBarLinks = () => {
         <li class="nav-item" id="participantMessageBtn">
             <a class="nav-item nav-link ws-nowrap" href="#participantMessages" title="Participant Messages"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-envelope-open"></i> Participant Messages</span></a>
         </li>
-        ${(isParent === 'true' || coordinatingCenter === 'true') ? (`<li class="nav-item">
+        ${(isParent === 'true' || coordinatingCenter === 'true') ? (`<li class="nav-item" id="pathologyReportUploadBtn">
             <a class="nav-item nav-link ws-nowrap" href="#pathologyReportUpload" title="Pathology Report Upload"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-upload"></i> Pathology Report Upload</span></a>
         </li>`) : ``}
         ${(helpDesk === 'true' || coordinatingCenter === 'true') ?
