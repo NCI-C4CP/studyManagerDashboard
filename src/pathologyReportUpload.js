@@ -56,10 +56,10 @@ const setupPathologyReportUploadPage = (participantData) => {
                   <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content" style="border-radius:8px;">
                       <div class="modal-header" style="border-bottom:none; background-color:#fff3cd">
-                        <h5 class="modal-title" id="warningModalLabel" style="color:black; border-radius:4px; padding:6px 12px;">Duplicate File(s) Found</h5>
+                        <h5 class="modal-title" id="warningModalLabel" style="color:black; border-radius:4px; padding:6px 12px;">Duplicate Selection</h5>
                       </div>
                       <div class="modal-body" style="text-align:left;">
-                        <span id="duplicateFilesWarning"></span>
+                        <div id="duplicateFilesWarning"></div>
                       </div>
                       <div class="modal-footer" style="border-top:none; justify-content:center;">
                         <button id="replaceBtn" class="btn btn-warning" style="margin-right:12px;">Replace</button>
@@ -187,14 +187,22 @@ const addNewFiles = (newFiles) => {
   }
 
   if (fileState.tobeSelectedDuplicate.length > 0) {
-    let msg = `Below file is already selected for upload. Do you want to replace it with the new file or cancel this selection?`;
+    const headingText = "Duplicate Selection";
+    let msg = `Below file is already selected. Do you want to replace it with the new file or cancel this selection?`;
     if (fileState.tobeSelectedDuplicate.length > 1) {
-      msg = `Below files are already selected for upload. Do you want to replace them with the new files or cancel this selection?`;
+      msg = `Below files are already selected. Do you want to replace them with the new files or cancel this selection?`;
     }
 
-    document.querySelector("#duplicateFilesWarning").innerHTML = `${msg}<br>${fileState.tobeSelectedDuplicate
-      .map((file) => file.name)
-      .join("<br>")}`;
+    document.querySelector("#warningModalLabel").textContent = headingText;
+    const warningDiv = document.querySelector("#duplicateFilesWarning");
+    warningDiv.textContent = msg;
+    const listEle = document.createElement("ul");
+    fileState.tobeSelectedDuplicate.forEach((file) => {
+      const listItem = document.createElement("li");
+      listItem.textContent = file.name;
+      listEle.appendChild(listItem);
+    });
+    warningDiv.appendChild(listEle);
     $("#warningModal").modal({ backdrop: "static", keyboard: false });
   }
 
@@ -400,14 +408,22 @@ export const renderPathologyReportUploadPage = async (participantData) => {
     }
 
     if (fileState.tobeUploadedDuplicate.length > 0) {
-      let msg = `Below file has been uploaded already. Do you want to replace it with the new file or cancel this upload?`;
+      const headingText = "Duplicate Upload";
+      let msg = `Below file has been uploaded previously. Do you want to replace it with the new file or cancel this upload?`;
       if (fileState.tobeUploadedDuplicate.length > 1) {
-        msg = `Below files have been uploaded already. Do you want to replace them with the new files or cancel this upload?`;
+        msg = `Below files have been uploaded  previously. Do you want to replace them with the new files or cancel this upload?`;
       }
 
-      document.querySelector("#duplicateFilesWarning").innerHTML = `${msg}<br>${fileState.tobeUploadedDuplicate
-        .map((file) => file.name)
-        .join("<br>")}`;
+      document.querySelector("#warningModalLabel").textContent = headingText;
+      const warningDiv = document.querySelector("#duplicateFilesWarning");
+      warningDiv.textContent = msg;
+      const listEle = document.createElement("ul");
+      fileState.tobeUploadedDuplicate.forEach((file) => {
+        const listItem = document.createElement("li");
+        listItem.textContent = file.name;
+        listEle.appendChild(listItem);
+      });
+      warningDiv.appendChild(listEle);
       $("#warningModal").modal({ backdrop: "static", keyboard: false });
       return;
     }
