@@ -203,6 +203,10 @@ const addNewFiles = (newFiles) => {
       listEle.appendChild(listItem);
     });
     warningDiv.appendChild(listEle);
+
+    // Todo: Remove JQuery after migration to Bootstrap 5
+    // const modal = new bootstrap.Modal("#warningModal", { backdrop: "static", keyboard: false });
+    // modal.show();
     $("#warningModal").modal({ backdrop: "static", keyboard: false });
   }
 
@@ -360,6 +364,9 @@ export const renderPathologyReportUploadPage = async (participantData) => {
   });
 
   document.getElementById("replaceBtn").addEventListener("click", async () => {
+    // Todo: Remove JQuery after migration to Bootstrap 5
+    // const modal = new bootstrap.Modal("#warningModal", { backdrop: "static", keyboard: false });
+    // modal.hide();
     $("#warningModal").modal("hide");
 
     if (fileState.stage === "select") {
@@ -387,6 +394,7 @@ export const renderPathologyReportUploadPage = async (participantData) => {
   });
 
   document.getElementById("cancelBtn").addEventListener("click", () => {
+    // Todo: Remove JQuery after migration to Bootstrap 5
     $("#warningModal").modal("hide");
   });
 
@@ -424,6 +432,7 @@ export const renderPathologyReportUploadPage = async (participantData) => {
         listEle.appendChild(listItem);
       });
       warningDiv.appendChild(listEle);
+      // Todo: Remove JQuery after migration to Bootstrap 5
       $("#warningModal").modal({ backdrop: "static", keyboard: false });
       return;
     }
