@@ -247,7 +247,7 @@ const uploadPathologyReports = async () => {
       } else if (respJson.code === 207) {
         const failureFilenames = respJson.data.failureFilenames || [];
         triggerNotificationBanner(
-          `Some files were not uccessfully uploaded<br>: ${failureFilenames.join("<br>")}`,
+          `Files not successfully uploaded<br>: ${failureFilenames.join("<br>")}`,
           "warning"
         );
         fileState.filenamesUploaded = respJson.data.allFilenames;
@@ -358,7 +358,7 @@ export const renderPathologyReportUploadPage = async (participantData) => {
     addNewFiles(e.dataTransfer.files);
   });
 
-  document.querySelector("#selectFilesLink").addEventListener("click", function (e) {
+  document.querySelector("#selectFilesLink").addEventListener("click", (e) => {
     e.preventDefault();
     fileInput.click();
   });
@@ -398,7 +398,7 @@ export const renderPathologyReportUploadPage = async (participantData) => {
     $("#warningModal").modal("hide");
   });
 
-  document.querySelector("#uploadForm").addEventListener("submit", async function (e) {
+  document.querySelector("#uploadForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     fileState.stage = "upload";
     fileState.tobeUploaded = [];
