@@ -254,11 +254,6 @@ const downloadReportHandler = (participant, reports) => {
 
                 handleDHQHEIPDFDownload(blob, reportDate, participant['Connect_ID']);
 
-                // Successful report view: If this is pt's first time viewing the report, update viewed status
-                if (participant[fieldMapping.reports.dhq3.reportStatusInternal] !== fieldMapping.reports.viewed || participant[fieldMapping.reports.dhq3.reportStatusExternal] !== fieldMapping.reports.viewed) {
-                    await updateDHQReportViewedStatus(uid, studyID, respondentUsername);
-                }
-
             } catch (error) {
                 console.error(error);
                 alert('An error has occured generating the pdf. Please contact support');
@@ -267,42 +262,6 @@ const downloadReportHandler = (participant, reports) => {
                 hideAnimation();
             }
         });
-    }
-}
-
-export const updateDHQReportViewedStatus = async (uid, studyID, respondentUsername) => {
-
-    if (!uid || !studyID || !respondentUsername) {
-        console.error('DHQ3 Update criteria not met. Missing at least one of uid, studyID, or respondentUsername:', uid, studyID, respondentUsername);
-        return null;
-    }
-
-    try {
-        const idToken = await getIdToken();
-        const response = await fetch(`${baseAPI}/dashboard?api=updateDHQReportViewedStatus`, {
-            method: "POST",
-            headers: {
-                Authorization: "Bearer " + idToken,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ uid, studyID, respondentUsername })
-        });
-
-        if (!response.ok) {
-            const error = (response.status + ": " + (await response.json()).message);
-            throw new Error(error);
-        }
-
-        const reportData = await response.json();
-        if (reportData.code === 200) {
-            return;
-        }
-
-        throw new Error('Failed to update DHQ Report viewed status. Response code: ' + reportData.code);
-
-    } catch (error) {
-        console.error('Error in updateDHQReportViewedStatus:', error);
-        throw error;
     }
 }
 
