@@ -5,6 +5,7 @@ import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
 import { renderKitRequest } from './src/requestHomeCollectionKit.js';
+import { renderPathologyReportUploadPage } from './src/pathologyReportUpload.js';
 import { setupDataCorrectionsSelectionToolPage } from './src/dataCorrectionsTool/dataCorrectionsToolSelection.js';
 import { setupVerificationCorrectionsPage } from './src/dataCorrectionsTool/verificationCorrectionsTool.js';
 import { setupSurveyResetToolPage } from './src/dataCorrectionsTool/surveyResetTool.js';
@@ -189,6 +190,14 @@ const router = async () => {
                 let participant = JSON.parse(localStorage.getItem("participant"))
                 renderKitRequest(participant);
             }
+        } else if (route === '#pathologyReportUpload') {
+            const participantData = JSON.parse(localStorage.getItem("participant"));
+            if (participantData === null) {
+                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page.");
+                return;
+            } 
+                
+            renderPathologyReportUploadPage(participantData);
         }
         else if (dataCorrectionsToolRoutes.includes(route)) {
             if (JSON.parse(localStorage.getItem("participant")) === null) {
