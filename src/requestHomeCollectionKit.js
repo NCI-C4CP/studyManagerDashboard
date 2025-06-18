@@ -79,6 +79,9 @@ const render = (participant) => {
         ) {
             initialKitSectionText = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
             replacementKitSectionText = initialKitSectionText;
+        } else if (participant[fieldMapping.verifiedFlag] !== fieldMapping.verified) {
+            initialKitSectionText = `<div>Participant is not verified; cannot send home mouthwash kit.</div>`;
+            replacementKitSectionText = initialKitSectionText;
         } else if (participant[fieldMapping.withdrawConsent] == fieldMapping.yes
         ) {
             initialKitSectionText = `<div>Participant has withdrawn from the study.</div>`;
