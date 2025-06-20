@@ -571,7 +571,7 @@ export default
     bioKitMouthwashBL2: 641006239,
     kitReceivedTime: 826941471,
     kitShippedTime: 661940160,
-    uniqeKitAssemblyId: 687158491,
+    uniqueKitAssemblyId: 687158491,
     kitType: 379252329,
     kitTypeValues: {
         mouthwash: 390351864,
@@ -609,8 +609,17 @@ export default
             aerobicActivityMeeting:  682636404,
             aerobicActivityExceeding: 948593796
         },
+
+        dhq3: {
+            reportStatusInternal: 542983589,
+            reportStatusExternal: 892697201,
+            viewedTS: 600958089,
+            declinedTS: 404613256,
+        },
+
+        // Physical Activity & DHQ internal report status
         unread: 702641611,
         viewed: 469323437,
-        declined: 746038746
+        declined: 746038746,
     }
 };
