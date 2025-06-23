@@ -252,7 +252,7 @@ const downloadReportHandler = (participant, reports) => {
                     return;
                 }
 
-                handleDHQHEIPDFDownload(blob, reportDate, participant['Connect_ID']);
+                handleDHQHEIPDFDownload(blob, reportDate);
 
             } catch (error) {
                 console.error(error);
@@ -341,7 +341,7 @@ const generateDHQHEIPDF = async (lang, dhqCompletedDate, reportData) => {
     return new Blob([pdfBytes], { type: 'application/pdf' });
 }
 
-const handleDHQHEIPDFDownload = (blob, reportDate, connectID) => {
+const handleDHQHEIPDFDownload = (blob, reportDate) => {
     const url = URL.createObjectURL(blob);
     const tempEle = document.createElement('a');
     tempEle.href = url;
@@ -349,7 +349,7 @@ const handleDHQHEIPDFDownload = (blob, reportDate, connectID) => {
     const filenameDate = new Date(reportDate).toISOString().split('T')[0];
     const baseFilename = 'dhq_hei_report.pdf';
     const nameWithoutExt = baseFilename.replace('.pdf', '');
-    tempEle.download = `${connectID}_${nameWithoutExt}_${filenameDate}.pdf`;
+    tempEle.download = `${nameWithoutExt}_${filenameDate}.pdf`;
 
     document.body.appendChild(tempEle);
     tempEle.click();
