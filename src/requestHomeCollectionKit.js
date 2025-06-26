@@ -1,25 +1,23 @@
 import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
 import { renderParticipantHeader } from './participantHeader.js';
 import { findParticipant, renderLookupResultsTable } from './participantLookup.js';
-import { renderParticipantDetails } from './participantDetails.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
 import { baseAPI, getIdToken, hideAnimation, showAnimation } from './utils.js';
 
 
-export const renderReplacementKitRequest = (participant) => {
+export const renderKitRequest = (participant) => {
     document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
     document.getElementById('replaceHomeCollectionBtn').classList.add('active');
 
     mainContent.innerHTML = render(participant);
     bindEventRequestReplacementButton(participant?.['Connect_ID'], participant?.token);
+    bindEventRequestKitButton(participant?.['Connect_ID'], participant?.token);
     bindActionReturnSearchResults();
 };
 
 const renderReplacementScreen = (kitAlreadyReceived) => {
-    return `<div>Request a Home Mouthwash Replacement Kit</div>
-                <div><span class="text-danger">NOTE:</span> Make sure you have verified the mailing address with the participant before entering this request and have updated the address in the User Profile if needed.
-</div>${
+    return `${
     kitAlreadyReceived ? 
         '<div><span class="text-danger">A home mouthwash kit for this participant has already been received. Please confirm the need for a replacement kit before clicking Request Replacement below.</span></div>' : 
         ''
@@ -37,8 +35,26 @@ const renderReplacementScreen = (kitAlreadyReceived) => {
     </div>`;
 }
 
+const renderInitialKitSection = (alreadyOrdered) => {
+    if(alreadyOrdered) {
+        return `<div>An initial home MW kit for the participant has already been ordered.</div>`;
+    } else {
+        return `<div>
+        <button
+            id="requestKitBtn"
+            class="btn btn-primary"
+            data-toggle="modal" 
+            data-target="#modalSuccess"
+            name="modalResetParticipant"
+        >
+            Request Initial Kit
+        </button>
+    </div>`;
+    }
+}
+
 const render = (participant) => {
-    let template = `<div class="container">`
+    let template = `<div class="container" style="padding-top:1rem;">`
     if (!participant) {
         template +=` 
             <div id="root">
@@ -51,7 +67,8 @@ const render = (participant) => {
         const initialKitStatus = participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwash]?.[fieldMapping.kitStatus];
         const replacementKit1Status = participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL1]?.[fieldMapping.kitStatus];
 
-        let resetTextTemplate = ``;
+        let initialKitSectionText = ``;
+        let replacementKitSectionText = ``;
         // Is the user's address valid?
         const poBoxRegex = /^(?:P\.?\s*O\.?\s*(?:Box|B\.?)?|Post\s+Office\s+(?:Box|B\.?)?)\s*(\s*#?\s*\d*)((?:\s+(.+))?$)$/i;
         const physicalAddressLineOne = participant[fieldMapping.physicalAddress1];
@@ -60,76 +77,91 @@ const render = (participant) => {
             (!physicalAddressLineOne || poBoxRegex.test(physicalAddressLineOne)) &&
             (!mailingAddressLineOne || poBoxRegex.test(mailingAddressLineOne))
         ) {
-            resetTextTemplate = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
+            initialKitSectionText = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
+            replacementKitSectionText = initialKitSectionText;
+        } else if (participant[fieldMapping.verifiedFlag] !== fieldMapping.verified) {
+            initialKitSectionText = `<div>Participant is not verified; cannot send home mouthwash kit.</div>`;
+            replacementKitSectionText = initialKitSectionText;
         } else if (participant[fieldMapping.withdrawConsent] == fieldMapping.yes
         ) {
-            resetTextTemplate = `<div>Participant has withdrawn from the study.</div>`;
+            initialKitSectionText = `<div>Participant has withdrawn from the study.</div>`;
+            replacementKitSectionText = initialKitSectionText;
         } else if ( participant[fieldMapping.participantDeceased] == fieldMapping.yes) {
-            resetTextTemplate = `<div>Participant is deceased.</div>`;
+            initialKitSectionText = `<div>Participant is deceased.</div>`;
+            replacementKitSectionText = initialKitSectionText;
         } else {
             if (participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL2]) {
+                initialKitSectionText = renderInitialKitSection(true);
+                replacementKitSectionText = `<div>Participant has already used supported number of replacement kits.</div>`;
                 // If two replacements, they are out of replacement kits; prevent further.
-                resetTextTemplate = `<div>Participant has already used supported number of replacement kits.</div>`;
             } else if (participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL1]) {
     
+                initialKitSectionText = renderInitialKitSection(true);
                 // If one replacement, mark as eligible for second replacement
                 switch(replacementKit1Status) {
                     case undefined:
                     case null:
                     case fieldMapping.kitStatusValues.pending: {
-                        resetTextTemplate = '<div>This participant is not eligible for a second replacement home mouthwash kit</div>';
+                        replacementKitSectionText = '<div>This participant is not eligible for a second replacement home mouthwash kit</div>';
                         break;
                     }
                     case fieldMapping.kitStatusValues.addressUndeliverable: {
-                        resetTextTemplate = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
+                        replacementKitSectionText = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
                         break;
                     }
                     case fieldMapping.kitStatusValues.initialized:
                     case fieldMapping.kitStatusValues.addressPrinted:
                     case fieldMapping.kitStatusValues.assigned: {
-                        resetTextTemplate = '<div>This participant\'s first replacement home mouthwash kit has not been sent</div>';
+                        replacementKitSectionText = '<div>This participant\'s first replacement home mouthwash kit has not been sent</div>';
                         break;
                     }
                     
                     case fieldMapping.kitStatusValues.shipped:
-                        resetTextTemplate = renderReplacementScreen();
+                        replacementKitSectionText = renderReplacementScreen();
                         break;
                     case fieldMapping.kitStatusValues.received:
-                        resetTextTemplate = renderReplacementScreen(true);
+                        replacementKitSectionText = renderReplacementScreen(true);
                         break;
                     default:
-                        resetTextTemplate = '<div>Unrecognized kit status ' + replacementKit1Status + '</div>';
+                        replacementKitSectionText = '<div>Unrecognized kit status ' + replacementKit1Status + '</div>';
                 }
             } else if(participant?.[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwash]) {
                 switch(initialKitStatus) {
                     case undefined:
                     case null:
                     case fieldMapping.kitStatusValues.pending: {
-                        resetTextTemplate = '<div>This participant is not yet eligible for a home mouthwash kit</div>';
+                        initialKitSectionText = renderInitialKitSection(false);
+                        replacementKitSectionText = '<div>This participant is not yet eligible for a home mouthwash replacement kit</div>';
                         break;
                     }
                     case fieldMapping.kitStatusValues.addressUndeliverable: {
-                        resetTextTemplate = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
+                        initialKitSectionText = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
+                        replacementKitSectionText = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
                         break;
                     }
                     case fieldMapping.kitStatusValues.initialized:
                     case fieldMapping.kitStatusValues.addressPrinted:
                     case fieldMapping.kitStatusValues.assigned: {
-                        resetTextTemplate = '<div>This participant\'s initial home mouthwash kit has not been sent</div>';
+                        initialKitSectionText = renderInitialKitSection(true);
+                        replacementKitSectionText = '<div>This participant\'s initial home mouthwash kit has not been sent</div>';
                         break;
                     }
                     case fieldMapping.kitStatusValues.shipped:
+                        initialKitSectionText = renderInitialKitSection(true);
                         // Eligible for first replacement
-                        resetTextTemplate = renderReplacementScreen();
+                        replacementKitSectionText = renderReplacementScreen();
                         break;
                     case fieldMapping.kitStatusValues.received:
-                        resetTextTemplate =  renderReplacementScreen(true);
+                        initialKitSectionText = renderInitialKitSection(true);
+                        replacementKitSectionText =  renderReplacementScreen(true);
                         break;
                     default:
-                        resetTextTemplate = '<div>Unrecognized kit status ' + initialKitStatus + '/<div>';
+                        initialKitSectionText = renderInitialKitSection(true);
+                        replacementKitSectionText = '<div>Unrecognized kit status ' + initialKitStatus + '/<div>';
                 }
             } else {
-                resetTextTemplate = '<div>This participant is not yet eligible for a home mouthwash kit OR their initial home mouthwash kit has not yet been sent</div>';
+                initialKitSectionText = renderInitialKitSection(false);
+                replacementKitSectionText = '<div>This participant is not yet eligible for a home mouthwash replacement kit OR their initial home mouthwash kit has not yet been sent</div>';
             }
         }
 
@@ -146,32 +178,51 @@ const render = (participant) => {
                 </div>
             </div>
             ${renderParticipantHeader(participant)}
-            <div><h2>Home Mouthwash Replacement Kits</h1></div>
-            ${resetTextTemplate}
+            <div><h1>Kit Requests</h1></div>
+            <div><span class="text-danger">Note for all kit requests:</span> Make sure you have verified the mailing address with the participant before entering this request and have updated the address in the User Profile if needed.
+</div>
+            <div style="height:1em;"></div>
+            <h2>Request an Initial Home Mouthwash Kit</h2>
+            ${initialKitSectionText}
+            <div style="height:2em;"></div>
+            <h2>Request a Home Mouthwash Replacement Kit</h2>
+            ${replacementKitSectionText}
+            <div style="height:1em;"></div>
             ${renderBackToSearchDivAndButton()}
-            
         `;
-        
-
-        /**
-         * kitStatus options:
-         * pending: 517216441,
-            initialized: 728267588,
-            addressPrinted: 849527480,
-            assigned: 241974920,
-            shipped: 277438316,
-            received: 375535639,
-
-         * Considerations:
-         * * User not currently eligible for MW (list why?)
-         * * User eligible for MW but first kit has not yet been assigned (kitStatus of initialized)
-         * * User has returned home MW and it has been received
-         * * User is eligible for MW and has no replacements yet (kitStatus of addressPrinted)
-         * * User is eligible for MW and has one replacement
-         * * User is eligible for MW and has two replacements
-         */
     }
     return template;
+}
+
+const bindEventRequestKitButton = (connectId, token) => {
+    const requestKitButton = document.getElementById('requestKitBtn');
+    if(requestKitButton) {
+        requestKitButton.addEventListener('click', async () => {
+            try {
+                showAnimation();
+
+                await requestKit(connectId);
+
+                const header = document.getElementById('modalHeader');
+                const body = document.getElementById('modalBody');  
+                header.innerHTML = `
+                        <h5>Success! Kit requested.</h5>
+                        <button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    `
+                body.innerHTML = `<div>
+                    Please wait while we refresh the participant information and navigate to the participant details page.
+                </div>`
+
+                // Notify user of success and refresh the participant data
+                await refreshParticipantAfterSuccess(token);
+                hideAnimation();
+            } catch(err) {
+                console.error('err', err);
+                alert('Error: There was an error requesting a kit. Please try again.');
+                hideAnimation();
+            }
+        });
+    }
 }
 
 const bindEventRequestReplacementButton = (connectId, token) => {
@@ -181,7 +232,7 @@ const bindEventRequestReplacementButton = (connectId, token) => {
             try {
                 showAnimation();
 
-                await requestReplacementKit(connectId);
+                await requestKit(connectId);
 
                 const header = document.getElementById('modalHeader');
                 const body = document.getElementById('modalBody');  
@@ -194,7 +245,7 @@ const bindEventRequestReplacementButton = (connectId, token) => {
                 </div>`
 
                 // Notify user of success and refresh the participant data
-                await refreshParticipantAfterReplacement(token);
+                await refreshParticipantAfterSuccess(token);
                 hideAnimation();
             } catch(err) {
                 console.error('err', err);
@@ -213,10 +264,9 @@ const closeModal = () => {
     modalClose.querySelector('#closeModal').click();
 };
 
-const refreshParticipantAfterReplacement = async (token) => {
+const refreshParticipantAfterSuccess = async (token) => {
     try {
-        let participant = await reloadParticipantData(token);
-        let changedOption = {};
+        await reloadParticipantData(token);
         // Navigate to the participant details page after 3 seconds
         setTimeout(() => {
             closeModal();
@@ -224,7 +274,7 @@ const refreshParticipantAfterReplacement = async (token) => {
         }, 3000);
     } catch (err) {
         console.error('err', err);
-        alert('The replacement kit was successfully requested, but refreshing the participant information failed. Participant data displayed may be stale.');
+        alert('The kit was successfully requested, but refreshing the participant information failed. Participant data displayed may be stale.');
     }
 }
 
@@ -239,10 +289,10 @@ const reloadParticipantData = async (token) => {
     return reloadedParticipant;
 }
 
-const requestReplacementKit = async (connectId) => {
+const requestKit = async (connectId) => {
     try {
         const idToken = await getIdToken();
-        const response = await fetch(`${baseAPI}/dashboard?api=requestHomeMWReplacementKit`, {
+        const response = await fetch(`${baseAPI}/dashboard?api=requestHomeKit`, {
             method: 'POST',
             headers:{
                 Authorization: "Bearer " + idToken,
@@ -257,10 +307,9 @@ const requestReplacementKit = async (connectId) => {
         
         return await response.json();
     } catch (error) {
-        console.error('Error in requestReplacementKit:', error);
+        console.error('Error in requestKit:', error);
         throw error;
     }
-    
 }
 
 const renderBackToSearchDivAndButton = () => {
