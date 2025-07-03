@@ -100,7 +100,7 @@ const render = (participant) => {
         const mailingAddressLineOne = participant[fieldMapping.address1];
         if (
             (!physicalAddressLineOne || poBoxRegex.test(physicalAddressLineOne)) &&
-            (!mailingAddressLineOne || poBoxRegex.test(mailingAddressLineOne))
+            (!mailingAddressLineOne || poBoxRegex.test(mailingAddressLineOne) || participant[fieldMapping.isPOBox] === fieldMapping.yes)
         ) {
             // PO Boxes should not provide the checkbox to override and send a kit anyway
             initialKitSectionText = renderInvalidAddressSection(false, 'initial');
