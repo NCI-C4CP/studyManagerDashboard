@@ -84,11 +84,11 @@ const showNotAllowedToUpload = (participantData) => {
   mainContent.innerHTML = `
     <div class="container">
       ${renderParticipantHeader(participantData)}
-      <div style="text-align: center">
+      <div class="text-center">
         <h4>${displayedMsg}</h4>
       </div>
-      <div style="text-align: center;">
-        <button type="button" class="btn btn-info" id="backToSearchBtn" style="margin-top:1rem;">Back to Search</button>
+      <div class="text-center">
+        <button type="button" class="btn btn-info mt-1" id="backToSearchBtn">Back to Search</button>
       </div>
     </div>
   `;
