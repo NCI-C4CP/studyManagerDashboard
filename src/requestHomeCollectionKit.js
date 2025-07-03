@@ -90,6 +90,7 @@ const render = (participant) => {
         
         const initialKitStatus = participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwash]?.[fieldMapping.kitStatus];
         const replacementKit1Status = participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL1]?.[fieldMapping.kitStatus];
+        const replacementKit2Status = participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL2]?.[fieldMapping.kitStatus];
 
         let initialKitSectionText = ``;
         let replacementKitSectionText = ``;
@@ -99,7 +100,7 @@ const render = (participant) => {
         const mailingAddressLineOne = participant[fieldMapping.address1];
         if (
             (!physicalAddressLineOne || poBoxRegex.test(physicalAddressLineOne)) &&
-            (!mailingAddressLineOne || poBoxRegex.test(mailingAddressLineOne))
+            (!mailingAddressLineOne || poBoxRegex.test(mailingAddressLineOne) || participant[fieldMapping.isPOBox] === fieldMapping.yes)
         ) {
             // PO Boxes should not provide the checkbox to override and send a kit anyway
             initialKitSectionText = renderInvalidAddressSection(false, 'initial');
@@ -115,7 +116,12 @@ const render = (participant) => {
             initialKitSectionText = `<div>Participant is deceased.</div>`;
             replacementKitSectionText = initialKitSectionText;
         } else {
-            if (participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL2]) {
+            // If their second replacement kit is marked as addressUndeliverable, they can provide an override
+            if (replacementKit2Status === fieldMapping.kitStatusValues.addressUndeliverable) {
+                initialKitSectionText = renderInitialKitSection(true);
+                replacementKitSectionText = renderInvalidAddressSection(true, 'replacement');
+                // If two replacements otherwise, they are out of replacement kits; prevent further.
+            } else if (participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL2]) {
                 initialKitSectionText = renderInitialKitSection(true);
                 replacementKitSectionText = `<div>Participant has already used supported number of replacement kits.</div>`;
                 // If two replacements, they are out of replacement kits; prevent further.
