@@ -34,7 +34,7 @@ export const renderRefusalOptions = () => {
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I think the payment or benefit to participate is not great enough" name="options" 
-                        data-optionKey=${fieldMapping.participantGreedy} id="defaultCheck6">
+                        data-optionKey=${fieldMapping.paymentInsufficient} id="defaultCheck6">
                         <label class="form-check-label" for="defaultCheck6">
                         I think the payment or benefit to participate is not great enough
                         </label>
