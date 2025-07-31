@@ -385,7 +385,7 @@ export default
     // reasosns for refusal/withdrawal
     'tooBusy': 141450621,
     'noLongerInterested': 919699172,
-    'participantGreedy': 576083042,
+    'paymentInsufficient': 576083042,
     'tooSick': 431428747,
     'noInternet': 121430614,
     'worriedAboutResults': 523768810,

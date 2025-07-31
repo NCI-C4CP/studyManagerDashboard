@@ -75,15 +75,20 @@ const setupPathologyReportUploadPage = (participantData) => {
 };
 
 const showNotAllowedToUpload = (participantData) => {
+  let displayedMsg = "Participant does not meet the criteria for uploading pathology reports.";
+  if (participantData[conceptIds.destroyData] === conceptIds.yes) {
+    displayedMsg = "This participant has requested data destruction. Pathology reports cannot be uploaded and any previously uploaded reports have been deleted.";
+  }
+
   const mainContent = document.getElementById("mainContent");
   mainContent.innerHTML = `
     <div class="container">
       ${renderParticipantHeader(participantData)}
-      <div class="row">
-        <h4 style="text-align: center;">Participant does not meet the criteria for uploading pathology reports.</h4>
+      <div class="text-center">
+        <h4>${displayedMsg}</h4>
       </div>
-      <div style="text-align: center;">
-        <button type="button" class="btn btn-info" id="backToSearchBtn" style="margin-top:1rem;">Back to Search</button>
+      <div class="text-center">
+        <button type="button" class="btn btn-info mt-1" id="backToSearchBtn">Back to Search</button>
       </div>
     </div>
   `;

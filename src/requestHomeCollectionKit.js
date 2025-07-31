@@ -14,6 +14,8 @@ export const renderKitRequest = (participant) => {
     bindEventRequestReplacementButton(participant?.['Connect_ID'], participant?.token);
     bindEventRequestKitButton(participant?.['Connect_ID'], participant?.token);
     bindActionReturnSearchResults();
+    bindEventOverrideCheckbox('initial');
+    bindEventOverrideCheckbox('replacement');
 };
 
 const renderReplacementScreen = (kitAlreadyReceived) => {
@@ -53,6 +55,28 @@ const renderInitialKitSection = (alreadyOrdered) => {
     }
 }
 
+const renderInvalidAddressSection = (allowOverride, kitLevel) => {
+    let toReturn = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
+    if (allowOverride) {
+        toReturn += `
+        <div><input type="checkbox" id="${kitLevel}OverrideCheckbox" /> Address updated. Request ${kitLevel} kit.</div>
+        <div>
+            <button
+                id="${kitLevel === 'initial' ? 'requestKitBtn' : 'requestReplacementKitBtn'}"
+                class="btn btn-primary"
+                data-toggle="modal" 
+                data-target="#modalSuccess"
+                name="modalResetParticipant"
+                disabled
+            >
+                ${kitLevel === 'initial' ? 'Request Initial Kit' : 'Request Replacement'}
+            </button>
+        </div>
+    `
+    }
+    return toReturn;
+}
+
 const render = (participant) => {
     let template = `<div class="container" style="padding-top:1rem;">`
     if (!participant) {
@@ -66,6 +90,7 @@ const render = (participant) => {
         
         const initialKitStatus = participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwash]?.[fieldMapping.kitStatus];
         const replacementKit1Status = participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL1]?.[fieldMapping.kitStatus];
+        const replacementKit2Status = participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL2]?.[fieldMapping.kitStatus];
 
         let initialKitSectionText = ``;
         let replacementKitSectionText = ``;
@@ -75,10 +100,11 @@ const render = (participant) => {
         const mailingAddressLineOne = participant[fieldMapping.address1];
         if (
             (!physicalAddressLineOne || poBoxRegex.test(physicalAddressLineOne)) &&
-            (!mailingAddressLineOne || poBoxRegex.test(mailingAddressLineOne))
+            (!mailingAddressLineOne || poBoxRegex.test(mailingAddressLineOne) || participant[fieldMapping.isPOBox] === fieldMapping.yes)
         ) {
-            initialKitSectionText = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
-            replacementKitSectionText = initialKitSectionText;
+            // PO Boxes should not provide the checkbox to override and send a kit anyway
+            initialKitSectionText = renderInvalidAddressSection(false, 'initial');
+            replacementKitSectionText = renderInvalidAddressSection(false, 'replacement');
         } else if (participant[fieldMapping.verifiedFlag] !== fieldMapping.verified) {
             initialKitSectionText = `<div>Participant is not verified; cannot send home mouthwash kit.</div>`;
             replacementKitSectionText = initialKitSectionText;
@@ -90,7 +116,12 @@ const render = (participant) => {
             initialKitSectionText = `<div>Participant is deceased.</div>`;
             replacementKitSectionText = initialKitSectionText;
         } else {
-            if (participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL2]) {
+            // If their second replacement kit is marked as addressUndeliverable, they can provide an override
+            if (replacementKit2Status === fieldMapping.kitStatusValues.addressUndeliverable) {
+                initialKitSectionText = renderInitialKitSection(true);
+                replacementKitSectionText = renderInvalidAddressSection(true, 'replacement');
+                // If two replacements otherwise, they are out of replacement kits; prevent further.
+            } else if (participant[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.bioKitMouthwashBL2]) {
                 initialKitSectionText = renderInitialKitSection(true);
                 replacementKitSectionText = `<div>Participant has already used supported number of replacement kits.</div>`;
                 // If two replacements, they are out of replacement kits; prevent further.
@@ -106,7 +137,7 @@ const render = (participant) => {
                         break;
                     }
                     case fieldMapping.kitStatusValues.addressUndeliverable: {
-                        replacementKitSectionText = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
+                        replacementKitSectionText = renderInvalidAddressSection(true, 'replacement');
                         break;
                     }
                     case fieldMapping.kitStatusValues.initialized:
@@ -135,8 +166,8 @@ const render = (participant) => {
                         break;
                     }
                     case fieldMapping.kitStatusValues.addressUndeliverable: {
-                        initialKitSectionText = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
-                        replacementKitSectionText = `<div>Participant address is invalid; cannot send home mouthwash kit.</div>`;
+                        initialKitSectionText = renderInvalidAddressSection(true, 'initial');
+                        replacementKitSectionText = '<div>This participant\'s initial home mouthwash kit has not been sent</div>';;
                         break;
                     }
                     case fieldMapping.kitStatusValues.initialized:
@@ -192,6 +223,21 @@ const render = (participant) => {
         `;
     }
     return template;
+}
+
+const bindEventOverrideCheckbox = (kitLevel = 'initial') => {
+    // Add listener to enable or disable the relevant button based on checked status
+    const checkboxInput = document.getElementById(`${kitLevel}OverrideCheckbox`);
+    if(checkboxInput) {
+        checkboxInput.addEventListener('change', event => {
+            const matchingButton = kitLevel === 'initial' ? document.getElementById('requestKitBtn') : document.getElementById('requestReplacementKitBtn');
+            if (matchingButton && checkboxInput.checked) {
+                matchingButton.disabled = false;
+            } else if (matchingButton) {
+                matchingButton.disabled = true;
+            }
+        })
+    }
 }
 
 const bindEventRequestKitButton = (connectId, token) => {
