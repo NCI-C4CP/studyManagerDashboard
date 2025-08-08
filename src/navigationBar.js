@@ -55,7 +55,11 @@ export const dashboardNavBarLinks = () => {
         </li>`) : (``) }
         ${(helpDesk === 'true' || coordinatingCenter === 'true') ?
             (`<li class="nav-item" id="replaceHomeCollectionBtn">
-                <a class="nav-item nav-link ws-nowrap" href="#requestHomeCollectionKit" title="Home Collection Kit Request"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-home"></i>Kit Requests</span></a>
+                <a class="nav-item nav-link ws-nowrap" href="#requestHomeCollectionKit" title="Home Collection Kit Request"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-home"></i> Kit Requests</span></a>
+            </li>`) : (``) }
+        ${coordinatingCenter === 'true' ?
+            (`<li class="nav-item" id="manageRequestAKitConditionsBtn">
+                <a class="nav-item nav-link ws-nowrap" href="#requestAKitConditions" title="Manage Automated Kit Request Eligibility"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-cogs"></i> Manage Automated Kit Request Eligibility</span></a>
             </li>`) : (``) }
         ${(isParent !== 'true' || coordinatingCenter === 'true') ?
         (`<li class="nav-item" id="siteMessageBtn">
