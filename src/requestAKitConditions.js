@@ -1,5 +1,5 @@
 import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
-import { baseAPI, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner } from './utils.js';
+import { baseAPI, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, escapeHTML } from './utils.js';
 
 let conceptsOptionsStr = "";
 let concepts = null;
@@ -20,24 +20,26 @@ export const renderRequestAKitConditions = async () => {
         }
     }
 
-    // @TODO: Error handling
-    const response = await getRequestAKitConditions();
+    try {
+      const response = await getRequestAKitConditions();
 
-    console.log('Get requestAKitConditions response', response);
-
-    mainContent.innerHTML = render(response.data);
-
-    handleDeleteExistingConditions();
-    handleAddCondition();
-    handleDeleteExistingSorts();
-    handleAddSort();
-    handleFormSubmit();
-    handleExitForm();
-    handleRunButtons();
-    hideAnimation();
+      mainContent.innerHTML = renderRequestAKitConditionsHTML(response.data);
+      
+      handleDeleteExistingConditions();
+      handleAddCondition();
+      handleDeleteExistingSorts();
+      handleAddSort();
+      handleFormSubmit();
+      handleExitForm();
+      handleRunButtons();
+      hideAnimation();
+    } catch(err) {
+      console.error('Error retrieving data', err);
+      mainContent.innerHTML = `<div class="text=-danger">Unrecoverable error in retrieving request a kit conditions. Please check console for more information.</div>`;
+    }
 }
 
-const render = (data = {}) => {
+const renderRequestAKitConditionsHTML = (data = {}) => {
     
     const isReadOnly = false;
     let conditionHtmlStrAll = "";
@@ -124,6 +126,7 @@ const render = (data = {}) => {
 }
 
 const getRequestAKitConditions = async () => {
+    // Error handling in wrapping renderRequestAKitConditions function
     const idToken = await getIdToken();
     const url = `${baseAPI}/dashboard?api=retrieveRequestAKitConditions`;
     
@@ -144,7 +147,7 @@ const getConditionHtmlStr = (index = 0, isReadOnly = false, condition = []) => {
     <div class="row form-group" data-condition-idx="${index}" data-condition-type="simple">
         <label class="col-form-label col-md-2">Condition</label>
         <div class="col-md-3 mr-2 p-0">
-          <input list="dataListConditionKey${index}" class="form-control" name="condition-key" ${conditionKey ? `value="${conditionKey}"` : ""} ${readonlyCheck}>
+          <input list="dataListConditionKey${index}" class="form-control" name="condition-key" ${conditionKey ? `value="${escapeHTML(conditionKey)}"` : ""}  ${readonlyCheck}>
           <datalist id="dataListConditionKey${index}">
               ${conceptsOptionsStr}
           </datalist>
@@ -162,7 +165,7 @@ const getConditionHtmlStr = (index = 0, isReadOnly = false, condition = []) => {
             <option value="string" ${typeof conditionValue === "string" ? "selected" : ""}>string</option>
         </select>
         <div class="condition-value col-md-3 mr-2 p-0">
-          <input list="dataListConditionValue${index}" class="form-control" name="condition-value" ${conditionValue ? `value="${conditionValue}"` : ""} ${readonlyCheck}>
+          <input list="dataListConditionValue${index}" class="form-control" name="condition-value" ${conditionValue ? `value="${escapeHTML(conditionValue)}"` : ""} ${readonlyCheck}>
           <datalist id="dataListConditionValue${index}">
               ${conceptsOptionsStr}
           </datalist>
@@ -196,7 +199,7 @@ const handleAddCondition = () => {
 
   for (const [btnId, getHtmlStr] of idAndCallbacks) {
     const btn = document.getElementById(btnId);
-    if (!btn || btn.hasClickListener) continue;
+    if (!conditionDiv || !btn || btn.hasClickListener) continue;
 
     btn.addEventListener("click", () => {
       const index = parseInt(conditionDiv.dataset.currentIndex) + 1;
@@ -248,7 +251,7 @@ const handleAddSort = () => {
 
   for (const [btnId, getHtmlStr] of idAndCallbacks) {
     const btn = document.getElementById(btnId);
-    if (!btn || btn.hasClickListener) continue;
+    if (!sortDiv || !btn || btn.hasClickListener) continue;
 
     btn.addEventListener("click", () => {
       const index = parseInt(sortDiv.dataset.currentIndex) + 1;
@@ -411,29 +414,32 @@ const handleRunButtons = () => {
     liveRunBtn.addEventListener("click", async () => {
         showAnimation();
 
-        await saveForm();
+        try {
+          await saveForm();
 
-        const resJson = await processRequestAKitConditions(true);
+          const resJson = await processRequestAKitConditions(true);
 
-        console.log('resJson', resJson);
+          let {data, message, code, success} = resJson;
 
-        let {data, message, code, success} = resJson;
-
-        const displayDiv = document.getElementById('live-run-results');
-        if(success === true) {
-          triggerNotificationBanner('Updates successful! See results below.', 'success');
-          const {count, queryStr} = data;
-          // Update div
-          displayDiv.innerHTML = `
-          <div>
-            BigQuery String run: ${queryStr}
-          </div>
-          <div>
-            Updated ${count} participants
-          </div>
-          `;
-        } else {
-          displayDiv.innerHTML = `${code} Error in processing updates: ${message}`;
+          const displayDiv = document.getElementById('live-run-results');
+          if(success === true) {
+            triggerNotificationBanner('Updates successful! See results below.', 'success');
+            const {count, queryStr} = data;
+            // Update div
+            displayDiv.innerHTML = `
+            <div>
+              BigQuery String run: ${queryStr}
+            </div>
+            <div>
+              Updated ${count} participants
+            </div>
+            `;
+          } else {
+            displayDiv.innerHTML = `${code} Error in processing updates: ${message}`;
+          }
+        } catch(err) {
+          console.error('Error', err);
+          triggerNotificationBanner(`Error in processing updates: see console`, 'danger');
         }
 
         hideAnimation();
@@ -444,16 +450,17 @@ const handleRunButtons = () => {
 }
 
 const processRequestAKitConditions = async (updateDb = false) => { 
-const idToken = await getIdToken();
+  // Error handling in wrapping functions
+  const idToken = await getIdToken();
 
-    const res = await fetch(`${baseAPI}/dashboard?api=processRequestAKitConditions&updateDb=${updateDb}`, {
-      method: "GET",
-      headers: {
-        Authorization: "Bearer " + idToken,
-      },
-    });
+  const res = await fetch(`${baseAPI}/dashboard?api=processRequestAKitConditions&updateDb=${updateDb}`, {
+    method: "GET",
+    headers: {
+      Authorization: "Bearer " + idToken,
+    },
+  });
 
-    return await res.json();
+  return await res.json();
 }
 
 const storeRequestAKitConditions = async (schema) => {
