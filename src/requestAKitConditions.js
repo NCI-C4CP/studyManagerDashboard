@@ -180,7 +180,7 @@ const getSQLConditionHtmlStr = (index = 0, isReadOnly = false, conditionStr = ""
     <div class="row form-group" data-condition-idx="${index}" data-condition-type="sql">
         <label class="col-form-label col-md-3">SQL Conditions</label>
         <div class="col-md-7 mr-2 p-0">
-          <textarea required class="form-control" rows="2" placeholder='d_685002411.d_867203506=104430631 AND (d_827220437=531629870 OR d_827220437=548392715) AND d_914594314>"2024-01-01" AND d_914594314<"2024-09-10T20:05:16.490Z"' ${readonlyCheck}>${conditionStr}</textarea>
+          <textarea required class="form-control" rows="2" placeholder='d_685002411.d_867203506=104430631 AND (d_827220437=531629870 OR d_827220437=548392715) AND d_914594314>"2024-01-01" AND d_914594314<"2024-09-10T20:05:16.490Z"' ${readonlyCheck}>${escapeHTML(conditionStr)}</textarea>
         </div>
         <button type ="button" data-btn-idx="${index}" ${readonlyCheck} class="btn btn-warning ml-4 col-md-1" title="Delete SQL conditions in this row">Delete</button>
     </div>`;
