@@ -26,7 +26,7 @@ const ehrRequiredNamesExact = [
   "concept",
   "vocabulary",
 ];
-const ehrOptoinalNamesAll = [
+const ehrOptionalNamesAll = [
   "concept_class",
   "concept_relationship",
   "concept_synonym",
@@ -54,10 +54,10 @@ const ehrOptoinalNamesAll = [
   "metadata",
   "attribute_definition",
 ];
-const ehrOptionalNamesExact = ehrOptoinalNamesAll.filter((name) => !name.endsWith("*"));
-const ehrOptionalNamePrefixes = ehrOptoinalNamesAll
+const ehrOptionalNamesExact = ehrOptionalNamesAll.filter((name) => !name.endsWith("*"));
+const ehrOptionalNamePrefixes = ehrOptionalNamesAll
   .filter((name) => name.endsWith("*"))
-  .map((name) => name.replace("*", ""));
+  .map((name) => name.replace(/\*$/, ""));
 
 const checkEhrFullName = (fullName) => {
   const res = { fileName: "", fileExt: "", isValid: false };
@@ -441,7 +441,7 @@ const uploadEhr = async () => {
 export const renderEhrUploadPage = async () => {
   document.getElementById("navBarLinks").innerHTML = dashboardNavBarLinks();
   removeActiveClass("nav-link", "active");
-  document.getElementById("participantSummaryBtn").classList.add("active");
+  document.getElementById("ehrUploadBtn").classList.add("active");
 
   const mainContent = document.getElementById("mainContent");
   mainContent.innerHTML = setupEhrUploadPage();
@@ -529,7 +529,7 @@ export const renderEhrUploadPage = async () => {
       const headingText = "Duplicate Upload";
       let msg = `Below file has been uploaded previously. Do you want to replace it with the new file or cancel this upload?`;
       if (fileState.tobeUploadedDuplicate.length > 1) {
-        msg = `Below files have been uploaded  previously. Do you want to replace them with the new files or cancel this upload?`;
+        msg = `Below files have been uploaded previously. Do you want to replace them with the new files or cancel this upload?`;
       }
 
       document.querySelector("#warningModalLabel").textContent = headingText;
