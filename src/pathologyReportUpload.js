@@ -304,7 +304,7 @@ const getUploadedPathologyReportNames = async () => {
 export const renderPathologyReportUploadPage = async (participantData) => {
   document.getElementById("navBarLinks").innerHTML = dashboardNavBarLinks();
   removeActiveClass("nav-link", "active");
-  document.getElementById("participantSummaryBtn").classList.add("active");
+  document.getElementById("pathologyReportUploadBtn").classList.add("active");
 
   const isAllowedToUpload =
     participantData[conceptIds.verifiedFlag] === conceptIds.verified &&
