@@ -77,7 +77,7 @@ const renderRequestAKitConditionsHTML = (data = {}) => {
 
     return `
     <div class="container-fluid">
-      <h2>Select Participants to Make Eligible for Home Mouthwash Kits</h2>
+      <h2>CCC use only- Set Kit Eligibility</h2>
       <div id="root root-margin"> 
         <div id="alert_placeholder"></div>
         <br />
@@ -117,7 +117,12 @@ const renderRequestAKitConditionsHTML = (data = {}) => {
             </div>
             <div class="col-md-12" id="live-run-results"></div>
         </div>
-
+        <div class="row form-group">
+          <div class="col-md-1"></div>
+          <div class="col-md-10 text-center">
+            Firestore backup to BigQuery (BQ) occurs at 2:45pm ET, 7:45pm ET and 12:00am ET. Data pulled in this query relies on BQ, and Kit Eligible flags set via this functionality will update in BQ when the next scheduled backup occurs.
+          </div>
+        </div>
         
 
 
