@@ -2,10 +2,10 @@ import { dashboardNavBarLinks, removeActiveClass } from "./navigationBar.js";
 import { getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, baseAPI } from "./utils.js";
 
 let fileState = {
-  tobeSelectedDuplicate: [],
+  toBeSelectedDuplicate: [],
   selected: [],
-  tobeUploadedDuplicate: [],
-  tobeUploaded: [],
+  toBeUploadedDuplicate: [],
+  toBeUploaded: [],
   uploaded: [],
   stage: "select", // "select" | "upload"
 };
@@ -144,9 +144,9 @@ const setupEhrUploadPage = () => {
 const selectNewFiles = (newFiles) => {
   const fileArray = Array.from(newFiles);
   const fileNameSet = new Set();
-  const selecteFileCount = fileState.selected.length;
+  const selectedFileCount = fileState.selected.length;
   fileState.stage = "select";
-  fileState.tobeSelectedDuplicate = [];
+  fileState.toBeSelectedDuplicate = [];
 
   for (const file of fileArray) {
     const { fileName, fileExt, isValid } = checkEhrFullName(file.name);
@@ -157,14 +157,14 @@ const selectNewFiles = (newFiles) => {
     if (selectedFileIdx === -1) {
       fileState.selected.push({ file, fileName, fileExt });
     } else {
-      fileState.tobeSelectedDuplicate.push({ file, fileName, fileExt });
+      fileState.toBeSelectedDuplicate.push({ file, fileName, fileExt });
     }
   }
 
-  if (fileState.tobeSelectedDuplicate.length > 0) {
+  if (fileState.toBeSelectedDuplicate.length > 0) {
     const headingText = "Duplicate Selection";
     let msg = `Below file is already selected. Do you want to replace it with the new file?`;
-    if (fileState.tobeSelectedDuplicate.length > 1) {
+    if (fileState.toBeSelectedDuplicate.length > 1) {
       msg = `Below files are already selected. Do you want to replace them with the new files?`;
     }
 
@@ -172,7 +172,7 @@ const selectNewFiles = (newFiles) => {
     const warningDiv = document.querySelector("#duplicateFilesWarning");
     warningDiv.textContent = msg;
     const listEle = document.createElement("ul");
-    fileState.tobeSelectedDuplicate.forEach((item) => {
+    fileState.toBeSelectedDuplicate.forEach((item) => {
       const listItem = document.createElement("li");
       listItem.textContent = item.fileName;
       listEle.appendChild(listItem);
@@ -185,7 +185,7 @@ const selectNewFiles = (newFiles) => {
     $("#warningModal").modal({ backdrop: "static", keyboard: false });
   }
 
-  if (fileState.selected.length > selecteFileCount) {
+  if (fileState.selected.length > selectedFileCount) {
     refreshSelectedFiles();
   }
 };
@@ -280,12 +280,12 @@ const refreshUploadedEhrNames = async () => {
 };
 
 const checkEhrBeforeUpload = () => {
-  if (fileState.tobeUploaded.length === 0) return false;
-  const tobeUploadedSet = new Set(fileState.tobeUploaded.map((item) => item.fileName));
-  const missingRequired = ehrRequiredNamesExact.filter((fileName) => !tobeUploadedSet.has(fileName));
-  const missingOptional = ehrOptionalNamesExact.filter((fileName) => !tobeUploadedSet.has(fileName));
+  if (fileState.toBeUploaded.length === 0) return false;
+  const toBeUploadedSet = new Set(fileState.toBeUploaded.map((item) => item.fileName));
+  const missingRequired = ehrRequiredNamesExact.filter((fileName) => !toBeUploadedSet.has(fileName));
+  const missingOptional = ehrOptionalNamesExact.filter((fileName) => !toBeUploadedSet.has(fileName));
   const missingOptionalPrefix = ehrOptionalNamePrefixes.filter((prefix) => {
-    return !fileState.tobeUploaded.some((item) => item.fileName.startsWith(prefix));
+    return !fileState.toBeUploaded.some((item) => item.fileName.startsWith(prefix));
   });
 
   if (missingOptionalPrefix.length > 0) {
@@ -402,7 +402,7 @@ const uploadEhr = async () => {
 
   showAnimation();
   const formData = new FormData();
-  fileState.tobeUploaded.forEach((item) => formData.append("files", item.file));
+  fileState.toBeUploaded.forEach((item) => formData.append("files", item.file));
 
   const url = `${baseAPI}/dashboard/?api=uploadEhr`;
   const idToken = await getIdToken();
@@ -482,8 +482,8 @@ export const renderEhrUploadPage = async () => {
     $("#warningModal").modal("hide");
 
     if (fileState.stage === "select") {
-      while (fileState.tobeSelectedDuplicate.length > 0) {
-        const duItem = fileState.tobeSelectedDuplicate.pop();
+      while (fileState.toBeSelectedDuplicate.length > 0) {
+        const duItem = fileState.toBeSelectedDuplicate.pop();
         const idx = fileState.selected.findIndex((item) => item.fileName === duItem.fileName);
         if (idx !== -1) {
           fileState.selected.splice(idx, 1);
@@ -493,10 +493,10 @@ export const renderEhrUploadPage = async () => {
       refreshSelectedFiles();
     } else if (fileState.stage === "upload") {
       const fileNameSet = new Set();
-      while (fileState.tobeUploadedDuplicate.length > 0) {
-        const item = fileState.tobeUploadedDuplicate.pop();
+      while (fileState.toBeUploadedDuplicate.length > 0) {
+        const item = fileState.toBeUploadedDuplicate.pop();
         if (!fileNameSet.has(item.fileName)) {
-          fileState.tobeUploaded.push(item);
+          fileState.toBeUploaded.push(item);
           fileNameSet.add(item.fileName);
         }
       }
@@ -512,23 +512,23 @@ export const renderEhrUploadPage = async () => {
 
   document.querySelector("#uploadForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    fileState = { ...fileState, stage: "upload", tobeUploaded: [], tobeUploadedDuplicate: [] };
+    fileState = { ...fileState, stage: "upload", toBeUploaded: [], toBeUploadedDuplicate: [] };
     const fileNameSet = new Set();
 
     for (const item of fileState.selected) {
       const idx = fileState.uploaded.findIndex((uploadedItem) => uploadedItem.fileName === item.fileName);
       if (idx !== -1) {
-        fileState.tobeUploadedDuplicate.push(item);
+        fileState.toBeUploadedDuplicate.push(item);
       } else if (!fileNameSet.has(item.fileName)) {
-        fileState.tobeUploaded.push(item);
+        fileState.toBeUploaded.push(item);
         fileNameSet.add(item.fileName);
       }
     }
 
-    if (fileState.tobeUploadedDuplicate.length > 0) {
+    if (fileState.toBeUploadedDuplicate.length > 0) {
       const headingText = "Duplicate Upload";
       let msg = `Below file has been uploaded previously. Do you want to replace it with the new file or cancel this upload?`;
-      if (fileState.tobeUploadedDuplicate.length > 1) {
+      if (fileState.toBeUploadedDuplicate.length > 1) {
         msg = `Below files have been uploaded previously. Do you want to replace them with the new files or cancel this upload?`;
       }
 
@@ -536,7 +536,7 @@ export const renderEhrUploadPage = async () => {
       const warningDiv = document.querySelector("#duplicateFilesWarning");
       warningDiv.textContent = msg;
       const ulEle = document.createElement("ul");
-      fileState.tobeUploadedDuplicate.forEach((item) => {
+      fileState.toBeUploadedDuplicate.forEach((item) => {
         const liEle = document.createElement("li");
         liEle.textContent = item.fileName;
         ulEle.appendChild(liEle);
