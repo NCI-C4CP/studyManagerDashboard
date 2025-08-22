@@ -5,7 +5,9 @@ import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
 import { renderKitRequest } from './src/requestHomeCollectionKit.js';
+import { renderRequestAKitConditions } from './src/requestAKitConditions.js';
 import { renderPathologyReportUploadPage } from './src/pathologyReportUpload.js';
+import { renderEhrUploadPage } from "./src/ehrUpload.js";
 import { setupDataCorrectionsSelectionToolPage } from './src/dataCorrectionsTool/dataCorrectionsToolSelection.js';
 import { setupVerificationCorrectionsPage } from './src/dataCorrectionsTool/verificationCorrectionsTool.js';
 import { setupSurveyResetToolPage } from './src/dataCorrectionsTool/surveyResetTool.js';
@@ -190,6 +192,8 @@ const router = async () => {
                 let participant = JSON.parse(localStorage.getItem("participant"))
                 renderKitRequest(participant);
             }
+        } else if (route === '#requestAKitConditions') {
+            renderRequestAKitConditions();
         } else if (route === '#pathologyReportUpload') {
             const participantData = JSON.parse(localStorage.getItem("participant"));
             if (participantData === null) {
@@ -198,6 +202,8 @@ const router = async () => {
             } 
                 
             renderPathologyReportUploadPage(participantData);
+        } else if (route === '#ehrUpload') {
+            renderEhrUploadPage();
         }
         else if (dataCorrectionsToolRoutes.includes(route)) {
             if (JSON.parse(localStorage.getItem("participant")) === null) {
