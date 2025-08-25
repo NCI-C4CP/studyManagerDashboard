@@ -49,13 +49,20 @@ export const dashboardNavBarLinks = () => {
         ${(helpDesk === 'true') ? '' : (`<li class="nav-item" id="pathologyReportUploadBtn">
             <a class="nav-item nav-link ws-nowrap" href="#pathologyReportUpload" title="Pathology Report Upload"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-upload"></i> Pathology Report Upload</span></a>
         </li>`)}
+        ${(helpDesk === 'true' || (coordinatingCenter === 'true' && location.host === urls.prod)) ? '' : (`<li class="nav-item" id="ehrUploadBtn">
+            <a class="nav-item nav-link ws-nowrap" href="#ehrUpload" title="EHR Upload"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-upload"></i> EHR Upload</span></a>
+        </li>`)}
         ${(helpDesk === 'true' || coordinatingCenter === 'true') ?
         (`<li class="nav-item" id="participantVerificationBtn">
             <a class="nav-item nav-link ws-nowrap" href="#dataCorrectionsToolSelection" title="Data Corrections Tool"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-check"></i> Data Corrections Tool</span></a>
         </li>`) : (``) }
         ${(helpDesk === 'true' || coordinatingCenter === 'true') ?
             (`<li class="nav-item" id="replaceHomeCollectionBtn">
-                <a class="nav-item nav-link ws-nowrap" href="#requestHomeCollectionKit" title="Home Collection Kit Request"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-home"></i>Kit Requests</span></a>
+                <a class="nav-item nav-link ws-nowrap" href="#requestHomeCollectionKit" title="Home Collection Kit Request"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-home"></i> Kit Requests</span></a>
+            </li>`) : (``) }
+        ${coordinatingCenter === 'true' ?
+            (`<li class="nav-item" id="manageRequestAKitConditionsBtn">
+                <a class="nav-item nav-link ws-nowrap" href="#requestAKitConditions" title="Manage Automated Kit Request Eligibility"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-cogs"></i> CCC use only- Set Kit Eligibility</span></a>
             </li>`) : (``) }
         ${(isParent !== 'true' || coordinatingCenter === 'true') ?
         (`<li class="nav-item" id="siteMessageBtn">
