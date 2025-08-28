@@ -49,7 +49,6 @@ const renderIncentiveEligibilityToolContent = (participant) => {
                     </div>
                 </div>
 
-
                 <div class="row">
                     <div class="col my-2">
                         <h2 class="norcToolTypeHeader">Incentive Eligibility </h2>
@@ -138,7 +137,10 @@ const handlePaymentRoundSelect = (participant) => {
         !dropdownPaymentOptions || 
         !incentiveStatusText || 
         !isIncentiveEligibleNote || 
-        !selectButton) return;
+        !selectButton
+        ) {
+            return;
+        }
 
     const { paymentRound, baselinePayment, eligiblePayment, norcPaymentEligibility, no } = fieldMapping; 
 
@@ -190,7 +192,13 @@ const handleParticipantPaymentTextContent = (participant, isEligibleForIncentive
     const incentiveStatusText = document.getElementById('incentiveStatusText');
     const isIncentiveEligibleNote = document.getElementById('isIncentiveEligibleNote');
     const dateOfEligibilityText = document.getElementById('dateOfEligibilityText');
-    if (!incentiveStatusText || !isIncentiveEligibleNote || !dateOfEligibilityText) return;
+
+    if (!incentiveStatusText || 
+        !isIncentiveEligibleNote || 
+        !dateOfEligibilityText
+    ) {
+        return;
+    }
     
     const { paymentRound, baseline, eligiblePaymentRoundTimestamp } = fieldMapping; 
 
@@ -227,7 +235,14 @@ const clearPaymentRoundSelect = () => {
     const clearButton = document.getElementById('clearPaymentRoundButton');
     const isIncentiveEligibleNote = document.getElementById('isIncentiveEligibleNote');
     const selectButton = document.querySelector('.selectButton');
-    if (!clearButton || !isIncentiveEligibleNote || !selectButton) return;
+
+    if (
+        !clearButton || 
+        !isIncentiveEligibleNote || 
+        !selectButton
+    ) {
+        return;
+    }
 
     clearButton.addEventListener('click', () => {
         setParticipantPaymentRound();
@@ -241,7 +256,16 @@ const setParticipantPaymentRound = () => {
     const selectButton = document.querySelector('.selectButton');
     const incentiveStatusText = document.getElementById('incentiveStatusText');
     const dateOfEligibilityText = document.getElementById('dateOfEligibilityText');
-    if (!clearButton || !isIncentiveEligibleNote || !selectButton || !incentiveStatusText || !dateOfEligibilityText) return;
+
+    if (
+        !clearButton || 
+        !isIncentiveEligibleNote || 
+        !selectButton || 
+        !incentiveStatusText || 
+        !dateOfEligibilityText
+    ) {
+        return;
+    }
 
     isIncentiveEligibleNote.textContent = '';
     dateOfEligibilityText.textContent = 'Date of Eligibility:';
@@ -263,22 +287,23 @@ const toggleSubmitButton = (isEligibleForIncentiveUpdate) => {
 
 const confirmIncentiveEligibilityUpdate = (participant) => { 
     const confirmButton = document.getElementById('confirmUpdateEligibility');
-    if (confirmButton && dateOfEligibilityInput) {
-        // Check if the wrapper already exists; if not, create it
-        if (!handleConfirmClickWrapper) {
-            handleConfirmClickWrapper = () => handleConfirmClick(participant);
-        }
-        // remove and add listeners to prevent multiple listeners
+    if (!confirmButton) return;
+
+    // remove old event listener if it exists, with previous participant
+    if (handleConfirmClickWrapper) {
         confirmButton.removeEventListener('click', handleConfirmClickWrapper);
-        confirmButton.addEventListener('click', handleConfirmClickWrapper);
     }
+
+    // Reassign new wrapper with current participant
+    handleConfirmClickWrapper = () => handleConfirmClick(participant);
+    confirmButton.addEventListener('click', handleConfirmClickWrapper);
 };
 
 const handleConfirmClick = async (participant) => { 
     const { paymentRound, baseline, eligiblePaymentRoundTimestamp } = fieldMapping;
     const confirmUpdateEligibilityButton = document.getElementById('confirmUpdateEligibility');
     const selectedDateValue = selectedDateOfEligibility ? convertToISO8601(selectedDateOfEligibility) : convertToISO8601(dateOfEligibilityInput.value);
-
+    
     if (confirmUpdateEligibilityButton) {
         try {
             const updateResponse = await updateParticipantIncentiveEligibility(participant, participantPaymentRound, selectedDateValue);
