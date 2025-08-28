@@ -3,18 +3,17 @@ import { renderParticipantHeader } from './participantHeader.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey, 
     baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineBloodSample, baselineUrineSample, baselineBiospecSurvey, baselineMenstrualSurvey,
-    baselineMouthwashSample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
-    baselineExperienceSurvey, cancerScreeningHistorySurvey, baselinePhysActReport} from './participantSummaryRow.js';
-import { formatUTCDate, conceptToSiteMapping, pdfCoordinatesMap } from './utils.js';
+    baselineMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
+    baselineExperienceSurvey, cancerScreeningHistorySurvey, dhqSurvey, baselinePhysActReport, dhq3Report} from './participantSummaryRow.js';
+import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate } from './utils.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
 
-const { PDFDocument, StandardFonts } = PDFLib;
+const { PDFDocument, StandardFonts, rgb } = PDFLib;
 
 document.body.scrollTop = document.documentElement.scrollTop = 0;
 
 export const renderParticipantSummary = (participant, reports) => {
-    const isParent = localStorage.getItem('isParent');
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
+    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantSummaryBtn').classList.add('active');
     if (participant !== null) {
@@ -105,6 +104,9 @@ export const render = (participant, reports) => {
                                     ${baselineExperienceSurvey(participant)}
                                 </tr>
                                 <tr class="row-color-survey-dark">
+                                    ${dhqSurvey(participant)}
+                                </tr>
+                                <tr class="row-color-survey-light">
                                     ${cancerScreeningHistorySurvey(participant)}
                                 </tr>
                                 <tr class="row-color-sample-dark">
@@ -116,6 +118,12 @@ export const render = (participant, reports) => {
                                 <tr class="row-color-sample-dark">
                                     ${baselineMouthwashSample(participant)}
                                 </tr>
+                                <tr class="row-color-sample-light">
+                                    ${baselineMouthwashR1Sample(participant)}
+                                </tr>
+                                <tr class="row-color-sample-dark">
+                                    ${baselineMouthwashR2Sample(participant)}
+                                </tr>
                                 <tr class="row-color-payment">
                                     ${baselinePayment(participant)}
                                 </tr>
@@ -124,6 +132,9 @@ export const render = (participant, reports) => {
                                 </tr>
                                 <tr class="row-color-roi-dark">
                                     ${baselinePhysActReport(participant, reports)}
+                                </tr>
+                                <tr class="row-color-roi-light">
+                                    ${dhq3Report(participant, reports)}
                                 </tr>
                                 ${participant[fieldMapping.revokeHIPAA] === fieldMapping.yes ? 
                                     (`<tr class="row-color-enrollment-dark"> ${hipaaRevocation(participant)} </tr>`) : (``)}
@@ -216,6 +227,134 @@ const downloadReportHandler = (participant, reports) => {
             }
         })
     }
+
+    const dhqHEIReportDownloadLink = document.getElementById('downloadDHQHEIReport');
+    if (dhqHEIReportDownloadLink) {
+        dhqHEIReportDownloadLink.addEventListener('click', async () => {
+            try {
+                showAnimation();
+                const uid = participant.state.uid;
+                const dhqSurveyStatus = participant[fieldMapping.dhqSurveyStatus];
+                const studyID = participant[fieldMapping.dhqStudyID];
+                const respondentUsername = participant[fieldMapping.dhqUsername];
+                const reportDate = participant[fieldMapping.dhqSurveyCompletedDate];
+                const reportData = await retrieveDHQHEIReport(dhqSurveyStatus, studyID, respondentUsername);
+
+                if (!reportData) {
+                    alert('No DHQ HEI Report data found for this participant.');
+                    console.error('No DHQ HEI Report data found for this participant.');
+                }
+
+                const blob = await generateDHQHEIPDF(lang, reportDate, reportData);
+                if (!blob) {
+                    alert('Failed to generate PDF blob.');
+                    console.error('Failed to generate PDF blob.');
+                    return;
+                }
+
+                handleDHQHEIPDFDownload(blob, reportDate);
+
+            } catch (error) {
+                console.error(error);
+                alert('An error has occured generating the pdf. Please contact support');
+
+            } finally {
+                hideAnimation();
+            }
+        });
+    }
+}
+
+export const retrieveDHQHEIReport = async (dhqSurveyStatus, studyID, respondentUsername) => {
+    
+    if (dhqSurveyStatus !== fieldMapping.submitted || !studyID || !respondentUsername) {
+        console.error('DHQ3 Retrieval criteria not met:', dhqSurveyStatus, studyID, respondentUsername);
+        return null;
+    }
+
+    try {
+        const idToken = await getIdToken();
+        const response = await fetch(`${baseAPI}/dashboard?api=retrieveDHQHEIReport`, {
+            method: "POST",
+            headers: {
+                Authorization: "Bearer " + idToken,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ studyID, respondentUsername })
+        });
+
+        if (!response.ok) {
+            const error = (response.status + ": " + (await response.json()).message);
+            throw new Error(error);
+        }
+
+        const reportData = await response.json();
+        if (reportData.code === 200) {
+            return reportData.data || null;
+        }
+
+        throw new Error('Failed to retrieve DHQ HEI Report data. Response code: ' + reportData.code);
+
+    } catch (error) {
+        console.error('Error in retrieveDHQHEIReport:', error);
+        throw error;
+    }
+}
+
+const generateDHQHEIPDF = async (lang, dhqCompletedDate, reportData) => {
+    const binaryString = atob(reportData);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const pdfDoc = await PDFDocument.load(bytes);
+    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    const pages = pdfDoc.getPages();
+    const firstPage = pages[0];
+    const { width, height } = firstPage.getSize();
+
+    const dateOptions = {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    };
+
+    const reportGeneratedDate = new Date(dhqCompletedDate);
+    const dateString = translateDate(reportGeneratedDate, lang, dateOptions);
+    const fontSize = 16;
+
+    const textWidth = helveticaFont.widthOfTextAtSize(dateString, fontSize);
+    const x = (width - textWidth) / 2;  // Horizontally center the text
+    const y = height - 245;             // Under the 'Healthy Eating Index' title
+
+    firstPage.drawText(dateString, {
+        x: x,
+        y: y,
+        font: helveticaFont,
+        size: fontSize,
+    });
+
+    const pdfBytes = await pdfDoc.save();
+
+    return new Blob([pdfBytes], { type: 'application/pdf' });
+}
+
+const handleDHQHEIPDFDownload = (blob, reportDate) => {
+    const url = URL.createObjectURL(blob);
+    const tempEle = document.createElement('a');
+    tempEle.href = url;
+
+    const filenameDate = new Date(reportDate).toISOString().split('T')[0];
+    const baseFilename = 'dhq_hei_report.pdf';
+    const nameWithoutExt = baseFilename.replace('.pdf', '');
+    tempEle.download = `${nameWithoutExt}_${filenameDate}.pdf`;
+
+    document.body.appendChild(tempEle);
+    tempEle.click();
+    document.body.removeChild(tempEle);
+    URL.revokeObjectURL(url);
 }
 
 const getHealthcareProviderCoordinates = (healthcareProvider, source, version, lang) => {

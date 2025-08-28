@@ -8,7 +8,8 @@ export const renderNavBarLinks = () => {
     `;
 }
 
-export const dashboardNavBarLinks = (isParent) => {
+export const dashboardNavBarLinks = () => {
+    const isParent = localStorage.getItem('isParent');
     const coordinatingCenter = localStorage.getItem('coordinatingCenter');
     const helpDesk = localStorage.getItem('helpDesk');
     return `
@@ -45,15 +46,23 @@ export const dashboardNavBarLinks = (isParent) => {
         <li class="nav-item" id="participantMessageBtn">
             <a class="nav-item nav-link ws-nowrap" href="#participantMessages" title="Participant Messages"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-envelope-open"></i> Participant Messages</span></a>
         </li>
+        ${(helpDesk === 'true') ? '' : (`<li class="nav-item" id="pathologyReportUploadBtn">
+            <a class="nav-item nav-link ws-nowrap" href="#pathologyReportUpload" title="Pathology Report Upload"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-upload"></i> Pathology Report Upload</span></a>
+        </li>`)}
+        ${(helpDesk === 'true' || (coordinatingCenter === 'true' && location.host === urls.prod)) ? '' : (`<li class="nav-item" id="ehrUploadBtn">
+            <a class="nav-item nav-link ws-nowrap" href="#ehrUpload" title="EHR Upload"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-upload"></i> EHR Upload</span></a>
+        </li>`)}
         ${(helpDesk === 'true' || coordinatingCenter === 'true') ?
         (`<li class="nav-item" id="participantVerificationBtn">
             <a class="nav-item nav-link ws-nowrap" href="#dataCorrectionsToolSelection" title="Data Corrections Tool"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-check"></i> Data Corrections Tool</span></a>
         </li>`) : (``) }
-        ${(coordinatingCenter === 'true' && 
-            (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.host.toLowerCase() === urls.dev /* Lock to dev for now */)
-        ) ?
+        ${(helpDesk === 'true' || coordinatingCenter === 'true') ?
             (`<li class="nav-item" id="replaceHomeCollectionBtn">
-                <a class="nav-item nav-link ws-nowrap" href="#replaceHomeCollectionKit" title="Home Collection Kit Request"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-home"></i> Home Collection Kit Replacement</span></a>
+                <a class="nav-item nav-link ws-nowrap" href="#requestHomeCollectionKit" title="Home Collection Kit Request"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-home"></i> Kit Requests</span></a>
+            </li>`) : (``) }
+        ${coordinatingCenter === 'true' ?
+            (`<li class="nav-item" id="manageRequestAKitConditionsBtn">
+                <a class="nav-item nav-link ws-nowrap" href="#requestAKitConditions" title="Manage Automated Kit Request Eligibility"><span data-target="#navbarNavAltMarkup" data-toggle="collapse"><i class="fa fa-cogs"></i> CCC use only- Set Kit Eligibility</span></a>
             </li>`) : (``) }
         ${(isParent !== 'true' || coordinatingCenter === 'true') ?
         (`<li class="nav-item" id="siteMessageBtn">

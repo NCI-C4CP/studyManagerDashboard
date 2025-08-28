@@ -10,8 +10,7 @@ const headerImportantColumns = [
 ];
 
 export const renderParticipantMessages = async (participant) => {
-    const isParent = localStorage.getItem('isParent')
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
+    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantMessageBtn').classList.add('active');
     if (participant !== null) {

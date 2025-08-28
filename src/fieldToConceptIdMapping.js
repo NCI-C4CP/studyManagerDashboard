@@ -156,7 +156,7 @@ export default
     "sasCompletedDate1": 770257102,
     "sasStartDate1": 386488297,
 
-    "lawStausFlag1": 663265240,
+    "lawStatusFlag1": 663265240,
     "lawCompletedDate1": 264644252,
     "lawStartDate1": 452942800,
 
@@ -219,6 +219,12 @@ export default
     'cancerScreeningHistorySurveyStartDate': 609630315,
     'cancerScreeningHistorySurveyCompletedDate': 389890053,
 
+    'dhqSurveyStatus': 692560814,
+    'dhqSurveyStartDate': 109610692,
+    'dhqSurveyCompletedDate': 610227793,
+    'dhqUsername': 148184166, 
+    'dhqStudyID': 196723965,
+
     "baselineEMR": 209454331,
     "baselineEMRflag": 101170406,
     "baselineEMRpushDate": 143523420,
@@ -234,6 +240,7 @@ export default
     "eligiblePaymentRoundTimestamp": 787567527,
     "refusedBaselinePayment": 648228701,
     "refusedBaselinePaymentDate": 438636757,
+    "paymentChosen": 945795905,
 
     // de-identified age
     "ageRange1": 713781738,
@@ -273,6 +280,9 @@ export default
 	"pacificIslanderSH": 965998904,
     "blankSH": 986445321,
     "declinedSH": 746038746,
+    "sanfordReportedEthnicity": 538553381,
+    "ethHispanicLatino": 628733063,
+    "ethNotHispanicLatino": 319570637,
 
     // hfhs 
     "henryFReportedRace": 684926335, 
@@ -314,13 +324,15 @@ export default
     'passive': 854703046,
     'inactive': 180583933,
     'recruitmentDate': 471593703,
+    'reinvitationCampaignType': 280021666,
+    'reinvitationDate': 439351436,
     'signedInFlag': 230663853,
     'signinDate': 335767902,
     'pinEntered': 379080287,
     'noPin': 828729648,
     'duplicateType': 148197146,
     'updateRecruitType': 793822265,
-    'signInMechansim': 995036844,
+    'signInMechanism': 995036844,
     'signInPassword': 101178950,
     'signInPhone': 804918759,
     'accountEmail': 421823980,
@@ -373,7 +385,7 @@ export default
     // reasosns for refusal/withdrawal
     'tooBusy': 141450621,
     'noLongerInterested': 919699172,
-    'participantGreedy': 576083042,
+    'paymentInsufficient': 576083042,
     'tooSick': 431428747,
     'noInternet': 121430614,
     'worriedAboutResults': 523768810,
@@ -467,7 +479,9 @@ export default
     'whoRequestedDataDestructionOther': 902332801,
     'whoRequestedSuspendedContact': 719222792,
     'whoRequestedSuspendedContactOther': 993855378,
+    'studyIdTimeStamp': 521025370,
 
+    // Campaign Types
     'random':926338735,
     'screeningAppointment': 348281054,
     'nonScreeningAppointment':324692899, 
@@ -476,14 +490,15 @@ export default
     'geographicGroup': 834544960,
     'postScreeningAppointment': 682916147,
     'technologyAdapters': 153365143,
-    'noneOftheAbove': 398561594,
     'lowIncomeAreas': 663706936,
-    'studyIdTimeStamp': 521025370,
-    'automatedVerification': 444699761,
     'researchRegistry': 208952854,
     'popUp': 296312382,
+    'noneOftheAbove': 398561594,
+    // Note: 'other': 181769837 is a valid campaign type (already accounted for in fieldMapping).
+
     'outreachRequiredForVerification': 188797763,
     'manualVerification': 953614051,
+    'automatedVerification': 444699761,
     'firstNameMatch': 147176963,
     'lastNameMatch': 557461333,
     'dobMatch': 725929722,
@@ -530,15 +545,15 @@ export default
     // remaining withdrawal
     'contactSuspended': 726389747,
 
-    // Enrollment Status
+    // Enrollment Status @deprecated. Data exists in prod
     'enrollmentStatus': 507120821,
     'signedInEnrollment': 939311541,
 	'consentedEnrollment': 554563961,
     'userProfileCompleteEnrollment': 928145508,
     'verificationCompleteEnrollment': 959657954,
     'cannotBeVerifiedEnrollment': 850536553,
-	'verifiedMimimallyEnrolledEnrollment': 364179400,
-    'fullyEnrolledEnrollment': 485892221,	
+    'verifiedMimimallyEnrolledEnrollment': 364179400,
+    'fullyEnrolledEnrollment': 485892221,
 
 
     939311541 : 'Signed In',
@@ -556,16 +571,18 @@ export default
     bioKitMouthwashBL2: 641006239,
     kitReceivedTime: 826941471,
     kitShippedTime: 661940160,
-    uniqeKitAssemblyId: 687158491,
+    uniqueKitAssemblyId: 687158491,
     kitType: 379252329,
     kitTypeValues: {
-        mouthwash: 390351864
+        mouthwash: 390351864,
+        homeMouthwash: 976461859
     },
     kitStatus: 221592017,
     kitStatusValues: {
         pending: 517216441,
         initialized: 728267588,
         addressPrinted: 849527480,
+        addressUndeliverable: 332067457,
         assigned: 241974920,
         shipped: 277438316,
         received: 375535639
@@ -592,8 +609,17 @@ export default
             aerobicActivityMeeting:  682636404,
             aerobicActivityExceeding: 948593796
         },
+
+        dhq3: {
+            reportStatusInternal: 542983589,
+            reportStatusExternal: 892697201,
+            viewedTS: 600958089,
+            declinedTS: 404613256,
+        },
+
+        // Physical Activity & DHQ internal report status
         unread: 702641611,
         viewed: 469323437,
-        declined: 746038746
+        declined: 746038746,
     }
 };

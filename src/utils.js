@@ -1,5 +1,7 @@
 import en from "../i18n/en.js";
 import es from "../i18n/es.js";
+import { nameToKeyObj } from './idsToName.js';
+import { appState } from './stateManager.js';
 
 const i18n = {
     es, en
@@ -212,11 +214,19 @@ export const pdfCoordinatesMap = {
         'Eng': [{x: 90, y: 402}, {x0: 90, y0: 362}, {x1: 110, y1: 322}],
         'Span': [{x: 105, y: 392}, {x0: 105, y0: 352}, {x1: 105, y1: 312}]
       },
+      'V0.06': {
+        'Eng': [{x: 90, y: 402}, {x0: 90, y0: 362}, {x1: 110, y1: 322}],
+        'Span': [{x: 105, y: 392}, {x0: 105, y0: 352}, {x1: 105, y1: 312}]
+      },
       'V1.0': [{x: 90, y: 420}, {x0: 90, y0: 380}, {x1: 110, y1: 340}]
     },
     'HFHS': {
       'V0.02': [{x: 110, y: 380}, {x0: 110, y0: 340}, {x1: 115, y1: 300}],
       'V0.03': {
+        'Eng': [{x: 90, y: 410}, {x0: 90, y0: 370}, {x1: 110, y1: 330}],
+        'Span': [{x: 105, y: 410}, {x0: 105, y0: 370}, {x1: 105, y1: 330}]
+      },
+      'V0.04': {
         'Eng': [{x: 90, y: 410}, {x0: 90, y0: 370}, {x1: 110, y1: 330}],
         'Span': [{x: 105, y: 410}, {x0: 105, y0: 370}, {x1: 105, y1: 330}]
       },
@@ -232,12 +242,20 @@ export const pdfCoordinatesMap = {
         'Eng': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}],
         'Span': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
       },
+      'V0.05': {
+        'Eng': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}],
+        'Span': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
+      },
       'V1.0': [{x: 110, y: 400}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
     },
     'KPGA': {
       'V0.02': [{x: 110, y: 400}, {x0: 110, y0: 360}, {x1: 110, y1: 320}],
       'V0.03': [{x: 110, y: 375}, {x0: 110, y0: 335}, {x1: 110, y1: 295}],
       'V0.04': {
+        'Eng': [{x: 110, y: 375}, {x0: 110, y0: 335}, {x1: 110, y1: 295}],
+        'Span': [{x: 110, y: 375}, {x0: 110, y0: 335}, {x1: 110, y1: 295}]
+      },
+      'V0.05': {
         'Eng': [{x: 110, y: 375}, {x0: 110, y0: 335}, {x1: 110, y1: 295}],
         'Span': [{x: 110, y: 375}, {x0: 110, y0: 335}, {x1: 110, y1: 295}]
       },
@@ -249,11 +267,19 @@ export const pdfCoordinatesMap = {
         'Eng': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}],
         'Span': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
       },
+      'V0.04': {
+        'Eng': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}],
+        'Span': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
+      },
       'V1.0': [{x: 110, y: 370}, {x0: 110, y0: 330}, {x1: 110, y1: 290}]
     },
     'KPNW': {
       'V0.02': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}],
       'V0.03': {
+        'Eng': [{x: 110, y: 390}, {x0: 110, y0: 350}, {x1: 110, y1: 310}],
+        'Span': [{x: 110, y: 390}, {x0: 110, y0: 350}, {x1: 110, y1: 310}]
+      },
+      'V0.04': {
         'Eng': [{x: 110, y: 390}, {x0: 110, y0: 350}, {x1: 110, y1: 310}],
         'Span': [{x: 110, y: 390}, {x0: 110, y0: 350}, {x1: 110, y1: 310}]
       },
@@ -265,11 +291,19 @@ export const pdfCoordinatesMap = {
         'Eng': [{x: 110, y: 405}, {x0: 110, y0: 365}, {x1: 115, y1: 325}],
         'Span': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
       },
+      'V0.04': {
+        'Eng': [{x: 110, y: 405}, {x0: 110, y0: 365}, {x1: 115, y1: 325}],
+        'Span': [{x: 110, y: 395}, {x0: 110, y0: 355}, {x1: 110, y1: 315}]
+      },
       'V1.0': [{x: 110, y: 420}, {x0: 110, y0: 380}, {x1: 115, y1: 345}]
     },
     'Sanford': {
       'V0.02': [{x: 120, y: 407}, {x0: 105, y0: 365}, {x1: 110, y1: 325}],
       'V0.03': {
+        'Eng': [{x: 120, y: 730}, {x0: 120, y0: 690}, {x1: 120, y1: 655}],
+        'Span': [{x: 120, y: 200}, {x0: 120, y0: 160}, {x1: 120, y1: 125}]
+      },
+      'V0.04': {
         'Eng': [{x: 120, y: 730}, {x0: 120, y0: 690}, {x1: 120, y1: 655}],
         'Span': [{x: 120, y: 200}, {x0: 120, y0: 160}, {x1: 120, y1: 125}]
       },
@@ -282,10 +316,18 @@ export const pdfCoordinatesMap = {
         'Eng': [ {x: 110, y: 410} , {x0: 110, y0: 370} , {x1: 115, y1: 330} ],
         'Span': [ {x: 110, y: 410} , {x0: 110, y0: 370} , {x1: 115, y1: 330} ]
       },
+      'V0.06': {
+        'Eng': [ {x: 110, y: 410} , {x0: 110, y0: 370} , {x1: 115, y1: 330} ],
+        'Span': [ {x: 110, y: 410} , {x0: 110, y0: 370} , {x1: 115, y1: 330} ]
+      },
       'V1.0': [{x: 110, y: 380} , {x0: 110, y0: 342} , {x1: 115, y1: 305}]
     },
     'BSWH': {
         'V0.02': {
+          'Eng': [{x: 110, y: 405} , {x0: 110, y0: 365} , {x1: 115, y1: 328}],
+          'Span': [{x: 110, y: 405} , {x0: 110, y0: 365} , {x1: 115, y1: 328}]
+        },
+        'V0.03': {
           'Eng': [{x: 110, y: 405} , {x0: 110, y0: 365} , {x1: 115, y1: 328}],
           'Span': [{x: 110, y: 405} , {x0: 110, y0: 365} , {x1: 115, y1: 328}]
         }
@@ -294,6 +336,7 @@ export const pdfCoordinatesMap = {
       'V0.02': [{x: 110, y: 400}, {x0: 110, y0: 410}, {x1: 110, y1: 330}],
       'V0.04': [{x: 110, y: 400}, {x0: 110, y0: 410}, {x1: 110, y1: 330}],
       'V0.05': [{x: 90, y: 407}, {x0: 90, y0:370},  {x1:110, y1: 330}],
+      'V0.06': [{x: 90, y: 407}, {x0: 90, y0:370},  {x1:110, y1: 330}],
       'V1.0': [{x: 110, y: 400}, {x0: 110, y0: 410}, {x1: 110, y1: 330}]
     }
   },
@@ -478,4 +521,102 @@ export function replaceUnsupportedPDFCharacters(string, font) {
       }
   }
   return String.fromCodePoint(...codePoints);
- }
+}
+
+export const sortByKey = (arr, key) => {
+	return arr.sort((a, b) => {
+		if (a[key] > b[key]) return 1;
+		if (b[key] > a[key]) return -1;
+		return 0;
+	});
+}
+
+/**
+ * Fetches participant data based on the provided query parameters.
+ * 
+ * @async
+ * @function getParticipants
+ * @returns {Promise<Object>} A promise that resolves to the API response containing:
+ *   - code: HTTP status code (200 for success)
+ *   - data: Array of participant objects
+ *   - message: Response message (if applicable)
+ * @throws {Error} If the API request fails
+ */
+export const getParticipants = async () => {
+	
+	const { participantTypeFilter, siteCode, startDateFilter, endDateFilter, cursorHistory, pageNumber, direction } = appState.getState();
+  appState.setState({direction: ``});
+
+	const params = new URLSearchParams();
+	params.append('api', 'getParticipants');
+  params.append('limit', 50);
+	params.append('type', participantTypeFilter || 'all');
+
+	if (siteCode && siteCode !== nameToKeyObj.allResults) {
+		params.append('site', siteCode);
+	}
+
+	if (startDateFilter) {
+		params.append('from', `${startDateFilter}T00:00:00.000Z`);
+	}
+
+	if (endDateFilter) {
+		params.append('to', `${endDateFilter}T23:59:59.999Z`);
+	}
+
+  if (pageNumber > 1) {
+      params.append('cursor', cursorHistory[pageNumber - 2]);
+  }
+
+	const url = `${baseAPI}/dashboard?${params.toString()}`;
+	
+	try {
+		const token = await getIdToken();
+		const response = await fetch(url, {
+			method: 'GET',
+			headers: {
+				Authorization: `Bearer ${token}`,
+			}
+		});
+
+    const responseObj = await response.json();
+
+    if (responseObj.cursor) {
+      if (direction === 'previous') cursorHistory.pop();
+      
+      cursorHistory[pageNumber - 1] = responseObj.cursor;
+      appState.setState({cursorHistory});
+    }
+
+		return responseObj;
+	}
+	catch (error) {
+		console.error("Error fetching participants:", error);
+		return error;
+	}
+}
+
+export const resetPagination = () => { appState.setState({cursorHistory: [], pageNumber: 1});}
+export const resetFilters = () => { appState.setState({participantTypeFilter: '', siteCode: '', startDateFilter: '', endDateFilter: ''});}
+
+// Ensure that the date is a valid ISO 8601 string
+export function timestampValidation(iso8601String) {
+  if (iso8601String) {
+    const dateObj = new Date(iso8601String);
+    if (!isNaN(dateObj.getTime())) {
+      return dateObj.toLocaleString();
+    }
+  }
+  return '';
+}
+
+/**
+ * Escape HTML characters (useful for github-advanced-security bot warnings)
+ * @param {string} str - String to escape 
+ * @returns {string} - Escaped string
+ */
+export const escapeHTML = (str) => {
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+};

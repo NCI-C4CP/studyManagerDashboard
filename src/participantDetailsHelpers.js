@@ -824,7 +824,7 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
         cleanedPhoneNumber = cleanedPhoneNumber.replace(/\D/g, '').trim();
         switchPackage['phone'] = cleanedPhoneNumber;
         switchPackage['flag'] = 'updatePhone';
-        changedOption[fieldMapping.signInMechansim] = 'phone';
+        changedOption[fieldMapping.signInMechanism] = 'phone';
         changedOption[fieldMapping.accountPhone] = `+1`+ cleanedPhoneNumber;
     } else if (emailField &&  emailField.value === document.getElementById('confirmEmail').value) {
         if (!validEmailFormat.test(emailField.value)) {
@@ -833,7 +833,7 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
         }
         switchPackage['email'] = emailField.value;
         switchPackage['flag'] = 'updateEmail';
-        changedOption[fieldMapping.signInMechansim] = 'password';
+        changedOption[fieldMapping.signInMechanism] = 'password';
         changedOption[fieldMapping.accountEmail] = emailField.value;
     } else {
         alert(`Your entered inputs don't match`);
@@ -841,7 +841,7 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
     }
 
     if ((phoneField && phoneField.value && participantAuthenticationEmail && !participantAuthenticationEmail.startsWith('noreply')) || (emailField && emailField.value && !emailField.value.startsWith('noreply') && participantAuthenticationPhone)) {
-        changedOption[fieldMapping.signInMechansim] = 'passwordAndPhone';
+        changedOption[fieldMapping.signInMechanism] = 'passwordAndPhone';
     }
 
     return { switchPackage, changedOption };
@@ -855,12 +855,12 @@ const getLoginRemovalSwitchPackage = (processType, participantAuthenticationEmai
         switchPackage['email'] = placeholderForEmailRemoval;
         switchPackage['flag'] = 'updateEmail';
         changedOption[fieldMapping.accountEmail] = placeholderForEmailRemoval;
-        changedOption[fieldMapping.signInMechansim] = 'phone';
+        changedOption[fieldMapping.signInMechanism] = 'phone';
     } else if (processType === 'removePhone') {
         switchPackage['email'] = participantAuthenticationEmail;
         switchPackage['flag'] = 'replaceSignin';
         changedOption[fieldMapping.accountPhone] = '';
-        changedOption[fieldMapping.signInMechansim] = 'password';
+        changedOption[fieldMapping.signInMechanism] = 'password';
     }
     return { switchPackage, changedOption };
 };
@@ -1765,6 +1765,37 @@ const updateUserHistory = (existingDataToUpdate, userHistory, adminEmail, newSuf
     return userProfileHistoryArray;
 };
 
+/**
+ * Delete properties in fields are empty string or 'no' before write to user profile history in firestore
+ * @param {array of object} data - The data to write to history
+ * @returns {array of object} - this will write to user profile history
+ */
+
+const prepareUserHistoryData = (data) => {
+    const fields = [
+        // Physical adress
+        fieldMapping.physicalAddress1,
+        fieldMapping.physicalAddress2,
+        fieldMapping.physicalCity,
+        fieldMapping.physicalState,
+        fieldMapping.physicalZip,
+        // Alternate adress
+        fieldMapping.altAddress1,
+        fieldMapping.altAddress2,
+        fieldMapping.altCity,
+        fieldMapping.altState,
+        fieldMapping.altZip,
+        fieldMapping.isPOBoxAltAddress,
+    ];
+    fields.forEach(key => {
+        if (data[key] === '' || data[key] === fieldMapping.no) {
+            delete data[key];
+        }
+    });
+
+    return data;
+}
+
 const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
     const userHistoryMap = {};
     const keys = [
@@ -1831,6 +1862,9 @@ const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
         userHistoryMap[fieldMapping.userProfileUpdateTimestamp] = new Date().toISOString();
         userHistoryMap[fieldMapping.profileChangeRequestedBy] = adminEmail;
 
+        // temp pull out - adding back early June
+        // return prepareUserHistoryData(userHistoryMap);
+        
         return userHistoryMap;
     } else {
         return null;

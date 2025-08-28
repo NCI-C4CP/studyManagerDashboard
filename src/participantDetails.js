@@ -29,8 +29,7 @@ const initLoginMechanism = (participant) => {
 
 export const renderParticipantDetails = (participant, changedOption) => {
     initLoginMechanism(participant);
-    const isParent = localStorage.getItem('isParent');
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks(isParent);
+    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantDetailsBtn').classList.add('active');
     mainContent.innerHTML = render(participant, changedOption);
@@ -69,12 +68,16 @@ export const render = (participant, changedOption) => {
 
         const filteredImportantRows = importantRows.filter(row => row.display === true);
         filteredImportantRows.forEach(row => {
+            
             const conceptId = row.field;
+            const participantConsented = participant[fieldMapping.consentFlag] === fieldMapping.yes;
+            const hideLoginInformation = (conceptId === 'Change Login Phone' || conceptId === 'Change Login Email') && !participantConsented;
             const variableLabel = row.label;
             const variableValue = participant[conceptId];
-            const valueToRender = getFieldValues(variableValue, conceptId);
+            const valueToRender = hideLoginInformation ? 'N/A' : getFieldValues(variableValue, conceptId);
             const rowBackgroundColor = row.isHeading ? '#f5f5f5' : null;
-            const buttonToRender = getButtonToRender(variableLabel, conceptId, participant[fieldMapping.dataDestroyCategorical]);
+            const buttonToRender = getButtonToRender(variableLabel, conceptId, participant[fieldMapping.dataDestroyCategorical], hideLoginInformation);
+
             template += `
                 <tr class="detailedRow" style="text-align: left; background-color: ${rowBackgroundColor}" id="${conceptId}row">
                     <th scope="row">
@@ -181,13 +184,21 @@ export const changeParticipantDetail = (participant, changedOption, originalHTML
  * @param {string} conceptId - the conceptId of the variable 
  * @returns {HTMLButtonElement} - template string with the button to render
  */
-const getButtonToRender = (variableLabel, conceptId, participantIsDataDestroyed) => {
+const getButtonToRender = (variableLabel, conceptId, participantIsDataDestroyed, disableButton) => {
     const isParticipantDataDestroyed = participantIsDataDestroyed === fieldMapping.requestedDataDestroySigned;
     const loginButtonType = !isParticipantDataDestroyed && conceptId === 'Change Login Phone' ? 'Phone' : !isParticipantDataDestroyed && conceptId === 'Change Login Email' ? 'Email' : null;
     const participantKey = loginButtonType ? '' : `data-participantkey="${variableLabel}"`;
     const participantConceptId = loginButtonType ? '' : `data-participantconceptid="${conceptId}"`;
     const participantLoginUpdate = loginButtonType ? `data-participantLoginUpdate="${loginButtonType.toLowerCase()}"` : '';
     const buttonId = loginButtonType ? `updateUserLogin${loginButtonType}` : `${conceptId}button`;
+
+    if (disableButton) {
+        return `
+            <button type="button" class="btn btn-secondary btn-custom" disabled title="Participant Consent Required">
+                Edit
+            </button>
+        `;
+    }
 
     return `
         <a class="showMore" 
