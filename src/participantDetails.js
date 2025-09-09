@@ -34,7 +34,6 @@ export const renderParticipantDetails = (participant, changedOption = {}) => {
     document.getElementById('participantDetailsBtn').classList.add('active');
     mainContent.innerHTML = render(participant, changedOption);
     let originalHTML =  mainContent.innerHTML;
-    hideUneditableButtons(participant, changedOption);
     localStorage.setItem("participant", JSON.stringify(participant));
     changeParticipantDetail(participant,  changedOption, originalHTML);
     resetParticipantConfirm();
@@ -102,13 +101,14 @@ export const render = (participant, changedOption) => {
             const conceptId = row.field;
             const participantConsented = participant[fieldMapping.consentFlag] === fieldMapping.yes;
             const hideLoginInformation = (conceptId === 'Change Login Phone' || conceptId === 'Change Login Email') && !participantConsented;
+            const shouldHideButton = !row.editable || hideLoginInformation;
             const disableButton = hideLoginInformation || !row.editable;
             const variableLabel = row.label;
             const variableValue = participant[conceptId];
             const valueToRender = hideLoginInformation ? 'N/A' : getFieldValues(variableValue, conceptId);
             const rowBackgroundColor = row.isHeading ? '#f5f5f5' : null;
-            // Don't show buttons for header rows
-            const buttonToRender = row.isHeading ? '' : getButtonToRender(variableLabel, conceptId, disableButton, isParticipantDataDestroyed, isParticipantDuplicate, isParticipantCannotBeVerified);
+            // Don't show buttons for header rows or when button should be hidden (e.g. login buttons when participant not consented and phone preference buttons when phone number is not provided)
+            const buttonToRender = (row.isHeading || shouldHideButton) ? '' : getButtonToRender(variableLabel, conceptId, disableButton, isParticipantDataDestroyed, isParticipantDuplicate, isParticipantCannotBeVerified);
 
             template += `
                 <tr class="detailedRow" style="text-align: left; background-color: ${rowBackgroundColor}" id="${conceptId}row">
@@ -203,7 +203,7 @@ export const changeParticipantDetail = (participant, changedOption, originalHTML
                         showSaveNoteInModal(conceptId);
                         saveResponses(participant, changedOption, element, conceptId);
                         resetChanges(participant, originalHTML);
-                    }, 100);
+                    });
                 });
             }
         });
