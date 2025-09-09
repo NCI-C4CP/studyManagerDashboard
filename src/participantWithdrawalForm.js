@@ -502,7 +502,7 @@ const optionsHandler = (suspendDate) => {
             if (checkbox.value === 'Participant Deceased') {
                 skipWhoRequested = true;
             }
-            modalTemplate += `<span>${checkbox.value}</span> <br />` 
+            modalTemplate += `<span>${escapeHTML(checkbox.value)}</span> <br />` 
         }
     });
 
@@ -512,7 +512,7 @@ const optionsHandler = (suspendDate) => {
     whoRequestedRadioButtons.forEach(x => { 
         if (x.checked) {  
             selectedWhoRequestedRadios.push(x);
-            modalTemplate += `<span>Requested by: ${x.value} </span> ${requestOtherText && escapeHTML(requestOtherText.value)} </br>`
+            modalTemplate += `<span>Requested by: ${escapeHTML(x.value)} </span> ${requestOtherText && escapeHTML(requestOtherText.value)} </br>`
         }
     })
     
@@ -522,7 +522,7 @@ const optionsHandler = (suspendDate) => {
     const canSkipRequestedBy = skipWhoRequested === true;
     let confirmSectionHtml = '';
 
-    if (hasSuspendDate) modalTemplate += `<span>Suspend all contact on case until ${suspendDate}</span> <br />`
+    if (hasSuspendDate) modalTemplate += `<span>Suspend all contact on case until ${escapeHTML(suspendDate)}</span> <br />`
 
     if (canSkipRequestedBy || (hasSuspendDate && hasRequestedBySelection)) {
         confirmSectionHtml = ` <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="proceedFormPage">Confirm</button>`;
