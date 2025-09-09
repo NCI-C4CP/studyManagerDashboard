@@ -121,6 +121,12 @@ const isPhoneNumberInForm = (participant, changedOption, fieldMappingKey) => {
 export const getImportantRows = (participant, changedOption) => {
     const isParticipantVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.verified;
     const isParticipantDataDestroyed = participant[fieldMapping.dataDestroyCategorical] === fieldMapping.requestedDataDestroySigned;
+    const isParticipantDuplicate = participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate;
+    const isParticipantCannotBeVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.cannotBeVerified;
+    
+    // Condition handles editing restrictions
+    const isEditable = !isParticipantDataDestroyed && !isParticipantDuplicate && !isParticipantCannotBeVerified;
+    
     const isCellPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.cellPhone);
     const isHomePhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.homePhone);
     const isOtherPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.otherPhone);
@@ -131,105 +137,105 @@ export const getImportantRows = (participant, changedOption) => {
     const participantDataRows = [ 
         { field: fieldMapping.lName,
             label: 'Last Name',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'text',
             isRequired: true
         },
         { field: fieldMapping.fName,
             label: 'First Name',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'text',
             isRequired: true
         },
         { field: fieldMapping.prefName,
             label: 'Preferred Name',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'text',
             isRequired: false
         },
         { field: fieldMapping.mName,
             label: 'Middle Name',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'text',
             isRequired: false
         },
         { field: fieldMapping.suffix,
             label: 'Suffix',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'suffix',
             isRequired: false
         },
         { field: fieldMapping.cellPhone,
             label: 'Cell Phone',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'phoneNumber',
             isRequired: false
         },
         { field: fieldMapping.canWeText,
             label: 'Can we text your mobile phone?',
-            editable: !isParticipantDataDestroyed && isCellPhonePresent,
+            editable: isEditable && isCellPhonePresent,
             display: true,
             validationType: 'permissionSelector',
             isRequired: false
         },
         { field: fieldMapping.voicemailMobile,
             label: 'Can we leave a voicemail at your mobile phone number?',
-            editable: !isParticipantDataDestroyed && isCellPhonePresent,
+            editable: isEditable && isCellPhonePresent,
             display: true,
             validationType: 'permissionSelector',
             isRequired: false
         },
         { field: fieldMapping.homePhone,
             label: 'Home Phone',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'phoneNumber',
             isRequired: false
         },
         { field: fieldMapping.voicemailHome,
             label: 'Can we leave a voicemail at your home phone number?',
-            editable: !isParticipantDataDestroyed && isHomePhonePresent,
+            editable: isEditable && isHomePhonePresent,
             display: true,
             validationType: 'permissionSelector',
             isRequired: false
         },
         { field: fieldMapping.otherPhone,
             label: 'Other Phone',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'phoneNumber',
             isRequired: false
         },
         { field: fieldMapping.voicemailOther,
             label: '   Can we leave a voicemail at your other phone number?',
-            editable: !isParticipantDataDestroyed && isOtherPhonePresent,
+            editable: isEditable && isOtherPhonePresent,
             display: true,
             validationType: 'permissionSelector',
             isRequired: false
         },
         { field: fieldMapping.email,
             label: 'Preferred Email',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'email',
             isRequired: true
         },
         { field: fieldMapping.email1,
             label: 'Additional Email 1',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'email',
             isRequired: false
         },
         { field: fieldMapping.email2,
             label: 'Additional Email 2',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'email',
             isRequired: false
@@ -249,42 +255,42 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: fieldMapping.address1,
             label: 'Mailing Address Line 1',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: true
         },
         { field: fieldMapping.address2,
             label: 'Mailing Address Line 2',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: false
         },
         { field: fieldMapping.city,
             label: 'Mailing Address City',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'text',
             isRequired: true
         },
         { field: fieldMapping.state,
             label: 'Mailing Address State',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'state',
             isRequired: true
         },
         { field: fieldMapping.zip,
             label: 'Mailing Address Zip',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'zip',
             isRequired: true
         },
         { field: fieldMapping.isPOBox,
             label: 'Mailing Address is PO Box',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'permissionSelector',
             isRequired: false
@@ -304,35 +310,35 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: fieldMapping.physicalAddress1,
             label: 'Physical Address Line 1 (if different from mailing address)',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: false
         },
         { field: fieldMapping.physicalAddress2,
             label: 'Physical Address Line 2 (if different from mailing address)',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: false
         },
         { field: fieldMapping.physicalCity,
             label: 'Physical City (if different from mailing address)',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'text',
             isRequired: false
         },
         { field: fieldMapping.physicalState,
             label: 'Physical State (if different from mailing address)',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'state',
             isRequired: false
         },
         { field: fieldMapping.physicalZip,
             label: 'Physical Zip (if different from mailing address)',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'zip',
             isRequired: false
@@ -353,7 +359,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altAddress1,
             label: 'Alternate Address Line 1',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: false,
@@ -361,7 +367,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altAddress2,
             label: 'Alternate Address Line 2',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: false,
@@ -369,7 +375,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altCity,
             label: 'Alternate City',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'text',
             isRequired: false,
@@ -377,7 +383,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altState,
             label: 'Alternate State',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'state',
             isRequired: false,
@@ -385,7 +391,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altZip,
             label: 'Alternate Zip',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'zip',
             isRequired: false,
@@ -393,7 +399,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.isPOBoxAltAddress,
             label: 'Alternate Address is PO Box',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'permissionSelector',
             isRequired: false
@@ -414,7 +420,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altContactFirstName,
             label: 'Alternate Contact First Name',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'text',
             isRequired: false,            
@@ -422,7 +428,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altContactLastName,
             label: 'Alternate Contact Last Name',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'text',
             isRequired: false,
@@ -430,7 +436,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altContactMobilePhone,
             label: 'Alternate Contact Mobile Phone',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'phoneNumber',
             isRequired: false,
@@ -438,7 +444,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altContactHomePhone,
             label: 'Alternate Contact Home Phone',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'phoneNumber',
             isRequired: false,
@@ -446,7 +452,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altContactEmail,
             label: 'Alternate Contact Email Address',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'email',
             isRequired: false,
@@ -466,21 +472,21 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: fieldMapping.birthMonth,
             label: 'Birth Month',
-            editable: !isParticipantDataDestroyed && !isParticipantVerified,
+            editable: isEditable && !isParticipantVerified,
             display: !isParticipantVerified,
             validationType: 'month',
             isRequired: false
         },
         { field: fieldMapping.birthDay,
             label: 'Birth Day',
-            editable: !isParticipantDataDestroyed && !isParticipantVerified,
+            editable: isEditable && !isParticipantVerified,
             display: !isParticipantVerified,
             validationType: 'day',
             isRequired: true
         },
         { field: fieldMapping.birthYear,
             label: 'Birth Year',
-            editable: !isParticipantDataDestroyed && !isParticipantVerified,
+            editable: isEditable && !isParticipantVerified,
             display: !isParticipantVerified,
             validationType: 'year',
             isRequired: true
@@ -507,7 +513,7 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: fieldMapping.preferredLanguage,
             label: 'Preferred Language',
-            editable: (helpDesk === 'true' || coordinatingCenter === 'true'),
+            editable: (helpDesk === 'true' || coordinatingCenter === 'true') && isEditable,
             display: true,
             validationType: 'none',
             isRequired: false
@@ -526,13 +532,13 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: `Change Login Email`,
             label: 'Email Login',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: appState.getState().loginMechanism.email,
             validationType: 'none'
         },
         { field: `Change Login Phone`,
             label: 'Phone Login',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display:  appState.getState().loginMechanism.phone,
             validationType: 'none'
         }
@@ -642,7 +648,7 @@ export const reloadParticipantData = async (token) => {
     const query = `token=${token}`
     const reloadedParticipant = await findParticipant(query);
     mainContent.innerHTML = render(reloadedParticipant.data[0]);
-    renderParticipantDetails(reloadedParticipant.data[0], {});
+    renderParticipantDetails(reloadedParticipant.data[0]);
     hideAnimation();
 }
 
@@ -668,7 +674,7 @@ export const resetChanges = (participant, originalHTML) => {
     const handleCancelChanges = () => {
         if ( appState.getState().unsavedChangesTrack.saveFlag === false ) {
             mainContent.innerHTML = originalHTML;
-            renderParticipantDetails(participant, {});
+            renderParticipantDetails(participant);
             appState.setState({unsavedChangesTrack:{saveFlag: false, counter: 0}})
             let alertList = document.getElementById('alert_placeholder');
             // throws an alert when canncel changes button is clicked
@@ -998,7 +1004,7 @@ const showAuthUpdateAPIError = (bodyId, message) => {
 export const refreshParticipantAfterReset = async (participant) => {
     showAnimation();
     localStorage.setItem('participant', JSON.stringify(participant));
-    renderParticipantDetails(participant, {});
+    renderParticipantDetails(participant);
     appState.setState({unsavedChangesTrack:{saveFlag: false, counter: 0}})
     let alertList = document.getElementById('alert_placeholder');
     let template = '';
@@ -1028,7 +1034,7 @@ export const participantRefreshError = async (errorMsg) => {
 
 export const refreshParticipantAfterUpdate = async (participant) => {
     localStorage.setItem('participant', JSON.stringify(participant));
-    renderParticipantDetails(participant, {});
+    renderParticipantDetails(participant);
     appState.setState({unsavedChangesTrack:{saveFlag: false, counter: 0}})
     let alertList = document.getElementById('alert_placeholder');
     let template = '';
@@ -1087,8 +1093,8 @@ export const saveResponses = (participant, changedOption, editedElement, concept
                 changedOption = forceDataTypesForFirestore(changedOption);
                 closeModal();
 
-                // Reattach all event listeners after each edit. Timeout ensures DOM is updated.
-                setTimeout(() => {
+                // Reattach all event listeners after each edit.
+                requestAnimationFrame(() => {
                     const originalHTML = document.getElementById('mainContent').innerHTML;
                     changeParticipantDetail(participant, changedOption, originalHTML);
 
@@ -1102,7 +1108,7 @@ export const saveResponses = (participant, changedOption, editedElement, concept
                             }
                         });
                     }
-                }, 100);
+                });
             }
         } else {
             showAlreadyExistsNoteInModal();

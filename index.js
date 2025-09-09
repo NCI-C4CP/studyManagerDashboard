@@ -128,6 +128,17 @@ window.onhashchange = () => {
     router();
 };
 
+// Participant-dependent routes that require an active participant
+const participantRoutes = [
+        '#participantDetails',
+        '#participantSummary', 
+        '#participantMessages',
+        '#requestHomeCollectionKit',
+        '#pathologyReportUpload',
+        '#participantWithdrawal'
+    ];
+
+// Data corrections tool routes also require an active participant
 const dataCorrectionsToolRoutes = [
     '#dataCorrectionsToolSelection',
     '#incentiveEligibilityTool',
@@ -135,122 +146,68 @@ const dataCorrectionsToolRoutes = [
     '#verificationCorrectionsTool',
 ];
 
-
 const router = async () => {
     const hash = decodeURIComponent(window.location.hash);
     const route = hash || '#';
     const isParent = localStorage.getItem('isParent')
+
+    // Authenticated
     if (await userLoggedIn() || localStorage.dashboard) {
-        if (route === '#home') renderDashboard();
-        else if (route === '#participants/notyetverified') renderParticipants('notyetverified');
-        else if (route === '#participants/cannotbeverified') renderParticipants('cannotbeverified');
-        else if (route === '#participants/verified') renderParticipants('verified');
-        else if (route === '#participants/all') renderParticipants('all');
-        else if (route === '#participants/profilenotsubmitted') renderParticipants('profileNotSubmitted');
-        else if (route === '#participants/consentnotsubmitted') renderParticipants('consentNotSubmitted');
-        else if (route === '#participants/notsignedin') renderParticipants('notSignedIn');
-        else if (route === '#participantLookup') renderParticipantLookup();
-        else if (route === '#participantDetails') {
-            if (JSON.parse(localStorage.getItem("participant")) === null) {
+
+        // Handle participant-dependent routes
+        if (participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route)) {
+            const participant = JSON.parse(localStorage.getItem("participant"));
+            if (!participant) {
                 alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
-            } else {
-                let participant = JSON.parse(localStorage.getItem("participant"));
-                let changedOption = {};
-                renderParticipantDetails(participant, changedOption);
+                return;
             }
-        }
-        else if (route === '#participantSummary') {
-            if (JSON.parse(localStorage.getItem("participant")) === null) {
-                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
-            }
-            else {
-                let participant = JSON.parse(localStorage.getItem("participant"));
+
+            // Phys Act report data needs to be fetched from BQ. DHQ Report data is found in the participant object.
+            if (route === '#participantSummary') {
                 let reports = {};
-                //Retrive the Physical Activity Report
                 let physActReport = await retrievePhysicalActivityReport(participant);
                 if (physActReport) {
                     reports.physActReport = physActReport;
                 }
-                renderParticipantSummary(participant, reports);
+                return renderParticipantSummary(participant, reports);
             }
-        }
-        else if (route === '#participantMessages') {
-            if (JSON.parse(localStorage.getItem("participant")) === null) {
-                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
-            }
-            else {
-                let participant = JSON.parse(localStorage.getItem("participant"))
-                renderParticipantMessages(participant);
-            }
-        }
-        else if (route === '#requestHomeCollectionKit') {
-            const participant = JSON.parse(localStorage.getItem("participant"));
-            if (participant === null) {
-                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
-            }
-            else {
-                let participant = JSON.parse(localStorage.getItem("participant"))
-                renderKitRequest(participant);
-            }
-        } else if (route === '#requestAKitConditions') {
-            renderRequestAKitConditions();
-        } else if (route === '#pathologyReportUpload') {
-            const participantData = JSON.parse(localStorage.getItem("participant"));
-            if (participantData === null) {
-                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page.");
-                return;
-            } 
-                
-            renderPathologyReportUploadPage(participantData);
-        } else if (route === '#ehrUpload') {
-            renderEhrUploadPage();
-        }
-        else if (dataCorrectionsToolRoutes.includes(route)) {
-            if (JSON.parse(localStorage.getItem("participant")) === null) {
-                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
-            }
-            else {
-                let participant = JSON.parse(localStorage.getItem("participant"));
-
-                switch(route) {
-                    case '#dataCorrectionsToolSelection':
-                        setupDataCorrectionsSelectionToolPage(participant)
-                        break;
-                    case '#verificationCorrectionsTool':
-                        setupVerificationCorrectionsPage(participant)
-                        break;
-                    case '#surveyResetTool':
-                        setupSurveyResetToolPage(participant)
-                        break;
-                    case '#incentiveEligibilityTool':
-                        setupIncentiveEligibilityToolPage(participant)
-                        break;
-                    default:
-                        window.location.hash = '#dataCorrectionsToolSelection';
-                        break;
-                }
-            }
+            else if (route === '#participantDetails') return renderParticipantDetails(participant)
+            else if (route === '#participantMessages') return renderParticipantMessages(participant)
+            else if (route === '#requestHomeCollectionKit') return renderKitRequest(participant)
+            else if (route === '#pathologyReportUpload') return renderPathologyReportUploadPage(participant)
+            else if (route === '#participantWithdrawal') return renderParticipantWithdrawal(participant)
+            else if (route === '#dataCorrectionsToolSelection') return setupDataCorrectionsSelectionToolPage(participant)
+            else if (route === '#verificationCorrectionsTool') return setupVerificationCorrectionsPage(participant)
+            else if (route === '#surveyResetTool') return setupSurveyResetToolPage(participant)
+            else if (route === '#incentiveEligibilityTool') return setupIncentiveEligibilityToolPage(participant)
         }
 
-        else if (route === '#siteMessages') renderSiteMessages();
-        else if (route === '#participantWithdrawal' && isParent === 'true') {
-            if (JSON.parse(localStorage.getItem("participant")) === null) {
-                renderParticipantWithdrawal();
-            }
-            else {
-                let participant = JSON.parse(localStorage.getItem("participant"))
-                renderParticipantWithdrawal(participant);
-            }
+        // Handle all other routes
+        if (route === '#participants/notyetverified') return renderParticipants('notyetverified');
+        else if (route === '#participants/cannotbeverified') return renderParticipants('cannotbeverified');
+        else if (route === '#participants/verified') return renderParticipants('verified');
+        else if (route === '#participants/all') return renderParticipants('all');
+        else if (route === '#participants/profilenotsubmitted') return renderParticipants('profileNotSubmitted');
+        else if (route === '#participants/consentnotsubmitted') return renderParticipants('consentNotSubmitted');
+        else if (route === '#participants/notsignedin') return renderParticipants('notSignedIn');
+        else if (route === '#siteMessages') return renderSiteMessages();
+        else if (route === '#notifications/createnotificationschema') return createNotificationSchema();
+        else if (route === '#notifications/retrievenotificationschema') return renderRetrieveNotificationSchema();
+        else if (route === '#notifications/editSchema') return editNotificationSchema();
+        else if (route === '#notifications/showDraftSchemas') return showDraftSchemas();
+        else if (route === '#requestAKitConditions') return renderRequestAKitConditions();
+        else if (route === '#ehrUpload') return renderEhrUploadPage();
+        else if (route === '#logout') return clearLocalStorage();
+        else if (route === '#participantLookup') return renderParticipantLookup();
+        else if (route !== '#home' && route !== '#') {
+            console.error('Unhandled route. Going to home page. Route:', route);
+            window.location.hash = '#home';
         }
-        else if (route === '#notifications/createnotificationschema') createNotificationSchema();
-        else if (route === '#notifications/retrievenotificationschema') renderRetrieveNotificationSchema();
-        else if (route === '#notifications/editSchema') editNotificationSchema();
-        else if (route === '#notifications/showDraftSchemas') showDraftSchemas();
-        else if (route === '#logout') clearLocalStorage();
-        else window.location.hash = '#home';
+        return renderDashboard();
     }
-    else if (route === '#') homePage();
-    else window.location.hash = '#';
+
+    // Not authenticated
+    return loginPage();
 }
 
 const headsupBanner = () => {
@@ -262,7 +219,7 @@ const headsupBanner = () => {
                     </div>`;
 };
 
-const homePage = () => {
+const loginPage = () => {
     if (localStorage.dashboard) {
         window.location.hash = '#home';
     }
@@ -1063,6 +1020,7 @@ const filterDataBySiteCode = (siteCode) => {
 
   return result;
 };
+
 /**
  * Renders the participants table based on the specified filter type.
  *

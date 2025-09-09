@@ -497,22 +497,6 @@ export const baselineMenstrualSurvey = (participant) => {
     return template;
 }
 
-export const baselineEMR = (participantModule) => {
-    const baselineEMR = participantModule[fieldMapping.baselineEMR]
-    let template = ``;
-
-    if (!baselineEMR) {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "EMR", "N/A", "Not Pushed", "N/A", "N/A", "N", "N/A");
-    } else if (baselineEMR[fieldMapping.baselineEMRflag] === fieldMapping.yes) {
-        template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "EMR", "N/A", "Pushed",
-        formatUTCDate(baselineEMR[fieldMapping.baselineEMRpushDate]), "N/A", "N/A", "N/A");
-    } else {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "EMR", "N/A", "Not Pushed", "N/A", "N/A", "N/A", "N/A");
-    }
-    
-    return template;    
-}
-
 export const baselinePayment = (participantModule) => {
     let template = ``;
 
