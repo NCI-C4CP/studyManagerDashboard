@@ -436,7 +436,7 @@ export default
     618686157 : "Deceased",
     861639549 :  "Data Destroyed",
 
-
+    // Participation status disposition codes
     "noRefusal": 208325815,
     "refusedSome": 622008261,	
     "refusedAll": 458508122,

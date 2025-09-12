@@ -3,8 +3,8 @@ import { renderParticipantHeader } from './participantHeader.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey, 
     baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineBloodSample, baselineUrineSample, baselineBiospecSurvey, baselineMenstrualSurvey,
-    baselineMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
-    baselineExperienceSurvey, cancerScreeningHistorySurvey, dhqSurvey, baselinePhysActReport, dhq3Report} from './participantSummaryRow.js';
+    baselineMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey,
+    baselinePayment, baselineExperienceSurvey, cancerScreeningHistorySurvey, dhqSurvey, baselinePhysActReport, dhq3Report} from './participantSummaryRow.js';
 import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate } from './utils.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
 
@@ -126,9 +126,6 @@ export const render = (participant, reports) => {
                                 </tr>
                                 <tr class="row-color-payment">
                                     ${baselinePayment(participant)}
-                                </tr>
-                                <tr class="row-color-emr-light">
-                                    ${baselineEMR(participant)}
                                 </tr>
                                 <tr class="row-color-roi-dark">
                                     ${baselinePhysActReport(participant, reports)}

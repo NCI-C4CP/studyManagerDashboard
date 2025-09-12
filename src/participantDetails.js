@@ -16,9 +16,9 @@ window.addEventListener('beforeunload',  (e) => {
 })
 // Prevents from scrolling to bottom or middle of the page
 window.addEventListener('onload', (e) => {
-    setTimeout(function() {
+    requestAnimationFrame(() => {
         document.body.scrollTop = document.documentElement.scrollTop = 0;
-    }, 15);
+    });
 })
 
 const initLoginMechanism = (participant) => {
@@ -27,14 +27,13 @@ const initLoginMechanism = (participant) => {
     appState.setState({loginMechanism:{phone: true, email: true}});
 }
 
-export const renderParticipantDetails = (participant, changedOption) => {
+export const renderParticipantDetails = (participant, changedOption = {}) => {
     initLoginMechanism(participant);
     document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantDetailsBtn').classList.add('active');
     mainContent.innerHTML = render(participant, changedOption);
     let originalHTML =  mainContent.innerHTML;
-    hideUneditableButtons(participant, changedOption);
     localStorage.setItem("participant", JSON.stringify(participant));
     changeParticipantDetail(participant,  changedOption, originalHTML);
     resetParticipantConfirm();
@@ -56,12 +55,42 @@ export const render = (participant, changedOption) => {
         </div>
         `
     } else {
+        // Check participant status
+        const isParticipantDuplicate = participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate;
+        const isParticipantCannotBeVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.cannotBeVerified;
+        const isParticipantDataDestroyed = participant[fieldMapping.dataDestroyCategorical] === fieldMapping.requestedDataDestroySigned;
+        
+        let statusWarning = '';
+        let warningTitle = '';
+        let warningMessage = '';
+        
+        if (isParticipantDuplicate) {
+            warningTitle = 'Duplicate Account';
+            warningMessage = 'This participant has been marked as a duplicate account. Editing is disabled for this participant.';
+        } else if (isParticipantCannotBeVerified) {
+            warningTitle = 'Cannot Be Verified';
+            warningMessage = 'This participant cannot be verified. Editing is disabled for this participant.';
+        } else if (isParticipantDataDestroyed) {
+            warningTitle = 'Data Destroyed';
+            warningMessage = 'This participant\'s data has been destroyed. Editing is disabled for this participant.';
+        }
+        
+        if (warningTitle && warningMessage) {
+            statusWarning = `
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <h4 class="alert-heading">${warningTitle}</h4>
+                    <p>${warningMessage}</p>
+                </div>
+            `;
+        }
+        
         template += `
             <div id="root" > 
             <div id="alert_placeholder"></div>
             ${renderParticipantHeader(participant)}     
+            ${statusWarning}
             ${renderBackToSearchDivAndButton()}
-            ${renderCancelChangesAndSaveChangesButtons()}
+            ${renderCancelChangesAndSaveChangesButtons('Upper')}
             ${renderResetUserButton(participant?.state?.uid)}
             ${renderDetailsTableHeader()}
         `;
@@ -72,11 +101,14 @@ export const render = (participant, changedOption) => {
             const conceptId = row.field;
             const participantConsented = participant[fieldMapping.consentFlag] === fieldMapping.yes;
             const hideLoginInformation = (conceptId === 'Change Login Phone' || conceptId === 'Change Login Email') && !participantConsented;
+            const shouldHideButton = !row.editable || hideLoginInformation;
+            const disableButton = hideLoginInformation || !row.editable;
             const variableLabel = row.label;
             const variableValue = participant[conceptId];
             const valueToRender = hideLoginInformation ? 'N/A' : getFieldValues(variableValue, conceptId);
             const rowBackgroundColor = row.isHeading ? '#f5f5f5' : null;
-            const buttonToRender = getButtonToRender(variableLabel, conceptId, participant[fieldMapping.dataDestroyCategorical], hideLoginInformation);
+            // Don't show buttons for header rows or when button should be hidden (e.g. login buttons when participant not consented and phone preference buttons when phone number is not provided)
+            const buttonToRender = (row.isHeading || shouldHideButton) ? '' : getButtonToRender(variableLabel, conceptId, disableButton, isParticipantDataDestroyed, isParticipantDuplicate, isParticipantCannotBeVerified);
 
             template += `
                 <tr class="detailedRow" style="text-align: left; background-color: ${rowBackgroundColor}" id="${conceptId}row">
@@ -102,7 +134,7 @@ export const render = (participant, changedOption) => {
         template += `
                     </tbody>
                 </table>
-                ${renderCancelChangesAndSaveChangesButtons()}
+                ${renderCancelChangesAndSaveChangesButtons('Lower')}
             </div>
         </div>
         `;
@@ -135,44 +167,60 @@ const resetParticipantConfirm = () => {
     }
 }
 
-const changeParticipantDetail = (participant, changedOption, originalHTML) => {
+export const changeParticipantDetail = (participant, changedOption, originalHTML) => {
     const detailedRow = Array.from(document.getElementsByClassName('detailedRow'));
     if (detailedRow) {
+        // Rm existing listeners
+        document.querySelectorAll('.showMore').forEach(btn => {
+            btn.replaceWith(btn.cloneNode(true));
+        });
+
+        // New listeners for buttons
         detailedRow.forEach(element => {
-            let editRow = element.getElementsByClassName('showMore')[0];
-            const values = editRow;
-            let data = getDataAttributes(values);
-            editRow && editRow.addEventListener('click', () => {
-                const header = document.getElementById('modalHeader');
-                const body = document.getElementById('modalBody');
-                const conceptId = data.participantconceptid;
-                const participantKey = data.participantkey;
-                const modalLabel = getModalLabel(participantKey);
-                const participantValue = data.participantvalue;
-                header.innerHTML = `
-                    <h5>Edit ${modalLabel}</h5>
-                    <button type="button" class="modal-close-btn" id="closeModal" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`
-                let template = `
-                    <div>
-                        ${renderFormInModal(participant, changedOption, conceptId, participantKey, modalLabel, participantValue)}
-                    </div>`
-                body.innerHTML = template;
-                showSaveNoteInModal(conceptId);
-                saveResponses(participant, changedOption, element, conceptId);
-                resetChanges(participant, originalHTML);   
-            });
-        })
+            const editButton = element.querySelector('.showMore');
+            if (editButton) {
+                editButton.addEventListener('click', function (e) {
+                    const data = getDataAttributes(this);
+                    // Wait for Bootstrap modal to open using requestAnimationFrame
+                    requestAnimationFrame(() => {
+                        const header = document.getElementById('modalHeader');
+                        const body = document.getElementById('modalBody');
+                        const conceptId = data.participantconceptid;
+                        const participantKey = data.participantkey;
+                        const modalLabel = getModalLabel(participantKey);
+                        const participantValue = data.participantvalue;
+
+                        header.innerHTML = `
+                            <h5>Edit ${modalLabel}</h5>
+                            <button type="button" class="modal-close-btn" id="closeModal" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
+
+                        let template = `
+                            <div>
+                                ${renderFormInModal(participant, changedOption, conceptId, participantKey, modalLabel, participantValue)}
+                            </div>`;
+
+                        body.innerHTML = template;
+                        showSaveNoteInModal(conceptId);
+                        saveResponses(participant, changedOption, element, conceptId);
+                        resetChanges(participant, originalHTML);
+                    });
+                });
+            }
+        });
     }
-}
+};
 
 /**
  * Render the edit button for the participant details based on the variable
  * @param {string} variableLabel - the label of the variable
  * @param {string} conceptId - the conceptId of the variable 
+ * @param {boolean} disableButton - whether the button should be disabled
+ * @param {boolean} isParticipantDataDestroyed - whether participant data is destroyed
+ * @param {boolean} isParticipantDuplicate - whether participant is duplicate
+ * @param {boolean} isParticipantCannotBeVerified - whether participant cannot be verified
  * @returns {HTMLButtonElement} - template string with the button to render
  */
-const getButtonToRender = (variableLabel, conceptId, participantIsDataDestroyed, disableButton) => {
-    const isParticipantDataDestroyed = participantIsDataDestroyed === fieldMapping.requestedDataDestroySigned;
+const getButtonToRender = (variableLabel, conceptId, disableButton, isParticipantDataDestroyed, isParticipantDuplicate, isParticipantCannotBeVerified) => {
     const loginButtonType = !isParticipantDataDestroyed && conceptId === 'Change Login Phone' ? 'Phone' : !isParticipantDataDestroyed && conceptId === 'Change Login Email' ? 'Email' : null;
     const participantKey = loginButtonType ? '' : `data-participantkey="${variableLabel}"`;
     const participantConceptId = loginButtonType ? '' : `data-participantconceptid="${conceptId}"`;
@@ -180,8 +228,18 @@ const getButtonToRender = (variableLabel, conceptId, participantIsDataDestroyed,
     const buttonId = loginButtonType ? `updateUserLogin${loginButtonType}` : `${conceptId}button`;
 
     if (disableButton) {
+        // Use the passed boolean values instead of re-checking
+        let tooltipText = "Participant Consent Required";
+        if (isParticipantDuplicate) {
+            tooltipText = "Duplicate account - editing disabled";
+        } else if (isParticipantCannotBeVerified) {
+            tooltipText = "Cannot be verified - editing disabled";
+        } else if (isParticipantDataDestroyed) {
+            tooltipText = "Data destroyed - editing disabled";
+        }
+        
         return `
-            <button type="button" class="btn btn-secondary btn-custom" disabled title="Participant Consent Required">
+            <button type="button" class="btn btn-secondary btn-custom" disabled title="${tooltipText}">
                 Edit
             </button>
         `;
@@ -304,10 +362,10 @@ const renderShowMoreDataModal = () => {
     `;
 };
 
-const renderCancelChangesAndSaveChangesButtons = () => {
+const renderCancelChangesAndSaveChangesButtons = (position) => {
     return `
         <div class="float-right" style="display:inline-block;">
-            <button type="button" id="cancelChanges" class="btn btn-danger">Cancel Changes</button>
+            <button type="button" id="cancelChanges${position}" class="btn btn-danger">Cancel Changes</button>
             &nbsp;
             <button type="submit" id="updateMemberData" class="updateMemberData btn btn-primary">Save Changes</button>
         </div>

@@ -1,25 +1,61 @@
 import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantHeader, getParticipantStatus, getParticipantSuspendedDate } from './participantHeader.js';
-import { renderParticipantWithdrawalLandingPage, viewOptionsSelected, proceedToNextPage, autoSelectOptions, addEventMonthSelection } from './participantWithdrawalForm.js'
+import { renderWithdrawalForm, viewOptionsSelected, proceedToNextPage, autoSelectOptions, addEventMonthSelection } from './participantWithdrawalForm.js'
 
 
 export const renderParticipantWithdrawal = (participant) => {
     if (participant !== undefined) {
+        const mainContent = document.getElementById('mainContent');
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
         removeActiveClass('nav-link', 'active');
         document.getElementById('participantWithdrawalBtn').classList.add('active');
-        mainContent.innerHTML = render(participant);
+        
+        // Deny access if participant is duplicate. Provide warning message and nav buttons.
+        if (participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate) {
+            mainContent.innerHTML = buildAccessDeniedTemplate(participant);
+            
+            document.getElementById('goToParticipantSummaryBtn').addEventListener('click', () => {
+                window.location.hash = '#participantSummary';
+            });
+            document.getElementById('goToParticipantDetailsBtn').addEventListener('click', () => {
+                window.location.hash = '#participantDetails';
+            });
+            document.getElementById('goToParticipantLookupBtn').addEventListener('click', () => {
+                window.location.hash = '#participantLookup';
+            });
+            return;
+        }
+        
+        mainContent.innerHTML = buildWithdrawalTemplate(participant);
         autoSelectOptions();
         viewOptionsSelected();
         proceedToNextPage();
-        addEventMonthSelection('UPMonth', 'UPDay');
+        addEventMonthSelection('suspendContactUntilMonth', 'suspendContactUntilDay', 'suspendContactUntilYear');
         checkPreviousWithdrawalStatus(participant);
     }
 }
 
+export const buildAccessDeniedTemplate = (participant) => {
+    return `
+        <div class="container-fluid">
+            <div id="root root-margin">
+                ${renderParticipantHeader(participant)}
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <h4 class="alert-heading">Access Denied</h4>
+                    <p>Duplicate account. Withdrawal page is not accessible for this participant.</p>
+                </div>
+                <div class="text-center">
+                    <button type="button" class="btn btn-primary mt-3 mr-2" id="goToParticipantSummaryBtn">Participant Summary</button>
+                    <button type="button" class="btn btn-secondary mt-3 mr-2" id="goToParticipantDetailsBtn">Participant Details</button>
+                    <button type="button" class="btn btn-info mt-3" id="goToParticipantLookupBtn">Participant Lookup</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
 
-export const render = (participant) => {
+export const buildWithdrawalTemplate = (participant) => {
     localStorage.setItem('token', participant.token)
     let template = `<div class="container-fluid">`
     if (!participant) {
@@ -35,7 +71,7 @@ export const render = (participant) => {
                     ${renderParticipantHeader(participant)}
                     <div id="alert_placeholder"></div>
                     <div id="formMainPage">
-                    ${renderParticipantWithdrawalLandingPage(participant)}
+                    ${renderWithdrawalForm(participant)}
                     </div>
                 </div>
                 `;
