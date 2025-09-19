@@ -215,30 +215,31 @@ const refreshSelectedFiles = () => {
   }
 
   uploadBtn.disabled = false;
-  fileState.selected.sort((a, b) => a.name.localeCompare(b.name));
-  fileState.selected.forEach((file, idx) => {
-    const div = document.createElement("div");
-    div.className = "d-flex align-items-center mb-1";
-    div.style.gap = "8px";
+  fileState.selected
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach((file, idx) => {
+      const div = document.createElement("div");
+      div.className = "d-flex align-items-center mb-1";
+      div.style.gap = "8px";
 
-    const btn = document.createElement("button");
-    btn.textContent = "✕";
-    btn.title = "Remove file";
-    btn.className = "btn btn-sm btn-warning py-0 px-2";
-    btn.style.marginRight = "0.75rem";
-    btn.style.fontSize = "0.85em";
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      fileState.selected.splice(idx, 1);
-      refreshSelectedFiles();
+      const btn = document.createElement("button");
+      btn.textContent = "✕";
+      btn.title = "Remove file";
+      btn.className = "btn btn-sm btn-warning py-0 px-2";
+      btn.style.marginRight = "0.75rem";
+      btn.style.fontSize = "0.85em";
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        fileState.selected.splice(idx, 1);
+        refreshSelectedFiles();
+      });
+
+      const span = document.createElement("span");
+      span.textContent = file.name;
+      div.append(btn, span);
+
+      selectedFileNamesDiv.appendChild(div);
     });
-
-    const span = document.createElement("span");
-    span.textContent = file.name;
-    div.append(btn, span);
-
-    selectedFileNamesDiv.appendChild(div);
-  });
 };
 
 const showUploadedFiles = (updatedFileNames) => {
@@ -253,7 +254,6 @@ const showUploadedFiles = (updatedFileNames) => {
       fileState.uploadedFileNames.push(filename);
     }
   });
-
 
   const ul = document.createElement("ul");
   ul.style = "text-align: left; padding-left: 20px;";
@@ -367,7 +367,6 @@ const uploadEhrUsingSignedUrls = async () => {
           method: "PUT",
           headers: {
             "Content-Type": file.type || "application/octet-stream",
-            // "x-goog-resumable": "start",
           },
           body: file,
         })
@@ -468,6 +467,7 @@ export const renderEhrUploadPage = async () => {
         }
         fileState.selected.push(duplicateFile);
       }
+      hideWarningModal();
       refreshSelectedFiles();
     } else if (modalStatus === "missingOptionalFiles") {
       const hasDuplicates = checkDuplicateUploads();
