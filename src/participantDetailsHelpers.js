@@ -1487,7 +1487,7 @@ export const validateAddress = (addressLineElement, isRequired) => {
     if (addressLineElement.value) {
         // Check character limit (100 characters)
         if (addressLineElement.value.length > 800) {
-            errorMessage('Error: Address must be 100 characters or less. Please shorten your input.', addressLineElement);
+            errorMessage('Error: Address must be 800 characters or less. Please shorten your input.', addressLineElement);
             return false;
         }
     }

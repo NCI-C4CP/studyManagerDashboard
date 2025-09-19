@@ -30,9 +30,10 @@ const initLoginMechanism = (participant) => {
 
 export const renderParticipantDetails = (participant, changedOption = {}) => {
     initLoginMechanism(participant);
-    localStorage.setItem("participant", JSON.stringify(participant)); // TODO: remove localStorage usage.
+    appState.setState({participant: participant});
     
     mainContent.innerHTML = render(participant, changedOption);
+    localStorage.setItem("participant", JSON.stringify(participant));
     changeParticipantDetail(participant, changedOption);
     resetChanges(participant);
     
