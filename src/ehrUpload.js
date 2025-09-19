@@ -243,11 +243,7 @@ const refreshSelectedFiles = () => {
 };
 
 const showUploadedFiles = (updatedFileNames) => {
-  const uploadedFilesWrapperDiv = document.querySelector("#uploadedFilesWrapper");
-  if (updatedFileNames.length === 0) {
-    uploadedFilesWrapperDiv.style.display = "none";
-    return;
-  }
+  if (!updatedFileNames || updatedFileNames.length === 0) return;
 
   updatedFileNames.forEach((filename) => {
     if (!fileState.uploadedFileNames.includes(filename)) {
@@ -265,7 +261,7 @@ const showUploadedFiles = (updatedFileNames) => {
   });
 
   document.querySelector("#uploadedFileNames").replaceChildren(ul);
-  uploadedFilesWrapperDiv.style.display = "";
+  document.querySelector("#uploadedFilesWrapper").style.display = "";
 };
 
 const refreshUploadedEhrNames = async () => {
