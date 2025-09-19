@@ -1,9 +1,8 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
-import { timestampValidation } from './utils.js';
+import { timestampValidation} from './utils.js';
 
 export const keyToNameObj = 
 {
-
     452412599 : "Kaiser Permanente Northwest",
     531629870 : "Health Partners",
     657167265 : "Sanford Health",
@@ -15,12 +14,10 @@ export const keyToNameObj =
     300267574 : "Kaiser Permanente Hawaii",
     327912200 : "Kaiser Permanente Georgia",
     472940358: "Baylor Scott & White Health",
-
 }
 
 export const keyToShortNameObj = 
 {
-
     452412599 : "KP NW",
     531629870 : "Health Partners",
     657167265 : "Sanford Health",
@@ -33,7 +30,6 @@ export const keyToShortNameObj =
     327912200 : "KP GA",
     472940358: "Baylor Scott & White Health",
     1000: "All Sites"
-
 }
 
 export const nameToKeyObj = 
