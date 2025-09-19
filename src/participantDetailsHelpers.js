@@ -1167,10 +1167,8 @@ const showAuthUpdateAPIError = (bodyId, message) => {
     return false;
 }
 
-// TODO: remove localStorage usage.
 export const updateParticipantAfterFormSave = (participant, changedUserDataForProfile) => {
     const updatedParticipant = { ...participant, ...changedUserDataForProfile };
-    localStorage.setItem('participant', JSON.stringify(updatedParticipant));
     appState.setState({ participant: updatedParticipant });
     return updatedParticipant;
 }
