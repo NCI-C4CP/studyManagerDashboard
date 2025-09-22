@@ -158,7 +158,6 @@ export const addFormInputFormattingListeners = () => {
     phoneInputs.forEach((input, index) => {
         if (input.dataset.currentValue && input.dataset.currentValue !== 'undefined' && !input.value) {
             const formattedValue = formatPhoneNumber(input.dataset.currentValue.toString());
-            console.log(`📱 Setting value from ${input.dataset.currentValue} to ${formattedValue}`);
             input.value = formattedValue;
         }
     });
@@ -1558,7 +1557,13 @@ export const validatePhoneNumber = (phoneNumberElement, isRequired) => {
     }
 
     if (phoneNumberElement.value) {
-        if (!validPhoneNumberFormat.test(phoneNumberElement.value)) {
+        const phoneDigits = phoneNumberElement.value.replace(/\D/g, '');
+        if (phoneDigits.startsWith('0')) {
+            errorMessage('Error: Phone number cannot start with 0. Please enter a 10-digit phone number without the country code. Example: (999) 999-9999', phoneNumberElement);
+            return false;
+        }
+
+        if (!validPhoneNumberFormat.test(phoneDigits)) {
             errorMessage('Please enter a valid phone number format. Example: (999) 999-9999.', phoneNumberElement);
             return false;
         }

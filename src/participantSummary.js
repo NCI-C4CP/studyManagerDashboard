@@ -682,7 +682,6 @@ const resetParticipantConfirm = () => {
 }
 
 const postResetUserData = async (uid) => {
-    console.log('postResetUserData', uid);
     try {
         const idToken = await getIdToken();
         const response = await fetch(`${baseAPI}/dashboard?api=resetUser`, {
@@ -707,7 +706,6 @@ const postResetUserData = async (uid) => {
 }
 
 const refreshParticipantAfterReset = async (participant) => {
-    console.log('refreshParticipantAfterReset', participant);
     showAnimation();
     localStorage.setItem('participant', JSON.stringify(participant));
     renderParticipantSummary(participant);
