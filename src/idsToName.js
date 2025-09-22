@@ -57,7 +57,8 @@ export const keyToVerificationStatus = {
     160161595 : 'Outreach timed out',
     197316935 : 'Verified',
     219863910 : 'Cannot be verified',
-    922622075 : 'Duplicate'
+    922622075 : 'Duplicate',
+    290379732 : 'No longer enrolling'
 }
 
 export const keyToDuplicateType = {
@@ -220,6 +221,7 @@ export const searchBubbleMap = new Map([
 const verificationStatusMapping = {
     [fieldMapping.notYetVerified]: 'Not Yet Verified',
     [fieldMapping.outreachTimedout]: 'Out Reach Timed Out',
+    [fieldMapping.noLongerEnrolling]: 'No Longer Enrolling',
     [fieldMapping.verified]: 'Verified',
     [fieldMapping.cannotBeVerified]: 'Can Not Be Verified',
     [fieldMapping.duplicate]: 'Duplicate'

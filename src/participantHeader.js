@@ -13,6 +13,8 @@ export const renderParticipantHeader = (participant) => {
     verificationHtmlStr = `<span><b>Not Yet Verified</b></span>: N/A`;
   } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate) {
     verificationHtmlStr = `<span><b>Duplicate</b></span>: ${readableVerificationDate}`;
+  } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.noLongerEnrolling) {
+    verificationHtmlStr = `<span><b>No Longer Enrolling</b></span>: ${readableVerificationDate}`;
   } else {
     verificationHtmlStr = `<span><b>Outreach Timed Out</b></span>: ${readableVerificationDate}`;
   }
