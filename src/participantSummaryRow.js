@@ -30,6 +30,9 @@ export const verificationStatus = (participant) => {
     } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.notYetVerified) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Enrollment", "N/A", "Verification Status", "Not yet Verified",
         "N/A", "N/A", "N", "N/A");
+    } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.noLongerEnrolling) {
+        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "Verification Status", "No Longer Enrolling",
+        formatUTCDate(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
     } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate) {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "Verification Status", "Duplicate",
         formatUTCDate(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
