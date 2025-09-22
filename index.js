@@ -1,6 +1,6 @@
 import { renderParticipantLookup } from './src/participantLookup.js';
 import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, removeActiveClass } from './src/navigationBar.js';
-import { renderTable, renderData, activeColumns, renderFilters } from './src/participantCommons.js';
+import { renderTable, renderParticipantSearchResults, activeColumns, renderFilters, renderTablePage } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
@@ -16,7 +16,7 @@ import { renderSiteMessages } from './src/siteMessages.js';
 import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
-import { internalNavigatorHandler, getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, resetPagination, resetFilters, escapeHTML } from './src/utils.js';
+import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, resetPagination, resetFilters, escapeHTML, renderSiteDropdown, triggerNotificationBanner, clearUnsaved, clearParticipant, showConfirmModal, showAlertModal } from './src/utils.js';
 import fieldMapping from './src/fieldToConceptIdMapping.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
@@ -28,8 +28,6 @@ import { SSOConfig as stageSSOConfig} from './config/stage/identityProvider.js';
 import { SSOConfig as prodSSOConfig} from './config/prod/identityProvider.js';
 import { appState } from './src/stateManager.js';
 
-let saveFlag = false;
-let counter = 0;
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
@@ -107,10 +105,13 @@ window.onload = async () => {
 
     !isLocalDev && window.DD_RUM && window.DD_RUM.startSessionReplayRecording();
 
+    // TODO: Initialize appState here (Oct 2025).
+    //await initializeAppState();
+    
     router();
-    localStorage.setItem("flags", JSON.stringify(saveFlag));
-    localStorage.setItem("counters", JSON.stringify(counter));
     activityCheckController();
+    
+    // TODO: manage user session in sessionStorage
     const userSession = localStorage.getItem('userSession');
     userSession && appState.setState({ userSession: JSON.parse(userSession) });
 
@@ -121,7 +122,6 @@ window.onload = async () => {
     } else {
       appState.setState({statsData: {}, statsDataUpdateTime: 0});
     }
-    
 };
 
 window.onhashchange = () => {
@@ -146,10 +146,33 @@ const dataCorrectionsToolRoutes = [
     '#verificationCorrectionsTool',
 ];
 
+// TODO: centralize in appState
+// Track previous hash for 'no participant selected' and 'unsaved changes' guards.
+let previousHash = window.location.hash;
+
 const router = async () => {
     const hash = decodeURIComponent(window.location.hash);
     const route = hash || '#';
     const isParent = localStorage.getItem('isParent')
+
+    // Guard: Unsaved changes in participant details form
+    const state = appState.getState() || {};
+    if (state.hasUnsavedChanges) {
+        const proceed = await showConfirmModal({
+            title: 'Unsaved Changes',
+            message: 'You have unsaved changes. Continue and lose your edits?',
+            confirmText: 'Continue',
+            cancelText: 'Stay'
+        });
+        if (!proceed) {
+            history.replaceState(null, null, previousHash || '#');
+            return;
+        }
+        clearUnsaved();
+    }
+
+    // Update browser hash tracking once route is cleared for navigation
+    const markNavigationSucceeded = () => { previousHash = route; };
 
     // Authenticated
     if (await userLoggedIn() || localStorage.dashboard) {
@@ -158,9 +181,16 @@ const router = async () => {
         if (participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route)) {
             const participant = JSON.parse(localStorage.getItem("participant"));
             if (!participant) {
-                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
+                await showAlertModal({
+                    title: 'Participant Required',
+                    message: 'No participant selected. Please select a participant from the participants dropdown or the participant lookup page',
+                    okText: 'OK'
+                });
+                history.replaceState(null, null, previousHash || '#');
                 return;
             }
+
+            markNavigationSucceeded();
 
             // Phys Act report data needs to be fetched from BQ. DHQ Report data is found in the participant object.
             if (route === '#participantSummary') {
@@ -183,6 +213,14 @@ const router = async () => {
         }
 
         // Handle all other routes
+        markNavigationSucceeded();
+        
+        // Clear unsaved state and active participant for non-participant routes
+        if (!participantRoutes.includes(route) && !dataCorrectionsToolRoutes.includes(route)) {
+            clearUnsaved();
+            clearParticipant();
+        }
+
         if (route === '#participants/notyetverified') return renderParticipants('notyetverified');
         else if (route === '#participants/cannotbeverified') return renderParticipants('cannotbeverified');
         else if (route === '#participants/verified') return renderParticipants('verified');
@@ -207,6 +245,8 @@ const router = async () => {
     }
 
     // Not authenticated
+    clearParticipant();
+    markNavigationSucceeded();
     return loginPage();
 }
 
@@ -295,7 +335,6 @@ const renderDashboard = async () => {
             location.host !== urls.prod ? mainContent.innerHTML = headsupBanner() : ``
             renderCharts(idToken);
         }
-        internalNavigatorHandler(counter); // function call to prevent internal navigation when there's unsaved changes
         if (isAuthorized.code === 401) {
             clearLocalStorage();
         }
@@ -330,10 +369,9 @@ const renderCharts = async (accessToken) => {
         const siteSelectionRow = document.createElement('div');
         siteSelectionRow.classList = ['row'];
         siteSelectionRow.id = 'siteSelection';
-        siteSelectionRow.innerHTML = renderSiteKeyList();
+        siteSelectionRow.innerHTML = `<div style="padding:15px;">${renderSiteDropdown('dashboard')}</div>`;
         mainContent.appendChild(siteSelectionRow);
-        const sitekeyName = 'Filter by Site';
-        handleSiteSelection(sitekeyName);
+        handleSiteSelection('All Sites', 'allResults');
     }
 
     const transformedData = transformDataForCharts(statsData);
@@ -421,34 +459,15 @@ const transformDataForCharts = (siteData) => {
   };
 };
 
-const renderSiteKeyList = () => {
-    const template = `    
-        <div style="margin-top:10px; padding:15px;" class="dropdown">
-            <button class="btn btn-secondary dropdown-toggle dropdown-toggle-sites" id="dropdownSites" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Filter by Site
-            </button>
-            <ul class="dropdown-menu" id="dropdownMenuButtonSites" aria-labelledby="dropdownMenuButton">
-                <li><a class="dropdown-item" data-siteKey="allResults" id="all">All</a></li>
-                <li><a class="dropdown-item" data-siteKey="BSWH" id="BSWH">Baylor Scott & White Health</a></li>
-                <li><a class="dropdown-item" data-siteKey="hfHealth" id="hfHealth">Henry Ford HS</a></li>
-                <li><a class="dropdown-item" data-siteKey="hPartners" id="hPartners">Health Partners</a></li>
-                <li><a class="dropdown-item" data-siteKey="kpGA" id="kpGA">KP GA</a></li>
-                <li><a class="dropdown-item" data-siteKey="kpHI" id="kpHI">KP HI</a></li>
-                <li><a class="dropdown-item" data-siteKey="kpNW" id="kpNW">KP NW</a></li>
-                <li><a class="dropdown-item" data-siteKey="kpCO" id="kpCO">KP CO</a></li>
-                <li><a class="dropdown-item" data-siteKey="maClinic" id="maClinic">Marshfield Clinic</a></li>
-                ${((location.host !== urls.prod) && (location.host !== urls.stage)) ? `<li><a class="dropdown-item" data-siteKey="nci" id="nci">NCI</a></li>` : ``}
-                <li><a class="dropdown-item" data-siteKey="snfrdHealth" id="snfrdHealth">Sanford Health</a></li>
-                <li><a class="dropdown-item" data-siteKey="uChiM" id="uChiM">UofC Medicine</a></li>
-            </ul>
-        </div>
-        `;
-    return template;
-};
-
-const handleSiteSelection = (siteTextContent) => {
+/**
+ * Handles the site selection button click event and renders the dashboard
+ * @param {string} siteTextContent - Text content for the site selection button
+ * @param {string} siteKey - Key for the site selection button
+ */
+const handleSiteSelection = (siteTextContent = 'All Sites', siteKey = 'allResults') => {
     const siteSelectionButton = document.getElementById("dropdownSites");
     siteSelectionButton.innerHTML = siteTextContent;
+    siteSelectionButton && (siteSelectionButton.dataset.sitekey = siteKey);
 
     const dropdownMenuButton = document.getElementById("dropdownMenuButtonSites");
     dropdownMenuButton && dropdownMenuButton.addEventListener("click", (e) => {
@@ -981,19 +1000,18 @@ const filterBiospecimenStats = (data, verifiedParticipants) => {
 }
 
 const reRenderDashboard = async (siteTextContent, siteKey) => {
-  mainContent.innerHTML = `<div class="row" id="siteSelection">${renderSiteKeyList()}</div>`;
+  mainContent.innerHTML = `<div class="row" id="siteSelection">${renderSiteDropdown('dashboard')}</div>`;
   const siteCode = nameToKeyObj[siteKey];
   const siteData = filterDataBySiteCode(siteCode);
   const transformedData = transformDataForCharts(siteData);
   renderAllCharts(transformedData);
-  handleSiteSelection(siteTextContent);
+  handleSiteSelection(siteTextContent, siteKey);
   hideAnimation();
 };
 
 
 export const clearLocalStorage = () => {
     firebase.auth().signOut();
-    internalNavigatorHandler(counter);
     hideAnimation();
     delete localStorage.dashboard;
     delete localStorage.participant;
@@ -1031,30 +1049,47 @@ const filterDataBySiteCode = (siteCode) => {
  * @returns {Promise<void>}
  */
 const renderParticipants = async (type) => {
-    showAnimation();
+    try {
+        showAnimation();
 
-    resetFilters();
-    resetPagination();
+        resetFilters();
+        resetPagination();
 
-    appState.setState({ participantTypeFilter: type, siteCode: `` });
-    const response = await getParticipants();
-    const data = sortByKey(response.data, fieldMapping.healthcareProvider);
+        appState.setState({ participantTypeFilter: type, siteCode: nameToKeyObj.allResults });
+        const response = await getParticipants();
+        
+        if (response.code === 401) {
+            clearLocalStorage();
+            triggerNotificationBanner(
+                'Not authorized. Please log in again.',
+                'danger',
+                4000
+            );
+            
+        } else if (response.code !== 200) {
+            throw new Error(`Failed to fetch participants: ${response.code} - ${response.message || 'Unknown error'}`);
+        }
 
-    if (response.code === 200) {
+        const data = sortByKey(response.data, fieldMapping.healthcareProvider);
 
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
         updateActiveElements(type);
         mainContent.innerHTML = renderTable(data, type);
 
-        renderData(data, type);
+        renderParticipantSearchResults(data, type);
         activeColumns(data);
         renderFilters();
-        hideAnimation();
-    }
 
-    internalNavigatorHandler(counter);
-    if (response.code === 401) {
-        clearLocalStorage();
+    } catch (error) {
+        console.error('Error rendering participants:', error);
+        triggerNotificationBanner(
+            'Error loading participant data. Please try again. If the problem persists, please contact support.',
+            'danger',
+            4000
+        );
+        
+    } finally {
+        hideAnimation();
     }
 }
 

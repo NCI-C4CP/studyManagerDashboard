@@ -1,7 +1,7 @@
 import { renderParticipantDetails } from './participantDetails.js';
 import { clearLocalStorage } from '../index.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
-import { getIdToken, showAnimation, hideAnimation, urls, getParticipants, sortByKey, resetPagination } from './utils.js';
+import { getIdToken, showAnimation, hideAnimation, urls, getParticipants, sortByKey, renderSiteDropdown, resetPagination } from './utils.js';
 import { appState } from './stateManager.js';
 import { nameToKeyObj, keyToNameObj, keyToShortNameObj, participantConceptIDToTextMapping, searchBubbleMap, tableHeaderMap } from './idsToName.js';
 
@@ -23,37 +23,21 @@ const renderSearchBubbles = () => {
 }
 
 export const renderTable = (data, source) => {
-    
-    let template = '';
-    if(data.length === 0) return `No data found!`;
-
     localStorage.removeItem("participant");
+    if (data.length === 0) return `No data found!`;
     
-    template += renderSearchBubbles();
+    // Display the site dropdown, active and passive filters, and verification status time filter for specific search sources
+    const displayFilters = ['all', 'verified', 'active', 'passive'].includes(source);
 
+    let template = '';
+    template += renderSearchBubbles();
     template += ` <div id="alert_placeholder"></div>
                     <div class="row">
                     
-                    ${(source === 'all' || source === 'active' || source === 'passive') ? ` 
+                    ${displayFilters ? ` 
                         <div class="col-12">
                             <div class="d-flex flex-wrap align-items-center"> 
-                                <div class="form-group dropdown dropright mr-3" id="siteDropdownLookup" ${localStorage.getItem('dropDownstatusFlag') === 'false' ? `hidden` : ``}>
-                                    <button class="btn btn-primary btn-lg dropdown-toggle" type="button" id="dropdownSites" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-top: 10px;"></button>
-                                    <ul class="dropdown-menu" id="dropdownMenuButtonSites" aria-labelledby="dropdownMenuButton">
-                                        <li><a class="dropdown-item" data-siteKey="allResults" id="all">All</a></li>
-                                        <li><a class="dropdown-item" data-siteKey="BSWH" id="BSWH">Baylor Scott & White Health</a></li>
-                                        <li><a class="dropdown-item" data-siteKey="hfHealth" id="hfHealth">Henry Ford HS</a></li>
-                                        <li><a class="dropdown-item" data-siteKey="hPartners" id="hPartners">Health Partners</a></li>
-                                        <li><a class="dropdown-item" data-siteKey="kpGA" id="kpGA">KP GA</a></li>
-                                        <li><a class="dropdown-item" data-siteKey="kpHI" id="kpHI">KP HI</a></li>
-                                        <li><a class="dropdown-item" data-siteKey="kpNW" id="kpNW">KP NW</a></li>
-                                        <li><a class="dropdown-item" data-siteKey="kpCO" id="kpCO">KP CO</a></li>
-                                        <li><a class="dropdown-item" data-siteKey="maClinic" id="maClinic">Marshfield Clinic</a></li>
-                                        ${((location.host !== urls.prod) && (location.host !== urls.stage)) ? `<li><a class="dropdown-item" data-siteKey="nci" id="nci">NCI</a></li>` : ``}
-                                        <li><a class="dropdown-item" data-siteKey="snfrdHealth" id="snfrdHealth">Sanford Health</a></li>
-                                        <li><a class="dropdown-item" data-siteKey="uChiM" id="uChiM">UofC Medicine</a></li>
-                                    </ul>
-                                </div>
+                                ${renderSiteDropdown('table')}
 
                                 <div class="btn-group .btn-group-lg" role="group" aria-label="Basic example" style="margin-left:25px; padding: 10px 20px; border-radius: 10px; width:25%; height:25%;">
                                     <button type="button" class="btn btn-outline-info btn-lg" id="activeFilter">Active</button>
@@ -87,7 +71,7 @@ export const renderTable = (data, source) => {
                     </div>
                 
                     <div class="row w-100 mx-0">
-                        <div class="col-12 px-0">
+                        <div class="col-12 px-0 table-responsive">
                             <table id="dataTable" class="table table-hover table-bordered table-borderless sub-div-shadow no-wrap"></table>
                             <div id="paginationContainer"></div>
                         </div>
@@ -105,7 +89,7 @@ export const renderTable = (data, source) => {
     return template;
 }
 
-export  const renderData = (data, source) => {
+export  const renderParticipantSearchResults = (data, source) => {
     if(data.length === 0) {
         const mainContent = document.getElementById('mainContent');
         mainContent.innerHTML = renderTable(data, source);
@@ -116,6 +100,7 @@ export  const renderData = (data, source) => {
     const pageSize = 50;
     const dataLength = data.length;
     data.splice(pageSize, dataLength);
+    
     renderDataTable(data)
     addEventShowMoreInfo(data);
     if (source !== 'bubbleFilters') {
@@ -156,14 +141,20 @@ export const renderFilters = () => {
 
     const dropdownButton = document.getElementById('dropdownSites');
     if (dropdownButton) {
-        const siteName = appState.getState().siteCode ? keyToShortNameObj[appState.getState().siteCode] : keyToShortNameObj[1000];
-        dropdownButton.innerHTML = siteName;
+        const siteCode = appState.getState().siteCode;
+        if (siteCode && siteCode !== nameToKeyObj.allResults) {
+            const siteName = keyToShortNameObj[siteCode];
+            dropdownButton.innerHTML = siteName;
+            dropdownButton.setAttribute('data-siteKey', Object.keys(nameToKeyObj).find(key => nameToKeyObj[key] === siteCode) || 'allResults');
+        } else {
+            dropdownButton.innerHTML = 'All Sites';
+            dropdownButton.setAttribute('data-siteKey', 'allResults');
+        }
     }
 }
 
 const renderDataTable = (data, showButtons) => {
     document.getElementById('dataTable').innerHTML = buildTableTemplate(data, showButtons);
-    addEventShowMoreInfo(data);
 }
 
 /**
@@ -239,8 +230,6 @@ const addEventPagination = () => {
             if (type === 'previous') appState.setState({ pageNumber: currentPage - 1, direction: 'previous' });
             if (type === 'next') appState.setState({ pageNumber: currentPage + 1, direction: 'next' });
 
-            window.scrollTo({top: 0, behavior: 'smooth'});
-
             reRenderMainTable();
         });
     }
@@ -270,11 +259,21 @@ const addEventSiteFilter = () => {
     setupDropdownButton(dropdownButton);
 }
 
+export const renderTablePage = (data, type) => {
+    const mainContent = document.getElementById('mainContent');
+    mainContent.innerHTML = renderTable(data, type);
+    
+    renderParticipantSearchResults(data, type);
+    activeColumns(data);
+    if (type !== 'participantLookup') {
+        renderFilters();
+    }
+}
+
 export const reRenderMainTable = async () => {
 
     showAnimation();
 
-    const mainContent = document.getElementById('mainContent');
     const type = appState.getState().participantTypeFilter;
 
     const response = await getParticipants();
@@ -284,12 +283,23 @@ export const reRenderMainTable = async () => {
 
     if(response.code === 200) {
         if (data.length > 0) {
+            renderTablePage(data, type);
 
-            mainContent.innerHTML = renderTable(data, type);
-            renderData(data, type);
-            activeColumns(data);
-            renderFilters();
+            requestAnimationFrame(() => {
+                const targetElement = document.getElementById('dataTable'); // Target the table itself
+                const headerElement = document.querySelector('.navbar'); // The sticky header
 
+                if (targetElement && headerElement) {
+                    const headerHeight = headerElement.offsetHeight;
+                    const targetPosition = targetElement.getBoundingClientRect().top;
+                    const offsetPosition = targetPosition + window.scrollY - headerHeight - 10; // Add 10px of padding
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            });
             return;
         }
         else {
@@ -422,19 +432,15 @@ const addEventShowMoreInfo = (data) => {
 
 }
 
-export const filterdata = (data) => {
-    return data.filter(participant => participant['699625233'] !== undefined);
-}
+export const filterBySiteKey = (data, siteAbbr) => {
+    if (!siteAbbr || siteAbbr === 'allResults') {
+        return data;
+    }
 
-export const filterBySiteKey = (data, sitePref) => {
-    let filteredData = [];
-    data.filter(participant => 
-        {
-            if (participant['827220437'] === sitePref) {
-                filteredData.push(participant);
-            }
-        })
-    return filteredData;
+    const siteCode = nameToKeyObj?.[siteAbbr];
+    
+    // Filter participants by site code (827220437)
+    return data.filter(participant => participant[fieldMapping.healthcareProvider] === siteCode);
 }
 
 export const activeColumns = (data) => {
@@ -449,12 +455,12 @@ export const activeColumns = (data) => {
             if(!btn.classList.contains('filter-active')){
                 btn.classList.add('filter-active');
                 importantColumns.push(value);
-                renderData(data, 'bubbleFilters');
+                renderParticipantSearchResults(data, 'bubbleFilters');
             }
             else{
                 btn.classList.remove('filter-active');
                 importantColumns.splice(importantColumns.indexOf(value), 1);
-                renderData(data, 'bubbleFilters');
+                renderParticipantSearchResults(data, 'bubbleFilters');
             }
             document.getElementById('currentPageNumber').innerHTML = `&nbsp;Page: 1&nbsp;`
             document.getElementById('nextLink').setAttribute('data-nextpage', 1);

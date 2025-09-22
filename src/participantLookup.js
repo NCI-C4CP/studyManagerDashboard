@@ -1,19 +1,25 @@
 import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
-import { renderTable, filterdata, filterBySiteKey, renderData, activeColumns } from './participantCommons.js';
-import { internalNavigatorHandler, getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls, escapeHTML } from './utils.js';
+import { renderTable, filterBySiteKey, renderParticipantSearchResults, activeColumns, renderTablePage } from './participantCommons.js';
+import { getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls, escapeHTML, renderSiteDropdown, resetPagination } from './utils.js';
 import { nameToKeyObj } from './idsToName.js';
+import { addFormInputFormattingListeners } from './participantDetailsHelpers.js';
 
 export function renderParticipantLookup(){
+    resetPagination();
     document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
     document.getElementById('participantLookupBtn').classList.add('active');
     localStorage.removeItem("participant");
-    let counter = 0;
-    internalNavigatorHandler(counter)
+
     mainContent.innerHTML = renderParticipantSearch();
-    addEventSearch();
-    addEventSearchId();
-    triggerLookup();
+    
+    // Add all event listeners after DOM updates
+    requestAnimationFrame(() => {
+        addEventSearch();
+        addEventSearchId();
+        addFormInputFormattingListeners();
+        triggerLookup();
+    });
 }
 
 export function renderParticipantSearch() {
@@ -44,7 +50,7 @@ export function renderParticipantSearch() {
                             </div>
                             <div class="form-group">
                                 <label class="col-form-label search-label">Phone number</label>
-                                <input class="form-control" id="phone" placeholder="Enter a 10-digit phone number"/>
+                                <input class="form-control phone-input" id="phone" placeholder="(999) 999-9999" maxlength="14"/>
                             </div>
                             <span><i> (OR) </i></span>
                             <br />
@@ -52,26 +58,7 @@ export function renderParticipantSearch() {
                                 <label class="col-form-label search-label">Email</label>
                                 <input class="form-control" type="email" id="email" placeholder="Enter Email"/>
                             </div>
-                            <div class="form-group dropdown" id="siteDropdownLookup" ${localStorage.getItem('dropDownstatusFlag') === 'false' ? `hidden` : ``}>
-                                <label class="col-form-label search-label">Site Preference </label> &nbsp;
-                                <button class="btn btn-primary btn-lg dropdown-toggle" type="button" id="dropdownSites" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    Filter by Site
-                                </button>
-                                <ul class="dropdown-menu" id="dropdownMenuLookupSites" aria-labelledby="dropdownMenuButton">
-                                    <li><a class="dropdown-item" data-siteKey="allResults" id="all">All</a></li>
-                                    <li><a class="dropdown-item" data-siteKey="BSWH" id="BSWH">Baylor Scott & White Health</a></li>
-                                    <li><a class="dropdown-item" data-siteKey="hfHealth" id="hfHealth">Henry Ford HS</a></li>
-                                    <li><a class="dropdown-item" data-siteKey="hPartners" id="hPartners">Health Partners</a></li>
-                                    <li><a class="dropdown-item" data-siteKey="kpGA" id="kpGA">KP GA</a></li>
-                                    <li><a class="dropdown-item" data-siteKey="kpHI" id="kpHI">KP HI</a></li>
-                                    <li><a class="dropdown-item" data-siteKey="kpNW" id="kpNW">KP NW</a></li>
-                                    <li><a class="dropdown-item" data-siteKey="kpCO" id="kpCO">KP CO</a></li>
-                                    <li><a class="dropdown-item" data-siteKey="maClinic" id="maClinic">Marshfield Clinic</a></li>
-                                    ${((location.host !== urls.prod) && (location.host !== urls.stage)) ? `<li><a class="dropdown-item" data-siteKey="nci" id="nci">NCI</a></li>` : ``}
-                                    <li><a class="dropdown-item" data-siteKey="snfrdHealth" id="snfrdHealth">Sanford Health</a></li>
-                                    <li><a class="dropdown-item" data-siteKey="uChiM" id="uChiM">UofC Medicine</a></li>
-                                </ul>
-                            </div>
+                            ${renderSiteDropdown('lookup', 'dropdownMenuLookupSites')}
                             <div id="search-failed" class="search-not-found" hidden>
                                 The participant with entered search criteria not found!
                             </div>
@@ -193,36 +180,38 @@ const alertTrigger = () => {
     return template;
 }
 
-export const performSearch = async (query, sitePref, failedElem) => {
-    showAnimation();
-    const response = await findParticipant(query);
-    hideAnimation();
-    if(response.code === 200 && response.data.length > 0) {
-        const mainContent = document.getElementById('mainContent')
-        let filterRawData = filterdata(response.data);
+export const performSearch = async (query, siteAbbr, failedElem) => {
+    try {
+        showAnimation();
 
-        if (sitePref !== undefined && sitePref != null && sitePref !== 'allResults') {
-            const sitePrefId = nameToKeyObj[sitePref];
-            const tempFilterRawData = filterBySiteKey(filterRawData, sitePrefId);
-            if (tempFilterRawData.length !== 0 ) {
-                filterRawData = tempFilterRawData;
-            }
-            else if (tempFilterRawData.length === 0) {
-                document.getElementById(failedElem).hidden = false;
-                return alertTrigger();
-            }
+        const response = await findParticipant(query);
+
+        if(response.code !== 200) {
+            throw new Error('Search failed with code:', response.code, response.message);
         }
-        mainContent.innerHTML = renderTable(filterRawData, 'participantLookup');
-        renderData(filterRawData);
-        activeColumns(filterRawData);
+
+        // Note: this only happens when isParent=true AND site filter is applied.
+        // Otherwise, pt data is filtered during the query in ConnectFaas.
+        const siteFilteredData = filterBySiteKey(response.data, siteAbbr);
+        if (siteFilteredData.length === 0) {
+            document.getElementById(failedElem).hidden = false;
+            return alertTrigger();
+        }
+        
+        renderTablePage(siteFilteredData, 'participantLookup');
+        
         const element = document.getElementById('back-to-search');
         element.addEventListener('click', () => { 
             renderParticipantLookup();
         });
-    }
-    else if(response.code === 200 && response.data.length === 0) {
+        
+    } catch (error) {
+        console.error('Error during participant search:', error);
         document.getElementById(failedElem).hidden = false;
         alertTrigger();
+        
+    } finally {
+        hideAnimation();
     }
 }
 
@@ -230,18 +219,31 @@ export const showNotifications = (data, error) => {
     document.getElementById("search-failed").hidden = false;
 }
 
-
 export const findParticipant = async (query) => {
-    const idToken = await getIdToken();
-    const response = await fetch(`${baseAPI}/dashboard?api=getFilteredParticipants&${query}`, {
-        method: "GET",
-        headers: {
-            Authorization:"Bearer " + idToken
+    try {
+        const idToken = await getIdToken();
+        const response = await fetch(`${baseAPI}/dashboard?api=getFilteredParticipants&${query}`, {
+            method: "GET",
+            headers: {
+                Authorization:"Bearer " + idToken
+            }
+        });
+
+        const json = await response.json();
+
+        if (!response.ok) {
+            throw new Error(`Error fetching participants: ${response.status} - ${json?.message || 'Unknown error'}`);
         }
-    });
-    return await response.json();
+
+        return json;
+
+    } catch (error) {
+        console.error('Error in findParticipant():', error);
+        return { code: 500, message: error.message, data: [] };
+    }
 }
 
+// TODO: Oct 2025 -- from pt details page, render previous search results.
 export const renderLookupResultsTable = () => {
     const loadDetailsPage = '#participants/all'
     location.replace(window.location.origin + window.location.pathname + loadDetailsPage); // updates url to participantsAll

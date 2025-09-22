@@ -67,13 +67,13 @@ export const dashboardNavBarLinks = () => {
             (`<li class="nav-item" id="manageRequestAKitConditionsBtn">
                 <a class="nav-item nav-link ws-nowrap" href="#requestAKitConditions" title="Manage Automated Kit Request Eligibility"><i class="fa fa-cogs"></i> CCC use only- Set Kit Eligibility</a>
             </li>`) : (``) }
+        ${(isParent !== 'true' || coordinatingCenter === 'true') ?
+        (`<li class="nav-item" id="siteMessageBtn">
+            <a class="nav-item nav-link ws-nowrap" href="#siteMessages" title="Automated Refusal/Withdrawal Notifications to Sites"><i class="fa fa-comments"></i> Automated Refusal/Withdrawal Notifications to Sites</a>
+        </li>`) : (``) }
         ${(helpDesk === 'true' || (coordinatingCenter === 'true' && location.host === urls.prod)) ? '' : (`<li class="nav-item" id="ehrUploadBtn">
             <a class="nav-item nav-link ws-nowrap" href="#ehrUpload" title="EHR Upload"><i class="fa fa-upload"></i> EHR Upload</a>
         </li>`)}
-        ${(isParent !== 'true' || coordinatingCenter === 'true') ?
-        (`<li class="nav-item" id="siteMessageBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#siteMessages" title="Site Messages"><i class="fa fa-comments"></i> Site Messages</a>
-        </li>`) : (``) }
         ${coordinatingCenter === 'true' ?
         (`<li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle ws-nowrap" id="notifications" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
