@@ -278,8 +278,9 @@ const renderDetailsTableHeader = () => {
 };
 
 const renderFormInModal = (participant, changedOption, conceptId, participantKey, modalLabel, participantValue) => {
+    const textFieldTypes = new Set(['name', 'email', 'address', 'city', 'year', 'zip']);
     const textFieldMappingsArray = getImportantRows(participant, changedOption)
-        .filter(row => row.editable && (row.validationType == 'name' || row.validationType == 'email' || row.validationType == 'address' || row.validationType == 'year' || row.validationType == 'zip'))
+        .filter(row => row.editable && textFieldTypes.has(row.validationType))
         .map(row => row.field);
 
     const phoneFieldMappingsArray = getImportantRows(participant, changedOption)
