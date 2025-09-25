@@ -344,32 +344,73 @@ export const addEventMonthSelection = (month, day, year) => {
     });
 }
 
+// Handlers for withdrawal form checkbox hierarchy to support remove-then-add
+let destroyChangeHandler;
+let withdrawChangeHandler;
+let revokeChangeHandler;
+let deceasedChangeHandler;
+
 export const autoSelectOptions = () => {
     const selectedDestroyData = document.getElementById('destroyDataCheck');
     const selectedPtWithdrawn = document.getElementById('withdrawConsentCheck');
     const selectedPtDeceased = document.getElementById('participantDeceasedCheck')
+    const revokeHIPAA = document.getElementById('revokeHipaaAuthorizationCheck');
+
+    // Remove old listeners if present
+    if (selectedDestroyData && destroyChangeHandler) {
+        selectedDestroyData.removeEventListener('change', destroyChangeHandler);
+    }
+    if (selectedPtWithdrawn && withdrawChangeHandler) {
+        selectedPtWithdrawn.removeEventListener('change', withdrawChangeHandler);
+    }
+    if (revokeHIPAA && revokeChangeHandler) {
+        revokeHIPAA.removeEventListener('change', revokeChangeHandler);
+    }
+    if (selectedPtDeceased && deceasedChangeHandler) {
+        selectedPtDeceased.removeEventListener('change', deceasedChangeHandler);
+    }
+
+    // Add fresh listeners
     if (selectedDestroyData) {
-        selectedDestroyData.addEventListener('change', function(e) {
-            //Sync the value of withdraw consent and revoke hippa to data destroy IF the checkboxes are not already disabled
-            let dataDestroyChecked = e.target.checked;
-            let withdrawCheckbox = document.getElementById('withdrawConsentCheck');
-            if (!withdrawCheckbox.disabled) {
-                withdrawCheckbox.checked = dataDestroyChecked;
+        destroyChangeHandler = function(e) {
+            if (selectedDestroyData.checked) {
+                // Top-level checked → enforce lower levels
+                selectedPtWithdrawn && (selectedPtWithdrawn.checked = true);
+                revokeHIPAA && (revokeHIPAA.checked = true);
             }
-            let revokeHIPAACheckbox = document.getElementById('revokeHipaaAuthorizationCheck');
-            if (!revokeHIPAACheckbox.disabled) {
-                revokeHIPAACheckbox.checked = dataDestroyChecked;
-            }
-          });
+        };
+        selectedDestroyData.addEventListener('change', destroyChangeHandler);
     }
+
     if (selectedPtWithdrawn) {
-        selectedPtWithdrawn.addEventListener('change', function() {
-            let checkedValue1 = document.getElementById('revokeHipaaAuthorizationCheck');
-            checkedValue1.checked = true;
-          });
+        withdrawChangeHandler = function(e) {
+            // If Destroy Data is checked, user cannot uncheck Withdraw Consent or Revoke HIPAA
+            if (selectedDestroyData && selectedDestroyData.checked && !e.target.checked) {
+                e.target.checked = true;
+                return;
+            }
+            // If Withdraw Consent is checked, ensure Revoke HIPAA is checked
+            if (selectedPtWithdrawn && selectedPtWithdrawn.checked && revokeHIPAA) {
+                revokeHIPAA.checked = true;
+            }
+        };
+        selectedPtWithdrawn.addEventListener('change', withdrawChangeHandler);
     }
+
+    if (revokeHIPAA) {
+        revokeChangeHandler = function(e) {
+            // If Withdraw Consent or Destroy Data are checked, user cannot uncheck Revoke HIPAA
+            const withdrawChecked = selectedPtWithdrawn && selectedPtWithdrawn.checked;
+            const destroyChecked = selectedDestroyData && selectedDestroyData.checked;
+            if (!e.target.checked && (withdrawChecked || destroyChecked)) {
+                e.target.checked = true;
+            }
+        };
+        revokeHIPAA.addEventListener('change', revokeChangeHandler);
+    }
+
     if (selectedPtDeceased) {
-        selectedPtDeceased.addEventListener('change', function() {
+        deceasedChangeHandler = function() {
             disableEnableWhoRequested('requestParticipant')
             disableEnableWhoRequested('requestPrincipalInvestigator')
             disableEnableWhoRequested('requestConnectIRB')
@@ -377,7 +418,8 @@ export const autoSelectOptions = () => {
             disableEnableWhoRequested('requestChairSite')
             disableEnableWhoRequested('requestOther')
             disableEnableWhoRequested('requestOtherText')
-          });
+        };
+        selectedPtDeceased.addEventListener('change', deceasedChangeHandler);
     }
 }
 
@@ -604,31 +646,42 @@ const retainPreviouslySetOptions = (selectedRefusalWithdrawalCheckboxes, selecte
         const daySelect = document.getElementById('suspendContactUntilDay');
         const yearInput = document.getElementById('suspendContactUntilYear');
         
-        // Restore month first (this will trigger the change event and populate days)
+        // Restore month first
         if (monthSelect && month) {
             monthSelect.value = month;
             
-            // Trigger the change event, then MutationObserver waits for the day dropdown to be populated
-            monthSelect.dispatchEvent(new Event('change', { bubbles: true }));
-            
-            const observer = new MutationObserver((mutationsList, observer) => {
-                for(const mutation of mutationsList) {
-                    if (mutation.type === 'childList' && daySelect.options.length > 1) {
-                        if (day) {
-                            daySelect.value = day;
-                        }
-
-                        if (yearInput && year) {
-                            yearInput.value = year;
-                        }
-
-                        observer.disconnect();
-                        return;
+            // Populate the inputs
+            if (daySelect) {
+                let dayTemplate = '<option class="option-dark-mode" value="">Select day</option>';
+                const monthNum = parseInt(month);
+                
+                if (monthNum === 2) {
+                    // February - 29 days max
+                    for (let i = 1; i <= 29; i++) {
+                        dayTemplate += `<option class="option-dark-mode" value=${i < 10 ? `0${i}` : `${i}`}>${i}</option>`;
+                    }
+                } else if ([1, 3, 5, 7, 8, 10, 12].includes(monthNum)) {
+                    // 31-day months
+                    for (let i = 1; i <= 31; i++) {
+                        dayTemplate += `<option class="option-dark-mode" value=${i < 10 ? `0${i}` : `${i}`}>${i}</option>`;
+                    }
+                } else if ([4, 6, 9, 11].includes(monthNum)) {
+                    // 30-day months
+                    for (let i = 1; i <= 30; i++) {
+                        dayTemplate += `<option class="option-dark-mode" value=${i < 10 ? `0${i}` : `${i}`}>${i}</option>`;
                     }
                 }
-            });
-
-            observer.observe(daySelect, { childList: true });
+                
+                daySelect.innerHTML = dayTemplate;
+                
+                if (day) {
+                    daySelect.value = day;
+                }
+            }
+            
+            if (yearInput && year) {
+                yearInput.value = year;
+            }
         }
     }
 }
@@ -786,10 +839,14 @@ const processRefusalWithdrawalResponses = (selectedReasonsForWithdrawal, selecte
         
         if (selectedRadio) {
             if (otherTextInput && parseInt(selectedRadio.dataset.optionkey) === fieldMapping.requestOther) {
-                sendRefusalData[fieldMapping.whoRequested] = fieldMapping.requestOther
-                sendRefusalData[fieldMapping.requestOtherText] = otherTextInput.value
+                sendRefusalData[fieldMapping.whoRequested] = {
+                    [fieldMapping.whoRequested]: fieldMapping.requestOther,
+                    [fieldMapping.requestOtherText]: otherTextInput.value
+                }
             } else {
-                sendRefusalData[fieldMapping.whoRequested] = parseInt(selectedRadio.dataset.optionkey)
+                sendRefusalData[fieldMapping.whoRequested] = {
+                    [fieldMapping.whoRequested]: parseInt(selectedRadio.dataset.optionkey)
+                }
             }
         }
     }
@@ -857,6 +914,44 @@ const processRefusalWithdrawalResponses = (selectedReasonsForWithdrawal, selecte
         updateWhoRequested(sendRefusalData, fieldMapping.whoRequested, fieldMapping.requestOtherText)
     }
 
+    // Determine if baseline activities were selected (these should keep the general whoRequested variable)
+    const hasBaselineRefusalsSelected = selectedRefusalWithdrawalCheckboxes.some(x => {
+        const optionKey = parseInt(x.dataset.optionkey);
+        return [
+            fieldMapping.refusedSurvey,
+            fieldMapping.refusedBlood,
+            fieldMapping.refusedUrine,
+            fieldMapping.refusedMouthwash,
+            fieldMapping.refusedSpecimenSurveys,
+        ].includes(optionKey);
+    });
+
+    const hasFollowUpRefusalsSelected = selectedRefusalWithdrawalCheckboxes.some(x => {
+        const optionKey = parseInt(x.dataset.optionkey);
+        return [
+            fieldMapping.refusedQualityOfLifeSurvey,
+            fieldMapping.refusedAllFutureQualityOfLifeSurveys,
+            fieldMapping.refusedExperienceSurvey,
+            fieldMapping.refusedAllFutureExperienceSurveys,
+            fieldMapping.refusedCancerScreeningHistorySurvey,
+            fieldMapping.refusedFutureSurveys,
+            fieldMapping.refusedFutureSamples
+        ].includes(optionKey);
+    });
+
+    const hasAllRefusalsSelected = selectedRefusalWithdrawalCheckboxes.some(x => {
+        const optionKey = parseInt(x.dataset.optionkey);
+        return [
+            fieldMapping.refusedAllFutureActivities
+        ].includes(optionKey);
+    });
+
+    // Only remove the general whoRequested if no baseline activities were selected, AND we have a higher-level status (not refusedSome), AND no follow up activities were selected alongside "All Future Study Activities".
+    if ((!hasBaselineRefusalsSelected && statusConceptId !== fieldMapping.refusedSome) && (!hasFollowUpRefusalsSelected && !hasAllRefusalsSelected)) {
+        delete sendRefusalData[fieldMapping.whoRequested];
+        delete sendRefusalData[fieldMapping.requestOtherText];
+    }
+
     let refusalObj = sendRefusalData[fieldMapping.refusalOptions]
     if (JSON.stringify(refusalObj) === '{}') delete sendRefusalData[fieldMapping.refusalOptions]
 
@@ -865,14 +960,23 @@ const processRefusalWithdrawalResponses = (selectedReasonsForWithdrawal, selecte
     return sendRefusalData;
 }
 
-// Note: (updatedWhoRequested == [fieldMapping.whoRequested]) is always false...
 const updateWhoRequested = (sendRefusalData, updatedWhoRequested, updatedWhoRequestedOther) => {
-    (updatedWhoRequested == [fieldMapping.whoRequested]) ? (Object.assign(sendRefusalData, { [updatedWhoRequested] : { [updatedWhoRequested] : sendRefusalData[fieldMapping.whoRequested] }}))
-    :  delete Object.assign(sendRefusalData, { [updatedWhoRequested] : { [updatedWhoRequested] : sendRefusalData[fieldMapping.whoRequested] }})[fieldMapping.whoRequested]
-    
-    if (sendRefusalData[fieldMapping.requestOtherText]) {
-        Object.assign(sendRefusalData[updatedWhoRequested], { [updatedWhoRequestedOther] : sendRefusalData[fieldMapping.requestOtherText]})
-        delete sendRefusalData[fieldMapping.requestOtherText]
+    // Copy the nested (legacy) whoRequested structure to the specific variable
+    if (sendRefusalData[fieldMapping.whoRequested]) {
+        const originalWhoRequested = sendRefusalData[fieldMapping.whoRequested];
+
+        // Extract the value from the nested structure and create the new nested structure
+        const whoRequestedValue = originalWhoRequested[fieldMapping.whoRequested];
+        const otherTextValue = originalWhoRequested[fieldMapping.requestOtherText];
+
+        sendRefusalData[updatedWhoRequested] = {
+            [updatedWhoRequested]: whoRequestedValue
+        };
+
+        // Add the "other" text if it exists
+        if (otherTextValue) {
+            sendRefusalData[updatedWhoRequested][updatedWhoRequestedOther] = otherTextValue;
+        }
     }
 }
 

@@ -366,9 +366,8 @@ const renderMonthSelector = (participantValue, conceptId) => {
 const renderTextVoicemailPermissionSelector = (participantValue, conceptId) => {
     return `
         <select name="newValue${conceptId}" id="newValue${conceptId}" data-currentValue="${escapeHTML((participantValue ?? '').toString())}">
-            <option class="option-dark-mode" value="${fieldMapping.no}">-- Select --</option>
-            <option class="option-dark-mode" value="${fieldMapping.yes}">Yes</option>
             <option class="option-dark-mode" value="${fieldMapping.no}">No</option>
+            <option class="option-dark-mode" value="${fieldMapping.yes}">Yes</option>
         </select>
     `;
 };
@@ -424,7 +423,6 @@ const renderSuffixSelector = (participantValue, conceptId) => {
 const renderLanguageSelector = (participant, participantValue, conceptId) => {
     return `
         <select style="max-width:200px; margin-left:0px;" name="newValue${conceptId}" id="newValue${conceptId}" data-currentValue=${participantValue}>
-            <option value="">-- Select --</option>
             <option value="${fieldMapping.language.en}" ${participant[fieldMapping.preferredLanguage] ? (languageList[participant[fieldMapping.preferredLanguage]] == 0 ? 'selected':'') : ''}>English</option>
             <option value="${fieldMapping.language.es}" ${participant[fieldMapping.preferredLanguage] ? (languageList[participant[fieldMapping.preferredLanguage]] == 1 ? 'selected':'') : ''}>Spanish</option>
         </select>

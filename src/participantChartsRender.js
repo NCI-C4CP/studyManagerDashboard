@@ -1,7 +1,9 @@
 export const renderAllCharts = (inputData) => {
+    // Clear any existing metrics cards and rows to prevent double-rendering
+    const mainContent = document.getElementById('mainContent');
+    mainContent.querySelectorAll('.metrics-card, .row').forEach(el => el.remove());
 
     const { activeVerificationStatus, passiveVerificationStatus, recruitsCount, collectionStats} = inputData;
-    const mainContent = document.getElementById('mainContent');
     const metricsCards = metricsCardsView({
       activeRecruits: recruitsCount.activeCount,
       verifiedParticipants: activeVerificationStatus.verified + passiveVerificationStatus.verified,

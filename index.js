@@ -150,6 +150,17 @@ const dataCorrectionsToolRoutes = [
 // Track previous hash for 'no participant selected' and 'unsaved changes' guards.
 let previousHash = window.location.hash;
 
+/**
+ * Primary routing logic for the app.
+ * Handles both participant-dependent and non-participant routes.
+ * Manages navigation guards for unsaved participant details changes and participant selection.
+ * Maintains browser hash tracking for back button functionality.
+ * Supports both authenticated and unauthenticated states.
+ * Redirects to login page if not authenticated and not on login route.
+ * Redirects to home page if authenticated and on login route.
+ * window.onhashchange directs the calls to router.
+ * @returns {void} 
+ */
 const router = async () => {
     const hash = decodeURIComponent(window.location.hash);
     const route = hash || '#';
@@ -176,6 +187,13 @@ const router = async () => {
 
     // Authenticated
     if (await userLoggedIn() || localStorage.dashboard) {
+
+        // If authenticated and on login route, send to home
+        if (route === '#login') {
+            markNavigationSucceeded();
+            window.location.hash = '#home';
+            return;
+        }
 
         // Handle participant-dependent routes
         if (participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route)) {
@@ -246,6 +264,10 @@ const router = async () => {
 
     // Not authenticated
     clearParticipant();
+    if (route !== '#login') {
+        window.location.hash = '#login';
+        return;
+    }
     markNavigationSucceeded();
     return loginPage();
 }
@@ -260,8 +282,10 @@ const headsupBanner = () => {
 };
 
 const loginPage = () => {
+    // TODO: rm localStorage.dashboard usage.
     if (localStorage.dashboard) {
         window.location.hash = '#home';
+        return;
     }
     else {
         document.getElementById('navBarLinks').innerHTML = renderNavBarLinks();
@@ -297,7 +321,8 @@ const loginPage = () => {
                 .then((result) => {
                     appState.setState({userSession:{email: result.user.email}});
                     localStorage.setItem('userSession', JSON.stringify({email: result.user.email}));
-                    location.hash = '#home'
+                    location.hash = '#home';
+                    router();
                 })
                 .catch((error) => {
                     console.log(error);
@@ -1000,6 +1025,7 @@ const filterBiospecimenStats = (data, verifiedParticipants) => {
 }
 
 const reRenderDashboard = async (siteTextContent, siteKey) => {
+  mainContent.innerHTML = '';
   mainContent.innerHTML = `<div class="row" id="siteSelection">${renderSiteDropdown('dashboard')}</div>`;
   const siteCode = nameToKeyObj[siteKey];
   const siteData = filterDataBySiteCode(siteCode);
