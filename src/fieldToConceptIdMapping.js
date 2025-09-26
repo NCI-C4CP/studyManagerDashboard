@@ -33,6 +33,7 @@ export default
     "verficationDate": 914594314,
     'notYetVerified': 875007964,
     'outreachTimedout': 160161595,
+    'noLongerEnrolling': 290379732,
     'verified': 197316935,
     'cannotBeVerified': 219863910,
     'duplicate': 922622075,
@@ -436,7 +437,7 @@ export default
     618686157 : "Deceased",
     861639549 :  "Data Destroyed",
 
-
+    // Participation status disposition codes
     "noRefusal": 208325815,
     "refusedSome": 622008261,	
     "refusedAll": 458508122,

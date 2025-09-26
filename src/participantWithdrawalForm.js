@@ -2,240 +2,239 @@ import fieldMapping from './fieldToConceptIdMapping.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, escapeHTML } from './utils.js';
 import { renderRefusalOptions, renderCauseOptions } from './participantWithdrawalRender.js';
 
-export const renderParticipantWithdrawalLandingPage = (participant) => {
+export const renderWithdrawalForm = (participant) => {
     if (!participant) {
         participant = JSON.parse(localStorage.getItem("participant"));
     }
     let template = ``;
     template = `        
                 <div class="row">
-                    <div class="col-lg">
-                        <div class="row form-row">
-                            <div>                    
-                                <h6><b><u>Refusal of Study Activites</u></b></h6>
-                                <span style="font: 12px; margin-top: 0px"><i>Select all that apply</i></span>
-                                <br />
-                                <span style="position:relative; left:30px; top:2px;"><b>Baseline Activities</b></span>
-                                <div style="position:relative; left:80px; top:2px;">
-                                    <div class="form-check">
-                                        <span><i><b>Surveys</b></i></span>
-                                        <br />
-                                        <input class="form-check-input" name="options" type="checkbox" value="Initial Survey​" 
-                                        data-optionKey=${fieldMapping.refusedSurvey} id="defaultCheck1">
-                                        <label class="form-check-label" for="defaultCheck1">
-                                            Initial Survey​
-                                        </label>
-                                    </div>
+                    <div class="col-md-6">
+                        <h6><b><u>Refusal of Study Activites</u></b></h6>
+                        <span class="withdrawal-form-span"><i>Select all that apply</i></span>
+                        <br />
+                        <div class="withdrawal-form-div">
+                            <b>Baseline Activities</b>
+                            <div class="withdrawal-form-div" style="left: 20px">
+                                <div class="form-check">
+                                    <span><i><b>Surveys</b></i></span>
                                     <br />
-                                    <div class="form-check">
-                                        <span><i><b>Specimen Donations</b></i></span>
-                                        <br />
-                                        <input class="form-check-input" name="options" type="checkbox" value="Baseline Blood Donation" 
-                                        data-optionKey=${fieldMapping.refusedBlood} id="defaultCheck2">
-                                        <label class="form-check-label" for="defaultCheck2">
-                                            Baseline Blood Donation
-                                        </label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" name="options" type="checkbox" value="Baseline Urine Donation" 
-                                        data-optionKey=${fieldMapping.refusedUrine} id="defaultCheck3">
-                                        <label class="form-check-label" for="defaultCheck3">
-                                            Baseline Urine Donation
-                                        </label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input class="form-check-input" name="options" type="checkbox" value="Baseline Mouthwash (Saliva) Donation" 
-                                        data-optionKey=${fieldMapping.refusedMouthwash} id="defaultCheck4">
-                                        <label class="form-check-label" for="defaultCheck4">
-                                            Baseline Mouthwash (Saliva) Donation
-                                        </label>
-                                    </div>
-                                    <br />
-                                    <div class="form-check">
-                                        <span><i><b>Specimen Surveys</b></i></span>
-                                        <br />
-                                        <input class="form-check-input" name="options" type="checkbox" value="Baseline Specimen Surveys" 
-                                        data-optionKey=${fieldMapping.refusedSpecimenSurveys} id="defaultCheck5">
-                                        <label class="form-check-label" for="defaultCheck5">
-                                            Baseline Specimen Surveys
-                                        </label>
-                                    </div>
+                                    <input class="form-check-input" name="options" type="checkbox" value="Initial Survey​" 
+                                    data-optionkey=${fieldMapping.refusedSurvey} id="initialSurveyCheck">
+                                    <label class="form-check-label" for="initialSurveyCheck">
+                                        Initial Survey​
+                                    </label>
                                 </div>
                                 <br />
-                                <span style="position:relative; left:30px; top:2px;"><b>Follow Up Activities</b></span>
-                                <div style="position:relative; left:80px; top:2px;">
-                                    <div class="form-check">
-                                        <span><i><b>Surveys</b></i></span>
-                                        <br />
-                                        <input class="form-check-input" name="options" type="checkbox" value="Quality of Life 3-Mo Survey (but willing to do other future surveys)" 
-                                        data-optionKey=${fieldMapping.refusedQualityOfLifeSurvey} id="refusedQualityOfLifeSurveyCheck">
-                                        <label class="form-check-label" for="refusedQualityOfLifeSurveyCheck">
-                                            Quality of Life 3-Mo Survey (but willing to do other future surveys)
-                                        </label>
-                                        <br />
-                                        <input class="form-check-input" name="options" type="checkbox" value="All future QOL Surveys (but willing to do other future surveys)" 
-                                        data-optionKey=${fieldMapping.refusedAllFutureQualityOfLifeSurveys} id="refusedAllFutureQualityOfLifeSurveysCheck">
-                                        <label class="form-check-label" for="refusedAllFutureQualityOfLifeSurveysCheck">
-                                            All future QOL Surveys (but willing to do other future surveys)
-                                        </label>
-                                        <br />
-                                        <input class="form-check-input" name="options" type="checkbox" value="Refused 2024 Connect Experience Survey (but willing to do other future surveys)" 
-                                        data-optionKey=${fieldMapping.refusedExperienceSurvey} id="refusedExperienceSurveyCheck">
-                                        <label class="form-check-label" for="refusedExperienceSurveyCheck">
-                                            2024 Connect Experience Survey (but willing to do other future surveys)
-                                        </label>
-                                        <br />
-                                        <input class="form-check-input" name="options" type="checkbox" value="Cancer Screening History Survey (but willing to do other future surveys)"
-                                        data-optionKey=${fieldMapping.refusedCancerScreeningHistorySurvey} id="refusedCancerScreeningHistorySurveyCheck">
-                                        <label class="form-check-label" for="refusedCancerScreeningHistorySurveyCheck">
-                                          Cancer Screening History Survey (but willing to do other future surveys)
-                                        </label>
-                                        <br />
-                                        <input class="form-check-input" name="options" type="checkbox" value="All future Connect Experience Surveys (but willing to do other future surveys)" 
-                                        data-optionKey=${fieldMapping.refusedAllFutureExperienceSurveys} id="refusedAllFutureExperienceSurveysCheck">
-                                        <label class="form-check-label" for="refusedAllFutureExperienceSurveysCheck">
-                                            All future Connect Experience Surveys (but willing to do other future surveys)
-                                        </label>
-                                        <br />
-                                        <input class="form-check-input" name="options" type="checkbox" value="All future surveys (willing to do specimens)" 
-                                        data-optionKey=${fieldMapping.refusedFutureSurveys} id="defaultCheck6">
-                                        <label class="form-check-label" for="defaultCheck6">
-                                            All future surveys (willing to do specimens)​
-                                        </label>
-                                    </div>
+                                <div class="form-check">
+                                    <span><i><b>Specimen Donations</b></i></span>
                                     <br />
-                                    <div class="form-check">
-                                        <span><i><b>Specimen Donations and Specimen Surveys</b></i></span>
-                                        <br />
-                                        <input class="form-check-input" name="options" type="checkbox" value="All future specimens (willing to do surveys)" 
-                                        data-optionKey=${fieldMapping.refusedFutureSamples} id="defaultCheck7">
-                                        <label class="form-check-label" for="defaultCheck7">
-                                            All future specimens (willing to do surveys)​
-                                        </label>
-                                    </div>
-                                    <br />
-                                    <div class="form-check">
-                                        <span><i><b>All Follow Up Activities</b></i></span>
-                                        <br />
-                                        <input class="form-check-input" name="options" type="checkbox" value="All Future Study Activities" 
-                                        data-optionKey=${fieldMapping.refusedAllFutureActivities} id="defaultCheck8">
-                                        <label class="form-check-label" for="defaultCheck8">
-                                            All Future Study Activities​
-                                        </label>
-                                    </div>
+                                    <input class="form-check-input" name="options" type="checkbox" value="Baseline Blood Donation" 
+                                    data-optionkey=${fieldMapping.refusedBlood} id="baselineBloodDonationCheck">
+                                    <label class="form-check-label" for="baselineBloodDonationCheck">
+                                        Baseline Blood Donation
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" name="options" type="checkbox" value="Baseline Urine Donation" 
+                                    data-optionkey=${fieldMapping.refusedUrine} id="baselineUrineDonationCheck">
+                                    <label class="form-check-label" for="baselineUrineDonationCheck">
+                                        Baseline Urine Donation
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" name="options" type="checkbox" value="Baseline Mouthwash (Saliva) Donation" 
+                                    data-optionkey=${fieldMapping.refusedMouthwash} id="baselineMouthwashDonationCheck">
+                                    <label class="form-check-label" for="baselineMouthwashDonationCheck">
+                                        Baseline Mouthwash (Saliva) Donation
+                                    </label>
                                 </div>
                                 <br />
-                                <h6><b><u>Revocation and Withdrawal Options</u></b></h6>
-                                <span style="font: 12px; margin-top: 0px"><i>Select all that apply</i></span>
-                                <br />
-                                    <div style="position:relative; left:30px; top:2px; class="form-check">
-                                        <input class="form-check-input" name="options" type="checkbox"
-                                        value="Revoke HIPAA Authorization"
-                                        data-optionKey=${fieldMapping.revokeHIPAA} id="defaultCheck9" ${participant && (participant[fieldMapping.revokeHIPAA] === fieldMapping.yes || participant[fieldMapping.withdrawConsent] === fieldMapping.yes || participant[fieldMapping.destroyData] === fieldMapping.yes) ? 'disabled' : ''}>
-                                        <label class="form-check-label" for="defaultCheck9">
-                                            Revoke HIPAA Authorization
-                                        </label>
-                                    </div>
-                                    <div style="position:relative; left:30px; top:2px; class="form-check">
-                                        <input class="form-check-input" name="options" type="checkbox" value="Withdraw Consent" 
-                                        data-optionKey=${fieldMapping.withdrawConsent} id="defaultCheck10" ${participant && (participant[fieldMapping.withdrawConsent] === fieldMapping.yes || participant[fieldMapping.destroyData] === fieldMapping.yes) ? 'disabled' : ''}>
-                                        <label class="form-check-label" for="defaultCheck10">
-                                            Withdraw Consent
-                                        </label>
-                                    </div>
-                                    <div style="position:relative; left:30px; top:2px; class="form-check">
-                                        <input class="form-check-input" name="options" type="checkbox" value="Destroy Data" 
-                                        data-optionKey=${fieldMapping.destroyData} id="defaultCheck11" ${participant && participant[fieldMapping.destroyData] === fieldMapping.yes ? 'disabled' : ''}>
-                                        <label class="form-check-label" for="defaultCheck11">
-                                                Destroy Data
-                                        </label>
-                                    </div>
-                                    <div style="position:relative; left:30px; top:2px; class="form-check">
-                                        <input class="form-check-input" name="options" id = "messageCheckbox" type="checkbox" 
-                                        data-optionKey=${fieldMapping.participantDeceased} value="Participant Deceased">
-                                        <label class="form-check-label" for="defaultCheck12">
-                                            Participant Deceased
-                                        </label>
-                                    </div>
-                                &nbsp;
-                                <button type="button" data-toggle="modal" data-target="#modalShowSelectedData"
-                                    class="btn btn-primary next-btn" id="nextFormPage" style="margin-top:40px;">Next</button>
+                                <div class="form-check">
+                                    <span><i><b>Specimen Surveys</b></i></span>
+                                    <br />
+                                    <input class="form-check-input" name="options" type="checkbox" value="Baseline Specimen Surveys" 
+                                    data-optionkey=${fieldMapping.refusedSpecimenSurveys} id="baselineSpecimenSurveyCheck">
+                                    <label class="form-check-label" for="baselineSpecimenSurveyCheck">
+                                        Baseline Specimen Surveys
+                                    </label>
                                 </div>
+                            </div>
                         </div>
-                    </div>
-                                <div class="col-lg">
-                                    <div class="row form-row">
-                                        <span> <b>
-                                            <u> Refusal/Withdrawal Requested By: </u> </b>
-                                        </span>
-                                        <div style="position:relative; left:10px; top:4px;">
-                                            <div class="form-check">
-                                                <input type="radio" id="defaultRequest1" name="whoRequested" value="The participant (via the CSC directly or via a Connect site staff)"
-                                                data-optionKey=${fieldMapping.requestParticipant}>
-                                                <label for="defaultRequest1">The participant (via the CSC directly or via a Connect site staff)</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input type="radio" id="defaultRequest2" name="whoRequested" value="The Connect Principal Investigator (or designate)"
-                                                data-optionKey=${fieldMapping.requestPrincipalInvestigator}>
-                                                <label for="defaultRequest2">The Connect Principal Investigator (or designate)</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input type="radio" id="defaultRequest3" name="whoRequested" value="The Chair of the Connect IRB-of-record (NIH IRB)"
-                                                data-optionKey=${fieldMapping.requestConnectIRB}>
-                                                <label for="defaultRequest3">The Chair of the Connect IRB-of-record (NIH IRB)</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input type="radio" id="defaultRequest4" name="whoRequested" value="Site PI listed on the site-specific consent form"
-                                                data-optionKey=${fieldMapping.requestPIListed}>
-                                                <label for="defaultRequest4">Site PI listed on the site-specific consent form</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input type="radio" id="defaultRequest5" name="whoRequested" value="Chair of the Site IRB"
-                                                data-optionKey=${fieldMapping.requestChairSite}>
-                                                <label for="defaultRequest5">Chair of the Site IRB</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input type="radio" id="defaultRequest6" name="whoRequested" value="Other (specify):"
-                                                data-optionKey=${fieldMapping.requestOther}>
-                                                <label for="defaultRequest6">Other (specify):</label>
-                                                <input type="text" id="defaultRequest7" name="defaultRequest7" data-optionKey=${fieldMapping.requestOtherText}><br>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row form-row">
-                                    <span> <b>
-                                        <u> SUPERVISOR USE ONLY​ </u><br />
-                                        <b> Suspend all contact with participant until: </b> <br />
-                                        <div class="form-group row">
-                                        <label class="col-md-4 col-form-label">Month</label>
-                                        <select id="UPMonth" class="form-control required-field col-md-4" data-error-required='Please select your month.'>
-                                            <option class="option-dark-mode" value="">Select month</option>
-                                            <option class="option-dark-mode" value="01">1 - January</option>
-                                            <option class="option-dark-mode" value="02">2 - February</option>
-                                            <option class="option-dark-mode" value="03">3 - March</option>
-                                            <option class="option-dark-mode" value="04">4 - April</option>
-                                            <option class="option-dark-mode" value="05">5 - May</option>
-                                            <option class="option-dark-mode" value="06">6 - June</option>
-                                            <option class="option-dark-mode" value="07">7 - July</option>
-                                            <option class="option-dark-mode" value="08">8 - August</option>
-                                            <option class="option-dark-mode" value="09">9 - September</option>
-                                            <option class="option-dark-mode" value="10">10 - October</option>
-                                            <option class="option-dark-mode" value="11">11 - November</option>
-                                            <option class="option-dark-mode" value="12">12 - December</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group row">
-                                        <label class="col-md-4 col-form-label">Day</label>
-                                        <select class="form-control required-field col-md-4" data-error-required='Please select your day.' id="UPDay"></select>
-                                    </div>
-                                    <div class="form-group row">
-                                        <label class="col-md-4 col-form-label">Year</label>
-                                        <input type="text" class="form-control required-field input-validation col-md-4" data-error-required='Please select your year.' data-validation-pattern="year" data-error-validation="Your year must contain four digits in the YYYY format." maxlength="4" id="UPYear" list="yearsOption" title="Year, must be in 1900s" Placeholder="Enter year">
-                                        <datalist id="yearsOption"></datalist>
-                                    </div>
-                                    </span>
+                        <br />
+                        <div class="withdrawal-form-div">
+                            <b>Follow Up Activities</b>
+                            <div class="withdrawal-form-div" style="left: 20px">
+                                <div class="form-check">
+                                    <span><i><b>Surveys</b></i></span>
+                                    <br />
+                                    <input class="form-check-input" name="options" type="checkbox" value="Quality of Life 3-Mo Survey (but willing to do other future surveys)" 
+                                    data-optionkey=${fieldMapping.refusedQualityOfLifeSurvey} id="refusedQualityOfLifeSurveyCheck">
+                                    <label class="form-check-label" for="refusedQualityOfLifeSurveyCheck">
+                                        Quality of Life 3-Mo Survey (but willing to do other future surveys)
+                                    </label>
+                                    <br />
+                                    <input class="form-check-input" name="options" type="checkbox" value="All future QOL Surveys (but willing to do other future surveys)" 
+                                    data-optionkey=${fieldMapping.refusedAllFutureQualityOfLifeSurveys} id="refusedAllFutureQualityOfLifeSurveysCheck">
+                                    <label class="form-check-label" for="refusedAllFutureQualityOfLifeSurveysCheck">
+                                        All future QOL Surveys (but willing to do other future surveys)
+                                    </label>
+                                    <br />
+                                    <input class="form-check-input" name="options" type="checkbox" value="Refused 2024 Connect Experience Survey (but willing to do other future surveys)" 
+                                    data-optionkey=${fieldMapping.refusedExperienceSurvey} id="refusedExperienceSurveyCheck">
+                                    <label class="form-check-label" for="refusedExperienceSurveyCheck">
+                                        2024 Connect Experience Survey (but willing to do other future surveys)
+                                    </label>
+                                    <br />
+                                    <input class="form-check-input" name="options" type="checkbox" value="Cancer Screening History Survey (but willing to do other future surveys)"
+                                    data-optionkey=${fieldMapping.refusedCancerScreeningHistorySurvey} id="refusedCancerScreeningHistorySurveyCheck">
+                                    <label class="form-check-label" for="refusedCancerScreeningHistorySurveyCheck">
+                                        Cancer Screening History Survey (but willing to do other future surveys)
+                                    </label>
+                                    <br />
+                                    <input class="form-check-input" name="options" type="checkbox" value="All future Connect Experience Surveys (but willing to do other future surveys)" 
+                                    data-optionkey=${fieldMapping.refusedAllFutureExperienceSurveys} id="refusedAllFutureExperienceSurveysCheck">
+                                    <label class="form-check-label" for="refusedAllFutureExperienceSurveysCheck">
+                                        All future Connect Experience Surveys (but willing to do other future surveys)
+                                    </label>
+                                    <br />
+                                    <input class="form-check-input" name="options" type="checkbox" value="All future surveys (willing to do specimens)" 
+                                    data-optionkey=${fieldMapping.refusedFutureSurveys} id="allFutureSurveysCheck">
+                                    <label class="form-check-label" for="allFutureSurveysCheck">
+                                        All future surveys (willing to do specimens)​
+                                    </label>
                                 </div>
-                </div>`
+                                <br />
+                                <div class="form-check">
+                                    <span><i><b>Specimen Donations and Specimen Surveys</b></i></span>
+                                    <br />
+                                    <input class="form-check-input" name="options" type="checkbox" value="All future specimens (willing to do surveys)" 
+                                    data-optionkey=${fieldMapping.refusedFutureSamples} id="allFutureSpecimensCheck">
+                                    <label class="form-check-label" for="allFutureSpecimensCheck">
+                                        All future specimens (willing to do surveys)​
+                                    </label>
+                                </div>
+                                <br />
+                                <div class="form-check">
+                                    <span><i><b>All Follow Up Activities</b></i></span>
+                                    <br />
+                                    <input class="form-check-input" name="options" type="checkbox" value="All Future Study Activities" 
+                                    data-optionkey=${fieldMapping.refusedAllFutureActivities} id="allFutureStudyActivitiesCheck">
+                                    <label class="form-check-label" for="allFutureStudyActivitiesCheck">
+                                        All Future Study Activities​
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <br />
+                        <h6><b><u>Revocation and Withdrawal Options</u></b></h6>
+                        <span class="withdrawal-form-span"><i>Select all that apply</i></span>
+                        <br />
+                        <div class="withdrawal-form-div form-check">
+                            <input class="form-check-input" name="options" type="checkbox"
+                            value="Revoke HIPAA Authorization"
+                            data-optionkey=${fieldMapping.revokeHIPAA} id="revokeHipaaAuthorizationCheck" ${participant && (participant[fieldMapping.revokeHIPAA] === fieldMapping.yes || participant[fieldMapping.withdrawConsent] === fieldMapping.yes || participant[fieldMapping.destroyData] === fieldMapping.yes) ? 'disabled' : ''}>
+                            <label class="form-check-label" for="revokeHipaaAuthorizationCheck">
+                                Revoke HIPAA Authorization
+                            </label>
+                        </div>
+                        <div class="withdrawal-form-div form-check">
+                            <input class="form-check-input" name="options" type="checkbox" value="Withdraw Consent" 
+                            data-optionkey=${fieldMapping.withdrawConsent} id="withdrawConsentCheck" ${participant && (participant[fieldMapping.withdrawConsent] === fieldMapping.yes || participant[fieldMapping.destroyData] === fieldMapping.yes) ? 'disabled' : ''}>
+                            <label class="form-check-label" for="withdrawConsentCheck">
+                                Withdraw Consent
+                            </label>
+                        </div>
+                        <div class="withdrawal-form-div form-check">
+                            <input class="form-check-input" name="options" type="checkbox" value="Destroy Data" 
+                            data-optionkey=${fieldMapping.destroyData} id="destroyDataCheck" ${participant && participant[fieldMapping.destroyData] === fieldMapping.yes ? 'disabled' : ''}>
+                            <label class="form-check-label" for="destroyDataCheck">
+                                    Destroy Data
+                            </label>
+                        </div>
+                        <div class="withdrawal-form-div form-check">
+                            <input class="form-check-input" name="options" id="participantDeceasedCheck" type="checkbox" 
+                            data-optionkey=${fieldMapping.participantDeceased} value="Participant Deceased">
+                            <label class="form-check-label" for="participantDeceasedCheck">
+                                Participant Deceased
+                            </label>
+                        </div>
+                        &nbsp;
+                        <button type="button" class="btn btn-primary next-btn withdrawal-form-next-btn" id="nextFormPage">Next</button>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="row form-row">
+                            <span> <b>
+                                <u> Refusal/Withdrawal Requested By: </u> </b>
+                            </span>
+                            <div style="position:relative; left:10px; top:4px;">
+                                <div class="form-check">
+                                    <input type="radio" id="requestParticipant" name="whoRequested" value="The participant (via the CSC directly or via a Connect site staff)"
+                                    data-optionkey=${fieldMapping.requestParticipant}>
+                                    <label for="requestParticipant">The participant (via the CSC directly or via a Connect site staff)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" id="requestPrincipalInvestigator" name="whoRequested" value="The Connect Principal Investigator (or designate)"
+                                    data-optionkey=${fieldMapping.requestPrincipalInvestigator}>
+                                    <label for="requestPrincipalInvestigator">The Connect Principal Investigator (or designate)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" id="requestConnectIRB" name="whoRequested" value="Chair of the NIH IRB/Compliance Office/OHSRP"
+                                    data-optionkey=${fieldMapping.requestConnectIRB}>
+                                    <label for="requestConnectIRB">Chair of the NIH IRB/Compliance Office/OHSRP</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" id="requestPIListed" name="whoRequested" value="Site PI listed on the site-specific consent form"
+                                    data-optionkey=${fieldMapping.requestPIListed}>
+                                    <label for="requestPIListed">Site PI listed on the site-specific consent form</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" id="requestChairSite" name="whoRequested" value="Chair of the Site IRB"
+                                    data-optionkey=${fieldMapping.requestChairSite}>
+                                    <label for="requestChairSite">Chair of the Site IRB</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" id="requestOther" name="whoRequested" value="Other (specify):"
+                                    data-optionkey=${fieldMapping.requestOther}>
+                                    <label for="requestOther">Other (specify):</label>
+                                    <input type="text" id="requestOtherText" name="requestOtherText" data-optionkey=${fieldMapping.requestOtherText}><br>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row form-row">
+                        <span> <b>
+                            <u> SUPERVISOR USE ONLY​ </u><br />
+                            <b> Suspend all contact with participant until: </b> <br />
+                            <div class="form-group row">
+                            <label class="col-md-4 col-form-label">Month</label>
+                            <select id="suspendContactUntilMonth" class="form-control required-field col-md-4" data-error-required='Please select your month.'>
+                                <option class="option-dark-mode" value="">Select month</option>
+                                <option class="option-dark-mode" value="01">1 - January</option>
+                                <option class="option-dark-mode" value="02">2 - February</option>
+                                <option class="option-dark-mode" value="03">3 - March</option>
+                                <option class="option-dark-mode" value="04">4 - April</option>
+                                <option class="option-dark-mode" value="05">5 - May</option>
+                                <option class="option-dark-mode" value="06">6 - June</option>
+                                <option class="option-dark-mode" value="07">7 - July</option>
+                                <option class="option-dark-mode" value="08">8 - August</option>
+                                <option class="option-dark-mode" value="09">9 - September</option>
+                                <option class="option-dark-mode" value="10">10 - October</option>
+                                <option class="option-dark-mode" value="11">11 - November</option>
+                                <option class="option-dark-mode" value="12">12 - December</option>
+                            </select>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-md-4 col-form-label">Day</label>
+                            <select class="form-control required-field col-md-4" data-error-required='Please select your day.' id="suspendContactUntilDay"></select>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-md-4 col-form-label">Year</label>
+                            <input type="text" class="form-control required-field input-validation col-md-4" data-error-required='Please select your year.' data-validation-pattern="year" data-error-validation="Your year must contain four digits in the YYYY format." maxlength="4" id="suspendContactUntilYear" list="yearsOption" title="Year, must be in 1900s" Placeholder="Enter year">
+                            <datalist id="yearsOption"></datalist>
+                        </div>
+                        </span>
+                    </div>
+                </div>`;
            
         template += ` <div class="modal fade" id="modalShowSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
@@ -249,11 +248,76 @@ export const renderParticipantWithdrawalLandingPage = (participant) => {
 
 }
 
+const clearDateValidationErrors = () => {
+    const monthSelect = document.getElementById('suspendContactUntilMonth');
+    const daySelect = document.getElementById('suspendContactUntilDay');
+    const yearInput = document.getElementById('suspendContactUntilYear');
+    
+    if (monthSelect) monthSelect.classList.remove('is-invalid');
+    if (daySelect) daySelect.classList.remove('is-invalid');
+    if (yearInput) yearInput.classList.remove('is-invalid');
+    
+    const causeOfDeathMonth = document.getElementById('causeOfDeathMonth');
+    const causeOfDeathDay = document.getElementById('causeOfDeathDay');
+    const causeOfDeathYear = document.getElementById('causeOfDeathYear');
+    
+    if (causeOfDeathMonth) causeOfDeathMonth.classList.remove('is-invalid');
+    if (causeOfDeathDay) causeOfDeathDay.classList.remove('is-invalid');
+    if (causeOfDeathYear) causeOfDeathYear.classList.remove('is-invalid');
+    
+    const validationMessage = document.getElementById('dateValidationMessage');
+    if (validationMessage) validationMessage.remove();
+};
 
-export const addEventMonthSelection = (month, day) => {
-    const UPMonth = document.getElementById(month);
-    UPMonth.addEventListener('change', () => {
-        const value = UPMonth.value;
+const showDateValidationErrors = (error, isCauseOfDeathPage = false) => {
+    let monthSelect, daySelect, yearInput;
+    
+    if (isCauseOfDeathPage) {
+        monthSelect = document.getElementById('causeOfDeathMonth');
+        daySelect = document.getElementById('causeOfDeathDay');
+        yearInput = document.getElementById('causeOfDeathYear');
+
+    } else {
+        monthSelect = document.getElementById('suspendContactUntilMonth');
+        daySelect = document.getElementById('suspendContactUntilDay');
+        yearInput = document.getElementById('suspendContactUntilYear');
+    }
+    
+    if (monthSelect) monthSelect.classList.add('is-invalid');
+    if (daySelect) daySelect.classList.add('is-invalid');
+    if (yearInput) yearInput.classList.add('is-invalid');
+    
+    let validationMessage = document.getElementById('dateValidationMessage');
+    if (!validationMessage) {
+        validationMessage = document.createElement('div');
+        validationMessage.id = 'dateValidationMessage';
+        validationMessage.className = 'invalid-feedback d-block';
+        validationMessage.style.marginTop = '10px';
+        
+        const yearContainer = yearInput?.closest('.form-group');
+        if (yearContainer) {
+            yearContainer.appendChild(validationMessage);
+        }
+    }
+
+    validationMessage.textContent = error;
+};
+
+export const addEventMonthSelection = (month, day, year) => {
+    const selectedMonth = document.getElementById(month);
+    const selectedDay = document.getElementById(day);
+    const enteredYear = document.getElementById(year);
+
+    if (!selectedMonth || !selectedDay || !enteredYear) {
+        console.warn('Month or day or year elements not found for event listener setup');
+        return;
+    }
+    
+    selectedMonth.addEventListener('change', () => {
+        const value = selectedMonth.value;
+
+        const selectedDay = document.getElementById(day);
+        if (!selectedDay) return;
 
         let template = '<option class="option-dark-mode" value="">Select day</option>';
 
@@ -273,44 +337,89 @@ export const addEventMonthSelection = (month, day) => {
             }
         }
 
-        document.getElementById(day).innerHTML = template;
+        selectedDay.innerHTML = template;
+        
+        // Clear previous validation errors
+        clearDateValidationErrors();
     });
 }
 
+// Handlers for withdrawal form checkbox hierarchy to support remove-then-add
+let destroyChangeHandler;
+let withdrawChangeHandler;
+let revokeChangeHandler;
+let deceasedChangeHandler;
+
 export const autoSelectOptions = () => {
-    const selectedDestroyData = document.getElementById('defaultCheck11');
-    const selectedPtWithdrawn = document.getElementById('defaultCheck10');
-    const selectedPtDeceased = document.getElementById('messageCheckbox')
+    const selectedDestroyData = document.getElementById('destroyDataCheck');
+    const selectedPtWithdrawn = document.getElementById('withdrawConsentCheck');
+    const selectedPtDeceased = document.getElementById('participantDeceasedCheck')
+    const revokeHIPAA = document.getElementById('revokeHipaaAuthorizationCheck');
+
+    // Remove old listeners if present
+    if (selectedDestroyData && destroyChangeHandler) {
+        selectedDestroyData.removeEventListener('change', destroyChangeHandler);
+    }
+    if (selectedPtWithdrawn && withdrawChangeHandler) {
+        selectedPtWithdrawn.removeEventListener('change', withdrawChangeHandler);
+    }
+    if (revokeHIPAA && revokeChangeHandler) {
+        revokeHIPAA.removeEventListener('change', revokeChangeHandler);
+    }
+    if (selectedPtDeceased && deceasedChangeHandler) {
+        selectedPtDeceased.removeEventListener('change', deceasedChangeHandler);
+    }
+
+    // Add fresh listeners
     if (selectedDestroyData) {
-        selectedDestroyData.addEventListener('change', function(e) {
-            //Sync the value of withdraw consent and revoke hippa to data destroy IF the checkboxes are not already disabled
-            let dataDestroyChecked = e.target.checked;
-            let withdrawCheckbox = document.getElementById('defaultCheck10');
-            if (!withdrawCheckbox.disabled) {
-                withdrawCheckbox.checked = dataDestroyChecked;
+        destroyChangeHandler = function(e) {
+            if (selectedDestroyData.checked) {
+                // Top-level checked → enforce lower levels
+                selectedPtWithdrawn && (selectedPtWithdrawn.checked = true);
+                revokeHIPAA && (revokeHIPAA.checked = true);
             }
-            let revokeHIPAACheckbox = document.getElementById('defaultCheck9');
-            if (!revokeHIPAACheckbox.disabled) {
-                revokeHIPAACheckbox.checked = dataDestroyChecked;
-            }
-          });
+        };
+        selectedDestroyData.addEventListener('change', destroyChangeHandler);
     }
+
     if (selectedPtWithdrawn) {
-        selectedPtWithdrawn.addEventListener('change', function() {
-            let checkedValue1 = document.getElementById('defaultCheck9');
-            checkedValue1.checked = true;
-          });
+        withdrawChangeHandler = function(e) {
+            // If Destroy Data is checked, user cannot uncheck Withdraw Consent or Revoke HIPAA
+            if (selectedDestroyData && selectedDestroyData.checked && !e.target.checked) {
+                e.target.checked = true;
+                return;
+            }
+            // If Withdraw Consent is checked, ensure Revoke HIPAA is checked
+            if (selectedPtWithdrawn && selectedPtWithdrawn.checked && revokeHIPAA) {
+                revokeHIPAA.checked = true;
+            }
+        };
+        selectedPtWithdrawn.addEventListener('change', withdrawChangeHandler);
     }
+
+    if (revokeHIPAA) {
+        revokeChangeHandler = function(e) {
+            // If Withdraw Consent or Destroy Data are checked, user cannot uncheck Revoke HIPAA
+            const withdrawChecked = selectedPtWithdrawn && selectedPtWithdrawn.checked;
+            const destroyChecked = selectedDestroyData && selectedDestroyData.checked;
+            if (!e.target.checked && (withdrawChecked || destroyChecked)) {
+                e.target.checked = true;
+            }
+        };
+        revokeHIPAA.addEventListener('change', revokeChangeHandler);
+    }
+
     if (selectedPtDeceased) {
-        selectedPtDeceased.addEventListener('change', function() {
-            disableEnableWhoRequested('defaultRequest1')
-            disableEnableWhoRequested('defaultRequest2')
-            disableEnableWhoRequested('defaultRequest3')
-            disableEnableWhoRequested('defaultRequest4')
-            disableEnableWhoRequested('defaultRequest5')
-            disableEnableWhoRequested('defaultRequest6')
-            disableEnableWhoRequested('defaultRequest7')
-          });
+        deceasedChangeHandler = function() {
+            disableEnableWhoRequested('requestParticipant')
+            disableEnableWhoRequested('requestPrincipalInvestigator')
+            disableEnableWhoRequested('requestConnectIRB')
+            disableEnableWhoRequested('requestPIListed')
+            disableEnableWhoRequested('requestChairSite')
+            disableEnableWhoRequested('requestOther')
+            disableEnableWhoRequested('requestOtherText')
+        };
+        selectedPtDeceased.addEventListener('change', deceasedChangeHandler);
     }
 }
 
@@ -319,105 +428,265 @@ const disableEnableWhoRequested = (id) => {
     checkedValue.disabled === true ? checkedValue.disabled = false : checkedValue.disabled = true
 }
 
-export const viewOptionsSelected = () => {
-    const a = document.getElementById('nextFormPage');
-        if (a) {
-            a.addEventListener('click',  (  ) => { 
-                const UPMonth = escapeHTML(document.getElementById('UPMonth').value);
-                const UPDay = escapeHTML(document.getElementById('UPDay').value);
-                const UPYear = escapeHTML(document.getElementById('UPYear').value);
-
-                let suspendDate = UPMonth +'/'+ UPDay +'/'+ UPYear;
-                optionsHandler(suspendDate);
-            })
+/**
+ * Withdrawal Form Date Validation
+ * @param {string} month 
+ * @param {string} day 
+ * @param {string} year 
+ * @param {string} validationType - 'suspend' or 'causeOfDeath'
+ * @param {boolean} isRequired - whether the date is required (default: false for suspend, true for causeOfDeath)
+ * @returns {object} - { isValid: boolean, error: string }
+ */
+const validateDate = (month, day, year, validationType = 'suspend', isRequired = false) => {
+    // Determine if this date is required based on validation type and explicit requirement
+    const dateIsRequired = isRequired || validationType === 'causeOfDeath';
+    
+    // If all date fields are empty
+    if (!month && !day && !year) {
+        return dateIsRequired
+            ? { isValid: false, error: 'Date is required. Please enter month, day, and year.' }
+            : { isValid: true, error: null };
+    }
+    
+    // Require completion on partially filled dates
+    if (!month || !day || !year) {
+        return { isValid: false, error: 'Please complete all date fields (month, day, and year).' };
+    }
+    
+    // Validate. Suspend contact date must be in the future. Cause of death date must be today or earlier.
+    const selectedDate = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+    
+    if (selectedDate.getMonth() !== month - 1 || selectedDate.getDate() !== parseInt(day)) {
+        return { isValid: false, error: 'Please enter a valid date.' };
+    }
+    
+    if (validationType === 'suspend') {
+        if (selectedDate <= today) {
+            return { isValid: false, error: 'Suspend contact date must be after today\'s date.' };
         }
+
+    } else if (validationType === 'causeOfDeath') {
+        if (selectedDate > today) {
+            return { isValid: false, error: 'Date of death cannot be in the future.' };
+        }
+    }
+    
+    return { isValid: true, error: null };
+};
+
+// Store the current event handler reference to allow proper removal
+let currentNextHandler = null;
+
+export const viewOptionsSelected = () => {
+    const nextFormPageEle = document.getElementById('nextFormPage');
+        if (nextFormPageEle) {
+            // Remove any existing listeners to prevent duplicates
+            if (currentNextHandler) {
+                nextFormPageEle.removeEventListener('click', currentNextHandler);
+            }
+            nextFormPageEle.addEventListener('click', handleNextButtonClick);
+            currentNextHandler = handleNextButtonClick;
+        }
+}
+
+const handleNextButtonClick = () => { 
+    const selectedMonth = escapeHTML(document.getElementById('suspendContactUntilMonth').value);
+    const selectedDay = escapeHTML(document.getElementById('suspendContactUntilDay').value);
+    const enteredYear = escapeHTML(document.getElementById('suspendContactUntilYear').value);
+
+    // Validate the suspend date (optional - can be empty)
+    const dateValidation = validateDate(selectedMonth, selectedDay, enteredYear, 'suspend', false);
+    if (!dateValidation.isValid) {
+        showDateValidationErrors(dateValidation.error);
+        return;
+    }
+    
+    // Clear validation errors if validation passes
+    clearDateValidationErrors();
+
+    let suspendDate = selectedMonth +'/'+ selectedDay +'/'+ enteredYear;
+    optionsHandler(suspendDate);
+    
+    // Manually show the modal since we removed Bootstrap auto-trigger
+    const modal = document.getElementById('modalShowSelectedData');
+    if (modal) {
+        // Use Bootstrap 5's vanilla JS modal method to show it
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+    }
 }
 
 const optionsHandler = (suspendDate) => {
     
-    const header = document.getElementById('modalHeader');
-    const body = document.getElementById('modalBody');
-    const checkboxes = document.getElementsByName('options');
-    const requestedOption = document.getElementsByName('whoRequested');
+    const modalHeader = document.getElementById('modalHeader');
+    const modalBody = document.getElementById('modalBody');
+    const refusalWithdrawalCheckboxes = document.getElementsByName('options');
+    const whoRequestedRadioButtons = document.getElementsByName('whoRequested');
 
-    let retainOptions = [];
-    let requestedHolder = [];
-    let skipRequestedBy = false;
-    let template = '<div>';
+    // The 'who requested' field can be skipped if the participant is deceased
+    let skipWhoRequested = false;
 
-    header.innerHTML = `<h5>Options Selected</h5><button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
+    // "Refusal of study activities", "Follow-up activities", and "Revocation and Withdrawal" options.
+    let selectedRefusalWithdrawalCheckboxes = [];
+
+    // "Refusal/Withdrawal Requested By:" - One radio selected. The array supports the 'other' radio + text input option.
+    let selectedWhoRequestedRadios = [];
+
+    let modalTemplate = '<div>';
+
+    modalHeader.innerHTML = `<h5>Options Selected</h5><button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
     
-    checkboxes.forEach(box => { 
-        if (box.checked) {  
-            retainOptions.push(box);
-            retainOptions.forEach(i => i.value === 'Participant Deceased' ? skipRequestedBy = true : skipRequestedBy = false);
-
-            template += `<span>${box.value}</span> <br />` 
+    refusalWithdrawalCheckboxes.forEach(checkbox => { 
+        if (checkbox.checked) {  
+            selectedRefusalWithdrawalCheckboxes.push(checkbox);
+            if (checkbox.value === 'Participant Deceased') {
+                skipWhoRequested = true;
+            }
+            modalTemplate += `<span>${escapeHTML(checkbox.value)}</span> <br />` 
         }
     });
 
-    const requestOtherText = document.getElementById('defaultRequest7');
-    requestOtherText.value && requestedHolder.push(requestOtherText);
+    const requestOtherText = document.getElementById('requestOtherText');
+    requestOtherText.value && selectedWhoRequestedRadios.push(requestOtherText);
 
-    requestedOption.forEach(x => { 
+    whoRequestedRadioButtons.forEach(x => { 
         if (x.checked) {  
-            requestedHolder.push(x);
-            template += `<span>Requested by: ${x.value} </span> ${requestOtherText && escapeHTML(requestOtherText.value)} </br>`
+            selectedWhoRequestedRadios.push(x);
+            modalTemplate += `<span>Requested by: ${escapeHTML(x.value)} </span> ${requestOtherText && escapeHTML(requestOtherText.value)} </br>`
         }
     })
+    
+    const hasSuspendDate = suspendDate !== '//';
+    const hasRequestedBySelection = selectedWhoRequestedRadios.length > 0;
+    const hasAnySelections = selectedRefusalWithdrawalCheckboxes.length > 0;
+    const canSkipRequestedBy = skipWhoRequested === true;
+    let confirmSectionHtml = '';
 
-    if (suspendDate !== '//') template += `<span>Suspend all contact on case until ${suspendDate}</span> <br />`
-    template += `
+    if (hasSuspendDate) modalTemplate += `<span>Suspend all contact on case until ${escapeHTML(suspendDate)}</span> <br />`
+
+    if (canSkipRequestedBy || (hasSuspendDate && hasRequestedBySelection)) {
+        confirmSectionHtml = ` <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="proceedFormPage">Confirm</button>`;
+
+    } else if (!hasAnySelections && !hasSuspendDate) {
+        confirmSectionHtml = `<span style="color: red;"><b>Make a selection before proceeding!</b></span> <br />
+             <button type="button" class="btn btn-secondary" data-dismiss="modal" target="_blank" id="proceedFormPage" disabled>Confirm</button>`;
+
+    } else if (!hasRequestedBySelection) {
+        confirmSectionHtml = `<span style="color: red;"><b>Select requested by before proceeding!</b></span> <br />
+             <button type="button" class="btn btn-secondary" data-dismiss="modal" target="_blank" id="proceedFormPage" disabled>Confirm</button>`;
+
+    } else {
+        confirmSectionHtml = ` <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="proceedFormPage">Confirm</button>`;
+    }
+
+    modalTemplate += `
         <div style="display:inline-block; margin-top:20px;">
-        ${
-            ( suspendDate !== '//' && requestedHolder.length > 0 ) ?  
-                ` <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="proceedFormPage">Confirm</button>`
-            : ( skipRequestedBy === true && requestedHolder.length >= 0) ?  
-            ` <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="proceedFormPage">Confirm</button>`
-            :  ( retainOptions.length === 0 && requestedHolder.length === 0 && suspendDate === '//' )  ? 
-            `<span><b>Make a selection before proceeding!</b></span> <br />
-             <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="proceedFormPage" disabled>Confirm</button>`
-            :  ( retainOptions.length > 0 && requestedHolder.length === 0 ) || ( suspendDate !== '//' && requestedHolder.length === 0 )  ? 
-            `<span><b>Select requested by before proceeding!</b></span> <br />
-             <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="proceedFormPage" disabled>Confirm</button>`
-            :(( retainOptions.length === 0 && requestedHolder.length >= 0 ) && ( suspendDate === '//' && requestedHolder.length >= 0 ) ) ? 
-            `<span><b>Make a selection before proceeding!</b></span> <br />
-             <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="proceedFormPage" disabled>Confirm</button>`
-            : ` <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="proceedFormPage">Confirm</button>`
-            }
+        ${confirmSectionHtml}
             <button type="button" class="btn btn-danger" data-dismiss="modal" target="_blank">Cancel</button>
         </div>
     </div>`
 
-    body.innerHTML = template;
-    proceedToNextPage(retainOptions, requestedHolder, suspendDate)
+    modalBody.innerHTML = modalTemplate;
+
+    proceedToNextPage(selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, suspendDate)
 } 
 
 
-export const proceedToNextPage = (retainOptions, requestedHolder, suspendDate) => {
-    const a = document.getElementById('proceedFormPage');
-    if (a) {
-        a.addEventListener('click',  () => {
-            let checkedValue = document.getElementById('messageCheckbox').checked;
-            checkedValue ? causeOfDeathPage(retainOptions) : reasonForRefusalPage(retainOptions, requestedHolder, suspendDate);
-        })
+// Event handler ref to prevent duplicates
+let currentProceedHandler = null;
+
+export const proceedToNextPage = (selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, suspendDate) => {
+    const proceedFormPageEle = document.getElementById('proceedFormPage');
+    if (proceedFormPageEle) {
+
+        if (currentProceedHandler) {
+            proceedFormPageEle.removeEventListener('click', currentProceedHandler);
+        }
+        
+        currentProceedHandler = () => {
+            const checkedValue = document.getElementById('participantDeceasedCheck').checked;
+            checkedValue ? causeOfDeathPage(selectedRefusalWithdrawalCheckboxes) : reasonForRefusalPage(selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, suspendDate);
+        };
+        
+        proceedFormPageEle.addEventListener('click', currentProceedHandler);
     }
 }
 
-const retainPreviouslySetOptions = (retainOptions, requestedHolder) => {
-   retainOptions &&  (
-        retainOptions.forEach (x => { 
-            let checkedValue = document.getElementById(x.id);
-            checkedValue.checked = true;
-        }))
-    requestedHolder &&  (
-        requestedHolder.forEach (x => { 
-            let checkedValue = document.getElementById(x.id);
-            checkedValue.checked = true;
-        }))
+const retainPreviouslySetOptions = (selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, suspendDate) => {
+    // Restore checkbox selections
+    selectedRefusalWithdrawalCheckboxes && (
+        selectedRefusalWithdrawalCheckboxes.forEach(checkbox => { 
+            const checkedValue = document.getElementById(checkbox.id);
+            if (checkedValue) {
+                checkedValue.checked = true;
+            }
+        })
+    )
+    
+    // Restore radio button selections
+    selectedWhoRequestedRadios && (
+        selectedWhoRequestedRadios.forEach(radioButton => { 
+            const checkedValue = document.getElementById(radioButton.id);
+            if (checkedValue) {
+                if (checkedValue.type === 'radio') {
+                    checkedValue.checked = true;
+                } else if (checkedValue.type === 'text') {
+                    checkedValue.value = radioButton.value;
+                }
+            }
+        })
+    )
+    
+    // Restore suspend date fields if provided
+    if (suspendDate && suspendDate !== '//') {
+        const [month, day, year] = suspendDate.split('/');
+        const monthSelect = document.getElementById('suspendContactUntilMonth');
+        const daySelect = document.getElementById('suspendContactUntilDay');
+        const yearInput = document.getElementById('suspendContactUntilYear');
+        
+        // Restore month first
+        if (monthSelect && month) {
+            monthSelect.value = month;
+            
+            // Populate the inputs
+            if (daySelect) {
+                let dayTemplate = '<option class="option-dark-mode" value="">Select day</option>';
+                const monthNum = parseInt(month);
+                
+                if (monthNum === 2) {
+                    // February - 29 days max
+                    for (let i = 1; i <= 29; i++) {
+                        dayTemplate += `<option class="option-dark-mode" value=${i < 10 ? `0${i}` : `${i}`}>${i}</option>`;
+                    }
+                } else if ([1, 3, 5, 7, 8, 10, 12].includes(monthNum)) {
+                    // 31-day months
+                    for (let i = 1; i <= 31; i++) {
+                        dayTemplate += `<option class="option-dark-mode" value=${i < 10 ? `0${i}` : `${i}`}>${i}</option>`;
+                    }
+                } else if ([4, 6, 9, 11].includes(monthNum)) {
+                    // 30-day months
+                    for (let i = 1; i <= 30; i++) {
+                        dayTemplate += `<option class="option-dark-mode" value=${i < 10 ? `0${i}` : `${i}`}>${i}</option>`;
+                    }
+                }
+                
+                daySelect.innerHTML = dayTemplate;
+                
+                if (day) {
+                    daySelect.value = day;
+                }
+            }
+            
+            if (yearInput && year) {
+                yearInput.value = year;
+            }
+        }
+    }
 }
 
-export const reasonForRefusalPage = (retainOptions, requestedHolder, suspendDate) => {
+export const reasonForRefusalPage = (selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, suspendDate) => {
     let source = 'page1'
     let renderContent = document.getElementById('formMainPage');
     let template = `
@@ -431,28 +700,28 @@ export const reasonForRefusalPage = (retainOptions, requestedHolder, suspendDate
             </div>`;
 
     template += renderRefusalOptions();
-            
 
     renderContent.innerHTML =  template;
     document.getElementById('backToPrevPage').addEventListener('click', () => {
-        renderContent.innerHTML = renderParticipantWithdrawalLandingPage();
-        retainPreviouslySetOptions(retainOptions, requestedHolder);
-        addEventMonthSelection('UPMonth', 'UPDay');
-        autoSelectOptions();
-        viewOptionsSelected();
-        proceedToNextPage();
+        renderContent.innerHTML = renderWithdrawalForm();
+        
+        // Make sure DOM is rendered
+        requestAnimationFrame(() => {
+            addEventMonthSelection('suspendContactUntilMonth', 'suspendContactUntilDay', 'suspendContactUntilYear');
+            retainPreviouslySetOptions(selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, suspendDate);
+            autoSelectOptions();
+            viewOptionsSelected();
+        });
     })
-    document.getElementById('submit').addEventListener('click', () => {
-        collectFinalResponse(retainOptions, requestedHolder, source, suspendDate)
+    document.getElementById('submit').addEventListener('click', async () => {
+        await handleResponseSubmission(selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate)
     })
- 
 }
 
-export const causeOfDeathPage = (retainOptions) => {
-    let source = 'page2'
+export const causeOfDeathPage = (selectedRefusalWithdrawalCheckboxes) => {
+    const source = 'causeOfDeath'
     let renderContent = document.getElementById('formMainPage');
-    let template = ``;
-    template += ` <div class="modal fade" id="modalShowFinalSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+    let template = ` <div class="modal fade" id="modalShowFinalSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
                     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                         <div class="modal-content sub-div-shadow">
                             <div class="modal-header" id="modalHeader"></div>
@@ -462,38 +731,65 @@ export const causeOfDeathPage = (retainOptions) => {
             </div>`
     template += renderCauseOptions();
     renderContent.innerHTML =  template;
-    addEventMonthSelection('page2Month', 'page2Day')
+    addEventMonthSelection('causeOfDeathMonth', 'causeOfDeathDay', 'causeOfDeathYear')
     document.getElementById('backToPrevPage').addEventListener('click', () => {
-        renderContent.innerHTML = renderParticipantWithdrawalLandingPage();
-        retainPreviouslySetOptions(retainOptions);
-        autoSelectOptions();
-        viewOptionsSelected();
-        proceedToNextPage();
+        renderContent.innerHTML = renderWithdrawalForm();
+        
+        // Make sure DOM is rendered
+        requestAnimationFrame(() => {
+            addEventMonthSelection('suspendContactUntilMonth', 'suspendContactUntilDay', 'suspendContactUntilYear');
+            retainPreviouslySetOptions(selectedRefusalWithdrawalCheckboxes, [], '//');
+            autoSelectOptions();
+            viewOptionsSelected();
+        });
     })
-    document.getElementById('submit').addEventListener('click', () => {
-        const UPMonth = document.getElementById('page2Month').value;
-        const UPDay = document.getElementById('page2Day').value;
-        const UPYear = document.getElementById('page2Year').value;
-        let suspendDate = UPMonth +'/'+ UPDay +'/'+ UPYear
-        collectFinalResponse(retainOptions, [], source, suspendDate)
+    
+    document.getElementById('submit').addEventListener('click', async() => {
+        const causeOfDeathMonth = document.getElementById('causeOfDeathMonth').value;
+        const causeOfDeathDay = document.getElementById('causeOfDeathDay').value;
+        const causeOfDeathYear = document.getElementById('causeOfDeathYear').value;
+        
+        // Validate the cause of death date
+        const dateValidation = validateDate(causeOfDeathMonth, causeOfDeathDay, causeOfDeathYear, 'causeOfDeath', true);
+        if (!dateValidation.isValid) {
+            showDateValidationErrors(dateValidation.error, true); // true -> cause of death page
+            return;
+        }
+
+        clearDateValidationErrors();
+        
+        const suspendDate = causeOfDeathMonth +'/'+ causeOfDeathDay +'/'+ causeOfDeathYear
+        await handleResponseSubmission(selectedRefusalWithdrawalCheckboxes, [], source, suspendDate)
     })
- 
 }
 
-const collectFinalResponse = (retainOptions, requestedHolder, source, suspendDate) => {
-    let finalOptions = []
-    const otherReasonsInput = document.getElementById('defaultCheck24');
-    otherReasonsInput?.value && finalOptions.push(otherReasonsInput);
+const handleResponseSubmission = async (selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate) => {
+    let selectedReasonsForWithdrawal = []
+
+    const otherReasonsInput = document.getElementById('otherReasonsInput');
+    otherReasonsInput?.value && selectedReasonsForWithdrawal.push(otherReasonsInput);
+
     let checkboxes = document.getElementsByName('options');
-    checkboxes.forEach(checkbox => { if (checkbox.checked) {  finalOptions.push(checkbox)} });
-    sendResponses(finalOptions, retainOptions, requestedHolder, source, suspendDate);
+    checkboxes.forEach(checkbox => { if (checkbox.checked) {  selectedReasonsForWithdrawal.push(checkbox)} });
+
+    const completeRefusalData = processRefusalWithdrawalResponses(selectedReasonsForWithdrawal, selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate);
+
+    try {
+        const updatedParticipant = await sendRefusalWithdrawalResponses(completeRefusalData);
+        localStorage.setItem('participant', JSON.stringify(updatedParticipant));
+        navigateToParticipantSummary(updatedParticipant);
+
+    } catch (error) {
+        console.error('Error in handleResponseSubmission():', error);
+        alert('An error occurred. Please try again.');
+    }
 }
 
-const sendResponses = async (finalOptions, retainOptions, requestedHolder, source, suspendDate) => {
+const processRefusalWithdrawalResponses = (selectedReasonsForWithdrawal, selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate) => {
     let sendRefusalData = {};
     let highestStatus = [];
     sendRefusalData[fieldMapping.refusalOptions] = {};
-    retainOptions.forEach(x => {
+    selectedRefusalWithdrawalCheckboxes.forEach(x => {
         if (parseInt(x.dataset.optionkey) === fieldMapping.refusedSurvey) {
             setRefusalTimeStamp(sendRefusalData, x.dataset.optionkey, fieldMapping.refBaselineSurveyTimeStamp);
         }
@@ -534,23 +830,33 @@ const sendResponses = async (finalOptions, retainOptions, requestedHolder, sourc
             sendRefusalData[x.dataset.optionkey] = fieldMapping.yes
         }
     })
-    if (requestedHolder.length != 0) {
-        requestedHolder.forEach(x => {
-            switch (parseInt(x.dataset.optionkey)) {
-            case fieldMapping.requestOtherText:
-                    sendRefusalData[fieldMapping.whoRequested] = fieldMapping.requestOther
-                    sendRefusalData[fieldMapping.requestOtherText] = x.value
-            default:
-                    if (parseInt(requestedHolder[0].dataset.optionkey) != fieldMapping.requestOtherText) sendRefusalData[fieldMapping.whoRequested] = parseInt(requestedHolder[0].dataset.optionkey)
+
+    if (selectedWhoRequestedRadios.length != 0) {
+        // Find the radio button and text input (if it exists) from the array.
+        // Standard options are radio buttons, the "Other" option is a radio button and text input.
+        const selectedRadio = selectedWhoRequestedRadios.find(element => element.type === 'radio');
+        const otherTextInput = selectedWhoRequestedRadios.find(element => element.type === 'text');
+        
+        if (selectedRadio) {
+            if (otherTextInput && parseInt(selectedRadio.dataset.optionkey) === fieldMapping.requestOther) {
+                sendRefusalData[fieldMapping.whoRequested] = {
+                    [fieldMapping.whoRequested]: fieldMapping.requestOther,
+                    [fieldMapping.requestOtherText]: otherTextInput.value
+                }
+            } else {
+                sendRefusalData[fieldMapping.whoRequested] = {
+                    [fieldMapping.whoRequested]: parseInt(selectedRadio.dataset.optionkey)
+                }
             }
-        })
+        }
     }
-    if (suspendDate !== '//' && source !== 'page2') { 
+    if (suspendDate !== '//' && source !== 'causeOfDeath') { 
         sendRefusalData[fieldMapping.suspendContact] = suspendDate
         sendRefusalData[fieldMapping.startDateSuspendedContact] = new Date().toISOString();
         sendRefusalData[fieldMapping.contactSuspended] = fieldMapping.yes
         updateWhoRequested(sendRefusalData, fieldMapping.whoRequestedSuspendedContact, fieldMapping.whoRequestedSuspendedContactOther)
     }
+
     const previousSuspendedStatus = localStorage.getItem('suspendContact');
     if (previousSuspendedStatus === 'true' && suspendDate === '//') sendRefusalData[fieldMapping.suspendContact] = ``
     localStorage.removeItem('suspendContact');
@@ -569,19 +875,22 @@ const sendResponses = async (finalOptions, retainOptions, requestedHolder, sourc
         prevParticipantStatusSelection = prevParticipantStatusScore[prevParticipantStatusSelection]
         highestStatus.push(parseInt(prevParticipantStatusSelection))
     }
+
     if (previousRefusalStatus === 'true' && suspendDate !== '//') sendRefusalData[fieldMapping.participationStatus] = fieldMapping.noRefusal
     
-    source === 'page2' ? (
-        combineResponses(finalOptions, sendRefusalData, suspendDate)
-    ) : (
-    finalOptions.forEach(input => {
-        (parseInt(input.dataset.optionkey) === fieldMapping.otherReasonsSpecify) ?
-            ( sendRefusalData[fieldMapping.otherReasonsSpecify] = input.value )
-        :
-            ( sendRefusalData[input.dataset.optionkey] = fieldMapping.yes )
-        }))
-    const statusConceptId = getComputeScore(retainOptions, highestStatus);
-    if (retainOptions.length !== 0) sendRefusalData[fieldMapping.participationStatus] = statusConceptId
+    source === 'causeOfDeath'
+        ? combineResponses(selectedReasonsForWithdrawal, sendRefusalData, suspendDate)
+        : selectedReasonsForWithdrawal.forEach(input => {
+            if (parseInt(input.dataset.optionkey) === fieldMapping.otherReasonsSpecify) {
+                sendRefusalData[fieldMapping.otherReasonsSpecify] = input.value
+            } else {
+                sendRefusalData[input.dataset.optionkey] = fieldMapping.yes
+            }
+        })
+
+    const statusConceptId = calculateParticipationStatus(selectedRefusalWithdrawalCheckboxes, highestStatus);
+    
+    if (selectedRefusalWithdrawalCheckboxes.length !== 0) sendRefusalData[fieldMapping.participationStatus] = statusConceptId
     
     if (statusConceptId === fieldMapping.withdrewConsent) {
         sendRefusalData[fieldMapping.dateWithdrewConsentRequested] = new Date().toISOString();
@@ -605,31 +914,91 @@ const sendResponses = async (finalOptions, retainOptions, requestedHolder, sourc
         updateWhoRequested(sendRefusalData, fieldMapping.whoRequested, fieldMapping.requestOtherText)
     }
 
+    // Determine if baseline activities were selected (these should keep the general whoRequested variable)
+    const hasBaselineRefusalsSelected = selectedRefusalWithdrawalCheckboxes.some(x => {
+        const optionKey = parseInt(x.dataset.optionkey);
+        return [
+            fieldMapping.refusedSurvey,
+            fieldMapping.refusedBlood,
+            fieldMapping.refusedUrine,
+            fieldMapping.refusedMouthwash,
+            fieldMapping.refusedSpecimenSurveys,
+        ].includes(optionKey);
+    });
+
+    const hasFollowUpRefusalsSelected = selectedRefusalWithdrawalCheckboxes.some(x => {
+        const optionKey = parseInt(x.dataset.optionkey);
+        return [
+            fieldMapping.refusedQualityOfLifeSurvey,
+            fieldMapping.refusedAllFutureQualityOfLifeSurveys,
+            fieldMapping.refusedExperienceSurvey,
+            fieldMapping.refusedAllFutureExperienceSurveys,
+            fieldMapping.refusedCancerScreeningHistorySurvey,
+            fieldMapping.refusedFutureSurveys,
+            fieldMapping.refusedFutureSamples
+        ].includes(optionKey);
+    });
+
+    const hasAllRefusalsSelected = selectedRefusalWithdrawalCheckboxes.some(x => {
+        const optionKey = parseInt(x.dataset.optionkey);
+        return [
+            fieldMapping.refusedAllFutureActivities
+        ].includes(optionKey);
+    });
+
+    // Only remove the general whoRequested if no baseline activities were selected, AND we have a higher-level status (not refusedSome), AND no follow up activities were selected alongside "All Future Study Activities".
+    if ((!hasBaselineRefusalsSelected && statusConceptId !== fieldMapping.refusedSome) && (!hasFollowUpRefusalsSelected && !hasAllRefusalsSelected)) {
+        delete sendRefusalData[fieldMapping.whoRequested];
+        delete sendRefusalData[fieldMapping.requestOtherText];
+    }
+
     let refusalObj = sendRefusalData[fieldMapping.refusalOptions]
     if (JSON.stringify(refusalObj) === '{}') delete sendRefusalData[fieldMapping.refusalOptions]
-    const token = localStorage.getItem("token");
-    sendRefusalData['token'] = token;
-    const idToken = await getIdToken();
-    await sendResponsesClickHandler(sendRefusalData, idToken, token);
+
+    sendRefusalData['token'] = localStorage.getItem("token");
+
+    return sendRefusalData;
 }
 
 const updateWhoRequested = (sendRefusalData, updatedWhoRequested, updatedWhoRequestedOther) => {
-    (updatedWhoRequested == [fieldMapping.whoRequested]) ? (Object.assign(sendRefusalData, { [updatedWhoRequested] : { [updatedWhoRequested] : sendRefusalData[fieldMapping.whoRequested] }}))
-    :  delete Object.assign(sendRefusalData, { [updatedWhoRequested] : { [updatedWhoRequested] : sendRefusalData[fieldMapping.whoRequested] }})[fieldMapping.whoRequested]
-    
-    if (sendRefusalData[fieldMapping.requestOtherText]) {
-        Object.assign(sendRefusalData[updatedWhoRequested], { [updatedWhoRequestedOther] : sendRefusalData[fieldMapping.requestOtherText]})
-        delete sendRefusalData[fieldMapping.requestOtherText]
+    // Copy the nested (legacy) whoRequested structure to the specific variable
+    if (sendRefusalData[fieldMapping.whoRequested]) {
+        const originalWhoRequested = sendRefusalData[fieldMapping.whoRequested];
+
+        // Extract the value from the nested structure and create the new nested structure
+        const whoRequestedValue = originalWhoRequested[fieldMapping.whoRequested];
+        const otherTextValue = originalWhoRequested[fieldMapping.requestOtherText];
+
+        sendRefusalData[updatedWhoRequested] = {
+            [updatedWhoRequested]: whoRequestedValue
+        };
+
+        // Add the "other" text if it exists
+        if (otherTextValue) {
+            sendRefusalData[updatedWhoRequested][updatedWhoRequestedOther] = otherTextValue;
+        }
     }
 }
 
+/**
+ * Set the refusal time stamp for a given option
+ * @param {Object} sendRefusalData - the refusal data object
+ * @param {string} optionSelected - the option selected
+ * @param {string} refusalOptionTimeStamp - the time stamp for the refusal option
+ */
 const setRefusalTimeStamp = (sendRefusalData, optionSelected, refusalOptionTimeStamp) =>{
     sendRefusalData[refusalOptionTimeStamp] = new Date().toISOString();
     sendRefusalData[fieldMapping.refusalOptions][optionSelected] = fieldMapping.yes
 }
 
-const getComputeScore = (retainOptions, highestStatus) => {
-    retainOptions.forEach(x => {
+/**
+ * Calculate the participation status based on selected options
+ * @param {Array} selectedRefusalWithdrawalCheckboxes - array of selected options
+ * @param {Array} highestStatus - array of status scores
+ * @returns {string} - the participation status
+ */
+const calculateParticipationStatus = (selectedRefusalWithdrawalCheckboxes, highestStatus) => {
+    selectedRefusalWithdrawalCheckboxes.forEach(x => {
         switch (x.value) {
             case "All Future Study Activities":
                 highestStatus.push(2)
@@ -650,13 +1019,13 @@ const getComputeScore = (retainOptions, highestStatus) => {
                 highestStatus.push(1)
         }
     })
-    highestStatus = highestStatus.filter( value => !Number.isNaN(value) ); // removw NaN from array
+    highestStatus = highestStatus.filter( value => !Number.isNaN(value) ); // remove NaN from array
     let participationStatusScore = Math.max(...highestStatus);
     return fieldMapping[participationStatusScore.toString()];
 }
 
-const combineResponses = (finalOptions, sendRefusalData, suspendDate) => {
-    finalOptions.forEach(x => {
+const combineResponses = (selectedReasonsForWithdrawal, sendRefusalData, suspendDate) => {
+    selectedReasonsForWithdrawal.forEach(x => {
         sendRefusalData[fieldMapping.sourceOfDeath] = parseInt(x.dataset.optionkey) })
     if (suspendDate !== '//') {
         sendRefusalData[fieldMapping.dateOfDeath] = suspendDate    
@@ -664,12 +1033,15 @@ const combineResponses = (finalOptions, sendRefusalData, suspendDate) => {
     }
 }
 
-async function sendResponsesClickHandler(sendRefusalData, idToken, token) {
+async function sendRefusalWithdrawalResponses(sendRefusalData) {
     showAnimation();
+    
     try {
+        const idToken = await getIdToken();
         const refusalPayload = {
             "data": [sendRefusalData]
         };
+        
         const response = await fetch(`${baseAPI}/dashboard?api=updateParticipantData`, {
             method: 'POST',
             body: JSON.stringify(refusalPayload),
@@ -682,28 +1054,36 @@ async function sendResponsesClickHandler(sendRefusalData, idToken, token) {
         if (response.status !== 200) {
             throw new Error('Error updating participant data');
         }
-
-        const participantResponse = await fetch(`${baseAPI}/dashboard?api=getFilteredParticipants&token=${token}`, {
+        
+        const participantResponse = await fetch(`${baseAPI}/dashboard?api=getFilteredParticipants&token=${sendRefusalData['token']}`, {
             method: 'GET',
             headers: {
                 Authorization: "Bearer " + idToken,
                 "Content-Type": "application/json"
             }
         });
-
+        
         const participantJSON = await participantResponse.json();
 
         if (participantJSON.code !== 200) {
-            throw new Error('Error fetching participant data');
+            console.error('Error:', participantJSON.code + ": " + participantJSON.message || 'No error message provided');
+            throw new Error(`Error fetching participant data: ${participantJSON.message || 'Unknown error'}`);
+        } else if (participantJSON.data.length !==1) {
+            throw new Error(`Found ${participantJSON.data.length} participants. Expected one.`);
         }
 
-        const loadDetailsPage = '#participantSummary';
-        localStorage.setItem("participant", JSON.stringify(participantJSON.data[0]));
-        location.replace(window.location.origin + window.location.pathname + loadDetailsPage); // updates url to participantSummary
+        return participantJSON.data[0];
+
     } catch (error) {
-        console.error(error);
-        alert('An error occurred. Please try again.');
+        console.error('Error in sendRefusalWithdrawalResponses:', error);
+        alert(`Error: ${error.message || 'An unexpected error occurred. Please try again.'}`);
+        
     } finally {
         hideAnimation();
     }
+}
+
+const navigateToParticipantSummary = (participant) => {
+    localStorage.setItem('participant', JSON.stringify(participant));
+    location.replace(window.location.origin + window.location.pathname + '#participantSummary'); // updates url to participantSummary
 }

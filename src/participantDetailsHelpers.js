@@ -3,7 +3,7 @@ import { render, renderParticipantDetails } from './participantDetails.js';
 import { findParticipant, renderLookupResultsTable } from './participantLookup.js';
 import { renderParticipantSummary } from './participantSummary.js';
 import { appState } from './stateManager.js';
-import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation } from './utils.js';
+import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, escapeHTML, markUnsaved, clearUnsaved } from './utils.js';
 
 export const allStates = {
     "Alabama":1,
@@ -108,10 +108,198 @@ export const getFieldValues = (variableValue, conceptId) => {
 
 export const formatPhoneNumber = (phoneNumber) => {
     if (!phoneNumber) return '';
-    if (/^\+1/.test(phoneNumber)) {
-        phoneNumber = phoneNumber.substring(2);
+
+    // Clean the phone number - remove all non-digits, then remove the leading 1 if it exists
+    let cleanNumber = phoneNumber.toString().replace(/\D/g, '');
+    if (cleanNumber.length === 11 && cleanNumber.startsWith('1')) {
+        cleanNumber = cleanNumber.substring(1);
     }
-    return `${phoneNumber.substring(0,3)}-${phoneNumber.substring(3,6)}-${phoneNumber.substring(6,10)}`;
+
+    return `(${cleanNumber.substring(0,3)}) ${cleanNumber.substring(3,6)}-${cleanNumber.substring(6,10)}`;
+};
+
+/**
+ * Format phone number as the user types
+ * Limit to 10 digits only
+ * @param {string} value - the input value
+ * @returns {string} - formatted phone number
+ */
+export const formatPhoneNumberInput = (value) => {
+    const digits = (value || '').replace(/\D/g, '').substring(0, 10);
+    if (!digits) return '';
+    else if (digits.length <= 3) return digits;
+    else if (digits.length <= 6) return `(${digits.slice(0,3)}) ${digits.slice(3)}`;
+    else return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+};
+
+export const formatNameInput = (value) => {
+    if (!value) return '';
+    // Replace any character that is NOT in the allowed set.
+    return value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-.]/g, '');
+};
+
+/**
+ * Format zip code input to allow only digits, max 5 characters
+ * @param {string} value - the input value
+ * @returns {string} - formatted zip code
+ */
+export const formatZipInput = (value) => {
+    if (!value) return '';
+    // Only allow digits, limit to 5 characters
+    return value.replace(/\D/g, '').substring(0, 5);
+};
+
+/**
+ * Add input formatting event listeners for phone, name, and zip fields
+ */
+export const addFormInputFormattingListeners = () => {
+    const phoneInputs = document.querySelectorAll('.phone-input, input[type="tel"]');
+
+    phoneInputs.forEach((input, index) => {
+        if (input.dataset.currentValue && input.dataset.currentValue !== 'undefined' && !input.value) {
+            const formattedValue = formatPhoneNumber(input.dataset.currentValue.toString());
+            input.value = formattedValue;
+        }
+    });
+
+    // Remove existing listeners to prevent duplicates
+    document.removeEventListener('input', handleFormInputFormatting);
+    document.removeEventListener('keydown', handleFormKeydown);
+
+    // Add fresh listeners using event delegation
+    document.addEventListener('input', handleFormInputFormatting);
+    document.addEventListener('keydown', handleFormKeydown);
+};
+
+const nameFieldConceptIds = [
+    fieldMapping.lName,
+    fieldMapping.fName,
+    fieldMapping.mName,
+    fieldMapping.prefName,
+    fieldMapping.altContactFirstName,
+    fieldMapping.altContactLastName
+];
+
+const zipFieldConceptIds = [
+    fieldMapping.zip,
+    fieldMapping.physicalZip,
+    fieldMapping.altZip
+];
+
+/**
+ * Handle form input formatting for phone, name, and zip fields
+ */
+const handleFormInputFormatting = (event) => {
+    const input = event.target;
+
+    // Phone input handling
+    if (input.matches('.phone-input, input[type="tel"]')) {
+        const oldValue = input.value;
+        const oldCursor = input.selectionStart || 0;
+        const newValue = formatPhoneNumberInput(oldValue);
+
+        if (oldValue === newValue) return;
+
+        input.value = newValue;
+        const newCursor = getNewCursorPosition(oldValue, newValue, oldCursor);
+        input.setSelectionRange(newCursor, newCursor);
+        return; // Done
+    }
+
+    // Name input handling
+    if (input.matches('input[type="text"][id^="newValue"]')) {
+        const conceptId = parseInt(input.id.replace('newValue', ''), 10);
+        if (nameFieldConceptIds.includes(conceptId)) {
+            const oldValue = input.value;
+            const sanitizedValue = formatNameInput(oldValue);
+
+            if (oldValue !== sanitizedValue) {
+                const cursorPosition = input.selectionStart || 0;
+                const numCharsRemovedBeforeCursor = (oldValue.slice(0, cursorPosition).match(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'\-.]/g) || []).length;
+
+                input.value = sanitizedValue;
+                input.setSelectionRange(cursorPosition - numCharsRemovedBeforeCursor, cursorPosition - numCharsRemovedBeforeCursor);
+            }
+        }
+
+        // Zip code input handling
+        if (zipFieldConceptIds.includes(conceptId)) {
+            const oldValue = input.value;
+            const formattedValue = formatZipInput(oldValue);
+
+            if (oldValue !== formattedValue) {
+                const cursorPosition = input.selectionStart || 0;
+                input.value = formattedValue;
+                // Keep cursor at end if we hit the 5-digit limit, otherwise maintain position
+                const newCursorPosition = formattedValue.length >= 5 ? 5 : Math.min(cursorPosition, formattedValue.length);
+                input.setSelectionRange(newCursorPosition, newCursorPosition);
+            }
+        }
+    }
+};
+
+/**
+ * Handle keydown events to prevent invalid characters for phone and zip inputs.
+ * Allow backspace, tab, enter, escape, arrow keys, delete, home, end, and control keys.
+ * Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+Z (copy/paste/select all).
+ * Prevent non-numeric keys (allow digits only) for phone and zip fields.
+ */
+const handleFormKeydown = (event) => {
+    if (event.target.matches('.phone-input, input[type="tel"]')) {
+        const controlKeys = ['Backspace', 'Tab', 'Enter', 'Escape', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+        if (controlKeys.includes(event.key)) return;
+
+        if (event.ctrlKey && ['a', 'c', 'v', 'x', 'z'].includes(event.key.toLowerCase())) return;
+
+        // Only allow digits (0-9)
+        const isDigit = /^[0-9]$/.test(event.key);
+        if (!isDigit) {
+            event.preventDefault();
+        }
+    }
+
+    // Handle zip code input keydown
+    if (event.target.matches('input[type="text"][id^="newValue"]')) {
+        const conceptId = parseInt(event.target.id.replace('newValue', ''), 10);
+        if (zipFieldConceptIds.includes(conceptId)) {
+            const controlKeys = ['Backspace', 'Tab', 'Enter', 'Escape', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+            if (controlKeys.includes(event.key)) return;
+
+            if (event.ctrlKey && ['a', 'c', 'v', 'x', 'z'].includes(event.key.toLowerCase())) return;
+
+            // Only allow digits (0-9)
+            const isDigit = /^[0-9]$/.test(event.key);
+            if (!isDigit) {
+                event.preventDefault();
+            }
+        }
+    }
+};
+
+/**
+ * Calculate new cursor position after formatting the phone number.
+ * If digits were removed or cursor was at end -> move to end
+ * If digits were added or cursor was at start -> move to start
+ * 
+ */
+const getNewCursorPosition = (oldValue, newValue, oldCursorPosition) => {
+    const oldDigits = oldValue.replace(/\D/g, '');
+    const newDigits = newValue.replace(/\D/g, '');
+
+    // If digits were removed or cursor was at end -> move to end
+    if (newDigits.length < oldDigits.length || oldCursorPosition >= oldValue.length) return newValue.length;
+
+    const digitsBeforeCursor = oldValue.slice(0, oldCursorPosition).replace(/\D/g, '').length;
+    if (digitsBeforeCursor === 0) return 0;
+
+    // Walk newValue to find position after the same count of digits
+    let digitCount = 0;
+    for (let i = 0; i < newValue.length; i++) {
+        if (/\d/.test(newValue[i])) digitCount++;
+        if (digitCount === digitsBeforeCursor) return i + 1;
+    }
+
+    return newValue.length;
 };
 
 const isPhoneNumberInForm = (participant, changedOption, fieldMappingKey) => {
@@ -121,6 +309,12 @@ const isPhoneNumberInForm = (participant, changedOption, fieldMappingKey) => {
 export const getImportantRows = (participant, changedOption) => {
     const isParticipantVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.verified;
     const isParticipantDataDestroyed = participant[fieldMapping.dataDestroyCategorical] === fieldMapping.requestedDataDestroySigned;
+    const isParticipantDuplicate = participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate;
+    const isParticipantCannotBeVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.cannotBeVerified;
+    
+    // Condition handles editing restrictions
+    const isEditable = !isParticipantDataDestroyed && !isParticipantDuplicate && !isParticipantCannotBeVerified;
+    
     const isCellPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.cellPhone);
     const isHomePhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.homePhone);
     const isOtherPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.otherPhone);
@@ -131,105 +325,105 @@ export const getImportantRows = (participant, changedOption) => {
     const participantDataRows = [ 
         { field: fieldMapping.lName,
             label: 'Last Name',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
-            validationType: 'text',
+            validationType: 'name',
             isRequired: true
         },
         { field: fieldMapping.fName,
             label: 'First Name',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
-            validationType: 'text',
+            validationType: 'name',
             isRequired: true
         },
         { field: fieldMapping.prefName,
             label: 'Preferred Name',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
-            validationType: 'text',
+            validationType: 'name',
             isRequired: false
         },
         { field: fieldMapping.mName,
             label: 'Middle Name',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
-            validationType: 'text',
+            validationType: 'name',
             isRequired: false
         },
         { field: fieldMapping.suffix,
             label: 'Suffix',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'suffix',
             isRequired: false
         },
         { field: fieldMapping.cellPhone,
             label: 'Cell Phone',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'phoneNumber',
             isRequired: false
         },
         { field: fieldMapping.canWeText,
             label: 'Can we text your mobile phone?',
-            editable: !isParticipantDataDestroyed && isCellPhonePresent,
+            editable: isEditable && isCellPhonePresent,
             display: true,
             validationType: 'permissionSelector',
             isRequired: false
         },
         { field: fieldMapping.voicemailMobile,
             label: 'Can we leave a voicemail at your mobile phone number?',
-            editable: !isParticipantDataDestroyed && isCellPhonePresent,
+            editable: isEditable && isCellPhonePresent,
             display: true,
             validationType: 'permissionSelector',
             isRequired: false
         },
         { field: fieldMapping.homePhone,
             label: 'Home Phone',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'phoneNumber',
             isRequired: false
         },
         { field: fieldMapping.voicemailHome,
             label: 'Can we leave a voicemail at your home phone number?',
-            editable: !isParticipantDataDestroyed && isHomePhonePresent,
+            editable: isEditable && isHomePhonePresent,
             display: true,
             validationType: 'permissionSelector',
             isRequired: false
         },
         { field: fieldMapping.otherPhone,
             label: 'Other Phone',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'phoneNumber',
             isRequired: false
         },
         { field: fieldMapping.voicemailOther,
             label: '   Can we leave a voicemail at your other phone number?',
-            editable: !isParticipantDataDestroyed && isOtherPhonePresent,
+            editable: isEditable && isOtherPhonePresent,
             display: true,
             validationType: 'permissionSelector',
             isRequired: false
         },
         { field: fieldMapping.email,
             label: 'Preferred Email',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'email',
             isRequired: true
         },
         { field: fieldMapping.email1,
             label: 'Additional Email 1',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'email',
             isRequired: false
         },
         { field: fieldMapping.email2,
             label: 'Additional Email 2',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'email',
             isRequired: false
@@ -249,42 +443,42 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: fieldMapping.address1,
             label: 'Mailing Address Line 1',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: true
         },
         { field: fieldMapping.address2,
             label: 'Mailing Address Line 2',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: false
         },
         { field: fieldMapping.city,
             label: 'Mailing Address City',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
-            validationType: 'text',
+            validationType: 'city',
             isRequired: true
         },
         { field: fieldMapping.state,
             label: 'Mailing Address State',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'state',
             isRequired: true
         },
         { field: fieldMapping.zip,
             label: 'Mailing Address Zip',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'zip',
             isRequired: true
         },
         { field: fieldMapping.isPOBox,
             label: 'Mailing Address is PO Box',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'permissionSelector',
             isRequired: false
@@ -304,35 +498,35 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: fieldMapping.physicalAddress1,
             label: 'Physical Address Line 1 (if different from mailing address)',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: false
         },
         { field: fieldMapping.physicalAddress2,
             label: 'Physical Address Line 2 (if different from mailing address)',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: false
         },
         { field: fieldMapping.physicalCity,
             label: 'Physical City (if different from mailing address)',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
-            validationType: 'text',
+            validationType: 'city',
             isRequired: false
         },
         { field: fieldMapping.physicalState,
             label: 'Physical State (if different from mailing address)',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'state',
             isRequired: false
         },
         { field: fieldMapping.physicalZip,
             label: 'Physical Zip (if different from mailing address)',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'zip',
             isRequired: false
@@ -353,7 +547,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altAddress1,
             label: 'Alternate Address Line 1',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: false,
@@ -361,7 +555,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altAddress2,
             label: 'Alternate Address Line 2',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: false,
@@ -369,15 +563,15 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altCity,
             label: 'Alternate City',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
-            validationType: 'text',
+            validationType: 'city',
             isRequired: false,
         },
         {
             field: fieldMapping.altState,
             label: 'Alternate State',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'state',
             isRequired: false,
@@ -385,7 +579,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altZip,
             label: 'Alternate Zip',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'zip',
             isRequired: false,
@@ -393,7 +587,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.isPOBoxAltAddress,
             label: 'Alternate Address is PO Box',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'permissionSelector',
             isRequired: false
@@ -414,23 +608,23 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altContactFirstName,
             label: 'Alternate Contact First Name',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
-            validationType: 'text',
+            validationType: 'name',
             isRequired: false,            
         },
         {
             field: fieldMapping.altContactLastName,
             label: 'Alternate Contact Last Name',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
-            validationType: 'text',
+            validationType: 'name',
             isRequired: false,
         },
         {
             field: fieldMapping.altContactMobilePhone,
             label: 'Alternate Contact Mobile Phone',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'phoneNumber',
             isRequired: false,
@@ -438,7 +632,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altContactHomePhone,
             label: 'Alternate Contact Home Phone',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'phoneNumber',
             isRequired: false,
@@ -446,7 +640,7 @@ export const getImportantRows = (participant, changedOption) => {
         {
             field: fieldMapping.altContactEmail,
             label: 'Alternate Contact Email Address',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: true,
             validationType: 'email',
             isRequired: false,
@@ -466,21 +660,21 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: fieldMapping.birthMonth,
             label: 'Birth Month',
-            editable: !isParticipantDataDestroyed && !isParticipantVerified,
+            editable: isEditable && !isParticipantVerified,
             display: !isParticipantVerified,
             validationType: 'month',
             isRequired: false
         },
         { field: fieldMapping.birthDay,
             label: 'Birth Day',
-            editable: !isParticipantDataDestroyed && !isParticipantVerified,
+            editable: isEditable && !isParticipantVerified,
             display: !isParticipantVerified,
             validationType: 'day',
             isRequired: true
         },
         { field: fieldMapping.birthYear,
             label: 'Birth Year',
-            editable: !isParticipantDataDestroyed && !isParticipantVerified,
+            editable: isEditable && !isParticipantVerified,
             display: !isParticipantVerified,
             validationType: 'year',
             isRequired: true
@@ -507,7 +701,7 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: fieldMapping.preferredLanguage,
             label: 'Preferred Language',
-            editable: (helpDesk === 'true' || coordinatingCenter === 'true'),
+            editable: (helpDesk === 'true' || coordinatingCenter === 'true') && isEditable,
             display: true,
             validationType: 'none',
             isRequired: false
@@ -526,13 +720,13 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: `Change Login Email`,
             label: 'Email Login',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display: appState.getState().loginMechanism.email,
             validationType: 'none'
         },
         { field: `Change Login Phone`,
             label: 'Phone Login',
-            editable: !isParticipantDataDestroyed,
+            editable: isEditable,
             display:  appState.getState().loginMechanism.phone,
             validationType: 'none'
         }
@@ -586,7 +780,7 @@ const getIsRequiredField = (participant, changedOption, newValueElement, concept
         return true;
     }
 
-    if (!newValueElement.value && (conceptId == fieldMapping.cellPhone || conceptId == fieldMapping.homePhone || conceptId == fieldMapping.otherPhone)) {
+    if (!newValueElement?.value && (conceptId == fieldMapping.cellPhone || conceptId == fieldMapping.homePhone || conceptId == fieldMapping.otherPhone)) {
         const isCellPhonePresent = isPhoneNumberPresent(participant, changedOption, conceptId, fieldMapping.cellPhone);
         const isHomePhonePresent = isPhoneNumberPresent(participant, changedOption, conceptId, fieldMapping.homePhone);
         const isOtherPhonePresent = isPhoneNumberPresent(participant, changedOption, conceptId, fieldMapping.otherPhone);
@@ -625,63 +819,43 @@ export const getModalLabel = (participantKey) => {
     return labels[participantKey] || participantKey;
 };
 
-export const hideUneditableButtons = (participant, changedOption) => {
-    const importantRows = getImportantRows(participant, changedOption);
-    importantRows.forEach(row => {
-        if (!row.editable) {
-            const element = document.getElementById(`${row.field}button`);
-            if (element) {
-                element.style.display = 'none';
-            }
-        }
-    })
-};
-
 export const reloadParticipantData = async (token) => {
     showAnimation();
     const query = `token=${token}`
     const reloadedParticipant = await findParticipant(query);
-    mainContent.innerHTML = render(reloadedParticipant.data[0]);
-    renderParticipantDetails(reloadedParticipant.data[0], {});
+    mainContent.innerHTML = render(reloadedParticipant.data[0], {});
+    renderParticipantDetails(reloadedParticipant.data[0]);
     hideAnimation();
 }
-
-export const removeCamelCase = (participantKey) => {
-    let s = participantKey
-    s = s.replace(/([A-Z])/g, ' $1').trim()
-    return s;
-};
 
 export const renderReturnSearchResults = () => {
     const searchResultsButton = document.getElementById('displaySearchResultsBtn');
     if (searchResultsButton) {
-        searchResultsButton.addEventListener('click', () => {
+        const newSearchResultsButton = searchResultsButton.cloneNode(true);
+        searchResultsButton.parentNode.replaceChild(newSearchResultsButton, searchResultsButton);
+        newSearchResultsButton.addEventListener('click', () => {
             renderLookupResultsTable();
         })
 }};
 
-export const resetChanges = (participant, originalHTML) => {
-    const a = document.getElementById("cancelChanges");
-    let template = '';
-    a.addEventListener("click", () => {
-        if ( appState.getState().unsavedChangesTrack.saveFlag === false ) {
-            mainContent.innerHTML = originalHTML;
-            renderParticipantDetails(participant, {});
-            appState.setState({unsavedChangesTrack:{saveFlag: false, counter: 0}})
-            let alertList = document.getElementById('alert_placeholder');
-            // throws an alert when canncel changes button is clicked
-            template += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
-                            Changes cancelled.
-                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                         </div>`
-            alertList.innerHTML = template;
+export const resetChanges = (participant) => {
+    const cancelButtons = [document.getElementById("cancelChangesUpper"), document.getElementById("cancelChangesLower")];
+
+    const handleCancelChanges = () => {
+        if (appState.getState().hasUnsavedChanges) {
+            renderParticipantDetails(participant);
+            clearUnsaved();
+            triggerNotificationBanner('Changes cancelled.', 'warning');
         }
-        else {  
-            alert('No changes to save or cancel');
+    };
+
+    cancelButtons.forEach(button => {
+        if (button) {
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+            newButton.addEventListener("click", handleCancelChanges);
         }
-    })   
+    });
 }
 
 /**
@@ -740,14 +914,18 @@ export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail,
                         await processParticipantLoginMethod(participantAuthenticationEmail, participantToken, participantUid, {}, {}, 'removePhone');
                     });
                 }
+
+                addFormInputFormattingListeners();
             }
         };
     };
 
     const updateEmailButton = document.getElementById('updateUserLoginEmail');
     const updatePhoneButton = document.getElementById('updateUserLoginPhone');
-    updateEmailButton && updateEmailButton.addEventListener('click', createListener('email'));
-    updatePhoneButton && updatePhoneButton.addEventListener('click', createListener('phone'));
+    requestAnimationFrame(() => {
+        updateEmailButton && updateEmailButton.addEventListener('click', createListener('email'));
+        updatePhoneButton && updatePhoneButton.addEventListener('click', createListener('phone'));
+    });
 };
 
 const generateLoginFormInputFields = (currentLogins, loginType) => {
@@ -777,9 +955,13 @@ const generateLoginFormInputFields = (currentLogins, loginType) => {
                 <label class="col-form-label search-label">Current ${capitalizeFirstLetter(loginType)} Login</label>
                 <input class="form-control" value="${currentLogin}" disabled/>
                 <label class="col-form-label search-label">${labelForNewLogin}</label>
-                <input class="form-control" id="${newLoginId}" placeholder="${labelForNewLogin}"/>
+                ${loginType === 'phone' ?
+                    `<input class="form-control phone-input" id="${newLoginId}" placeholder="${labelForNewLogin}" maxlength="14"/>` :
+                    `<input class="form-control" id="${newLoginId}" placeholder="${labelForNewLogin}"/>`}
                 <label class="col-form-label search-label">${confirmLabel}</label>
-                <input class="form-control" id="${confirmId}" placeholder="${confirmLabel}"/>
+                ${loginType === 'phone' ?
+                    `<input class="form-control phone-input" id="${confirmId}" placeholder="${confirmLabel}" maxlength="14"/>` :
+                    `<input class="form-control" id="${confirmId}" placeholder="${confirmLabel}"/>`}
             </div>`;
 };
 
@@ -893,7 +1075,7 @@ const processParticipantLoginMethod = async (participantAuthenticationEmail, par
                     showAuthUpdateAPIError('modalBody', "IMPORTANT: There was an error updating the participant's profile.\n\nPLEASE PROCESS THE OPERATION AGAIN.");
                     console.error('Failed to update participant Firestore profile');
                 } else {
-                    updateUIOnAuthResponse(switchPackage, changedOption, responseJSON, response.status);
+                    await updateUIOnAuthResponse(switchPackage, changedOption, responseJSON, response.status);
                 }   
             } else {
                 hideAnimation();
@@ -923,7 +1105,7 @@ const updateParticipantFirestoreProfile = async (updatedOptions, bearerToken) =>
     const responseJSON = await response.json();
 
     if (response.status === 200) {
-        appState.setState({unsavedChangesTrack:{saveFlag: true, counter: 0}});
+        clearUnsaved();
         showAuthUpdateAPIAlert('success', 'Participant detail updated!');
         return true;
     } else { 
@@ -949,7 +1131,7 @@ const postLoginData = async (url = '', data = {}, bearerToken) => {
     }
 }
 
-const updateUIOnAuthResponse = (switchPackage, changedOption, responseData, status) => {
+const updateUIOnAuthResponse = async (switchPackage, changedOption, responseData, status) => {
     hideAnimation();
 
     if (status === 200) {
@@ -960,7 +1142,7 @@ const updateUIOnAuthResponse = (switchPackage, changedOption, responseData, stat
             document.getElementById('Change Login Emailrow').children[1].innerHTML = 'Updating login data';
             document.getElementById('Change Login Phonerow').children[1].innerHTML = 'Updating login data';
         }
-        reloadParticipantData(changedOption.token);
+        await reloadParticipantData(changedOption.token);
     } else {
         const errorMessage = responseData.error || 'Operation Unsuccessful!';
         showAuthUpdateAPIError('modalBody', errorMessage);
@@ -984,95 +1166,101 @@ const showAuthUpdateAPIError = (bodyId, message) => {
     return false;
 }
 
-export const refreshParticipantAfterReset = async (participant) => {
-    showAnimation();
-    localStorage.setItem('participant', JSON.stringify(participant));
-    renderParticipantDetails(participant, {});
-    appState.setState({unsavedChangesTrack:{saveFlag: false, counter: 0}})
-    let alertList = document.getElementById('alert_placeholder');
-    let template = '';
-    template += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
-                    Success! Participant Reset.
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    </div>`
-    hideAnimation();
-    alertList.innerHTML = template;
-}
-
-export const participantRefreshError = async (errorMsg) => {
-    showAnimation();
-    let alertList = document.getElementById('alert_placeholder');
-    let template = '';
-    template += `<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    Error resetting participant: ${errorMsg}
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    </div>`
-    hideAnimation();
-    alertList.innerHTML = template;
-}
-
-export const refreshParticipantAfterUpdate = async (participant) => {
-    localStorage.setItem('participant', JSON.stringify(participant));
-    renderParticipantDetails(participant, {});
-    appState.setState({unsavedChangesTrack:{saveFlag: false, counter: 0}})
-    let alertList = document.getElementById('alert_placeholder');
-    let template = '';
-    template += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
-                    Success! Changes Saved.
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                    </div>`
-    alertList.innerHTML = template;
+export const updateParticipantAfterFormSave = (participant, changedUserDataForProfile) => {
+    const updatedParticipant = { ...participant, ...changedUserDataForProfile };
+    appState.setState({ participant: updatedParticipant });
+    return updatedParticipant;
 }
 
 /**
  * Creates payload to be sent to backend and update the UI. Maps the field name back to concept id along with new responses.
  * Updates the UI with the new responses.
- * @param {object} participant - the participant being updated 
- * @param {object} changedOption - object containing the participant's updated data points
+ * @param {object} participant - the original participant obj
+ * @param {object} changedOption - updated data obj
  * @param {HTMLElement} editedElement - the currently edited HTML element
  */
+
 export const saveResponses = (participant, changedOption, editedElement, conceptId) => {
     let conceptIdArray = [];
-    const a = document.getElementById('formResponse')
-    a.addEventListener('submit', e => {
-        e.preventDefault()
-        const modifiedData = getDataAttributes(document.getElementById(`fieldModified${conceptId}`));
-        conceptIdArray.push(modifiedData.fieldconceptid);
+    const formResponse = document.getElementById('formResponse');
 
-        const newValueElement = document.getElementById(`newValue${conceptId}`);     
-        const dataValidationType = getImportantRows(participant, changedOption).find(row => row.field == modifiedData.fieldconceptid).validationType;
-        const currentConceptId = conceptIdArray[conceptIdArray.length - 1];
-        const isRequired = getIsRequiredField(participant, changedOption, newValueElement, currentConceptId);
-        
-        if (newValueElement.value != participant[currentConceptId] || textAndVoicemailPermissionIds.includes(parseInt(currentConceptId))) {
-            const newValueIsValid = validateNewValue(newValueElement, dataValidationType, isRequired);
+    // Rm existing event listeners, then add a new one
+    if (formResponse) {
+        const newForm = formResponse.cloneNode(true);
+        formResponse.parentNode.replaceChild(newForm, formResponse);
+    }
 
-            if (newValueIsValid) {
-                changedOption[currentConceptId] = newValueElement.value;
-                // if a changed field is a date of birth field then we need to update full date of birth  
-                if (fieldMapping.birthDay in changedOption || fieldMapping.birthMonth in changedOption || fieldMapping.birthYear in changedOption) {
-                    const day =  changedOption[fieldMapping.birthDay] || participant[fieldMapping.birthDay] || participant[fieldMapping.dateOfBirthComplete]?.slice(6,8) || "01";
-                    const month = changedOption[fieldMapping.birthMonth] || participant[fieldMapping.birthMonth];
-                    const year = changedOption[fieldMapping.birthYear] || participant[fieldMapping.birthYear];
-                    const dateOfBirthComplete = fieldMapping.dateOfBirthComplete;
-                    conceptIdArray.push(dateOfBirthComplete);
-                    changedOption[fieldMapping.dateOfBirthComplete] =  year + month.padStart(2, '0')+ day.padStart(2, '0');
+    const freshFormResponse = document.getElementById('formResponse');
+    if (freshFormResponse) {
+        freshFormResponse.addEventListener('submit', e => {
+            e.preventDefault()
+            const modifiedData = getDataAttributes(document.getElementById(`fieldModified${conceptId}`));
+            conceptIdArray.push(modifiedData.fieldconceptid);
+
+            const newValueElement = document.getElementById(`newValue${conceptId}`);     
+            const dataValidationType = getImportantRows(participant, changedOption).find(row => row.field == modifiedData.fieldconceptid).validationType;
+            const currentConceptId = conceptIdArray[conceptIdArray.length - 1];
+            const isRequired = getIsRequiredField(participant, changedOption, newValueElement, currentConceptId);
+            
+            if (newValueElement.value != participant[currentConceptId] || textAndVoicemailPermissionIds.includes(parseInt(currentConceptId))) {
+                const newValueIsValid = validateNewValue(newValueElement, dataValidationType, isRequired);
+
+                if (newValueIsValid) {
+                    changedOption[currentConceptId] = newValueElement.value;
+                    // if a changed field is a date of birth field then we need to update full date of birth  
+                    if (fieldMapping.birthDay in changedOption || fieldMapping.birthMonth in changedOption || fieldMapping.birthYear in changedOption) {
+                        const fallbackDoB = (participant[fieldMapping.dateOfBirthComplete] || '').toString();
+                        const fallbackMonth = fallbackDoB ? fallbackDoB.slice(4,6) : '';
+                        const fallbackDay = fallbackDoB ? fallbackDoB.slice(6,8) : '';
+
+                        const dayRaw = changedOption[fieldMapping.birthDay] || participant[fieldMapping.birthDay] || fallbackDay || '01';
+                        const monthRaw = changedOption[fieldMapping.birthMonth] || participant[fieldMapping.birthMonth] || fallbackMonth || '01';
+                        const yearRaw = changedOption[fieldMapping.birthYear] || participant[fieldMapping.birthYear] || (fallbackDoB ? fallbackDoB.slice(0,4) : '1900');
+
+                        const day = dayRaw.toString().padStart(2, '0');
+                        const month = monthRaw.toString().padStart(2, '0');
+                        const year = yearRaw.toString();
+
+                        const dateOfBirthComplete = fieldMapping.dateOfBirthComplete;
+                        conceptIdArray.push(dateOfBirthComplete);
+                        changedOption[fieldMapping.dateOfBirthComplete] =  `${year}${month}${day}`;
+                    }
+
+                    changedOption = forceDataTypesForFirestore(changedOption);
+                    closeModal();
+
+                    // Reattach event listeners after each edit and mark unsaved participant data changes
+                    requestAnimationFrame(() => {
+                        renderParticipantDetails(participant, changedOption);
+                        submitClickHandler(participant, changedOption);
+
+                        addFormInputFormattingListeners();
+                        markUnsaved();
+
+                        // Highlight any new phone permission fields that need attention
+                        highlightNewPhonePermissions(changedOption);
+                    });
                 }
+            } else {
+                // Value is being changed back to its original value.
+                if (Object.prototype.hasOwnProperty.call(changedOption, currentConceptId)) {
+                    delete changedOption[currentConceptId];
 
-                updateUIValues(editedElement, newValueElement.value, conceptIdArray);
-                changedOption = forceDataTypesForFirestore(changedOption);
+                    // If that was the last pending change, clear the unsaved flag.
+                    if (Object.keys(changedOption).length === 0) {
+                        clearUnsaved();
+                    }
+
+                    // Re-render to remove dirty indicators from the field.
+                    requestAnimationFrame(() => {
+                        renderParticipantDetails(participant, changedOption);
+                        submitClickHandler(participant, changedOption);
+                    });
+                }
                 closeModal();
             }
-        } else {
-            showAlreadyExistsNoteInModal();
-        }    
-    });
+        });
+    }
 };
 
 const forceDataTypesForFirestore = (changedOption) => {
@@ -1111,27 +1299,6 @@ const forceDataTypesForFirestore = (changedOption) => {
 };
 
 /**
- * update the UI after user edits a field
- * @param {HTMLElement} editedElement - the element that was edited
- * @param {string} newValue - the new value of the element
- * @param {string[]} conceptIdArray - the concept id of the element, used for checking how to format the user's input
- * update UI with a reminder to save changes, check for existing reminder so the message doesn't duplicate in a field
- * toggle phone permission buttons if the user edits a phone number
- */
-const updateUIValues = (editedElement, newValue, conceptIdArray) => {
-    const updatedEditValue = editedElement.querySelectorAll("td")[0];
-    updatedEditValue.textContent = getUITextForUpdatedValue(newValue, conceptIdArray);
-    const nextSiblingButton = updatedEditValue.nextElementSibling;
-    if (!nextSiblingButton.innerHTML.includes("Please save changes")) {
-        nextSiblingButton.innerHTML = `${nextSiblingButton.innerHTML}<br><br><i>Please save changes<br>before exiting the page</i>`;
-    }
-    updatedEditValue.parentNode.style.backgroundColor = "#FFFACA";
-    if (conceptIdArray.some(id => [fieldMapping.cellPhone.toString(), fieldMapping.homePhone.toString(), fieldMapping.otherPhone.toString()].includes(id.toString()))) {
-        togglePhonePermissionButtonsAndText(newValue, conceptIdArray);
-    }
-};
-
-/**
  * Handle suffix text and phone permission text -> convert concept id to text
  */
 const getUITextForUpdatedValue = (newValue, conceptIdArray) => {
@@ -1153,39 +1320,41 @@ const phoneTypeToPermissionsMapping = {
 };
 
 /**
- * Toggle the phone permission edit buttons based on whether the phone number exists
- * if phone number exists, show the permission button(s) and prompt user to enter permissions
- * permission buttons: voicemailMobile, canWeText (mobile only), voicemailHome, voicemailOther
- * if phone number does not exist and this function triggers, this means user just deleted the phone number. Hide the relevant permission button(s)
- * @param {string} newValue - the new value entered by the user 
- * @param {Array<string>} conceptIdArray - the concept id of the element 
+ * Highlight phone permission fields that need attention after adding a phone number
+ * This runs after the page re-renders and the permission buttons actually exist in the DOM
+ * @param {object} changedOption - the data that was just changed
  */
-const togglePhonePermissionButtonsAndText = (newValue, conceptIdArray) => {
-    const displayStatus = validPhoneNumberFormat.test(newValue) ? 'block' : 'none';
-    for (const phoneType in phoneTypeToPermissionsMapping) {
-        if (conceptIdArray.includes(phoneType.toString())) {
-            phoneTypeToPermissionsMapping[phoneType].forEach(valueType => {
-                const button = document.getElementById(`${valueType}button`);
-                if (button) {
-                    button.style.display = displayStatus;
-                    if (displayStatus === 'block') {
-                        const noteField = document.getElementById(`${valueType}note`);
-                        if (noteField) {
-                            noteField.parentNode.parentNode.style.backgroundColor = "yellow";
-                            noteField.style.display = "block";
-                            noteField.innerHTML = `<i style="color:red;"><u>IMPORTANT:</u><br>*Please confirm member's contact permission*</i>`;
-                        }
-                    } else {
-                        const valueField = document.getElementById(`${valueType}value`);
-                        if (valueField) {
-                            valueField.textContent = '';
-                        }
-                    }
+const highlightNewPhonePermissions = (changedOption) => {
+    // Check each phone type that was changed
+    const phoneFields = [
+        { field: fieldMapping.cellPhone, permissions: [fieldMapping.voicemailMobile, fieldMapping.canWeText] },
+        { field: fieldMapping.homePhone, permissions: [fieldMapping.voicemailHome] },
+        { field: fieldMapping.otherPhone, permissions: [fieldMapping.voicemailOther] }
+    ];
+
+    phoneFields.forEach(({ field, permissions }) => {
+        // If this phone field was changed and now has a valid phone number
+        if (changedOption[field] && validPhoneNumberFormat.test(changedOption[field])) {
+
+            permissions.forEach(permissionField => {
+                const buttonId = `${permissionField}button`;
+                const noteId = `${permissionField}note`;
+
+                const button = document.getElementById(buttonId);
+                const noteField = document.getElementById(noteId);
+
+                if (button && noteField) {
+                    // Show the button (should already be visible after re-render)
+                    button.style.display = 'block';
+
+                    // Add yellow background and warning text
+                    noteField.parentNode.parentNode.style.backgroundColor = "yellow";
+                    noteField.style.display = "block";
+                    noteField.innerHTML = `<i style="color:red;"><u>IMPORTANT:</u><br>*Please confirm participant's contact permission*</i>`;
                 }
-            }); 
-            break;
+            });
         }
-    }
+    });
 };
 
 export const showSaveNoteInModal = (conceptId) => {
@@ -1193,13 +1362,9 @@ export const showSaveNoteInModal = (conceptId) => {
     if (a) {
         a.addEventListener('click', () => {
             const b = document.getElementById('showNote');
-            b.innerHTML = `After 'Submit' you must scroll down and click 'Save Changes' at bottom of screen for your changes to be saved.`
+            b.innerHTML = `After 'Submit' you must click 'Save Changes' at the top or bottom of screen for your changes to be saved.`
         });
     }
-};
-
-export const showAlreadyExistsNoteInModal = () => {
-    document.getElementById('showNote').innerHTML = `This value already exists. Please enter a different value or choose 'cancel'.<br>`;
 };
 
 export const suffixList = { 612166858: 0, 
@@ -1241,14 +1406,20 @@ export const languageToTextMap = new Map([
   ]);
 
 export const removeAllErrors = () => {
-    document.getElementById('showError').style.display = 'none';
+    const showError = document.getElementById('showError');
+    if (showError) {
+        showError.style.display = 'none';
+    }
 }
 
 export const errorMessage = (msg, editedElement) => {
     const showError = document.getElementById('showError');
-    showError.innerHTML = `<p style="color: red; font-style: bold; font-size: 16px;">${msg}</p>`;
-    showError.style.display = 'block';
-    if(focus) editedElement.focus();
+    if (showError) {
+        const escapedMsg = escapeHTML(msg);
+        showError.innerHTML = `<p style="color: red; font-style: bold; font-size: 16px;">${escapedMsg}</p>`;
+        showError.style.display = 'block';
+    }
+    if (editedElement && editedElement.focus) editedElement.focus();
 }
 
 /**
@@ -1263,6 +1434,9 @@ const validateNewValue = (newValueElement, newValueType, isRequired) => {
         case 'address':
             isValid = validateAddress(newValueElement, isRequired);
             break;
+        case 'city':
+            isValid = validateCity(newValueElement, isRequired);
+            break;
         case 'day':
             isValid = validateDay(newValueElement, isRequired);
             break;
@@ -1275,8 +1449,8 @@ const validateNewValue = (newValueElement, newValueType, isRequired) => {
         case 'phoneNumber':
             isValid = validatePhoneNumber(newValueElement, isRequired);
             break;
-        case 'text':
-            isValid = validateText(newValueElement, isRequired);
+        case 'name':
+            isValid = validateName(newValueElement, isRequired);
             break;    
         case 'year':
             isValid = validateYear(newValueElement, isRequired);
@@ -1284,9 +1458,11 @@ const validateNewValue = (newValueElement, newValueType, isRequired) => {
         case 'zip':
             isValid = validateZip(newValueElement, isRequired);
             break;
-        case 'none':
-        case 'permissionSelector':  
         case 'state':
+            isValid = validateState(newValueElement, isRequired);
+            break;
+        case 'none':
+        case 'permissionSelector':
         case 'suffix':
             isValid = true;
             break;
@@ -1303,6 +1479,14 @@ export const validateAddress = (addressLineElement, isRequired) => {
     if (isRequired && !addressLineElement.value) {
         errorMessage('Error: Please enter a value.', addressLineElement);
         return false;
+    }
+    
+    if (addressLineElement.value) {
+        // Check character limit (100 characters)
+        if (addressLineElement.value.length > 800) {
+            errorMessage('Error: Address must be 800 characters or less. Please shorten your input.', addressLineElement);
+            return false;
+        }
     }
     
     return true;
@@ -1342,7 +1526,7 @@ export const validateMonth = (monthElement) => {
     return true;
 };
 
-export const validateText = (textElement, isRequired) => {
+export const validateName = (textElement, isRequired) => {
     removeAllErrors();
 
     if (isRequired && !textElement.value) {
@@ -1351,8 +1535,14 @@ export const validateText = (textElement, isRequired) => {
     }
 
     if (textElement.value) {
+        if (textElement.value.length > 800) {
+            errorMessage('Error: name must be 800 characters or less. Please shorten your input.', textElement);
+            return false;
+        }
+
+        // Use validNameFormat for name fields (allows international characters)
         if (!validNameFormat.test(textElement.value)) {
-            errorMessage('Error: Only Letters dashes, parenthesis, and some special characters are allowed. Please try again.', textElement);
+            errorMessage('Error: Only letters, dashes, apostrophes, periods, and spaces are allowed. Please try again.', textElement);
             return false;
         }
     }
@@ -1362,13 +1552,19 @@ export const validateText = (textElement, isRequired) => {
 export const validatePhoneNumber = (phoneNumberElement, isRequired) => {
     removeAllErrors();
     if (isRequired && !phoneNumberElement.value) {
-        errorMessage('At least one phone number is required. Please enter a 10-digit phone number. Example: 9999999999.', phoneNumberElement);
+        errorMessage('At least one phone number is required. Please enter a 10-digit phone number. Example: (999) 999-9999.', phoneNumberElement);
         return false;
     }
 
     if (phoneNumberElement.value) {
-        if (!validPhoneNumberFormat.test(phoneNumberElement.value)) {
-            errorMessage('Please enter a 10-digit phone number with no punctuation. Example: 9999999999.', phoneNumberElement);
+        const phoneDigits = phoneNumberElement.value.replace(/\D/g, '');
+        if (phoneDigits.startsWith('0')) {
+            errorMessage('Error: Phone number cannot start with 0. Please enter a 10-digit phone number without the country code. Example: (999) 999-9999', phoneNumberElement);
+            return false;
+        }
+
+        if (!validPhoneNumberFormat.test(phoneDigits)) {
+            errorMessage('Please enter a valid phone number format. Example: (999) 999-9999.', phoneNumberElement);
             return false;
         }
     }
@@ -1386,13 +1582,43 @@ export const validateYear = (yearElement) => {
     return true;
 };
 
+/**
+ * Validate mailing state only (always required)
+ */
+const validateState = (stateElement, isRequired) => {
+    removeAllErrors();
+    if (isRequired && !stateElement.value) {
+        errorMessage('Error: State is required. Please select a value.', stateElement);
+        return false;
+    }
+    return true;
+};
+
 export const validateZip = (zipElement) => {
     removeAllErrors();
     const zip = zipElement.value;
-    const zipRegExp = /[0-9]{5}/;
+    const zipRegExp = /^[0-9]{5}$/;
     if (!zip || !zipRegExp.test(zip)) {
         errorMessage('Error: Must be 5 digits. Please try again.', zipElement);
         return false;
+    }
+    return true;
+};
+
+export const validateCity = (cityElement, isRequired) => {
+    removeAllErrors();
+
+    if (isRequired && !cityElement.value) {
+        errorMessage('Error: This field is required. Please enter a value.', cityElement);
+        return false;
+    }
+
+    if (cityElement.value) {
+        // Check character limit (800 characters)
+        if (cityElement.value.length > 800) {
+            errorMessage('Error: City name must be 800 characters or less. Please shorten your input.', cityElement);
+            return false;
+        }
     }
     return true;
 };
@@ -1413,36 +1639,49 @@ export const viewParticipantSummary = (participant) => {
 }
 
 const cleanPhoneNumber = (changedOption) => {
-    phoneTypes.forEach(phoneNumber => {
+    allPhoneTypes.forEach(phoneNumber => {
         if (phoneNumber in changedOption) {
-            changedOption[phoneNumber] = changedOption[phoneNumber].replace(/\D/g, '');
+            changedOption[phoneNumber] = changedOption[phoneNumber].toString().replace(/\D/g, '');
         }
     });
     return changedOption;
-
 };
 
 const firstNameTypes = [fieldMapping.consentFirstName, fieldMapping.fName, fieldMapping.prefName];
 const lastNameTypes = [fieldMapping.consentLastName, fieldMapping.lName];
-const phoneTypes = [fieldMapping.cellPhone, fieldMapping.homePhone, fieldMapping.otherPhone];
+
+// Only primary phone types go to User Profile history.
+export const primaryPhoneTypes = [fieldMapping.cellPhone, fieldMapping.homePhone, fieldMapping.otherPhone];
+// All phone types get cleaned for Firestore.
+const allPhoneTypes = [...primaryPhoneTypes, fieldMapping.altContactMobilePhone, fieldMapping.altContactHomePhone];
+
 const emailTypes = [fieldMapping.prefEmail, fieldMapping.email1, fieldMapping.email2];
 
 /**
- * Process the user's update and submit the new user data to the database.
- * if participant is verified, fetch logged in admin's email (the person processing the edit) to attach to the user's history update
- * If successful, update the participant object in local storage.
+ * Process the user's update and submit the new user data to Firestore.
+ * if participant is verified, fetch logged in admin's email (the person processing the edit) to attach to the user's history update.
+ * If successful, update the participant data obj and clear the unsaved changes flag.
  * Else, alert the user that the update was unsuccessful.
- * @param {object} participant - the existing participant object 
- * @param {object} changedOption - the changed user data
+ * @param {object} participant - the original participant obj
+ * @param {object} changedOption - the updated user data obj
  */
 export const submitClickHandler = async (participant, changedOption) => {
     const isParticipantVerified = participant[fieldMapping.verifiedFlag] == fieldMapping.verified;
     const adminEmail = appState.getState().userSession?.email ?? '';
     const submitButtons = document.getElementsByClassName('updateMemberData');
+    
+    // Remove existing listeners to prevent duplicates
     for (const button of submitButtons) {
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
+    }
+    
+    // Add fresh listeners
+    const freshSubmitButtons = document.getElementsByClassName('updateMemberData');
+    for (const button of freshSubmitButtons) {
         button.addEventListener('click', async (e) => {
             if (Object.keys(changedOption).length === 0) {
-                alert('No changes to submit. No changes have been made. Please update the form and try again if changes are needed.');
+                triggerNotificationBanner('No changes to submit. No changes have been made. Please update the form and try again if changes are needed.', 'info');
                 return;
             }
 
@@ -1452,7 +1691,7 @@ export const submitClickHandler = async (participant, changedOption) => {
                 let { changedUserDataForProfile, changedUserDataForHistory } = findChangedUserDataValues(changedOption, participant);
                 if (firstNameTypes.some(firstNameKey => firstNameKey in changedUserDataForProfile)) changedUserDataForProfile = handleNameField(firstNameTypes, 'firstName', changedUserDataForProfile, participant);
                 if (lastNameTypes.some(lastNameKey => lastNameKey in changedUserDataForProfile)) changedUserDataForProfile = handleNameField(lastNameTypes, 'lastName', changedUserDataForProfile, participant);
-                if (phoneTypes.some(phoneKey => phoneKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllPhoneNoField(changedUserDataForProfile, participant);
+                if (primaryPhoneTypes.some(phoneKey => phoneKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllPhoneNoField(changedUserDataForProfile, participant);
                 if (emailTypes.some(emailKey => emailKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllEmailField(changedUserDataForProfile, participant);
                 
                 const isSuccess = await processUserDataUpdate(changedUserDataForProfile, changedUserDataForHistory, participant[fieldMapping.userProfileHistory], participant.state.uid, adminEmail, isParticipantVerified);
@@ -1460,12 +1699,15 @@ export const submitClickHandler = async (participant, changedOption) => {
                     throw new Error('Error: There was an error processing your changes. Please try again.');
                 }
 
-                const updatedParticipant = { ...participant, ...changedUserDataForProfile };
-                await refreshParticipantAfterUpdate(updatedParticipant);
+                clearUnsaved()
+                triggerNotificationBanner('Success! Changes Saved.', 'success');
+
+                const updatedParticipant = updateParticipantAfterFormSave(participant, changedUserDataForProfile);
+                renderParticipantDetails(updatedParticipant);
 
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error: There was an error processing your changes. Please try again.');
+                triggerNotificationBanner('Error: There was an error processing your changes. Please try again.', 'danger');
 
             } finally {
                 hideAnimation();
@@ -1473,29 +1715,6 @@ export const submitClickHandler = async (participant, changedOption) => {
         });
     }
 };
-
-export const resetClickHandlers = async (participantUid) => {
-    const resetButton = document.getElementById('resetUserBtn');
-    if(!resetButton) {
-        return;
-    }
-    resetButton.addEventListener('click', async () => {
-        try {
-            const json = await postResetUserData(participantUid);
-            closeModal();
-            if(json.code === 200) {
-                refreshParticipantAfterReset(json.data.data);
-            } else if (json.code === 404) {
-                participantRefreshError('Unable to find participant.');
-            } else {
-                participantRefreshError(json.data);
-            }
-        } catch(error) {
-            console.error('error', error);
-            participantRefreshError('Unknown error.');
-        }
-    });
-}
 
 /**
  * Handle the query.frstName and query.lastName fields.
@@ -1534,7 +1753,7 @@ const handleNameField = (nameTypes, fieldName, changedUserDataForProfile, partic
 const handleAllPhoneNoField = (changedUserDataForProfile, participant) => {
     const allPhoneNo = participant.query.allPhoneNo ?? [];
     
-    phoneTypes.forEach(phoneType => {
+    primaryPhoneTypes.forEach(phoneType => {
       if (changedUserDataForProfile[phoneType] && !allPhoneNo.includes(changedUserDataForProfile[phoneType])) {
         allPhoneNo.push(changedUserDataForProfile[phoneType]);
       }
@@ -1860,26 +2079,4 @@ export const postUserDataUpdate = async (changedUserData) => {
     }
 }
 
-export const postResetUserData = async (uid) => {
-    try {
-        const idToken = await getIdToken();
-        const response = await fetch(`${baseAPI}/dashboard?api=resetUser`, {
-            method: "POST",
-            headers:{
-                Authorization: "Bearer " + idToken,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({uid, saveToDb: 'true'})
-        });
 
-        if (!response.ok) { 
-            const error = (response.status + ": " + (await response.json()).message);
-            throw new Error(error);
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('Error in postResetUserData:', error);
-        throw error;
-    }
-}

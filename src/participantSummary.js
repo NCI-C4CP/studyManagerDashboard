@@ -1,11 +1,12 @@
 import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
 import { renderParticipantHeader } from './participantHeader.js';
+import { closeModal } from './participantDetailsHelpers.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
-import { userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey, 
+import { userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey,
     baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineBloodSample, baselineUrineSample, baselineBiospecSurvey, baselineMenstrualSurvey,
-    baselineMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey, baselineEMR, baselinePayment, 
-    baselineExperienceSurvey, cancerScreeningHistorySurvey, dhqSurvey, baselinePhysActReport, dhq3Report} from './participantSummaryRow.js';
-import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate } from './utils.js';
+    baselineMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey,
+    baselinePayment, baselineExperienceSurvey, cancerScreeningHistorySurvey, dhqSurvey, baselinePhysActReport, dhq3Report} from './participantSummaryRow.js';
+import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, renderShowMoreDataModal, urls, triggerNotificationBanner } from './utils.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
 
 const { PDFDocument, StandardFonts, rgb } = PDFLib;
@@ -20,6 +21,7 @@ export const renderParticipantSummary = (participant, reports) => {
         document.querySelector("#mainContent").innerHTML = render(participant, reports);
         downloadCopyHandler(participant);
         downloadReportHandler(participant, reports);
+        resetParticipantConfirm();
     }
 };
 
@@ -37,6 +39,8 @@ export const render = (participant, reports) => {
         <div class="container-fluid">
             <div id="root root-margin">
                 ${renderParticipantHeader(participant)}
+                ${renderResetUserButton(participant?.state?.uid)}
+                <div id="alert_placeholder" style="margin-top: 15px;"></div>
                 <div class="table-responsive">
                     <span> <h4 style="text-align: center;">Participant Summary </h4> </span>
                     <div class="sticky-header">
@@ -88,7 +92,7 @@ export const render = (participant, reports) => {
                                 <tr class="row-color-survey-dark">
                                     ${baselineBiospecSurvey(participant)}
                                 </tr>
-                                <tr class="row-color-enrollment-light"> 
+                                <tr class="row-color-survey-light">
                                     ${baselineMenstrualSurvey(participant)} 
                                 </tr>                   
                                 <tr class="row-color-survey-dark">
@@ -127,9 +131,6 @@ export const render = (participant, reports) => {
                                 <tr class="row-color-payment">
                                     ${baselinePayment(participant)}
                                 </tr>
-                                <tr class="row-color-emr-light">
-                                    ${baselineEMR(participant)}
-                                </tr>
                                 <tr class="row-color-roi-dark">
                                     ${baselinePhysActReport(participant, reports)}
                                 </tr>
@@ -145,6 +146,7 @@ export const render = (participant, reports) => {
                     </div>
                 </div>
             </div>
+            ${renderShowMoreDataModal()}
         </div>`;
 };
 
@@ -609,3 +611,110 @@ const dataDestroy = (participant) => {
     )
     return template;
 }
+
+const renderResetUserButton = (participantUid) => {
+    if(location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.host.toLowerCase() === urls.dev) {
+        return `
+        <a
+            data-toggle="modal" 
+            data-target="#modalShowMoreData"
+            name="modalResetParticipant"
+            id="openResetDialog"
+            data-participantuid="${participantUid}"
+        >
+            <button type="button" class="btn btn-danger">Reset Participant for Testing</button>
+        </a>
+        `
+    } else {
+        return '';
+    }
+}
+
+const resetClickHandlers = async (participantUid) => {
+    const resetButton = document.getElementById('resetUserBtn');
+    if(!resetButton) {
+        return;
+    }
+    resetButton.addEventListener('click', async () => {
+        try {
+            const json = await postResetUserData(participantUid);
+            closeModal();
+            if(json.code === 200) {
+                refreshParticipantAfterReset(json.data.data);
+
+            } else if (json.code === 404) {
+                participantRefreshError('Unable to find participant.');
+            } else {
+                participantRefreshError(json.data);
+            }
+        } catch(error) {
+            console.error('error', error);
+            participantRefreshError('Unknown error.');
+        }
+    });
+}
+
+const resetParticipantConfirm = () => {
+    const openResetDialogBtn = document.getElementById('openResetDialog');
+    if(openResetDialogBtn) {
+        const newButton = openResetDialogBtn.cloneNode(true);
+        openResetDialogBtn.parentNode.replaceChild(newButton, openResetDialogBtn);
+        
+        newButton.addEventListener('click', () => {
+            const data = getDataAttributes(newButton);
+            const header = document.getElementById('modalHeader');
+            const body = document.getElementById('modalBody');  
+            const uid = data.participantuid;
+            header.innerHTML = `
+                    <h5>Confirm Participant Reset</h5>
+                    <button type="button" class="modal-close-btn" id="closeModal" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`
+            body.innerHTML = `<div>
+                Are you sure you want to reset this participant to a just-verified state? This cannot be undone.
+                    <div style="display:inline-block;">
+                            <button type="submit" class="btn btn-danger" data-dismiss="modal" target="_blank">Cancel</button>
+                            &nbsp;
+                            <button type="button" class="btn btn-primary" id="resetUserBtn">Confirm</button>
+                        </div>
+            </div>`
+            resetClickHandlers(uid);
+        });
+    }
+}
+
+const postResetUserData = async (uid) => {
+    try {
+        const idToken = await getIdToken();
+        const response = await fetch(`${baseAPI}/dashboard?api=resetUser`, {
+            method: "POST",
+            headers:{
+                Authorization: "Bearer " + idToken,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({uid, saveToDb: 'true'})
+        });
+
+        if (!response.ok) { 
+            const error = (response.status + ": " + (await response.json()).message);
+            throw new Error(error);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error in postResetUserData:', error);
+        throw error;
+    }
+}
+
+const refreshParticipantAfterReset = async (participant) => {
+    showAnimation();
+    localStorage.setItem('participant', JSON.stringify(participant));
+    renderParticipantSummary(participant);
+    hideAnimation();
+    triggerNotificationBanner('Success! Participant Reset.', 'success');
+}
+
+const participantRefreshError = async (errorMsg) => {
+    hideAnimation();
+    triggerNotificationBanner(`Error resetting participant: ${errorMsg}`, 'danger');
+}
+
