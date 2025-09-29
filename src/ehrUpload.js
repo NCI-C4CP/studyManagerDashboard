@@ -219,26 +219,19 @@ const refreshSelectedFiles = () => {
     .sort((a, b) => a.name.localeCompare(b.name))
     .forEach((file, idx) => {
       const div = document.createElement("div");
-      div.className = "d-flex align-items-center mb-1";
-      div.style.gap = "8px";
-
-      const btn = document.createElement("button");
-      btn.textContent = "✕";
-      btn.title = "Remove file";
-      btn.className = "btn btn-sm btn-warning py-0 px-2";
-      btn.style.marginRight = "0.75rem";
-      btn.style.fontSize = "0.85em";
-      btn.addEventListener("click", (e) => {
+      div.innerHTML = `
+      <div class="d-flex align-items-center mb-1" style="gap: 8px;">
+        <button class="btn btn-sm btn-warning py-0 px-2" style="margin-right: 0.75rem; font-size: 0.85em;" title="Remove file">✕</button>
+        <span id="filename-${file.name}">${file.name}</span>
+      </div>
+      `;
+      div.querySelector("button").addEventListener("click", (e) => {
         e.preventDefault();
         fileState.selected.splice(idx, 1);
         refreshSelectedFiles();
       });
 
-      const span = document.createElement("span");
-      span.textContent = file.name;
-      div.append(btn, span);
-
-      selectedFileNamesDiv.appendChild(div);
+      selectedFileNamesDiv.append(...div.children);
     });
 };
 
@@ -322,6 +315,61 @@ const checkDuplicateUploads = () => {
   return false;
 };
 
+const formatBytes = (bytes) => {
+  if (bytes === 0) return "0 Bytes";
+  const base = 1024;
+  const units = ["Bytes", "KB", "MB", "GB"];
+  const idx = Math.floor(Math.log(bytes) / Math.log(base));
+  return (bytes / Math.pow(base, idx)).toFixed(1) + " " + units[idx];
+};
+
+const showUploadProgress = (filename, percent, loaded, total) => {
+  const span = document.getElementById(`filename-${filename}`);
+  if (span) {
+    span.textContent = `${filename}: ${percent}% (${formatBytes(loaded)}/${formatBytes(total)})`;
+
+    if (percent === 100) {
+      span.style.color = "green";
+      span.style.fontWeight = "bold";
+    }
+  }
+};
+
+const uploadFileWithProgress = (file, signedUrl) => {
+  const xhr = new XMLHttpRequest();
+  const progressThrottle = 500;
+  let lastProgressTime = 0;
+
+  return new Promise((resolve) => {
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) {
+        const now = Date.now();
+        if (now - lastProgressTime < progressThrottle) return;
+        lastProgressTime = now;
+        const percentComplete = Math.round((e.loaded / e.total) * 100);
+        showUploadProgress(file.name, percentComplete, e.loaded, e.total);
+      }
+    });
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve({ filename: file.name, success: true });
+      } else {
+        resolve({ filename: file.name, success: false, error: xhr.statusText });
+      }
+    });
+
+    xhr.addEventListener("error", () => {
+      resolve({ filename: file.name, success: false, error: "Network error" });
+    });
+
+    xhr.open("PUT", signedUrl);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.send(file);
+  });
+};
+
+
 const uploadEhrUsingSignedUrls = async () => {
   hideWarningModal();
   showAnimation();
@@ -333,14 +381,13 @@ const uploadEhrUsingSignedUrls = async () => {
   try {
     const idToken = await getIdToken();
     const resp = await fetch(`${baseAPI}/dashboard/?api=createEhrUploadUrls`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + idToken,
-        },
-        body: JSON.stringify({ fileInfoArray }),
-      }
-    );
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + idToken,
+      },
+      body: JSON.stringify({ fileInfoArray }),
+    });
 
     const respJson = await resp.json();
     if (!resp.ok) {
@@ -348,69 +395,43 @@ const uploadEhrUsingSignedUrls = async () => {
     }
 
     const { signedUrls } = respJson.data;
-    const uploadPromises = [];
-    for (const file of fileState.toBeUploaded) {
-      const filename = file.name;
-      const signedUrl = signedUrls[filename];
-
+    const uploadPromises = fileState.toBeUploaded.map((file) => {
+      const signedUrl = signedUrls[file.name];
       if (!signedUrl) {
-        console.error(`No signed URL for file: ${filename}`);
-        continue;
+        return Promise.resolve({ filename: file.name, success: false, error: "No signed URL" });
       }
-
-      uploadPromises.push(
-        fetch(signedUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": file.type || "application/octet-stream",
-          },
-          body: file,
-        })
-          .then((uploadResponse) => {
-            if (!uploadResponse.ok) {
-              return {
-                filename,
-                success: false,
-                error: `Upload failed: ${uploadResponse.statusText}`,
-              };
-            }
-            return {
-              filename,
-              success: true,
-            };
-          })
-          .catch((error) => {
-            return {
-              filename,
-              success: false,
-              error: error.message,
-            };
-          })
-      );
-    }
+      return uploadFileWithProgress(file, signedUrl);
+    });
 
     const results = await Promise.allSettled(uploadPromises);
     const successFileNames = [];
-    const failureFileNames = [];
+    const failureDataArray = [];
 
     results.forEach((result) => {
       if (result.value.success) {
         successFileNames.push(result.value.filename);
       } else {
-        failureFileNames.push(result.value.filename);
+        failureDataArray.push(result.value);
       }
     });
 
-    if (failureFileNames.length > 0) {
-      triggerNotificationBanner(`File(s) failed to upload:<br>${failureFileNames.join("<br>")}`, "danger");
+    if (failureDataArray.length > 0) {
+      triggerNotificationBanner(
+        `File(s) failed to upload:<br>${failureDataArray
+          .map((data) => `${data.filename} (${data.error})`)
+          .join("<br>")}`,
+        "danger"
+      );
     } else if (successFileNames.length > 0) {
-      fileState.selected = [];
-      triggerNotificationBanner(`Files uploaded successfully!`, "success");
-      refreshSelectedFiles();
-      showUploadedFiles(successFileNames);
+      triggerNotificationBanner("Files uploaded successfully!", "success");
     }
+
+    const failureFileNames = failureDataArray.map((data) => data.filename);
+    fileState.selected = fileState.selected.filter((file) => failureFileNames.includes(file.name));
+    refreshSelectedFiles();
+    showUploadedFiles(successFileNames);
   } catch (err) {
-    triggerNotificationBanner("Error uploading files: " + err.message, "danger");
+    triggerNotificationBanner("Error uploading files. " + err.message, "danger");
   }
 
   hideAnimation();
@@ -490,35 +511,39 @@ export const renderEhrUploadPage = async () => {
 
   document.querySelector("#uploadForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    const selectedNameSet = new Set(fileState.selected.map((file) => {
-      const { name } = checkEhrFileName(file.name);
-      return name;
-    }));
+    const selectedNameSet = new Set(
+      fileState.selected.map((file) => {
+        const { name } = checkEhrFileName(file.name);
+        return name;
+      })
+    );
 
-    const missingRequiredNames = ehrRequiredNames.filter((name) => !selectedNameSet.has(name));
-    if (missingRequiredNames.length > 0) {
-      triggerNotificationBanner(
-        `Please include required file(s) for this upload:<br>${missingRequiredNames.sort().join("<br>")}`,
-        "danger"
-      );
-      return;
-    }
+    const isInitialUpload = fileState.uploadedFileNames.length === 0;
+    if (isInitialUpload) {
+      const missingRequiredNames = ehrRequiredNames.filter((name) => !selectedNameSet.has(name));
+      if (missingRequiredNames.length > 0) {
+        triggerNotificationBanner(
+          `Please include required file(s) for this upload:<br>${missingRequiredNames.sort().join("<br>")}`,
+          "danger"
+        );
+        return;
+      }
 
-    const missingOptionalNames = ehrOptionalNames.filter((name) => !selectedNameSet.has(name));
-    if (missingOptionalNames.length > 0) {
-      const headingText = `Missing Optional ${missingOptionalNames.length > 1 ? "Files" : "File"}`;
-      const msg = `The following optional ${
-        missingOptionalNames.length > 1 ? "files aren't" : "file isn't"
-      } included. Would you like to proceed with the upload or cancel to include additional files?`;
+      const missingOptionalNames = ehrOptionalNames.filter((name) => !selectedNameSet.has(name));
+      if (missingOptionalNames.length > 0) {
+        const headingText = `Missing Optional ${missingOptionalNames.length > 1 ? "Files" : "File"}`;
+        const msg = `The following optional ${
+          missingOptionalNames.length > 1 ? "files aren't" : "file isn't"
+        } included. Would you like to proceed with the upload or cancel to include additional files?`;
 
-      showWarningModal(headingText, msg, missingOptionalNames, "missingOptionalFiles", "Proceed");
-      return;
+        showWarningModal(headingText, msg, missingOptionalNames, "missingOptionalFiles", "Proceed");
+        return;
+      }
     }
 
     const hasDuplicates = checkDuplicateUploads();
     if (!hasDuplicates) {
       await uploadEhrUsingSignedUrls();
     }
-
   });
 };
