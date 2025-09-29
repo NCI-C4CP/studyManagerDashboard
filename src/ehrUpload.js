@@ -1,5 +1,5 @@
 import { dashboardNavBarLinks, removeActiveClass } from "./navigationBar.js";
-import { getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, baseAPI } from "./utils.js";
+import { getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, baseAPI, escapeHTML } from "./utils.js";
 
 let fileState = {
   invalidFileNames: [],
@@ -219,10 +219,11 @@ const refreshSelectedFiles = () => {
     .sort((a, b) => a.name.localeCompare(b.name))
     .forEach((file, idx) => {
       const div = document.createElement("div");
+      const safeFilename = escapeHTML(file.name);
       div.innerHTML = `
       <div class="d-flex align-items-center mb-1" style="gap: 8px;">
         <button class="btn btn-sm btn-warning py-0 px-2" style="margin-right: 0.75rem; font-size: 0.85em;" title="Remove file">✕</button>
-        <span id="filename-${file.name}">${file.name}</span>
+        <span id="filename-${safeFilename}">${safeFilename}</span>
       </div>
       `;
       div.querySelector("button").addEventListener("click", (e) => {
@@ -231,7 +232,7 @@ const refreshSelectedFiles = () => {
         refreshSelectedFiles();
       });
 
-      selectedFileNamesDiv.append(...div.children);
+      selectedFileNamesDiv.append(...Array.from(div.children));
     });
 };
 
