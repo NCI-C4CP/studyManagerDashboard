@@ -277,23 +277,14 @@ export const reRenderMainTable = async () => {
         const type = appState.getState().participantTypeFilter;
         const response = await getParticipants();
 
-        if (!response) {
-            throw new Error('Invalid participants response');
-        }
-
-        if (response.code === 401) {
+        if (response?.code === 401) {
             clearLocalStorage();
             return;
         }
 
-        if (response.code !== 200 || !Array.isArray(response.data)) {
+        if (response?.code !== 200 || !Array.isArray(response?.data)) {
             console.error('Unexpected participants payload', response);
-            triggerNotificationBanner(
-                'Error loading participant data. Please try again. If the problem persists, contact support.',
-                'danger',
-                4000
-            );
-            return;
+            throw new Error('Unexpected participants payload');
         }
 
         const data = sortByKey(response.data, fieldMapping.healthcareProvider);
