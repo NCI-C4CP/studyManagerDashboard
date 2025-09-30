@@ -1,7 +1,14 @@
 export const renderAllCharts = (inputData) => {
-    // Clear any existing metrics cards and rows to prevent double-rendering
     const mainContent = document.getElementById('mainContent');
-    mainContent.querySelectorAll('.metrics-card, .row').forEach(el => el.remove());
+
+    let metricsContainer = document.getElementById('dashboardMetrics');
+    if (!metricsContainer) {
+        metricsContainer = document.createElement('div');
+        metricsContainer.id = 'dashboardMetrics';
+        mainContent.appendChild(metricsContainer);
+    }
+
+    metricsContainer.innerHTML = '';
 
     const { activeVerificationStatus, passiveVerificationStatus, recruitsCount, collectionStats} = inputData;
     const metricsCards = metricsCardsView({
@@ -10,7 +17,7 @@ export const renderAllCharts = (inputData) => {
       collectionStats
     });
 
-    mainContent.appendChild(metricsCards);
+    metricsContainer.appendChild(metricsCards);
 
     const reportsLinkTemplate = `
         <div class="row">
@@ -22,7 +29,7 @@ export const renderAllCharts = (inputData) => {
 
     const tempDiv= document.createElement('div');
     tempDiv.innerHTML = reportsLinkTemplate;
-    mainContent.append(...tempDiv.children);
+    metricsContainer.append(...tempDiv.children);
 }
 
 const metricsCardsView = ({activeRecruits, verifiedParticipants, collectionStats}) => {

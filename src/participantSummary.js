@@ -613,7 +613,7 @@ const dataDestroy = (participant) => {
 }
 
 const renderResetUserButton = (participantUid) => {
-    if(location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.host.toLowerCase() === urls.dev) {
+    if(location.hostname === 'localhost' || location.hostname === '127.0.0.1' || [urls.dev, urls.stage].includes(location.host.toLowerCase())) {
         return `
         <a
             data-toggle="modal" 
