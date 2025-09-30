@@ -1,7 +1,7 @@
 import { renderParticipantDetails } from './participantDetails.js';
 import { clearLocalStorage } from '../index.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
-import { getIdToken, showAnimation, hideAnimation, urls, getParticipants, sortByKey, renderSiteDropdown, resetPagination } from './utils.js';
+import { getIdToken, showAnimation, hideAnimation, getParticipants, sortByKey, renderSiteDropdown, resetPagination, triggerNotificationBanner } from './utils.js';
 import { appState } from './stateManager.js';
 import { nameToKeyObj, keyToNameObj, keyToShortNameObj, participantConceptIDToTextMapping, searchBubbleMap, tableHeaderMap } from './idsToName.js';
 
@@ -271,17 +271,33 @@ export const renderTablePage = (data, type) => {
 }
 
 export const reRenderMainTable = async () => {
-
     showAnimation();
 
-    const type = appState.getState().participantTypeFilter;
+    try {
+        const type = appState.getState().participantTypeFilter;
+        const response = await getParticipants();
 
-    const response = await getParticipants();
-    const data = sortByKey(response.data, fieldMapping.healthcareProvider);
-    
-    hideAnimation();
+        if (!response) {
+            throw new Error('Invalid participants response');
+        }
 
-    if(response.code === 200) {
+        if (response.code === 401) {
+            clearLocalStorage();
+            return;
+        }
+
+        if (response.code !== 200 || !Array.isArray(response.data)) {
+            console.error('Unexpected participants payload', response);
+            triggerNotificationBanner(
+                'Error loading participant data. Please try again. If the problem persists, contact support.',
+                'danger',
+                4000
+            );
+            return;
+        }
+
+        const data = sortByKey(response.data, fieldMapping.healthcareProvider);
+
         if (data.length > 0) {
             renderTablePage(data, type);
 
@@ -300,15 +316,20 @@ export const reRenderMainTable = async () => {
                     });
                 }
             });
-            return;
         }
         else {
             renderDataTable([]);
-            return alertTrigger();
+            alertTrigger();
         }
-    }
-    else {
-        clearLocalStorage();
+    } catch (error) {
+        console.error('Error refreshing participants table:', error);
+        triggerNotificationBanner(
+            'Error loading participant data. Please try again. If the problem persists, contact support.',
+            'danger',
+            4000
+        );
+    } finally {
+        hideAnimation();
     }
 }
 

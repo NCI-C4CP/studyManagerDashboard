@@ -391,11 +391,16 @@ const renderCharts = async (accessToken) => {
     localStorage.setItem('dropDownstatusFlag', false);
     if (localStorage.getItem('isParent') === 'true') {
         localStorage.setItem('dropDownstatusFlag', true);
-        const siteSelectionRow = document.createElement('div');
-        siteSelectionRow.classList = ['row'];
-        siteSelectionRow.id = 'siteSelection';
+
+        let siteSelectionRow = document.getElementById('siteSelection');
+        if (!siteSelectionRow) {
+            siteSelectionRow = document.createElement('div');
+            siteSelectionRow.id = 'siteSelection';
+            siteSelectionRow.className = 'row';
+            mainContent.appendChild(siteSelectionRow);
+        }
+
         siteSelectionRow.innerHTML = `<div style="padding:15px;">${renderSiteDropdown('dashboard')}</div>`;
-        mainContent.appendChild(siteSelectionRow);
         handleSiteSelection('All Sites', 'allResults');
     }
 
@@ -1026,7 +1031,13 @@ const filterBiospecimenStats = (data, verifiedParticipants) => {
 
 const reRenderDashboard = async (siteTextContent, siteKey) => {
   mainContent.innerHTML = '';
-  mainContent.innerHTML = `<div class="row" id="siteSelection">${renderSiteDropdown('dashboard')}</div>`;
+
+  const siteSelectionRow = document.createElement('div');
+  siteSelectionRow.id = 'siteSelection';
+  siteSelectionRow.className = 'row';
+  siteSelectionRow.innerHTML = `<div style="padding:15px;">${renderSiteDropdown('dashboard')}</div>`;
+  mainContent.appendChild(siteSelectionRow);
+
   const siteCode = nameToKeyObj[siteKey];
   const siteData = filterDataBySiteCode(siteCode);
   const transformedData = transformDataForCharts(siteData);
