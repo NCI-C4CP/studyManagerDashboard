@@ -2,15 +2,16 @@ import { dashboardNavBarLinks, removeActiveClass } from "./navigationBar.js";
 import { getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, baseAPI } from "./utils.js";
 
 let fileState = {
+  invalidFileNames: [],
   toBeSelectedDuplicate: [],
   selected: [],
   toBeUploadedDuplicate: [],
   toBeUploaded: [],
-  uploaded: [],
-  stage: "select", // "select" | "upload"
+  uploadedFileNames: [],
 };
-const ehrExtensions = [".csv", ".csv.gz", ".parquet", ".parquet.gz"];
-const ehrRequiredNamesExact = [
+let modalStatus = ""; // "" | "duplicateSelection" | "missingOptionalFiles" | "duplicateUploads"
+const validExtensions = [".csv", ".csv.gz", ".parquet"];
+const ehrRequiredNames = [
   "person",
   "visit_occurrence",
   "visit_detail",
@@ -26,7 +27,7 @@ const ehrRequiredNamesExact = [
   "concept",
   "vocabulary",
 ];
-const ehrOptionalNamesAll = [
+const ehrOptionalNames = [
   "concept_class",
   "concept_relationship",
   "concept_synonym",
@@ -39,13 +40,13 @@ const ehrOptionalNamesAll = [
   "drug_era",
   "condition_era",
   "dose_era",
-  "provider*",
-  "care_site*",
+  "provider",
+  "care_site",
   "location",
   "cost",
   "payer_plan_period",
-  "note_nlp*",
-  "note*",
+  "note_nlp",
+  "note",
   "fact_relationship",
   "episode",
   "episode_event",
@@ -54,35 +55,24 @@ const ehrOptionalNamesAll = [
   "metadata",
   "attribute_definition",
 ];
-const ehrOptionalNamesExact = ehrOptionalNamesAll.filter((name) => !name.endsWith("*"));
-const ehrOptionalNamePrefixes = ehrOptionalNamesAll
-  .filter((name) => name.endsWith("*"))
-  .map((name) => name.replace(/\*$/, ""));
+const validNames = [...ehrRequiredNames, ...ehrOptionalNames];
 
-const checkEhrFullName = (fullName) => {
-  const res = { fileName: "", fileExt: "", isValid: false };
-  const fullNameLower = fullName.toLowerCase();
-  for (const ext of ehrExtensions) {
-    if (fullNameLower.endsWith(ext)) {
-      res.fileName = fullNameLower.slice(0, -ext.length);
-      res.fileExt = ext;
+const checkEhrFileName = (filename) => {
+  const result = { name: "", ext: "", isValid: false };
+  const filenameLower = filename.toLowerCase();
+  for (const ext of validExtensions) {
+    if (filenameLower.endsWith(ext)) {
+      result.name = filenameLower.slice(0, -ext.length);
+      result.ext = ext;
       break;
     }
   }
 
-  if (ehrRequiredNamesExact.includes(res.fileName) || ehrOptionalNamesExact.includes(res.fileName)) {
-    res.isValid = true;
-    return res;
+  if (validNames.includes(result.name) && validExtensions.includes(result.ext)) {
+    result.isValid = true;
   }
 
-  for (const prefix of ehrOptionalNamePrefixes) {
-    if (res.fileName.startsWith(prefix)) {
-      res.isValid = true;
-      return res;
-    }
-  }
-
-  return res;
+  return result;
 };
 
 const setupEhrUploadPage = () => {
@@ -119,17 +109,17 @@ const setupEhrUploadPage = () => {
                   </div>
                 </div>
 
-                <div class="modal fade" id="warningModal" tabindex="-1" role="dialog" aria-labelledby="warningModalLabel" aria-hidden="true">
+                <div class="modal fade" id="warningModal" tabindex="-1" role="dialog">
                   <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content" style="border-radius:8px;">
                       <div class="modal-header" style="border-bottom:none; background-color:#fff3cd">
                         <h5 class="modal-title" id="warningModalLabel" style="color:black; border-radius:4px; padding:6px 12px;">Duplicate Selection</h5>
                       </div>
                       <div class="modal-body" style="text-align:left;">
-                        <div id="duplicateFilesWarning"></div>
+                        <div id="warningModalBody"></div>
                       </div>
                       <div class="modal-footer" style="border-top:none; justify-content:center;">
-                        <button id="replaceBtn" class="btn btn-warning" style="margin-right:12px;">Replace</button>
+                        <button id="proceedBtn" class="btn btn-warning" style="margin-right:12px;">Replace</button>
                         <button id="cancelBtn" class="btn btn-secondary">Cancel</button>
                       </div>
                     </div>
@@ -141,48 +131,72 @@ const setupEhrUploadPage = () => {
     `;
 };
 
+const showWarningModal = (headingText, msg, stringArray, modalNewStatus = "", proceedBtnText = "Replace") => {
+  if (!headingText || !msg || !Array.isArray(stringArray) || stringArray.length === 0 || modalNewStatus === "") return;
+
+  document.querySelector("#warningModalLabel").textContent = headingText;
+  const warningDiv = document.querySelector("#warningModalBody");
+  warningDiv.textContent = msg;
+  const ulEle = document.createElement("ul");
+  stringArray.sort().forEach((str) => {
+    const liEle = document.createElement("li");
+    liEle.textContent = str;
+    ulEle.appendChild(liEle);
+  });
+  warningDiv.appendChild(ulEle);
+  document.querySelector("#proceedBtn").textContent = proceedBtnText;
+  modalStatus = modalNewStatus;
+  // Todo: Remove JQuery after migration to Bootstrap 5
+  // const modal = new bootstrap.Modal("#warningModal", { backdrop: "static", keyboard: false });
+  // modal.show();
+  $("#warningModal").modal({ backdrop: "static", keyboard: false });
+};
+
+const hideWarningModal = () => {
+  // Todo: Remove JQuery after migration to Bootstrap 5
+  // const modal = new bootstrap.Modal("#warningModal", { backdrop: "static", keyboard: false });
+  // modal.hide();
+  $("#warningModal").modal("hide");
+};
+
 const selectNewFiles = (newFiles) => {
   const fileArray = Array.from(newFiles);
-  const fileNameSet = new Set();
   const selectedFileCount = fileState.selected.length;
-  fileState.stage = "select";
   fileState.toBeSelectedDuplicate = [];
+  fileState.invalidFileNames = [];
 
   for (const file of fileArray) {
-    const { fileName, fileExt, isValid } = checkEhrFullName(file.name);
-    if (!isValid) continue;
-
-    fileNameSet.add(fileName);
-    const selectedFileIdx = fileState.selected.findIndex((item) => item.fileName === fileName);
-    if (selectedFileIdx === -1) {
-      fileState.selected.push({ file, fileName, fileExt });
-    } else {
-      fileState.toBeSelectedDuplicate.push({ file, fileName, fileExt });
+    const { isValid } = checkEhrFileName(file.name);
+    if (!isValid) {
+      fileState.invalidFileNames.push(file.name);
+      continue;
     }
+
+    const idxInSelectedFiles = fileState.selected.findIndex((selectedFile) => selectedFile.name === file.name);
+    if (idxInSelectedFiles === -1) {
+      fileState.selected.push(file);
+    } else {
+      fileState.toBeSelectedDuplicate.push(file);
+    }
+  }
+
+  if (fileState.invalidFileNames.length > 0) {
+    const msg = `The following ${
+      fileState.invalidFileNames.length > 1 ? "files don't" : "file doesn't"
+    } match file naming convention, thus cannot be selected`;
+
+    triggerNotificationBanner(`Please select files with correct naming convention. ${msg}:<br>${fileState.invalidFileNames.sort().join("<br>")}`, "warning");
   }
 
   if (fileState.toBeSelectedDuplicate.length > 0) {
     const headingText = "Duplicate Selection";
     let msg = `Below file is already selected. Do you want to replace it with the new file?`;
     if (fileState.toBeSelectedDuplicate.length > 1) {
+      fileState.toBeSelectedDuplicate.sort((a, b) => a.name.localeCompare(b.name));
       msg = `Below files are already selected. Do you want to replace them with the new files?`;
     }
 
-    document.querySelector("#warningModalLabel").textContent = headingText;
-    const warningDiv = document.querySelector("#duplicateFilesWarning");
-    warningDiv.textContent = msg;
-    const listEle = document.createElement("ul");
-    fileState.toBeSelectedDuplicate.forEach((item) => {
-      const listItem = document.createElement("li");
-      listItem.textContent = item.fileName;
-      listEle.appendChild(listItem);
-    });
-    warningDiv.appendChild(listEle);
-
-    // Todo: Remove JQuery after migration to Bootstrap 5
-    // const modal = new bootstrap.Modal("#warningModal", { backdrop: "static", keyboard: false });
-    // modal.show();
-    $("#warningModal").modal({ backdrop: "static", keyboard: false });
+    showWarningModal(headingText, msg, fileState.toBeSelectedDuplicate.map((file) => file.name), "duplicateSelection");
   }
 
   if (fileState.selected.length > selectedFileCount) {
@@ -201,61 +215,60 @@ const refreshSelectedFiles = () => {
   }
 
   uploadBtn.disabled = false;
-  fileState.selected.forEach((item, idx) => {
-    const div = document.createElement("div");
-    div.className = "d-flex align-items-center mb-1";
-    div.style.gap = "8px";
+  fileState.selected
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach((file, idx) => {
+      const div = document.createElement("div");
+      div.className = "d-flex align-items-center mb-1";
+      div.style.gap = "8px";
 
-    const btn = document.createElement("button");
-    btn.textContent = "✕";
-    btn.title = "Remove file";
-    btn.className = "btn btn-sm btn-warning py-0 px-2";
-    btn.style.marginRight = "0.75rem";
-    btn.style.fontSize = "0.85em";
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      fileState.selected.splice(idx, 1);
-      refreshSelectedFiles();
+      const btn = document.createElement("button");
+      btn.textContent = "✕";
+      btn.title = "Remove file";
+      btn.className = "btn btn-sm btn-warning py-0 px-2";
+      btn.style.marginRight = "0.75rem";
+      btn.style.fontSize = "0.85em";
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        fileState.selected.splice(idx, 1);
+        refreshSelectedFiles();
+      });
+
+      const span = document.createElement("span");
+      span.textContent = file.name;
+      div.append(btn, span);
+
+      selectedFileNamesDiv.appendChild(div);
     });
-
-    const span = document.createElement("span");
-    span.textContent = item.file.name;
-    div.append(btn, span);
-
-    selectedFileNamesDiv.appendChild(div);
-  });
 };
 
-const showUploadedFiles = (fileFullNameArray) => {
-  const uploadedFilesWrapperDiv = document.querySelector("#uploadedFilesWrapper");
-  if (fileFullNameArray.length === 0) {
-    uploadedFilesWrapperDiv.style.display = "none";
-    return;
-  }
+const showUploadedFiles = (updatedFileNames) => {
+  if (!updatedFileNames || updatedFileNames.length === 0) return;
 
-  fileState.uploaded = [];
+  updatedFileNames.forEach((filename) => {
+    if (!fileState.uploadedFileNames.includes(filename)) {
+      fileState.uploadedFileNames.push(filename);
+    }
+  });
+
   const ul = document.createElement("ul");
   ul.style = "text-align: left; padding-left: 20px;";
-  fileFullNameArray.forEach((fullName) => {
-    const { fileName, fileExt } = checkEhrFullName(fullName);
-    fileState.uploaded.push({ fileName, fileExt });
-
+  fileState.uploadedFileNames.sort().forEach((filename) => {
     const li = document.createElement("li");
     li.style = "font-weight: bold;";
-    li.textContent = `${fullName}`;
+    li.textContent = `${filename}`;
     ul.appendChild(li);
   });
 
-  fileState.uploaded.sort((a, b) => a.fileName.localeCompare(b.fileName));
   document.querySelector("#uploadedFileNames").replaceChildren(ul);
-  uploadedFilesWrapperDiv.style.display = "";
+  document.querySelector("#uploadedFilesWrapper").style.display = "";
 };
 
 const refreshUploadedEhrNames = async () => {
   showAnimation();
   const url = `${baseAPI}/dashboard/?api=getUploadedEhrNames`;
   const idToken = await getIdToken();
-  let fileFullNameArray = [];
+  let allFilenames = [];
   try {
     const resp = await fetch(url, {
       method: "GET",
@@ -265,7 +278,7 @@ const refreshUploadedEhrNames = async () => {
     });
     const respJson = await resp.json();
     if (respJson.code === 200) {
-      fileFullNameArray = respJson.data.allFilenames || [];
+      allFilenames = respJson.data.allFilenames || [];
     } else {
       console.error("Failed to fetch uploaded file names:", respJson.message);
       triggerNotificationBanner("Failed to fetch uploaded file names: " + respJson.message, "danger");
@@ -273,168 +286,133 @@ const refreshUploadedEhrNames = async () => {
   } catch (e) {
     triggerNotificationBanner("Error fetching uploaded file names: " + e.message, "danger");
   } finally {
-    showUploadedFiles(fileFullNameArray);
+    showUploadedFiles(allFilenames);
   }
 
   hideAnimation();
 };
 
-const checkEhrBeforeUpload = () => {
-  if (fileState.toBeUploaded.length === 0) return false;
-  const toBeUploadedSet = new Set(fileState.toBeUploaded.map((item) => item.fileName));
-  const missingRequired = ehrRequiredNamesExact.filter((fileName) => !toBeUploadedSet.has(fileName));
-  const missingOptional = ehrOptionalNamesExact.filter((fileName) => !toBeUploadedSet.has(fileName));
-  const missingOptionalPrefix = ehrOptionalNamePrefixes.filter((prefix) => {
-    return !fileState.toBeUploaded.some((item) => item.fileName.startsWith(prefix));
-  });
+const checkDuplicateUploads = () => {
+  fileState = { ...fileState, toBeUploadedDuplicate: [], toBeUploaded: [] };
+  const fileNameSet = new Set();
 
-  if (missingOptionalPrefix.length > 0) {
-    missingOptionalPrefix.forEach((prefix) => {
-      missingOptional.push(`${prefix}*`);
-    });
+  for (const file of fileState.selected) {
+    if (fileNameSet.has(file.name)) continue;
+
+    const idx = fileState.uploadedFileNames.findIndex((uploadedFilename) => uploadedFilename === file.name);
+    if (idx !== -1) {
+      fileState.toBeUploadedDuplicate.push(file);
+    } else {
+      fileState.toBeUploaded.push(file);
+    }
+    fileNameSet.add(file.name);
   }
 
-  if (missingRequired.length > 0) {
-    triggerNotificationBanner(
-      `Please include required file(s) for this upload:<br>${missingRequired.join("<br>")}`,
-      "danger"
-    );
-    return false;
+  if (fileState.toBeUploadedDuplicate.length > 0) {
+    const headingText = "Duplicate Upload(s)";
+    let msg = `Below file has been uploaded previously. Do you want to replace it with the new file or cancel this upload?`;
+    if (fileState.toBeUploadedDuplicate.length > 1) {
+      msg = `Below files have been uploaded previously. Do you want to replace them with the new files or cancel this upload?`;
+    }
+
+    showWarningModal(headingText, msg, fileState.toBeUploadedDuplicate.map((file) => file.name), "duplicateUploads");
+    return true;
   }
 
-  if (missingOptional.length > 0) {
-    triggerNotificationBanner(
-      `All requirement files are included.<br>Optional file(s) not included: ${missingOptional.join(", ")}`,
-      "info"
-    );
-  }
-
-  return true;
+  return false;
 };
 
-// Todo: Decide whether to use signed URLs for EHR uploads
-const uploadEhrUsingSignedUrls = async (fileArray) => {
-  const fileInfoArray = fileArray.map((file) => ({
+const uploadEhrUsingSignedUrls = async () => {
+  hideWarningModal();
+  showAnimation();
+  const fileInfoArray = fileState.toBeUploaded.map((file) => ({
     filename: file.name,
     contentType: file.type || "application/octet-stream",
   }));
 
-  const idToken = await getIdToken();
-  const resp = await fetch(`${baseAPI}/dashboard/?api=createEhrUploadUrls`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer " + idToken,
-    },
-    body: JSON.stringify({ fileInfoArray }),
-  });
-
-  const respJson = await resp.json();
-  if (!resp.ok) {
-    throw new Error(`Failed to get signed URLs: ${respJson.message || resp.statusText}`);
-  }
-
-  const { signedUrls } = respJson.data;
-  const uploadPromises = [];
-  for (const file of fileArray) {
-    const signedUrl = signedUrls[file.name];
-
-    if (!signedUrl) {
-      console.error(`No signed URL for file: ${file.name}`);
-      continue;
-    }
-
-    uploadPromises.push(
-      fetch(signedUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": file.type || "application/octet-stream",
-        },
-        body: file,
-      })
-        .then((uploadResponse) => {
-          if (!uploadResponse.ok) {
-            return {
-              success: false,
-              filename: file.name,
-              error: `Upload failed: ${uploadResponse.statusText}`,
-            };
-          }
-          return {
-            success: true,
-            filename: file.name,
-          };
-        })
-        .catch((error) => {
-          return {
-            success: false,
-            filename: file.name,
-            error: error.message,
-          };
-        })
-    );
-  }
-
-  const results = await Promise.allSettled(uploadPromises);
-  const successful = [];
-  const failed = [];
-
-  results.forEach((result, index) => {
-    const fileFullName = fileArray[index].name;
-    if (result.status === "fulfilled" && result.value.success) {
-      successful.push({ fileFullName });
-    } else {
-      failed.push({ fileFullName, error: result.value.error });
-    }
-  });
-
-  return { successful, failed };
-};
-
-/**
- * Uploads EHR files to Bucket.
- * This implementation cannot handle large files. Use `uploadEhrUsingSignedUrls` for large files.
- * @returns {Promise<void>}
- */
-const uploadEhr = async () => {
-  const isReadyToUpload = checkEhrBeforeUpload();
-  if (!isReadyToUpload) return;
-
-  showAnimation();
-  const formData = new FormData();
-  fileState.toBeUploaded.forEach((item) => formData.append("files", item.file));
-
-  const url = `${baseAPI}/dashboard/?api=uploadEhr`;
-  const idToken = await getIdToken();
   try {
-    const resp = await fetch(url, {
-      method: "POST",
-      body: formData,
-      headers: {
-        Authorization: "Bearer " + idToken,
-      },
-    });
+    const idToken = await getIdToken();
+    const resp = await fetch(`${baseAPI}/dashboard/?api=createEhrUploadUrls`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + idToken,
+        },
+        body: JSON.stringify({ fileInfoArray }),
+      }
+    );
 
     const respJson = await resp.json();
-    if (resp.ok) {
-      if (respJson.code === 200) {
-        triggerNotificationBanner("Files uploaded successfully!", "success");
-      } else if (respJson.code === 207) {
-        const failureFilenames = respJson.data.failureFilenames || [];
-        triggerNotificationBanner(
-          `Files not successfully uploaded<br>:${failureFilenames.join("<br>")}`,
-          "warning"
-        );
+    if (!resp.ok) {
+      throw new Error(`Failed to get signed URLs: ${respJson.message || resp.statusText}`);
+    }
+
+    const { signedUrls } = respJson.data;
+    const uploadPromises = [];
+    for (const file of fileState.toBeUploaded) {
+      const filename = file.name;
+      const signedUrl = signedUrls[filename];
+
+      if (!signedUrl) {
+        console.error(`No signed URL for file: ${filename}`);
+        continue;
       }
-      showUploadedFiles(respJson.data.allFilenames);
+
+      uploadPromises.push(
+        fetch(signedUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": file.type || "application/octet-stream",
+          },
+          body: file,
+        })
+          .then((uploadResponse) => {
+            if (!uploadResponse.ok) {
+              return {
+                filename,
+                success: false,
+                error: `Upload failed: ${uploadResponse.statusText}`,
+              };
+            }
+            return {
+              filename,
+              success: true,
+            };
+          })
+          .catch((error) => {
+            return {
+              filename,
+              success: false,
+              error: error.message,
+            };
+          })
+      );
+    }
+
+    const results = await Promise.allSettled(uploadPromises);
+    const successFileNames = [];
+    const failureFileNames = [];
+
+    results.forEach((result) => {
+      if (result.value.success) {
+        successFileNames.push(result.value.filename);
+      } else {
+        failureFileNames.push(result.value.filename);
+      }
+    });
+
+    if (failureFileNames.length > 0) {
+      triggerNotificationBanner(`File(s) failed to upload:<br>${failureFileNames.join("<br>")}`, "danger");
+    } else if (successFileNames.length > 0) {
       fileState.selected = [];
+      triggerNotificationBanner(`Files uploaded successfully!`, "success");
       refreshSelectedFiles();
-    } else {
-      triggerNotificationBanner("EHR upload failed: " + respJson.message, "danger");
+      showUploadedFiles(successFileNames);
     }
   } catch (err) {
     triggerNotificationBanner("Error uploading files: " + err.message, "danger");
   }
+
   hideAnimation();
 };
 
@@ -475,78 +453,72 @@ export const renderEhrUploadPage = async () => {
     fileInput.click();
   });
 
-  document.getElementById("replaceBtn").addEventListener("click", async () => {
-    // Todo: Remove JQuery after migration to Bootstrap 5
-    // const modal = new bootstrap.Modal("#warningModal", { backdrop: "static", keyboard: false });
-    // modal.hide();
-    $("#warningModal").modal("hide");
-
-    if (fileState.stage === "select") {
+  document.getElementById("proceedBtn").addEventListener("click", async () => {
+    if (modalStatus === "duplicateSelection") {
       while (fileState.toBeSelectedDuplicate.length > 0) {
-        const duItem = fileState.toBeSelectedDuplicate.pop();
-        const idx = fileState.selected.findIndex((item) => item.fileName === duItem.fileName);
+        const duplicateFile = fileState.toBeSelectedDuplicate.pop();
+        const idx = fileState.selected.findIndex((file) => file.name === duplicateFile.name);
         if (idx !== -1) {
           fileState.selected.splice(idx, 1);
         }
-        fileState.selected.push(duItem);
+        fileState.selected.push(duplicateFile);
       }
+      hideWarningModal();
       refreshSelectedFiles();
-    } else if (fileState.stage === "upload") {
+    } else if (modalStatus === "missingOptionalFiles") {
+      const hasDuplicates = checkDuplicateUploads();
+      if (!hasDuplicates) {
+        await uploadEhrUsingSignedUrls();
+      }
+    } else if (modalStatus === "duplicateUploads") {
       const fileNameSet = new Set();
       while (fileState.toBeUploadedDuplicate.length > 0) {
-        const item = fileState.toBeUploadedDuplicate.pop();
-        if (!fileNameSet.has(item.fileName)) {
-          fileState.toBeUploaded.push(item);
-          fileNameSet.add(item.fileName);
+        const file = fileState.toBeUploadedDuplicate.pop();
+        if (!fileNameSet.has(file.name)) {
+          fileState.toBeUploaded.push(file);
+          fileNameSet.add(file.name);
         }
       }
 
-      await uploadEhr();
+      await uploadEhrUsingSignedUrls();
     }
   });
 
   document.getElementById("cancelBtn").addEventListener("click", () => {
-    // Todo: Remove JQuery after migration to Bootstrap 5
-    $("#warningModal").modal("hide");
+    hideWarningModal();
   });
 
   document.querySelector("#uploadForm").addEventListener("submit", async (e) => {
     e.preventDefault();
-    fileState = { ...fileState, stage: "upload", toBeUploaded: [], toBeUploadedDuplicate: [] };
-    const fileNameSet = new Set();
+    const selectedNameSet = new Set(fileState.selected.map((file) => {
+      const { name } = checkEhrFileName(file.name);
+      return name;
+    }));
 
-    for (const item of fileState.selected) {
-      const idx = fileState.uploaded.findIndex((uploadedItem) => uploadedItem.fileName === item.fileName);
-      if (idx !== -1) {
-        fileState.toBeUploadedDuplicate.push(item);
-      } else if (!fileNameSet.has(item.fileName)) {
-        fileState.toBeUploaded.push(item);
-        fileNameSet.add(item.fileName);
-      }
-    }
-
-    if (fileState.toBeUploadedDuplicate.length > 0) {
-      const headingText = "Duplicate Upload";
-      let msg = `Below file has been uploaded previously. Do you want to replace it with the new file or cancel this upload?`;
-      if (fileState.toBeUploadedDuplicate.length > 1) {
-        msg = `Below files have been uploaded previously. Do you want to replace them with the new files or cancel this upload?`;
-      }
-
-      document.querySelector("#warningModalLabel").textContent = headingText;
-      const warningDiv = document.querySelector("#duplicateFilesWarning");
-      warningDiv.textContent = msg;
-      const ulEle = document.createElement("ul");
-      fileState.toBeUploadedDuplicate.forEach((item) => {
-        const liEle = document.createElement("li");
-        liEle.textContent = item.fileName;
-        ulEle.appendChild(liEle);
-      });
-      warningDiv.appendChild(ulEle);
-      // Todo: Remove JQuery after migration to Bootstrap 5
-      $("#warningModal").modal({ backdrop: "static", keyboard: false });
+    const missingRequiredNames = ehrRequiredNames.filter((name) => !selectedNameSet.has(name));
+    if (missingRequiredNames.length > 0) {
+      triggerNotificationBanner(
+        `Please include required file(s) for this upload:<br>${missingRequiredNames.sort().join("<br>")}`,
+        "danger"
+      );
       return;
     }
 
-    await uploadEhr();
+    const missingOptionalNames = ehrOptionalNames.filter((name) => !selectedNameSet.has(name));
+    if (missingOptionalNames.length > 0) {
+      const headingText = `Missing Optional ${missingOptionalNames.length > 1 ? "Files" : "File"}`;
+      const msg = `The following optional ${
+        missingOptionalNames.length > 1 ? "files aren't" : "file isn't"
+      } included. Would you like to proceed with the upload or cancel to include additional files?`;
+
+      showWarningModal(headingText, msg, missingOptionalNames, "missingOptionalFiles", "Proceed");
+      return;
+    }
+
+    const hasDuplicates = checkDuplicateUploads();
+    if (!hasDuplicates) {
+      await uploadEhrUsingSignedUrls();
+    }
+
   });
 };

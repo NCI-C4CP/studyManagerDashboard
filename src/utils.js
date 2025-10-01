@@ -6,30 +6,12 @@ import { appState } from './stateManager.js';
 const i18n = {
     es, en
 };
-
-export const getCurrentTimeStamp = () => {
-  const date = new Date(new Date().toISOString());
-  const timeStamp = date.toLocaleString('en-US',  {month: 'long'}) + ' ' + date.getDate() + ',' + date.getFullYear() + ' ' + 
-                        date.getHours() + ':'+ date.getMinutes()+':'+ date.getSeconds();
-  return timeStamp; // January 28, 2021 16:11:54
-}
-                
+              
 export const humanReadableFromISO = (participantDate) => {
   const submittedDate = new Date(String(participantDate));
   const humanReadable = submittedDate.toLocaleString('en-US', { month: 'long' }) + ' ' + submittedDate.getDate() + ',' + submittedDate.getFullYear();
   return humanReadable; // October 30, 2020
 }
-
-export const humanReadableMDY = (participantDate) => {
-  if (!participantDate) return 'N/A'
-  const humanReadableDate = new Date(String(participantDate)).toLocaleDateString()
-  return humanReadableDate; // 10/30/2020
-}
-
-export const humanReadableY = () => {
-  const currentYear = new Date().getFullYear();
-  return currentYear;
-} // 2021
 
 /**
  * Convert ISO8601 date to human readable date
@@ -67,37 +49,33 @@ export const convertToISO8601 = (dateString, useEST) => {
   return dateObj.toISOString();
 };
 
-// Function prevents the user from internal navigation if unsaved changes are present
-export const internalNavigatorHandler = (counter) => {
-setTimeout(() => {
-  document.getElementById('navBarLinks').addEventListener('click', function(e) {
-      let getSaveFlag = JSON.parse(localStorage.getItem("flags"));
-      let getCounter = JSON.parse(localStorage.getItem("counters"));
-      
-      if (getCounter > 0 && getSaveFlag === false) {
-          // Cancel the event and show alert that the unsaved changes would be lost 
-          let confirmFlag = !confirm("Unsaved changes detected. Navigate away?");
-          if (confirmFlag) {
-            // when user decides to stay on the page
-              e.preventDefault();
-              return;
-          } 
-          else {
-              counter = 0;
-              localStorage.setItem("counters", JSON.stringify(counter));
-          }
-          return;
-      }
-  })
-}, 50);
-}
+
+// TODO: move markUnsaved, clearUnsaved, and clearParticipant to stateManager once it's implemented.
+/**
+ * Mark there are unsaved changes in the UI
+ */
+export const markUnsaved = () => {
+  appState.setState({ hasUnsavedChanges: true });
+};
+
+/**
+ * Clear the unsaved changes indicator
+ */
+export const clearUnsaved = () => {
+  appState.setState({ hasUnsavedChanges: false });
+};
+
+export const clearParticipant = () => {
+  appState.setState({ participant: null });
+  // TODO: remove localStorage usage during appState transition
+  // (maybe session storage for pt data?)
+  localStorage.removeItem('participant');
+};
 
 import { keyToNameObj } from './idsToName.js';
 
 export const siteKeyToName = (key) => {
-  
   return keyToNameObj[key];
-
 }
 
 export const getDataAttributes = (el) => {
@@ -178,6 +156,45 @@ export const conceptToSiteMapping = {
   13: 'NCI'
 }
 
+/**
+ * Renders a site dropdown
+ * @param {string} context - Context: 'dashboard', 'table', 'lookup'
+ * @param {string} menuId - Menu element ID (defaults to 'dropdownMenuButtonSites')
+ * @returns {string} HTML template
+ */
+export const renderSiteDropdown = (context = 'lookup', menuId = 'dropdownMenuButtonSites') => {
+    const showPreferenceLabel = context === 'lookup';
+
+    const sitesDropdown = [
+        { key: 'allResults', id: 'all', name: 'All Sites' },
+        { key: 'BSWH', id: 'BSWH', name: 'Baylor Scott & White Health' },
+        { key: 'hfHealth', id: 'hfHealth', name: 'Henry Ford HS' },
+        { key: 'hPartners', id: 'hPartners', name: 'Health Partners' },
+        { key: 'kpGA', id: 'kpGA', name: 'KP GA' },
+        { key: 'kpHI', id: 'kpHI', name: 'KP HI' },
+        { key: 'kpNW', id: 'kpNW', name: 'KP NW' },
+        { key: 'kpCO', id: 'kpCO', name: 'KP CO' },
+        { key: 'maClinic', id: 'maClinic', name: 'Marshfield Clinic' },
+        { key: 'snfrdHealth', id: 'snfrdHealth', name: 'Sanford Health' },
+        { key: 'uChiM', id: 'uChiM', name: 'UofC Medicine' },
+        // Add NCI for dev and local environments
+        ...((location.host !== urls.prod) && (location.host !== urls.stage) ? 
+            [{ key: 'nci', id: 'nci', name: 'NCI' }] : [])
+    ];
+    
+    return `
+        <div class="dropdown" ${localStorage.getItem('dropDownstatusFlag') === 'false' ? 'hidden' : ''}>
+            ${showPreferenceLabel ? `<label class="col-form-label search-label">Site Preference</label> &nbsp;` : ''}
+            <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownSites" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-siteKey="allResults">
+                All Sites
+            </button>
+            <ul class="dropdown-menu" id="${menuId}" aria-labelledby="dropdownMenuButton">
+                ${sitesDropdown.map(site => `<li><a class="dropdown-item" data-siteKey="${site.key}" id="${site.id}">${site.name}</a></li>`).join('')}
+            </ul>
+        </div>
+    `;
+};
+
 export const triggerNotificationBanner = (message, type, timeout) => {
   const alertList = document.getElementById("alert_placeholder");
   if (alertList) {
@@ -189,16 +206,17 @@ export const triggerNotificationBanner = (message, type, timeout) => {
                   </button>
           </div>`;
   
-  if (!timeout) return;
-  setTimeout(() => {
-    const alertElement = alertList.querySelector('.alert');
-    if (alertElement) {
-        alertElement.classList.remove('show');
-        alertElement.addEventListener('transitionend', () => {
-            alertElement.remove();
-        });
-    }
-  }, timeout);
+    if (!timeout) return;
+    
+    setTimeout(() => {
+      const alertElement = alertList.querySelector('.alert');
+      if (alertElement) {
+          alertElement.classList.remove('show');
+          alertElement.addEventListener('transitionend', () => {
+              alertElement.remove();
+          });
+      }
+    }, timeout);
   }
 }
 
@@ -619,4 +637,151 @@ export const escapeHTML = (str) => {
   const div = document.createElement('div');
   div.appendChild(document.createTextNode(str));
   return div.innerHTML;
+};
+
+/**
+ * Handler for navigation guard modals.
+ * Returns the modal element id
+ */
+const navGuardModalHandler = () => {
+  const modalId = 'globalNavGuardModal';
+  if (document.getElementById(modalId)) return modalId;
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div class="modal fade" id="${modalId}" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content sub-div-shadow">
+          <div class="modal-header">
+            <h5 class="modal-title" id="${modalId}Title"></h5>
+            <button type="button" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          </div>
+          <div class="modal-body" id="${modalId}Body"></div>
+          <div class="modal-footer" id="${modalId}Footer"></div>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(wrapper.firstElementChild);
+  return modalId;
+};
+
+/**
+ * Programmatically open Bootstrap modal
+ */
+const openBootstrapModal = (modalId) => {
+  const trigger = document.createElement('button');
+  trigger.style.display = 'none';
+  trigger.setAttribute('data-toggle', 'modal');
+  trigger.setAttribute('data-target', `#${modalId}`);
+  document.body.appendChild(trigger);
+  trigger.click();
+  document.body.removeChild(trigger);
+};
+
+/**
+ * Show a confirm dialog using the nav guard modal
+ * Resolves true on confirm, false on cancel
+ */
+export const showConfirmModal = ({ title = 'Confirm', message = '', confirmText = 'Continue', cancelText = 'Cancel' } = {}) => {
+  return new Promise((resolve) => {
+    const modalId = navGuardModalHandler();
+    const titleEl = document.getElementById(`${modalId}Title`);
+    const bodyEl = document.getElementById(`${modalId}Body`);
+    const footerEl = document.getElementById(`${modalId}Footer`);
+
+    if (titleEl) titleEl.textContent = title;
+    if (bodyEl) bodyEl.innerHTML = `<div>${escapeHTML(message)}</div>`;
+    if (footerEl) {
+      footerEl.innerHTML = `
+        <button type="button" class="btn btn-danger" id="${modalId}Cancel" data-dismiss="modal">${escapeHTML(cancelText)}</button>
+        <button type="button" class="btn btn-primary" id="${modalId}Confirm" data-dismiss="modal">${escapeHTML(confirmText)}</button>`;
+    }
+
+    const confirmBtn = document.getElementById(`${modalId}Confirm`);
+    const cancelBtn = document.getElementById(`${modalId}Cancel`);
+
+    let handled = false;
+    const onConfirm = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    const onKeydown = (event) => {
+      if (event.key === 'Enter') {
+        const modalEl = document.getElementById(modalId);
+        if (modalEl && modalEl.classList.contains('show')) {
+          event.preventDefault();
+          // Trigger Bootstrap dismissal and our click handler
+          confirmBtn && confirmBtn.click();
+        }
+      }
+    };
+
+    const cleanup = (result) => {
+      if (handled) return;
+      handled = true;
+      confirmBtn && confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn && cancelBtn.removeEventListener('click', onCancel);
+      document.removeEventListener('keydown', onKeydown);
+      resolve(result);
+    };
+
+    confirmBtn && confirmBtn.addEventListener('click', onConfirm);
+    cancelBtn && cancelBtn.addEventListener('click', onCancel);
+    document.addEventListener('keydown', onKeydown);
+
+    openBootstrapModal(modalId);
+  });
+};
+
+/**
+ * Show an alert dialog using the nav guard modal
+ */
+export const showAlertModal = ({ title = 'Alert', message = '', okText = 'OK' } = {}) => {
+  return new Promise((resolve) => {
+    const modalId = navGuardModalHandler();
+    const titleEl = document.getElementById(`${modalId}Title`);
+    const bodyEl = document.getElementById(`${modalId}Body`);
+    const footerEl = document.getElementById(`${modalId}Footer`);
+
+    if (titleEl) titleEl.textContent = title;
+    if (bodyEl) bodyEl.innerHTML = `<div>${escapeHTML(message)}</div>`;
+    if (footerEl) {
+      footerEl.innerHTML = `
+        <button type="button" class="btn btn-primary" id="${modalId}Ok" data-dismiss="modal">${escapeHTML(okText)}</button>`;
+    }
+
+    const okBtn = document.getElementById(`${modalId}Ok`);
+    let handled = false;
+    const onOk = () => cleanup();
+    const onKeydown = (event) => {
+      if (event.key === 'Enter') {
+        const modalEl = document.getElementById(modalId);
+        if (modalEl && modalEl.classList.contains('show')) {
+          event.preventDefault();
+          okBtn && okBtn.click();
+        }
+      }
+    };
+    const cleanup = () => {
+      if (handled) return;
+      handled = true;
+      okBtn && okBtn.removeEventListener('click', onOk);
+      document.removeEventListener('keydown', onKeydown);
+      resolve(true);
+    };
+    okBtn && okBtn.addEventListener('click', onOk);
+    document.addEventListener('keydown', onKeydown);
+    openBootstrapModal(modalId);
+  });
+};
+
+export const renderShowMoreDataModal = () => {
+    return `
+        <div class="modal fade" id="modalShowMoreData" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                <div class="modal-content sub-div-shadow">
+                    <div class="modal-header" id="modalHeader"></div>
+                    <div class="modal-body" id="modalBody"></div>
+                </div>
+            </div>
+        </div>
+    `;
 };

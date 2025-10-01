@@ -12,7 +12,7 @@ export const render = async () => {
     let template = `<div class="container-fluid">`
     template +=` 
         <div id="root root-margin">
-            <span> <h4 style="text-align: center; padding-top: 25px;">Site Messages </h4> </span>
+            <span> <h4 style="text-align: center; padding-top: 25px;">Automated Refusal/Withdrawal Notifications to Sites</h4> </span>
         </div>
     </div>`
 

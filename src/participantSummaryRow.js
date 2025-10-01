@@ -30,6 +30,9 @@ export const verificationStatus = (participant) => {
     } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.notYetVerified) {
         template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Enrollment", "N/A", "Verification Status", "Not yet Verified",
         "N/A", "N/A", "N", "N/A");
+    } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.noLongerEnrolling) {
+        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "Verification Status", "No Longer Enrolling",
+        formatUTCDate(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
     } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate) {
         template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "Verification Status", "Duplicate",
         formatUTCDate(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
@@ -495,22 +498,6 @@ export const baselineMenstrualSurvey = (participant) => {
     }
 
     return template;
-}
-
-export const baselineEMR = (participantModule) => {
-    const baselineEMR = participantModule[fieldMapping.baselineEMR]
-    let template = ``;
-
-    if (!baselineEMR) {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "EMR", "N/A", "Not Pushed", "N/A", "N/A", "N", "N/A");
-    } else if (baselineEMR[fieldMapping.baselineEMRflag] === fieldMapping.yes) {
-        template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "EMR", "N/A", "Pushed",
-        formatUTCDate(baselineEMR[fieldMapping.baselineEMRpushDate]), "N/A", "N/A", "N/A");
-    } else {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "EMR", "N/A", "Not Pushed", "N/A", "N/A", "N/A", "N/A");
-    }
-    
-    return template;    
 }
 
 export const baselinePayment = (participantModule) => {

@@ -1,6 +1,6 @@
 import { renderParticipantLookup } from './src/participantLookup.js';
 import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, removeActiveClass } from './src/navigationBar.js';
-import { renderTable, renderData, activeColumns, renderFilters } from './src/participantCommons.js';
+import { renderTable, renderParticipantSearchResults, activeColumns, renderFilters, renderTablePage } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
@@ -16,7 +16,7 @@ import { renderSiteMessages } from './src/siteMessages.js';
 import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
-import { internalNavigatorHandler, getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, resetPagination, resetFilters, escapeHTML } from './src/utils.js';
+import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, resetPagination, resetFilters, escapeHTML, renderSiteDropdown, triggerNotificationBanner, clearUnsaved, clearParticipant, showConfirmModal, showAlertModal } from './src/utils.js';
 import fieldMapping from './src/fieldToConceptIdMapping.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
@@ -28,8 +28,6 @@ import { SSOConfig as stageSSOConfig} from './config/stage/identityProvider.js';
 import { SSOConfig as prodSSOConfig} from './config/prod/identityProvider.js';
 import { appState } from './src/stateManager.js';
 
-let saveFlag = false;
-let counter = 0;
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
@@ -107,10 +105,13 @@ window.onload = async () => {
 
     !isLocalDev && window.DD_RUM && window.DD_RUM.startSessionReplayRecording();
 
+    // TODO: Initialize appState here (Oct 2025).
+    //await initializeAppState();
+    
     router();
-    localStorage.setItem("flags", JSON.stringify(saveFlag));
-    localStorage.setItem("counters", JSON.stringify(counter));
     activityCheckController();
+    
+    // TODO: manage user session in sessionStorage
     const userSession = localStorage.getItem('userSession');
     userSession && appState.setState({ userSession: JSON.parse(userSession) });
 
@@ -121,13 +122,23 @@ window.onload = async () => {
     } else {
       appState.setState({statsData: {}, statsDataUpdateTime: 0});
     }
-    
 };
 
 window.onhashchange = () => {
     router();
 };
 
+// Participant-dependent routes that require an active participant
+const participantRoutes = [
+        '#participantDetails',
+        '#participantSummary', 
+        '#participantMessages',
+        '#requestHomeCollectionKit',
+        '#pathologyReportUpload',
+        '#participantWithdrawal'
+    ];
+
+// Data corrections tool routes also require an active participant
 const dataCorrectionsToolRoutes = [
     '#dataCorrectionsToolSelection',
     '#incentiveEligibilityTool',
@@ -135,122 +146,130 @@ const dataCorrectionsToolRoutes = [
     '#verificationCorrectionsTool',
 ];
 
+// TODO: centralize in appState
+// Track previous hash for 'no participant selected' and 'unsaved changes' guards.
+let previousHash = window.location.hash;
 
+/**
+ * Primary routing logic for the app.
+ * Handles both participant-dependent and non-participant routes.
+ * Manages navigation guards for unsaved participant details changes and participant selection.
+ * Maintains browser hash tracking for back button functionality.
+ * Supports both authenticated and unauthenticated states.
+ * Redirects to login page if not authenticated and not on login route.
+ * Redirects to home page if authenticated and on login route.
+ * window.onhashchange directs the calls to router.
+ * @returns {void} 
+ */
 const router = async () => {
     const hash = decodeURIComponent(window.location.hash);
     const route = hash || '#';
     const isParent = localStorage.getItem('isParent')
-    if (await userLoggedIn() || localStorage.dashboard) {
-        if (route === '#home') renderDashboard();
-        else if (route === '#participants/notyetverified') renderParticipants('notyetverified');
-        else if (route === '#participants/cannotbeverified') renderParticipants('cannotbeverified');
-        else if (route === '#participants/verified') renderParticipants('verified');
-        else if (route === '#participants/all') renderParticipants('all');
-        else if (route === '#participants/profilenotsubmitted') renderParticipants('profileNotSubmitted');
-        else if (route === '#participants/consentnotsubmitted') renderParticipants('consentNotSubmitted');
-        else if (route === '#participants/notsignedin') renderParticipants('notSignedIn');
-        else if (route === '#participantLookup') renderParticipantLookup();
-        else if (route === '#participantDetails') {
-            if (JSON.parse(localStorage.getItem("participant")) === null) {
-                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
-            } else {
-                let participant = JSON.parse(localStorage.getItem("participant"));
-                let changedOption = {};
-                renderParticipantDetails(participant, changedOption);
-            }
+
+    // Guard: Unsaved changes in participant details form
+    const state = appState.getState() || {};
+    if (state.hasUnsavedChanges) {
+        const proceed = await showConfirmModal({
+            title: 'Unsaved Changes',
+            message: 'You have unsaved changes. Continue and lose your edits?',
+            confirmText: 'Continue',
+            cancelText: 'Stay'
+        });
+        if (!proceed) {
+            history.replaceState(null, null, previousHash || '#');
+            return;
         }
-        else if (route === '#participantSummary') {
-            if (JSON.parse(localStorage.getItem("participant")) === null) {
-                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
+        clearUnsaved();
+    }
+
+    // Update browser hash tracking once route is cleared for navigation
+    const markNavigationSucceeded = () => { previousHash = route; };
+
+    // Authenticated
+    if (await userLoggedIn() || localStorage.dashboard) {
+
+        // If authenticated and on login route, send to home
+        if (route === '#login') {
+            markNavigationSucceeded();
+            window.location.hash = '#home';
+            return;
+        }
+
+        // Handle participant-dependent routes
+        if (participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route)) {
+            const participant = JSON.parse(localStorage.getItem("participant"));
+            if (!participant) {
+                await showAlertModal({
+                    title: 'Participant Required',
+                    message: 'No participant selected. Please select a participant from the participants dropdown or the participant lookup page',
+                    okText: 'OK'
+                });
+                history.replaceState(null, null, previousHash || '#');
+                return;
             }
-            else {
-                let participant = JSON.parse(localStorage.getItem("participant"));
+
+            markNavigationSucceeded();
+
+            // Phys Act report data needs to be fetched from BQ. DHQ Report data is found in the participant object.
+            if (route === '#participantSummary') {
                 let reports = {};
-                //Retrive the Physical Activity Report
                 let physActReport = await retrievePhysicalActivityReport(participant);
                 if (physActReport) {
                     reports.physActReport = physActReport;
                 }
-                renderParticipantSummary(participant, reports);
+                return renderParticipantSummary(participant, reports);
             }
-        }
-        else if (route === '#participantMessages') {
-            if (JSON.parse(localStorage.getItem("participant")) === null) {
-                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
-            }
-            else {
-                let participant = JSON.parse(localStorage.getItem("participant"))
-                renderParticipantMessages(participant);
-            }
-        }
-        else if (route === '#requestHomeCollectionKit') {
-            const participant = JSON.parse(localStorage.getItem("participant"));
-            if (participant === null) {
-                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
-            }
-            else {
-                let participant = JSON.parse(localStorage.getItem("participant"))
-                renderKitRequest(participant);
-            }
-        } else if (route === '#requestAKitConditions') {
-            renderRequestAKitConditions();
-        } else if (route === '#pathologyReportUpload') {
-            const participantData = JSON.parse(localStorage.getItem("participant"));
-            if (participantData === null) {
-                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page.");
-                return;
-            } 
-                
-            renderPathologyReportUploadPage(participantData);
-        } else if (route === '#ehrUpload') {
-            renderEhrUploadPage();
-        }
-        else if (dataCorrectionsToolRoutes.includes(route)) {
-            if (JSON.parse(localStorage.getItem("participant")) === null) {
-                alert("No participant selected. Please select a participant from the participants dropdown or the participant lookup page");
-            }
-            else {
-                let participant = JSON.parse(localStorage.getItem("participant"));
-
-                switch(route) {
-                    case '#dataCorrectionsToolSelection':
-                        setupDataCorrectionsSelectionToolPage(participant)
-                        break;
-                    case '#verificationCorrectionsTool':
-                        setupVerificationCorrectionsPage(participant)
-                        break;
-                    case '#surveyResetTool':
-                        setupSurveyResetToolPage(participant)
-                        break;
-                    case '#incentiveEligibilityTool':
-                        setupIncentiveEligibilityToolPage(participant)
-                        break;
-                    default:
-                        window.location.hash = '#dataCorrectionsToolSelection';
-                        break;
-                }
-            }
+            else if (route === '#participantDetails') return renderParticipantDetails(participant)
+            else if (route === '#participantMessages') return renderParticipantMessages(participant)
+            else if (route === '#requestHomeCollectionKit') return renderKitRequest(participant)
+            else if (route === '#pathologyReportUpload') return renderPathologyReportUploadPage(participant)
+            else if (route === '#participantWithdrawal') return renderParticipantWithdrawal(participant)
+            else if (route === '#dataCorrectionsToolSelection') return setupDataCorrectionsSelectionToolPage(participant)
+            else if (route === '#verificationCorrectionsTool') return setupVerificationCorrectionsPage(participant)
+            else if (route === '#surveyResetTool') return setupSurveyResetToolPage(participant)
+            else if (route === '#incentiveEligibilityTool') return setupIncentiveEligibilityToolPage(participant)
         }
 
-        else if (route === '#siteMessages') renderSiteMessages();
-        else if (route === '#participantWithdrawal' && isParent === 'true') {
-            if (JSON.parse(localStorage.getItem("participant")) === null) {
-                renderParticipantWithdrawal();
-            }
-            else {
-                let participant = JSON.parse(localStorage.getItem("participant"))
-                renderParticipantWithdrawal(participant);
-            }
+        // Handle all other routes
+        markNavigationSucceeded();
+        
+        // Clear unsaved state and active participant for non-participant routes
+        if (!participantRoutes.includes(route) && !dataCorrectionsToolRoutes.includes(route)) {
+            clearUnsaved();
+            clearParticipant();
         }
-        else if (route === '#notifications/createnotificationschema') createNotificationSchema();
-        else if (route === '#notifications/retrievenotificationschema') renderRetrieveNotificationSchema();
-        else if (route === '#notifications/editSchema') editNotificationSchema();
-        else if (route === '#notifications/showDraftSchemas') showDraftSchemas();
-        else if (route === '#logout') clearLocalStorage();
-        else window.location.hash = '#home';
+
+        if (route === '#participants/notyetverified') return renderParticipants('notyetverified');
+        else if (route === '#participants/cannotbeverified') return renderParticipants('cannotbeverified');
+        else if (route === '#participants/verified') return renderParticipants('verified');
+        else if (route === '#participants/all') return renderParticipants('all');
+        else if (route === '#participants/profilenotsubmitted') return renderParticipants('profileNotSubmitted');
+        else if (route === '#participants/consentnotsubmitted') return renderParticipants('consentNotSubmitted');
+        else if (route === '#participants/notsignedin') return renderParticipants('notSignedIn');
+        else if (route === '#siteMessages') return renderSiteMessages();
+        else if (route === '#notifications/createnotificationschema') return createNotificationSchema();
+        else if (route === '#notifications/retrievenotificationschema') return renderRetrieveNotificationSchema();
+        else if (route === '#notifications/editSchema') return editNotificationSchema();
+        else if (route === '#notifications/showDraftSchemas') return showDraftSchemas();
+        else if (route === '#requestAKitConditions') return renderRequestAKitConditions();
+        else if (route === '#ehrUpload') return renderEhrUploadPage();
+        else if (route === '#logout') return clearLocalStorage();
+        else if (route === '#participantLookup') return renderParticipantLookup();
+        else if (route !== '#home' && route !== '#') {
+            console.error('Unhandled route. Going to home page. Route:', route);
+            window.location.hash = '#home';
+        }
+        return renderDashboard();
     }
-    else if (route === '#') homePage();
-    else window.location.hash = '#';
+
+    // Not authenticated
+    clearParticipant();
+    if (route !== '#login') {
+        window.location.hash = '#login';
+        return;
+    }
+    markNavigationSucceeded();
+    return loginPage();
 }
 
 const headsupBanner = () => {
@@ -262,9 +281,11 @@ const headsupBanner = () => {
                     </div>`;
 };
 
-const homePage = () => {
+const loginPage = () => {
+    // TODO: rm localStorage.dashboard usage.
     if (localStorage.dashboard) {
         window.location.hash = '#home';
+        return;
     }
     else {
         document.getElementById('navBarLinks').innerHTML = renderNavBarLinks();
@@ -300,7 +321,8 @@ const homePage = () => {
                 .then((result) => {
                     appState.setState({userSession:{email: result.user.email}});
                     localStorage.setItem('userSession', JSON.stringify({email: result.user.email}));
-                    location.hash = '#home'
+                    location.hash = '#home';
+                    router();
                 })
                 .catch((error) => {
                     console.log(error);
@@ -338,7 +360,6 @@ const renderDashboard = async () => {
             location.host !== urls.prod ? mainContent.innerHTML = headsupBanner() : ``
             renderCharts(idToken);
         }
-        internalNavigatorHandler(counter); // function call to prevent internal navigation when there's unsaved changes
         if (isAuthorized.code === 401) {
             clearLocalStorage();
         }
@@ -370,13 +391,17 @@ const renderCharts = async (accessToken) => {
     localStorage.setItem('dropDownstatusFlag', false);
     if (localStorage.getItem('isParent') === 'true') {
         localStorage.setItem('dropDownstatusFlag', true);
-        const siteSelectionRow = document.createElement('div');
-        siteSelectionRow.classList = ['row'];
-        siteSelectionRow.id = 'siteSelection';
-        siteSelectionRow.innerHTML = renderSiteKeyList();
-        mainContent.appendChild(siteSelectionRow);
-        const sitekeyName = 'Filter by Site';
-        handleSiteSelection(sitekeyName);
+
+        let siteSelectionRow = document.getElementById('siteSelection');
+        if (!siteSelectionRow) {
+            siteSelectionRow = document.createElement('div');
+            siteSelectionRow.id = 'siteSelection';
+            siteSelectionRow.className = 'row';
+            mainContent.appendChild(siteSelectionRow);
+        }
+
+        siteSelectionRow.innerHTML = `<div style="padding:15px;">${renderSiteDropdown('dashboard')}</div>`;
+        handleSiteSelection('All Sites', 'allResults');
     }
 
     const transformedData = transformDataForCharts(statsData);
@@ -464,34 +489,15 @@ const transformDataForCharts = (siteData) => {
   };
 };
 
-const renderSiteKeyList = () => {
-    const template = `    
-        <div style="margin-top:10px; padding:15px;" class="dropdown">
-            <button class="btn btn-secondary dropdown-toggle dropdown-toggle-sites" id="dropdownSites" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Filter by Site
-            </button>
-            <ul class="dropdown-menu" id="dropdownMenuButtonSites" aria-labelledby="dropdownMenuButton">
-                <li><a class="dropdown-item" data-siteKey="allResults" id="all">All</a></li>
-                <li><a class="dropdown-item" data-siteKey="BSWH" id="BSWH">Baylor Scott & White Health</a></li>
-                <li><a class="dropdown-item" data-siteKey="hfHealth" id="hfHealth">Henry Ford HS</a></li>
-                <li><a class="dropdown-item" data-siteKey="hPartners" id="hPartners">Health Partners</a></li>
-                <li><a class="dropdown-item" data-siteKey="kpGA" id="kpGA">KP GA</a></li>
-                <li><a class="dropdown-item" data-siteKey="kpHI" id="kpHI">KP HI</a></li>
-                <li><a class="dropdown-item" data-siteKey="kpNW" id="kpNW">KP NW</a></li>
-                <li><a class="dropdown-item" data-siteKey="kpCO" id="kpCO">KP CO</a></li>
-                <li><a class="dropdown-item" data-siteKey="maClinic" id="maClinic">Marshfield Clinic</a></li>
-                ${((location.host !== urls.prod) && (location.host !== urls.stage)) ? `<li><a class="dropdown-item" data-siteKey="nci" id="nci">NCI</a></li>` : ``}
-                <li><a class="dropdown-item" data-siteKey="snfrdHealth" id="snfrdHealth">Sanford Health</a></li>
-                <li><a class="dropdown-item" data-siteKey="uChiM" id="uChiM">UofC Medicine</a></li>
-            </ul>
-        </div>
-        `;
-    return template;
-};
-
-const handleSiteSelection = (siteTextContent) => {
+/**
+ * Handles the site selection button click event and renders the dashboard
+ * @param {string} siteTextContent - Text content for the site selection button
+ * @param {string} siteKey - Key for the site selection button
+ */
+const handleSiteSelection = (siteTextContent = 'All Sites', siteKey = 'allResults') => {
     const siteSelectionButton = document.getElementById("dropdownSites");
     siteSelectionButton.innerHTML = siteTextContent;
+    siteSelectionButton && (siteSelectionButton.dataset.sitekey = siteKey);
 
     const dropdownMenuButton = document.getElementById("dropdownMenuButtonSites");
     dropdownMenuButton && dropdownMenuButton.addEventListener("click", (e) => {
@@ -1024,19 +1030,25 @@ const filterBiospecimenStats = (data, verifiedParticipants) => {
 }
 
 const reRenderDashboard = async (siteTextContent, siteKey) => {
-  mainContent.innerHTML = `<div class="row" id="siteSelection">${renderSiteKeyList()}</div>`;
+  mainContent.innerHTML = '';
+
+  const siteSelectionRow = document.createElement('div');
+  siteSelectionRow.id = 'siteSelection';
+  siteSelectionRow.className = 'row';
+  siteSelectionRow.innerHTML = `<div style="padding:15px;">${renderSiteDropdown('dashboard')}</div>`;
+  mainContent.appendChild(siteSelectionRow);
+
   const siteCode = nameToKeyObj[siteKey];
   const siteData = filterDataBySiteCode(siteCode);
   const transformedData = transformDataForCharts(siteData);
   renderAllCharts(transformedData);
-  handleSiteSelection(siteTextContent);
+  handleSiteSelection(siteTextContent, siteKey);
   hideAnimation();
 };
 
 
 export const clearLocalStorage = () => {
     firebase.auth().signOut();
-    internalNavigatorHandler(counter);
     hideAnimation();
     delete localStorage.dashboard;
     delete localStorage.participant;
@@ -1063,6 +1075,7 @@ const filterDataBySiteCode = (siteCode) => {
 
   return result;
 };
+
 /**
  * Renders the participants table based on the specified filter type.
  *
@@ -1073,30 +1086,47 @@ const filterDataBySiteCode = (siteCode) => {
  * @returns {Promise<void>}
  */
 const renderParticipants = async (type) => {
-    showAnimation();
+    try {
+        showAnimation();
 
-    resetFilters();
-    resetPagination();
+        resetFilters();
+        resetPagination();
 
-    appState.setState({ participantTypeFilter: type, siteCode: `` });
-    const response = await getParticipants();
-    const data = sortByKey(response.data, fieldMapping.healthcareProvider);
+        appState.setState({ participantTypeFilter: type, siteCode: nameToKeyObj.allResults });
+        const response = await getParticipants();
+        
+        if (response.code === 401) {
+            clearLocalStorage();
+            triggerNotificationBanner(
+                'Not authorized. Please log in again.',
+                'danger',
+                4000
+            );
+            
+        } else if (response.code !== 200) {
+            throw new Error(`Failed to fetch participants: ${response.code} - ${response.message || 'Unknown error'}`);
+        }
 
-    if (response.code === 200) {
+        const data = sortByKey(response.data, fieldMapping.healthcareProvider);
 
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
         updateActiveElements(type);
         mainContent.innerHTML = renderTable(data, type);
 
-        renderData(data, type);
+        renderParticipantSearchResults(data, type);
         activeColumns(data);
         renderFilters();
-        hideAnimation();
-    }
 
-    internalNavigatorHandler(counter);
-    if (response.code === 401) {
-        clearLocalStorage();
+    } catch (error) {
+        console.error('Error rendering participants:', error);
+        triggerNotificationBanner(
+            'Error loading participant data. Please try again. If the problem persists, please contact support.',
+            'danger',
+            4000
+        );
+        
+    } finally {
+        hideAnimation();
     }
 }
 

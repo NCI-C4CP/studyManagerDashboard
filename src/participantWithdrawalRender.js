@@ -6,186 +6,186 @@ export const renderRefusalOptions = () => {
                     <span><h6>Reason for refusal/withdrawal (select all that apply):​</h6></span>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I’m no longer interested in the study​" name="options" 
-                        data-optionKey=${fieldMapping.noLongerInterested} id="defaultCheck1">
-                        <label class="form-check-label" for="defaultCheck1">
+                        data-optionkey=${fieldMapping.noLongerInterested} id="initialSurveyCheck">
+                        <label class="form-check-label" for="initialSurveyCheck">
                             I’m no longer interested in the study​
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I’m too busy/the study takes too much time​" name="options" 
-                        data-optionKey=${fieldMapping.tooBusy} id="defaultCheck2">
-                        <label class="form-check-label" for="defaultCheck2">
+                        data-optionkey=${fieldMapping.tooBusy} id="baselineBloodDonationCheck">
+                        <label class="form-check-label" for="baselineBloodDonationCheck">
                             I’m too busy/the study takes too much time​
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I’m concerned about my privacy​" name="options" 
-                        data-optionKey=${fieldMapping.concernedAboutPrivacy} id="defaultCheck3">
-                        <label class="form-check-label" for="defaultCheck3">
+                        data-optionkey=${fieldMapping.concernedAboutPrivacy} id="baselineUrineDonationCheck">
+                        <label class="form-check-label" for="baselineUrineDonationCheck">
                             I’m concerned about my privacy​
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I’m not able to complete the study activities online" name="options" 
-                        data-optionKey=${fieldMapping.unableToCompleteOnlineActivites} id="defaultCheck4">
-                        <label class="form-check-label" for="defaultCheck4">
+                        data-optionkey=${fieldMapping.unableToCompleteOnlineActivites} id="baselineMouthwashDonationCheck">
+                        <label class="form-check-label" for="baselineMouthwashDonationCheck">
                             I’m not able to complete the study activities online
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I think the payment or benefit to participate is not great enough" name="options" 
-                        data-optionKey=${fieldMapping.paymentInsufficient} id="defaultCheck6">
-                        <label class="form-check-label" for="defaultCheck6">
+                        data-optionkey=${fieldMapping.paymentInsufficient} id="allFutureSurveysCheck">
+                        <label class="form-check-label" for="allFutureSurveysCheck">
                         I think the payment or benefit to participate is not great enough
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I’m too sick/my health is too poor to participate" name="options" 
-                        data-optionKey=${fieldMapping.tooSick} id="defaultCheck7">
-                        <label class="form-check-label" for="defaultCheck7">
+                        data-optionkey=${fieldMapping.tooSick} id="allFutureSpecimensCheck">
+                        <label class="form-check-label" for="allFutureSpecimensCheck">
                             I’m too sick/my health is too poor to participate
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I don’t have reliable access to the internet/a device" name="options" 
-                        data-optionKey=${fieldMapping.noInternet} id="defaultCheck8">
-                        <label class="form-check-label" for="defaultCheck8">
+                        data-optionkey=${fieldMapping.noInternet} id="allFutureStudyActivitiesCheck">
+                        <label class="form-check-label" for="allFutureStudyActivitiesCheck">
                             I don’t have reliable access to the internet/a device
                         </label>
                     </div>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I don’t like to do things online" name="options" 
-                        data-optionKey=${fieldMapping.dontLikeThingsOnline} id="defaultCheck">
-                        <label class="form-check-label" for="defaultCheck">
+                        data-optionkey=${fieldMapping.dontLikeThingsOnline} id="dontLikeThingsOnlineCheck">
+                        <label class="form-check-label" for="dontLikeThingsOnlineCheck">
                             I don’t like to do things online
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I’m worried about receiving results from the study" name="options" 
-                        data-optionKey=${fieldMapping.worriedAboutResults} id="defaultCheck9">
-                        <label class="form-check-label" for="defaultCheck9">
+                        data-optionkey=${fieldMapping.worriedAboutResults} id="revokeHipaaAuthorizationCheck">
+                        <label class="form-check-label" for="revokeHipaaAuthorizationCheck">
                             I’m worried about receiving results from the study
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I’m worried the study might find something concerning about me" name="options" 
-                        data-optionKey=${fieldMapping.concernedAboutResults} id="defaultCheck10">
-                        <label class="form-check-label" for="defaultCheck10">
+                        data-optionkey=${fieldMapping.concernedAboutResults} id="withdrawConsentCheck">
+                        <label class="form-check-label" for="withdrawConsentCheck">
                             I’m worried the study might find something concerning about me
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I don’t trust the government" name="options" 
-                        data-optionKey=${fieldMapping.doesntTrustGov} id="defaultCheck11">
-                        <label class="form-check-label" for="defaultCheck11">
+                        data-optionkey=${fieldMapping.doesntTrustGov} id="destroyDataCheck">
+                        <label class="form-check-label" for="destroyDataCheck">
                             I don’t trust the government
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I don’t trust research/researchers" name="options" 
-                        data-optionKey=${fieldMapping.doesntTrustResearch} id="defaultCheck12">
-                        <label class="form-check-label" for="defaultCheck12">
+                        data-optionkey=${fieldMapping.doesntTrustResearch} id="participantDeceasedCheck">
+                        <label class="form-check-label" for="participantDeceasedCheck">
                             I don’t trust research/researchers
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I don’t want my information shared with other researchers" name="options" 
-                        data-optionKey=${fieldMapping.doesntWantInfoWithResearchers} id="defaultCheck13">
-                        <label class="form-check-label" for="defaultCheck13">
+                        data-optionkey=${fieldMapping.doesntWantInfoWithResearchers} id="doesntWantInfoSharedWithResearchers">
+                        <label class="form-check-label" for="doesntWantInfoSharedWithResearchers">
                             I don’t want my information shared with other researchers
                         </label>
                     </div>
                     <div class="form-check">
                             <input class="form-check-input" type="checkbox" value="I’m worried my information isn’t secure or there will be a data breach" name="options" 
-                            data-optionKey=${fieldMapping.worriedAboutDataBreach} id="defaultCheck14">
-                            <label class="form-check-label" for="defaultCheck14">
+                            data-optionkey=${fieldMapping.worriedAboutDataBreach} id="worriedAboutDataBreach">
+                            <label class="form-check-label" for="worriedAboutDataBreach">
                                 I’m worried my information isn’t secure or there will be a data breach
                             </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I’m worried about data being given to my insurance company/effects on insurance (health, life, other)" name="options" 
-                        data-optionKey=${fieldMapping.worriedAboutInsurance} id="defaultCheck15">
-                        <label class="form-check-label" for="defaultCheck15">
+                        data-optionkey=${fieldMapping.worriedAboutInsurance} id="worriedAboutInsurance">
+                        <label class="form-check-label" for="worriedAboutInsurance">
                             I’m worried about data being given to my insurance company/effects on insurance (health, life, other)
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I’m worried about data being given to my employer/potential employer" name="options" 
-                        data-optionKey=${fieldMapping.worriedAboutEmployer} id="defaultCheck16">
-                        <label class="form-check-label" for="defaultCheck16">
+                        data-optionkey=${fieldMapping.worriedAboutEmployer} id="worriedAboutEmployer">
+                        <label class="form-check-label" for="worriedAboutEmployer">
                             I’m worried about data being given to my employer/potential employer
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I’m worried that my information could be used to discriminate against me/my family" name="options" 
-                        data-optionKey=${fieldMapping.worriedAboutDiscrimination} id="defaultCheck17">
-                        <label class="form-check-label" for="defaultCheck17">
+                        data-optionkey=${fieldMapping.worriedAboutDiscrimination} id="worriedAboutDiscrimination">
+                        <label class="form-check-label" for="worriedAboutDiscrimination">
                             I’m worried that my information could be used to discriminate against me/my family
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I’m worried that my information will be used by others to make a profit" name="options" 
-                        data-optionKey=${fieldMapping.worriedAboutInformationMisue} id="defaultCheck18">
-                        <label class="form-check-label" for="defaultCheck18">
+                        data-optionkey=${fieldMapping.worriedAboutInformationMisue} id="worriedAboutInformationMisue">
+                        <label class="form-check-label" for="worriedAboutInformationMisue">
                              I’m worried that my information will be used by others to make a profit
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I have other privacy concerns" name="options" 
-                        data-optionKey=${fieldMapping.worriedAboutOtherPrivacyConcerns} id="defaultCheck19">
-                        <label class="form-check-label" for="defaultCheck19">
+                        data-optionkey=${fieldMapping.worriedAboutOtherPrivacyConcerns} id="worriedAboutOtherPrivacyConcerns">
+                        <label class="form-check-label" for="worriedAboutOtherPrivacyConcerns">
                             I have other privacy concerns
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I’m concerned about COVID-19" name="options" 
-                        data-optionKey=${fieldMapping.concernedAboutCovid} id="defaultCheck20">
-                        <label class="form-check-label" for="defaultCheck20">
+                        data-optionkey=${fieldMapping.concernedAboutCovid} id="concernedAboutCovid">
+                        <label class="form-check-label" for="concernedAboutCovid">
                             I’m concerned about COVID-19
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="Participant is now unable to participate" name="options" 
-                        data-optionKey=${fieldMapping.participantUnableToParticipate} id="defaultCheck21">
-                        <label class="form-check-label" for="defaultCheck21">
+                        data-optionkey=${fieldMapping.participantUnableToParticipate} id="participantUnableToParticipate">
+                        <label class="form-check-label" for="participantUnableToParticipate">
                             Participant is now unable to participate
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="Participant is incarcerated" name="options" 
-                        data-optionKey=${fieldMapping.participantIncarcerated} id="defaultCheck22">
-                        <label class="form-check-label" for="defaultCheck22">
+                        data-optionkey=${fieldMapping.participantIncarcerated} id="participantIncarcerated">
+                        <label class="form-check-label" for="participantIncarcerated">
                             Participant is incarcerated
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="I am concerned about providing information online" name="options" 
-                        data-optionKey=${fieldMapping.concernedInfoOnline} id="defaultCheck22">
-                        <label class="form-check-label" for="defaultCheck22">
+                        data-optionkey=${fieldMapping.concernedInfoOnline} id="concernedInfoOnline">
+                        <label class="form-check-label" for="concernedInfoOnline">
                             I am concerned about providing information online
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="Too many technical problems with MyConnect" name="options" 
-                        data-optionKey=${fieldMapping.tooManyTechnicalProblems} id="tooManyTechnicalProblemsCheckbox">
+                        data-optionkey=${fieldMapping.tooManyTechnicalProblems} id="tooManyTechnicalProblemsCheckbox">
                         <label class="form-check-label" for="tooManyTechnicalProblemsCheckbox">
                             Too many technical problems with MyConnect
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="Reason not given" name="options" 
-                        data-optionKey=${fieldMapping.reasonNotGiven}  id="defaultCheck23">
-                        <label class="form-check-label" for="defaultCheck23">
+                        data-optionkey=${fieldMapping.reasonNotGiven}  id="reasonNotGiven">
+                        <label class="form-check-label" for="reasonNotGiven">
                             Reason not given
                         </label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="Other reasons" name="options" data-optionKey=${fieldMapping.otherReasons} id="defaultCheck23">
-                        <label class="form-check-label" for="defaultCheck23">
+                        <input class="form-check-input" type="checkbox" value="Other reasons" name="options" data-optionkey=${fieldMapping.otherReasons} id="otherReasons">
+                        <label class="form-check-label" for="otherReasons">
                             Other reasons: 
                         </label>
-                        <input type="text" id="defaultCheck24" name="defaultCheck24" data-optionKey=${fieldMapping.otherReasonsSpecify}><br>
+                        <input type="text" id="otherReasonsInput" name="otherReasonsInput" data-optionkey=${fieldMapping.otherReasonsSpecify}><br>
                     </div>
                 </div> 
                 <div style="display:inline-block; margin-top:20px;">
@@ -202,7 +202,7 @@ export const renderCauseOptions = () => {
                     <span> Date of Death:
                     <div class="form-group row">
                     <label class="col-md-4 col-form-label">Month</label>
-                    <select id="page2Month" class="form-control required-field col-md-4" data-error-required='Please select your Month.'>
+                    <select id="causeOfDeathMonth" class="form-control required-field col-md-4" data-error-required='Please select your Month.'>
                         <option class="option-dark-mode" value="">Select month</option>
                         <option class="option-dark-mode" value="01">1 - January</option>
                         <option class="option-dark-mode" value="02">2 - February</option>
@@ -220,12 +220,12 @@ export const renderCauseOptions = () => {
                 </div>
                 <div class="form-group row">
                     <label class="col-md-4 col-form-label">Day</label>
-                    <select class="form-control required-field col-md-4" data-error-required='Please select your day.' id="page2Day"></select>
+                    <select class="form-control required-field col-md-4" data-error-required='Please select your day.' id="causeOfDeathDay"></select>
                 </div>
                 <div class="form-group row">
                     <label class="col-md-4 col-form-label">Year</label>
                     <input type="text" class="form-control required-field input-validation col-md-4" data-error-required='Please select your year.' 
-                    data-validation-pattern="year" data-error-validation="Your year must contain four digits in the YYYY format." maxlength="4" id="page2Year" list="yearsOption" title="Year, must be in 1900s" Placeholder="Enter year">
+                    data-validation-pattern="year" data-error-validation="Your year must contain four digits in the YYYY format." maxlength="4" id="causeOfDeathYear" list="yearsOption" title="Year, must be in 1900s" Placeholder="Enter year">
                     <datalist id="yearsOption"></datalist>
                 </div>
                     </span>
@@ -233,36 +233,36 @@ export const renderCauseOptions = () => {
                     <span><b> Source of Report:​ </b></span>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="options" value="Spouse/partner" 
-                        data-optionKey=${fieldMapping.spouse} id="defaultCheck2">
-                        <label class="form-check-label" for="defaultCheck2">
+                        data-optionkey=${fieldMapping.spouse} id="baselineBloodDonationCheck">
+                        <label class="form-check-label" for="baselineBloodDonationCheck">
                             Spouse/partner​
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="options" value="Child​" 
-                        data-optionKey=${fieldMapping.child} id="defaultCheck3">
-                        <label class="form-check-label" for="defaultCheck3">
+                        data-optionkey=${fieldMapping.child} id="baselineUrineDonationCheck">
+                        <label class="form-check-label" for="baselineUrineDonationCheck">
                             Child​
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="options" value="Other relative or proxy" 
-                        data-optionKey=${fieldMapping.otherRelative} id="defaultCheck4">
-                        <label class="form-check-label" for="defaultCheck4">
+                        data-optionkey=${fieldMapping.otherRelative} id="baselineMouthwashDonationCheck">
+                        <label class="form-check-label" for="baselineMouthwashDonationCheck">
                             Other relative or proxy​
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="options" value="IHCS Staff" 
-                        data-optionKey=${fieldMapping.ihcsStaff} id="defaultCheck5">
-                        <label class="form-check-label" for="defaultCheck5">
+                        data-optionkey=${fieldMapping.ihcsStaff} id="baselineSpecimenSurveyCheck">
+                        <label class="form-check-label" for="baselineSpecimenSurveyCheck">
                             IHCS Staff​
                         </label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="options" value="Other" 
-                        data-optionKey=${fieldMapping.other} id="defaultCheck6">
-                        <label class="form-check-label" for="defaultCheck6">
+                        data-optionkey=${fieldMapping.other} id="allFutureSurveysCheck">
+                        <label class="form-check-label" for="allFutureSurveysCheck">
                             Other
                         </label>
                     </div>
