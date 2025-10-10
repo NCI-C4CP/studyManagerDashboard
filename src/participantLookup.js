@@ -46,17 +46,17 @@ export function renderParticipantSearch() {
                             </div>
                             <div class="form-group">
                                 <label class="col-form-label search-label">Date of birth</label>
-                                <input class="form-control" type="date" id="dob"/>
+                                <input class="form-control" autocomplete="off" type="date" id="dob"/>
                             </div>
                             <div class="form-group">
                                 <label class="col-form-label search-label">Phone number</label>
-                                <input class="form-control phone-input" id="phone" placeholder="(999) 999-9999" maxlength="14"/>
+                                <input class="form-control phone-input" autocomplete="off" id="phone" placeholder="(999) 999-9999" maxlength="14"/>
                             </div>
                             <span><i> (OR) </i></span>
                             <br />
                             <div class="form-group">
                                 <label class="col-form-label search-label">Email</label>
-                                <input class="form-control" type="email" id="email" placeholder="Enter Email"/>
+                                <input class="form-control" autocomplete="off" type="email" id="email" placeholder="Enter Email"/>
                             </div>
                             ${renderSiteDropdown('lookup', 'dropdownMenuLookupSites')}
                             <div id="search-failed" class="search-not-found" hidden>
