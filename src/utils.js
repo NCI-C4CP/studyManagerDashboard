@@ -1,7 +1,7 @@
 import en from "../i18n/en.js";
 import es from "../i18n/es.js";
 import { nameToKeyObj } from './idsToName.js';
-import { appState } from './stateManager.js';
+import { appState, participantState } from './stateManager.js';
 
 const i18n = {
     es, en
@@ -47,29 +47,6 @@ export const convertToISO8601 = (dateString, useEST) => {
     }
   }
   return dateObj.toISOString();
-};
-
-
-// TODO: move markUnsaved, clearUnsaved, and clearParticipant to stateManager once it's implemented.
-/**
- * Mark there are unsaved changes in the UI
- */
-export const markUnsaved = () => {
-  appState.setState({ hasUnsavedChanges: true });
-};
-
-/**
- * Clear the unsaved changes indicator
- */
-export const clearUnsaved = () => {
-  appState.setState({ hasUnsavedChanges: false });
-};
-
-export const clearParticipant = () => {
-  appState.setState({ participant: null });
-  // TODO: remove localStorage usage during appState transition
-  // (maybe session storage for pt data?)
-  localStorage.removeItem('participant');
 };
 
 import { keyToNameObj } from './idsToName.js';

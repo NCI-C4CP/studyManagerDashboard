@@ -1,4 +1,4 @@
-import { dashboardNavBarLinks, removeActiveClass } from "./navigationBar.js";
+import { updateNavBar } from "./navigationBar.js";
 import {
   getIdToken,
   hideAnimation,
@@ -302,14 +302,12 @@ const getUploadedPathologyReportNames = async () => {
 };
 
 export const renderPathologyReportUploadPage = async (participantData) => {
-  document.getElementById("navBarLinks").innerHTML = dashboardNavBarLinks();
-  removeActiveClass("nav-link", "active");
-  document.getElementById("pathologyReportUploadBtn").classList.add("active");
+  updateNavBar('pathologyReportUploadBtn');
 
   const isAllowedToUpload =
     participantData[conceptIds.verifiedFlag] === conceptIds.verified &&
     participantData[conceptIds.consentFlag] === conceptIds.yes &&
-    participantData[conceptIds.hippaFlag] === conceptIds.yes &&
+    participantData[conceptIds.hipaaFlag] === conceptIds.yes &&
     participantData[conceptIds.withdrawConsent] === conceptIds.no &&
     participantData[conceptIds.revokeHIPAA] === conceptIds.no &&
     participantData[conceptIds.destroyData] === conceptIds.no;

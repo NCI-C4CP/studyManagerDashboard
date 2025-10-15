@@ -1,475 +1,221 @@
 import { formatUTCDate } from './utils.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 
-export const userProfile = (participant) => {
-    let template = ``;
+/**
+ * Mapping rules for the participant summary table.
+ * Ordered based on table rows.
+ * Specs location (10/2025): https://nih.app.box.com/file/1940543138318
+ */
 
-    if (!participant) {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "User Profile", "N/A", "N/A", "N/A", "N", "N/A");
-    } else if (participant[fieldMapping.userProfileFlag] === fieldMapping.yes) {
-        template += getTemplateRow("fa fa-check fa-2x", "color: green", "Enrollment", "N/A", "User Profile", "Submitted",
-        formatUTCDate(participant[fieldMapping.userProfileDateTime]), "N/A", "N", "N/A");
-    } else {
-      template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "User Profile", "Not Submitted", "N/A", "N/A", "N/A", "N/A");
+// Icon and color constants for Icon table column.
+const ICONS = {
+    CHECKMARK: "fa fa-check fa-2x",
+    HASHTAG: "fa fa-hashtag fa-2x",
+    X: "fa fa-times fa-2x",
+};
+
+const COLORS = {
+    GREEN: "icon--success",
+    ORANGE: "icon--warning",
+    RED: "icon--error",
+};
+
+/**
+ * ENROLLMENT / AGREEMENT
+ */
+
+export const consentHandler = (participant) => {
+    const isSigned = participant && participant[fieldMapping.consentFlag] === fieldMapping.yes;
+    const icon = isSigned ? ICONS.CHECKMARK : ICONS.X;
+    const color = isSigned ? COLORS.GREEN : COLORS.RED;
+    const status = isSigned ? "Signed" : "Not Signed";
+    const date = isSigned ? (participant[fieldMapping.consentDate] && formatUTCDate(participant[fieldMapping.consentDate])) : "N/A";
+    const version = isSigned ? participant[fieldMapping.consentVersion] : "N/A";
+    const extra = isSigned
+        ? '<a class="link--action" target="_blank" id="downloadCopy">Download Link</a>'
+        : '<span class="link--disabled">Download Link</span>';
+    return getTemplateRow(icon, color, "Enrollment", "Agreement", "Consent", status, date, version, "N/A", extra);
+}
+
+export const hipaaHandler = (participant) => {
+    const isSigned = participant && participant[fieldMapping.hipaaFlag] === fieldMapping.yes;
+    const icon = isSigned ? ICONS.CHECKMARK : ICONS.X;
+    const color = isSigned ? COLORS.GREEN : COLORS.RED;
+    const status = isSigned ? "Signed" : "Not Signed";
+    const date = isSigned ? (participant[fieldMapping.hipaaDate] && formatUTCDate(participant[fieldMapping.hipaaDate])) : "N/A";
+    const version = isSigned ? participant[fieldMapping.hipaaVersion] : "N/A";
+    const extra = isSigned
+        ? '<a class="link--action" target="_blank" id="downloadCopyHIPAA">Download Link</a>'
+        : '<span class="link--disabled">Download Link</span>';
+    return getTemplateRow(icon, color, "Enrollment", "Agreement", "HIPAA", status, date, version, "N/A", extra);
+}
+
+export const userProfile = (participant) => {
+    let icon = ICONS.X;
+    let color = COLORS.RED;
+    let status = "Not Submitted";
+    let date = "N/A";
+    let refused = "N/A";
+
+    if (participant[fieldMapping.userProfileFlag] === fieldMapping.yes) {
+        icon = ICONS.CHECKMARK;
+        color = COLORS.GREEN;
+        status = "Submitted";
+        date = formatUTCDate(participant[fieldMapping.userProfileDateTime]);
+        refused = "N";
     }
-    
-    return template;
+
+    return getTemplateRow(icon, color, "Enrollment", "N/A", "User Profile", status, date, "N/A", refused, "N/A");
 }
 
 export const verificationStatus = (participant) => {
-    let template = ``;
+    let icon = ICONS.X;
+    let color = COLORS.RED;
+    let status = "N/A";
+    let verificationDate = formatUTCDate(participant?.[fieldMapping.verficationDate]) || "N/A";
 
-    if (!participant) {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "Verification", "N/A", "N/A", "N/A", "N", "N/A");
-    } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.verified) {
-        template += getTemplateRow("fa fa-check fa-2x", "color: green", "Enrollment", "N/A", "Verification Status", "Verified",
-        formatUTCDate(participant[fieldMapping.verficationDate]), "N/A", "N", "N/A");
-    } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.cannotBeVerified) {
-        template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Enrollment", "N/A", "Verification Status", "Can't be Verified",
-        formatUTCDate(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
-    } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.notYetVerified) {
-        template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Enrollment", "N/A", "Verification Status", "Not yet Verified",
-        "N/A", "N/A", "N", "N/A");
-    } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.noLongerEnrolling) {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "Verification Status", "No Longer Enrolling",
-        formatUTCDate(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
-    } else if (participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate) {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Enrollment", "N/A", "Verification Status", "Duplicate",
-        formatUTCDate(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
-    } else {
-        template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Enrollment", "N/A", "Verification Status", "Outreach Timed Out",
-        formatUTCDate(participant[fieldMapping.verficationDate]) || "N/A", "N/A", "N", "N/A");
-    }
-    
-    return template;
-}
+    if (participant) {
+        const verificationFlag = participant[fieldMapping.verifiedFlag];
 
-export const baselineBloodSample = (participantModule) => {
-    const refusedBloodOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedBlood];
+        if (verificationFlag === fieldMapping.cannotBeVerified) {
+            status = "Cannot Be Verified";
+        
+        } else if (verificationFlag === fieldMapping.noLongerEnrolling) {
+            status = "No Longer Enrolling";
+        
+        } else if (verificationFlag === fieldMapping.duplicate) {
+            status = "Duplicate";
 
-    let faIcon = "fa fa-times fa-2x";
-    let faIconColor = "color: red";
-    let status = 'Not Collected';
-    let date = 'N/A';
-    let setting = 'N/A';
-    let refusal = 'N';
+        } else if (verificationFlag === fieldMapping.notYetVerified) {
+            icon = ICONS.HASHTAG;
+            color = COLORS.ORANGE;
+            status = "Not yet Verified";
+            verificationDate = "N/A";
 
-    if (refusedBloodOption === fieldMapping.yes) {
-        refusal = 'Y';
-    } 
-    
-    if (participantModule[fieldMapping.bloodFlag] === fieldMapping.yes) {
-        faIcon = 'fa fa-check fa-2x';
-        faIconColor = 'color: green';
-        status = 'Collected';
-        date = participantModule[fieldMapping.biospecimenCollectionDetail] && setSampleDateTime(participantModule, fieldMapping.biosepcimenBloodCollection, fieldMapping.bloodDateTime, fieldMapping.clinicalBloodDateTime);
-        setting = biospecimenStatus(participantModule, fieldMapping.biosepcimenBloodCollection);
-    } 
+        } else if (verificationFlag === fieldMapping.outreachTimedout) {
+            icon = ICONS.HASHTAG;
+            color = COLORS.ORANGE;
+            status = "Outreach Timed Out";
 
-    return getTemplateRow(faIcon, faIconColor, "Baseline", "Sample", "Blood", status, date, setting, refusal, "N/A");;
-}
-
-export const baselineUrineSample = (participantModule) => {
-    const refusedUrineOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedUrine];
-    const urineFlag = participantModule[fieldMapping.urineFlag];
-
-    let faIcon = "fa fa-times fa-2x";
-    let faIconColor = "color: red";
-    let status = 'Not Collected';
-    let date = 'N/A';
-    let setting = 'N/A';
-    let refusal = 'N';
-
-    if (refusedUrineOption === fieldMapping.yes) {
-        refusal = 'Y';
-    } 
-    
-    if (urineFlag === fieldMapping.yes) {
-        faIcon = 'fa fa-check fa-2x';
-        faIconColor = 'color: green';
-        status = 'Collected';
-        date =  participantModule[fieldMapping.biospecimenCollectionDetail] && setSampleDateTime(participantModule, fieldMapping.biosepcimenUrineCollection, fieldMapping.urineDateTime, fieldMapping.clinicalUrineDateTime);
-        setting = biospecimenStatus(participantModule, fieldMapping.biosepcimenUrineCollection);
+        } else if (verificationFlag === fieldMapping.verified) {
+            icon = ICONS.CHECKMARK;
+            color = COLORS.GREEN;
+            status = "Verified";       
+        
+        } else {
+            status = "Error: unhandled status in verificationStatus"
+        }
     }
 
-    return getTemplateRow(faIcon, faIconColor, "Baseline", "Sample", "Urine", status, date, setting, refusal, "N/A");;
+    return getTemplateRow(icon, color, "Enrollment", "N/A", "Verification Status", status, verificationDate, "N/A", "N", "N/A");
 }
 
-const kitStatusCidToString = {
-  728267588: "Initialized",
-  517216441: "Pending",
-  332067457: "Address Undeliverable",
-  849527480: "Address Printed",
-  241974920: "Assigned",
-  277438316: "Shipped",
-  375535639: "Received",
-};
-
-const mouthwashSampleTemplate = (participantModule, path, itemName) => {
-    // Initial kits have some specific behavior vs. replacement kits
-    const isInitialKit = path === fieldMapping.bioKitMouthwash;
-    const homeMouthwashData =
-        participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[path] || {};
-    const collectionTime =
-        (
-            homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash || !isInitialKit ?
-                // Home collection kits, including all replacement kits, use kit received time
-                participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[path]?.[fieldMapping.kitReceivedTime] :
-                // Research kits (initial kits with appropriate kit type) use kit collection time
-                participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[fieldMapping.mouthwashDateTime]
-        )
-        || "";
-
-    const [yyyy, mm, dd] = collectionTime.split("T")[0].split("-");
-
-    let collectionDate = "N/A";
-    if (yyyy && mm && dd) {
-        collectionDate = `${mm}/${dd}/${yyyy}`;
-    }
-    
-    const kitStatusCid = homeMouthwashData[fieldMapping.kitStatus];
-    const kitStatusStr = kitStatusCidToString[kitStatusCid];
-    const setting = homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash
-            ? 'Home'
-            // Only initial kits can be research; replacement kits are by definition home collections
-            : (isInitialKit ? 'Research' : 'N/A');
-    const isCollected = homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash ?
-        kitStatusCid === fieldMapping.kitStatusValues.received :
-        // Only initial kits can be research; replacement kits are by definition home collections,
-        // so the participantModule result here only applies to initial kits
-        participantModule[fieldMapping.mouthwash] === fieldMapping.yes && path === fieldMapping.bioKitMouthwash;
-    const refusedMouthwashOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedMouthwash] === fieldMapping.yes;
-
-    let displayedFields = {
-        icon: isCollected ? 
-            {faIcon: "fa fa-check fa-2x", style: "color: green"} :
-            {faIcon: "fa fa-times fa-2x", style: "color: red"},
-        status: isCollected ? "Collected" : "Not Collected",
-        date: isCollected ? collectionDate : "N/A",
-        setting: isCollected ? setting : "N/A",
-        refused: isInitialKit ? (refusedMouthwashOption ? "Y" : "N") : "N/A",
-        extra: kitStatusStr ? "Kit " + kitStatusStr : "N/A",
-    };
-    
-    return getTemplateRow(
-        displayedFields.icon.faIcon,
-        displayedFields.icon.style,
-        "Baseline",
-        "Sample",
-        itemName,
-        displayedFields.status,
-        displayedFields.date,
-        displayedFields.setting,
-        displayedFields.refused,
-        displayedFields.extra
-    );
-}
-
-export const baselineMouthwashSample = (participantModule) => {
-    return mouthwashSampleTemplate(participantModule, fieldMapping.bioKitMouthwash, "Mouthwash");
-};
-
-export const baselineMouthwashR1Sample = (participantModule) => {
-    return mouthwashSampleTemplate(participantModule, fieldMapping.bioKitMouthwashBL1, "Mouthwash R1");
-  };
-
-export const baselineMouthwashR2Sample = (participantModule) => {
-    return mouthwashSampleTemplate(participantModule, fieldMapping.bioKitMouthwashBL2, "Mouthwash R2");
-  };
+/**
+ * SURVEYS
+ */
 
 export const baselineBOHSurvey = (participant) => {
-    const refusedSurveyOption = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey];
+    const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey] === fieldMapping.yes ? 'Y' : 'N';
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.bohStatusFlag1, fieldMapping.bohStartDate1, fieldMapping.bohCompletedDate1);
 
-    let faIcon = "fa fa-times fa-2x";
-    let faIconColor = "color: red";
-    let status = 'N/A';
-    let date = 'N/A';
-    let refusal = 'N';
-
-    if (refusedSurveyOption === fieldMapping.yes) {
-        refusal = 'Y';
-    }
-    
-    if (participant[fieldMapping.bohStatusFlag1] === fieldMapping.submitted1) {
-        faIcon = 'fa fa-check fa-2x';
-        faIconColor = 'color: green';
-        status = 'Submitted';
-        date = formatUTCDate(participant[fieldMapping.bohCompletedDate1]);
-    } else if (participant[fieldMapping.bohStatusFlag1] === fieldMapping.started1) {
-        faIcon = 'fa fa-hashtag fa-2x';
-        faIconColor = 'color: orange';
-        status = 'Started';
-        date = formatUTCDate(participant[fieldMapping.bohStartDate1]);
-    } else if (participant[fieldMapping.bohStatusFlag1] === fieldMapping.notStarted1 && refusedSurveyOption !== fieldMapping.yes) {
-        status = 'Not Started';
-    }
-    
-    return getTemplateRow(faIcon, faIconColor, "Baseline", "Survey", "BOH", status, date, "N/A", refusal, "N/A");    
+    return getTemplateRow(icon, color, "Baseline", "Survey", "BOH", itemStatus, date, "N/A", refusal, "N/A");
 }
 
 export const baselineMRESurvey = (participant) => {
-    const refusedSurveyOption = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey];
+    const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey] === fieldMapping.yes ? 'Y' : 'N';
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.mreStatusFlag1, fieldMapping.mreStartDate1, fieldMapping.mreCompletedDate1);
     
-    let faIcon = "fa fa-times fa-2x";
-    let faIconColor = "color: red";
-    let status = 'N/A';
-    let date = 'N/A';
-    let refusal = 'N';
-    
-    if (refusedSurveyOption === fieldMapping.yes) {
-        refusal = 'Y';
-    }
-    
-    if (participant[fieldMapping.mreStatusFlag1] === fieldMapping.submitted1) {
-        faIcon = 'fa fa-check fa-2x';
-        faIconColor = 'color: green';
-        status = 'Submitted';
-        date = formatUTCDate(participant[fieldMapping.mreCompletedDate1]);
-    } else if (participant[fieldMapping.mreStatusFlag1] === fieldMapping.started1) {
-        faIcon = 'fa fa-hashtag fa-2x';
-        faIconColor = 'color: orange';
-        status = 'Started';
-        date = formatUTCDate(participant[fieldMapping.mreStartDate1]);
-    } else if (participant[fieldMapping.mreStatusFlag1] === fieldMapping.notStarted1 && refusedSurveyOption !== fieldMapping.yes) {
-        status = 'Not Started';
-    }
-    
-    return getTemplateRow(faIcon, faIconColor, "Baseline", "Survey", "MRE", status, date, "N/A", refusal, "N/A");    
+    return getTemplateRow(icon, color, "Baseline", "Survey", "MRE", itemStatus, date, "N/A", refusal, "N/A");
 }
 
 export const baselineSASSurvey = (participant) => {
-    const refusedSurveyOption = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey];
-
-    let faIcon = "fa fa-times fa-2x";
-    let faIconColor = "color: red";
-    let status = 'N/A';
-    let date = 'N/A';
-    let refusal = 'N';
+    const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey] === fieldMapping.yes ? 'Y' : 'N';
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.sasStatusFlag1, fieldMapping.sasStartDate1, fieldMapping.sasCompletedDate1);
     
-    if (refusedSurveyOption === fieldMapping.yes) {
-        refusal = 'Y';
-    } 
-    
-    if (participant[fieldMapping.sasStatusFlag1] === fieldMapping.submitted1) {
-        faIcon = 'fa fa-check fa-2x';
-        faIconColor = 'color: green';
-        status = 'Submitted';
-        date = formatUTCDate(participant[fieldMapping.sasCompletedDate1]);
-    } else if (participant[fieldMapping.sasStatusFlag1] === fieldMapping.started1) {
-        faIcon = 'fa fa-hashtag fa-2x';
-        faIconColor = 'color: orange';
-        status = 'Started';
-        date = formatUTCDate(participant[fieldMapping.sasStartDate1]);
-    } else if (participant[fieldMapping.sasStatusFlag1] === fieldMapping.notStarted1 && refusedSurveyOption !== fieldMapping.yes) {
-        status = 'Not Started';
-    }
-    
-    return getTemplateRow(faIcon, faIconColor, "Baseline", "Survey", "SAS", status, date, "N/A", refusal, "N/A");    
+    return getTemplateRow(icon, color, "Baseline", "Survey", "SAS", itemStatus, date, "N/A", refusal, "N/A");
 }
 
 export const baselineLAWSurvey = (participant) => {
-    const refusedSurveyOption = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey];
+    const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey] === fieldMapping.yes ? 'Y' : 'N';
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.lawStatusFlag1, fieldMapping.lawStartDate1, fieldMapping.lawCompletedDate1);
     
-    let faIcon = "fa fa-times fa-2x";
-    let faIconColor = "color: red";
-    let status = 'N/A';
-    let date = 'N/A';
-    let refusal = 'N';
-
-    if (refusedSurveyOption === fieldMapping.yes) {
-        refusal = 'Y';
-    } 
-    
-    if (participant[fieldMapping.lawStatusFlag1] === fieldMapping.submitted1) {
-        faIcon = 'fa fa-check fa-2x';
-        faIconColor = 'color: green';
-        status = 'Submitted';
-        date = formatUTCDate(participant[fieldMapping.lawCompletedDate1]);
-    } else if (participant[fieldMapping.lawStatusFlag1] === fieldMapping.started1) {
-        faIcon = 'fa fa-hashtag fa-2x';
-        faIconColor = 'color: orange';
-        status = 'Started';
-        date = formatUTCDate(participant[fieldMapping.lawStartDate1]);
-    } else if (participant[fieldMapping.lawStatusFlag1] === fieldMapping.notStarted1 && refusedSurveyOption !== fieldMapping.yes) {
-        status = 'Not Started';
-    }
-
-    return getTemplateRow(faIcon, faIconColor, "Baseline", "Survey", "LAW", status, date, "N/A", refusal, "N/A");
+    return getTemplateRow(icon, color, "Baseline", "Survey", "LAW", itemStatus, date, "N/A", refusal, "N/A");
 }
 
 export const baselineSSN = (participant) => {
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.ssnStatusFlag, fieldMapping.ssnPartialDate, fieldMapping.ssnFulldate);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.ssnStatusFlag, fieldMapping.ssnSurveyStartedDate, fieldMapping.ssnSurveyCompletedDate);
 
-    const timeline = "Baseline";
-    const category = "Survey";
-    const item = "SSN";
-    const setting = "N/A";
-    const refused = "N";
-    const extra = "N/A";
-
-    return getTemplateRow(icon, color, timeline, category, item, itemStatus, date, setting, refused, extra);
+    return getTemplateRow(icon, color, "Baseline", "Survey", "SSN", itemStatus, date, "N/A", "N", "N/A");
 }
 
 export const baselineCOVIDSurvey = (participant) => {
-    let template = ``;
-
-    if (participant[fieldMapping.covidFlag] === fieldMapping.submitted1) {
-        template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Survey", "COVID", "Submitted",
-        formatUTCDate(participant[fieldMapping.covidCompletedDate]), "N/A", "N", "N/A");
-    } else if (participant[fieldMapping.covidFlag] === fieldMapping.started1) {
-        template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Baseline", "Survey", "COVID", "Started",
-        formatUTCDate(participant[fieldMapping.covidStartDate]), "N/A", "N", "N/A");
-    } else if (participant[fieldMapping.covidFlag] === fieldMapping.notStarted1) {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "COVID", "Not Started", "N/A", "N/A", "N", "N/A");
-    } else {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "COVID", "N/A", "N/A", "N/A", "N", "N/A");
-    }
-    return template;
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.covidFlag, fieldMapping.covidStartDate, fieldMapping.covidCompletedDate);
+    
+    return getTemplateRow(icon, color, "Baseline", "Survey", "COVID", itemStatus, date, "N/A", "N", "N/A");
 }
 
-
-export const baselineBiospecSurvey = (participant) => {
-    const combinedBoodUrineMouthwashSurvey = !!participant[fieldMapping.combinedBoodUrineMouthwashSurvey];
-    const refusedSpecimenOption = participant[fieldMapping.refusalOptions] && participant[fieldMapping.refusalOptions][fieldMapping.refusedSpecimenSurveys];
-
-    let faIcon = "fa fa-times fa-2x";
-    let faIconColor = "color: red";
-    let status = 'N/A';
-    let date = 'N/A';
-    let refusal = 'N';
-
-    if (refusedSpecimenOption === fieldMapping.yes) {
-        refusal = 'Y';
-    } 
-
-    if (participant[fieldMapping.combinedBoodUrineMouthwashSurvey] === fieldMapping.submitted1) {
-        faIcon = 'fa fa-check fa-2x';
-        faIconColor = 'color: green';
-        status = 'Submitted';
-        date = formatUTCDate(participant[fieldMapping.combinedBoodUrineMouthwashSurveyCompleteDate]);
-    } else if (participant[fieldMapping.combinedBoodUrineMouthwashSurvey] === fieldMapping.started1) {
-        faIcon = 'fa fa-hashtag fa-2x';
-        faIconColor = 'color: orange';
-        status = 'Started';
-        date = formatUTCDate(participant[fieldMapping.combinedBoodUrineMouthwashSurveyStartDate]);
-    } else if (combinedBoodUrineMouthwashSurvey && refusedSpecimenOption !== fieldMapping.yes) {
-        status = 'Not Started';
-    }
-
-    return getTemplateRow(faIcon, faIconColor, "Baseline", "Survey", "Blood/Urine/Mouthwash", status, date, "N/A", refusal, "N/A");;
+export const baselineResearchBUMSurvey = (participant) => {
+    const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSpecimenSurveys] === fieldMapping.yes ? 'Y' : 'N';
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.combinedBoodUrineMouthwashSurvey, fieldMapping.combinedBoodUrineMouthwashSurveyStartDate, fieldMapping.combinedBoodUrineMouthwashSurveyCompleteDate);
+    
+    return getTemplateRow(icon, color, "Baseline", "Survey", "Research B/U/M", itemStatus, date, "N/A", refusal, "N/A");
 }
 
-export const baselineBloodUrineSurvey = (participant) => {
-    const refusedSpecimenOption = participant[fieldMapping.refusalOptions] && participant[fieldMapping.refusalOptions][fieldMapping.refusedSpecimenSurveys];
+export const baselineClinicalBloodUrineSurvey = (participant) => {
+    const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSpecimenSurveys] === fieldMapping.yes ? 'Y' : 'N';
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.bloodUrineSurveyFlag, fieldMapping.bloodUrineSurveyStartedDate, fieldMapping.bloodUrineSurveyCompletedDate);
     
-    let faIcon = "fa fa-times fa-2x";
-    let faIconColor = "color: red";
-    let status = 'N/A';
-    let date = 'N/A';
-    let refusal = 'N';
-    
-    if (refusedSpecimenOption === fieldMapping.yes) {
-        refusal = 'Y';
-    }
-
-    if (participant) {
-        if (participant[fieldMapping.bloodUrineSurveyFlag] === fieldMapping.submitted1) {
-            faIcon = 'fa fa-check fa-2x';
-            faIconColor = 'color: green';
-            status = 'Submitted';
-            date = formatUTCDate(participant[fieldMapping.bloodUrineSurveyCompletedDate]);
-        } else if (participant[fieldMapping.bloodUrineSurveyFlag] === fieldMapping.started1) {
-            faIcon = 'fa fa-hashtag fa-2x';
-            faIconColor = 'color: orange';
-            status = 'Started';
-            date = formatUTCDate(participant[fieldMapping.bloodUrineSurveyStartedDate]);
-        } else if (refusedSpecimenOption !== fieldMapping.yes) {
-            status = 'Not Started';
-        }
-    }
-
-    return getTemplateRow(faIcon, faIconColor, "Baseline", "Survey", "Clinical Blood/Urine", status, date, "N/A", refusal, "N/A"); 
+    return getTemplateRow(icon, color, "Baseline", "Survey", "Clinical Blood/Urine", itemStatus, date, "N/A", refusal, "N/A");
 }
 
-export const baselineMouthwashSurvey = (participantModule) => {
-    const refusedSpecimenOption = participantModule[fieldMapping.refusalOptions] && participantModule[fieldMapping.refusalOptions][fieldMapping.refusedSpecimenSurveys];
+export const baselineHomeMouthwashSurvey = (participantModule) => {
+    const refusal = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedSpecimenSurveys] === fieldMapping.yes ? 'Y' : 'N';
+    const { icon, color, itemStatus, date } = getSurveyStatus(participantModule, fieldMapping.mouthwashSurveyFlag, fieldMapping.mouthwashSurveyStartedDate, fieldMapping.mouthwashSurveyCompletedDate);
     
-    let faIcon = "fa fa-times fa-2x";
-    let faIconColor = "color: red";
-    let status = 'N/A';
-    let date = 'N/A';
-    let refusal = 'N';
-    
-    if (refusedSpecimenOption === fieldMapping.yes) {
-        refusal = 'Y';
-    }
-    
-    if (participantModule) {
-        if (participantModule[fieldMapping.mouthwashSurveyFlag] === fieldMapping.submitted1) {
-            faIcon = 'fa fa-check fa-2x';
-            faIconColor = 'color: green';
-            status = 'Submitted';
-            date = formatUTCDate(participantModule[fieldMapping.mouthwashSurveyCompletedDate]);
-        } else if (participantModule[fieldMapping.mouthwashSurveyFlag] === fieldMapping.started1) {
-            faIcon = 'fa fa-hashtag fa-2x';
-            faIconColor = 'color: orange';
-            status = 'Started';
-            date = formatUTCDate(participantModule[fieldMapping.mouthwashSurveyStartedDate]);
-        } else if (refusedSpecimenOption !== fieldMapping.yes) {
-            status = 'Not Started';
-        }
-    }
-
-    return getTemplateRow(faIcon, faIconColor, "Baseline", "Survey", "Home Mouthwash", status, date, "N/A", refusal, "N/A");
+    return getTemplateRow(icon, color, "Baseline", "Survey", "Home Mouthwash", itemStatus, date, "N/A", refusal, "N/A");
 };
 
-export const baselinePromisSurvey = (participant) => {
+export const baselineMenstrualSurvey = (participant) => {
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.menstrualFlag, fieldMapping.menstrualDateTimeStart, fieldMapping.menstrualDateTimeCompleted);
     
+    return getTemplateRow(icon, color, "Baseline", "Survey", "Menstrual Cycle", itemStatus, date, "N/A", "N", "N/A");
+}
+
+export const baselinePromisSurvey = (participant) => {
     const refusedAllFutureSurveys = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
     const refusedAllFutureActivities = participant[fieldMapping.refusedAllFutureActivities];
     const refusedQualityOfLifeSurvey = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedQualityOfLifeSurvey];
-
+    const refusal = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedQualityOfLifeSurvey === fieldMapping.yes ? "Y" : "N";
     const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.promisSurveyFlag, fieldMapping.promisSurveyStartedDate, fieldMapping.promisSurveyCompletedDate);
 
-    const timeline = "Follow-Up 3-mo";
-    const category = "Survey";
-    const item = "Quality of Life";
-    const setting = "N/A";
-    const refused = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedQualityOfLifeSurvey === fieldMapping.yes ? "Y" : "N";
-    const extra = "N/A";
-
-    return getTemplateRow(icon, color, timeline, category, item, itemStatus, date, setting, refused, extra);
+    return getTemplateRow(icon, color, "Follow-Up 3-mo", "Survey", "Quality of Life", itemStatus, date, "N/A", refusal, "N/A");
 };
 
 export const baselineExperienceSurvey = (participant) => {
-    
     const refusedAllFutureSurveys = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
     const refusedAllFutureActivities = participant[fieldMapping.refusedAllFutureActivities];
     const refusedExperienceSurvey = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedExperienceSurvey];
-
+    const refusal = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedExperienceSurvey === fieldMapping.yes ? "Y" : "N";
     const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.experienceSurvey, fieldMapping.experienceSurveyStartDate, fieldMapping.experienceCompleteDate);
 
-    const timeline = "Cross-Sectional 2024";
-    const category = "Survey";
-    const item = "2024 Connect Experience";
-    const setting = "N/A";
-    const refused = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedExperienceSurvey === fieldMapping.yes ? "Y" : "N";
-    const extra = "N/A";
-
-    return getTemplateRow(icon, color, timeline, category, item, itemStatus, date, setting, refused, extra);
+    return getTemplateRow(icon, color, "Cross-Sectional 2024", "Survey", "2024 Connect Experience", itemStatus, date, "N/A", refusal, "N/A");
 };
 
 export const dhqSurvey = (data) => {
-    // Note: Decision was made to not include refusal options specific to the Diet History Questionnaire
+    // Note: There's no DHQ-specific refusal, just the generic refusals that apply to all surveys
+    const refusedAllFutureSurveys = data[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
+    const refusedAllFutureActivities = data[fieldMapping.refusedAllFutureActivities];
+    const refusal = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes ? "Y" : "N";
+
+    
     let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.dhqSurveyStatus, fieldMapping.dhqSurveyStartDate, fieldMapping.dhqSurveyCompletedDate);
 
-    if (!data[fieldMapping.dhqSurveyStatus]) itemStatus = "Not Eligible";
-
+    // Custom properties for the DHQ Row's 'Setting' column
     const dhqUsername = data[fieldMapping.dhqUsername];
     const dhqStudyID = data[fieldMapping.dhqStudyID];
     const setting = dhqUsername && dhqStudyID ? `Username: ${dhqUsername}, Study ID: ${dhqStudyID.replace('study_', ' ')}` : "N/A";
     
-    return getTemplateRow(icon, color, "Follow-Up 6-mo", "Survey", "DHQ III", itemStatus, date, setting, "N/A", "N/A");
+    return getTemplateRow(icon, color, "Follow-Up 6-mo", "Survey", "DHQ III", itemStatus, date, setting, refusal, "N/A");
 };
 
 export const cancerScreeningHistorySurvey = (data) => {
@@ -479,62 +225,116 @@ export const cancerScreeningHistorySurvey = (data) => {
     const refused = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedCancerScreeningHistorySurvey === fieldMapping.yes ? "Y" : "N";
     let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.cancerScreeningHistorySurveyStatus, fieldMapping.cancerScreeningHistorySurveyStartDate, fieldMapping.cancerScreeningHistorySurveyCompletedDate);
 
-    if (!data[fieldMapping.cancerScreeningHistorySurveyStatus]) itemStatus = "Not Eligible";
-
     return getTemplateRow(icon, color, "Follow-Up 9-mo", "Survey", "Cancer Screening History", itemStatus, date, "N/A", refused, "N/A");
 };
 
-export const baselineMenstrualSurvey = (participant) => {
-    let template = ``;
+/**
+ * SAMPLES 
+ */
 
-    if (participant[fieldMapping.menstrualFlag] === fieldMapping.submitted1) {
-        template += getTemplateRow("fa fa-check fa-2x", "color: green", "Baseline", "Survey", "Menstrual Cycle", "Submitted",
-        formatUTCDate(participant[fieldMapping.menstrualDateTimeCompleted]), "N/A", "N", "N/A");
-    } else if (participant[fieldMapping.menstrualFlag] === fieldMapping.started1) {
-        template += getTemplateRow("fa fa-hashtag fa-2x", "color: orange", "Baseline", "Survey", "Menstrual Cycle", "Started",
-        formatUTCDate(participant[fieldMapping.menstrualDateTimeStart]), "N/A", "N", "N/A");
-    } else {
-        template += getTemplateRow("fa fa-times fa-2x", "color: red", "Baseline", "Survey", "Menstrual Cycle", "Not Started", "N/A", "N/A", "N", "N/A");
+export const baselineBloodSample = (participant) => {
+    const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedBlood] === fieldMapping.yes ? 'Y' : 'N';
+    const baselineBloodCollectedFlag = participant[fieldMapping.baselineBloodCollectedFlag];
+
+    let icon = ICONS.X;
+    let iconColor = COLORS.RED;
+    let status = 'Not Collected';
+    let date = 'N/A';
+    let setting = 'N/A';
+    
+    if (baselineBloodCollectedFlag === fieldMapping.yes) {
+        const baselineCollection = participant[fieldMapping.biospecimenCollectionDetail]?.[fieldMapping.biospecimenBaselineCollection];
+
+        icon = ICONS.CHECKMARK;
+        iconColor = COLORS.GREEN;
+        status = 'Collected';
+        date = setSampleDateTime(baselineCollection, fieldMapping.biosepcimenBloodCollection, fieldMapping.researchBloodCollectedDateTime, fieldMapping.clinicalBloodCollectedDateTime);
+        setting = biospecimenStatus(baselineCollection, fieldMapping.biosepcimenBloodCollection, fieldMapping.biospecimenBaselineCollection);
     }
 
-    return template;
+    return getTemplateRow(icon, iconColor, "Baseline", "Sample", "Blood", status, date, setting, refusal, "N/A");
 }
+
+export const baselineUrineSample = (participant) => {
+    const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedUrine] === fieldMapping.yes ? 'Y' : 'N';
+    const urineFlag = participant[fieldMapping.urineFlag];
+
+    let icon = ICONS.X;
+    let iconColor = COLORS.RED;
+    let status = 'Not Collected';
+    let date = 'N/A';
+    let setting = 'N/A';
+    
+    if (urineFlag === fieldMapping.yes) {
+        const baselineCollection = participant[fieldMapping.biospecimenCollectionDetail]?.[fieldMapping.biospecimenBaselineCollection];
+        icon = ICONS.CHECKMARK;
+        iconColor = COLORS.GREEN;
+        status = 'Collected';
+        date = setSampleDateTime(baselineCollection, fieldMapping.biosepcimenUrineCollection, fieldMapping.urineDateTime, fieldMapping.clinicalUrineDateTime);
+        setting = biospecimenStatus(baselineCollection, fieldMapping.biosepcimenUrineCollection, fieldMapping.biospecimenBaselineCollection);
+    }
+
+    return getTemplateRow(icon, iconColor, "Baseline", "Sample", "Urine", status, date, setting, refusal, "N/A");
+}
+
+export const baselineResearchMouthwashSample = (participant) => {
+    return mouthwashSampleTemplate(participant, "Research Mouthwash");
+};
+
+export const baselineHomeMouthwashSample = (participant) => {
+    return mouthwashSampleTemplate(participant, "Home Mouthwash Initial", fieldMapping.bioKitMouthwash);
+};
+
+export const baselineMouthwashR1Sample = (participant) => {
+    return mouthwashSampleTemplate(participant, "Home Mouthwash R1", fieldMapping.bioKitMouthwashBL1);
+};
+
+export const baselineMouthwashR2Sample = (participant) => {
+    return mouthwashSampleTemplate(participant, "Home Mouthwash R2", fieldMapping.bioKitMouthwashBL2);
+};
+
+/**
+ * PAYMENTS / INCENTIVES
+ */
 
 export const baselinePayment = (participantModule) => {
     let template = ``;
 
-    let faIcon = "fa fa-times fa-2x";
-    let faIconColor = "color: red";
+    let icon = ICONS.X;
+    let iconColor = COLORS.RED;
     let status = 'N/A';
     let date = 'N/A';
     let setting = 'N/A';
     let extra = 'N/A';
-    
 
     if (participantModule) {
         if (
-            participantModule[fieldMapping.paymentRoundup] &&
-            participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.eligiblePayment] === fieldMapping.yes
+            participantModule[fieldMapping.paymentRound] &&
+            participantModule[fieldMapping.paymentRound][fieldMapping.baselinePayment][fieldMapping.eligiblePayment] === fieldMapping.yes
         ) {
-            faIcon = 'fa fa-check fa-2x';
-            faIconColor = 'color: green';
+            icon = ICONS.CHECKMARK;
+            iconColor = COLORS.GREEN;
             status = 'Eligible';
-            date = formatUTCDate(participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.eligiblePaymentRoundTimestamp]);
+            date = formatUTCDate(participantModule[fieldMapping.paymentRound][fieldMapping.baselinePayment][fieldMapping.eligiblePaymentRoundTimestamp]);
         } else {
             status = 'Not Eligible';
         }
 
         if (
-            participantModule[fieldMapping.paymentRoundup] &&
-            participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.paymentChosen]
+            participantModule[fieldMapping.paymentRound] &&
+            participantModule[fieldMapping.paymentRound][fieldMapping.baselinePayment][fieldMapping.paymentChosen]
         ) {
-            setting = participantModule[fieldMapping.paymentRoundup][fieldMapping.baselinePayment][fieldMapping.paymentChosen];
+            setting = participantModule[fieldMapping.paymentRound][fieldMapping.baselinePayment][fieldMapping.paymentChosen];
         }
         extra = checkIncentiveIssued(participantModule);
     }
 
-    return getTemplateRow(faIcon, faIconColor, "Baseline", "Payment", "N/A", status, date, setting, "N/A", extra);
+    return getTemplateRow(icon, iconColor, "Baseline", "Payment", "N/A", status, date, setting, "N/A", extra);
 }
+
+/**
+ * ROI / REPORTS
+ */
 
 export const baselinePhysActReport = (participantModule, reports) => {
     let reportData;
@@ -544,8 +344,8 @@ export const baselinePhysActReport = (participantModule, reports) => {
 
     let icon, iconColor, status, date, refused, extra;
     if (reportData) {
-        icon = "fa fa-check fa-2x";
-        iconColor = "color: green";
+        icon = ICONS.CHECKMARK;
+        iconColor = COLORS.GREEN;
         status = 'Available';
         date =  reportData['d_'+fieldMapping.reports.physicalActivity.reportTS] ? formatUTCDate(reportData['d_'+fieldMapping.reports.physicalActivity.reportTS]) : 'N/A';
         if (participantModule[fieldMapping.reports.physicalActivityReport] && participantModule[fieldMapping.reports.physicalActivityReport][fieldMapping.reports.physicalActivity.status]) {
@@ -565,176 +365,284 @@ export const baselinePhysActReport = (participantModule, reports) => {
         } else {
             refused = 'N/A';
         }
-        extra = '<a style="color: blue; text-decoration: underline; cursor: pointer;" target="_blank" id="downloadPhysActReport">Download Link</a>'
+        extra = '<a class="link--action" target="_blank" id="downloadPhysActReport">Download Link</a>'
     } else {
-        icon = "fa fa-times fa-2x";
-        iconColor = "color: red";
+        icon = ICONS.X;
+        iconColor = COLORS.RED;
         status = 'Unavailable';
         date = 'N/A';
         refused = 'N/A';
-        extra = '<span style="color: grey; text-decoration: underline;">Download Link</span>'
+        extra = '<span class="link--disabled">Download Link</span>'
     }
 
     let template = getTemplateRow(icon, iconColor, "Baseline", "ROI", "Phys Act", status, date, "N/A", refused, extra);
     return template
 }
 
+// Note: `refused` (used for naming consistency across this file) refers to the report viewed status, visible in the table's 'Refused' column.
 export const dhq3Report = (participantData, reports) => {
-
     let icon, iconColor, status, date, refused, extra;
 
     const isSurveySubmitted = participantData[fieldMapping.dhqSurveyStatus] === fieldMapping.submitted;
     if (isSurveySubmitted) {
-        icon = "fa fa-check fa-2x";
-        iconColor = "color: green";
+        icon = ICONS.CHECKMARK;
+        iconColor = COLORS.GREEN;
         status = 'Available';
+        refused = "Int: "
         date = participantData[fieldMapping.dhqSurveyCompletedDate] ? formatUTCDate(participantData[fieldMapping.dhqSurveyCompletedDate]) : 'N/A';
         
+        // For submitted DHQ surveys, display both the internal and external report statuses.
         switch (participantData[fieldMapping.reports.dhq3.reportStatusInternal]) {
             case fieldMapping.reports.unread:
-                refused = 'Unread';
+                refused += 'Unread, ';
                 break;
             case fieldMapping.reports.viewed:
-                refused = 'Viewed';
+                refused += 'Viewed, ';
                 break;
             case fieldMapping.reports.declined:
-                refused = 'Declined';
+                refused += 'Declined, ';
                 break;
             default:
-                refused = 'Unread';
+                refused += 'Unread, ';
+        }
+
+        switch (participantData[fieldMapping.reports.dhq3.reportStatusExternal]) {
+            case fieldMapping.reports.unread:
+                refused += 'Ext: Unread';
+                break;
+            case fieldMapping.reports.viewed:
+                refused += 'Ext: Viewed';
+                break;
+            case fieldMapping.reports.declined:
+                refused += 'Ext: Declined';
+                break;
+            default:
+                refused += 'Ext: Unread';
         }
         
-        extra = '<a style="color: blue; text-decoration: underline; cursor: pointer;" target="_blank" id="downloadDHQHEIReport">Download Link</a>'
+        extra = '<a class="link--action" target="_blank" id="downloadDHQHEIReport">Download Link</a>'
 
     } else {
-        icon = "fa fa-times fa-2x";
-        iconColor = "color: red";
+        icon = ICONS.X;
+        iconColor = COLORS.RED;
         status = 'Unavailable';
         date = 'N/A';
         refused = 'N/A';
-        extra = '<span style="color: grey; text-decoration: underline;">Download Link</span>'
+        extra = '<span class="link--disabled">Download Link</span>'
     }
 
     return getTemplateRow(icon, iconColor, "Baseline", "ROI", "HEI Report - DHQ III", status, date, "N/A", refused, extra);
 }
 
+/**
+ * HELPER FUNCTIONS
+ */
 
 const getSurveyStatus = (participant, surveyFlag, startDate, completeDate) => {
     switch (participant[surveyFlag]) {
         case fieldMapping.submitted1:
             return {
-                icon: "fa fa-check fa-2x",
-                color: "color: green",
+                icon: ICONS.CHECKMARK,
+                color: COLORS.GREEN,
                 itemStatus: "Submitted",
                 date: formatUTCDate(participant[completeDate]),
             };
         case fieldMapping.started1:
             return {
-                icon: "fa fa-hashtag fa-2x",
-                color: "color: orange",
+                icon: ICONS.HASHTAG,
+                color: COLORS.ORANGE,
                 itemStatus: "Started",
                 date: formatUTCDate(participant[startDate]),
             };
+        case fieldMapping.notStarted1:
+            return {
+                icon: ICONS.X,
+                color: COLORS.RED,
+                itemStatus: "Not Started",
+                date: "N/A",
+            };
         case fieldMapping.notYetEligible1:
             return {
-                icon: "fa fa-times fa-2x",
-                color: "color: red",
+                icon: ICONS.X,
+                color: COLORS.RED,
                 itemStatus: "Not Yet Eligible",
                 date: "N/A",
             };
         default:
-            if ([fieldMapping.experienceSurvey, fieldMapping.dhqSurveyStatus].includes(surveyFlag) && (participant[surveyFlag] === null || participant[surveyFlag] === undefined)) {
+            // Special case: Experience and Cancer Screening History surveys have the 'Not Eligible' status as a fallback value.
+            if ([fieldMapping.experienceSurvey, fieldMapping.cancerScreeningHistorySurveyStatus].includes(surveyFlag)) {
                 return {
-                    icon: "fa fa-times fa-2x",
-                    color: "color: red",
+                    icon: ICONS.X,
+                    color: COLORS.RED,
                     itemStatus: "Not Eligible",
                     date: "N/A",
                 };
-            }  else {
+            // Special case: DHQ survey has the 'Not Yet Eligible' status as a fallback value.
+            }  else if ([fieldMapping.dhqSurveyStatus].includes(surveyFlag)) {
                 return {
-                    icon: "fa fa-times fa-2x",
-                    color: "color: red",
-                    itemStatus: "Not Started",
+                    icon: ICONS.X,
+                    color: COLORS.RED,
+                    itemStatus: "Not Yet Eligible",
+                    date: "N/A",
+                };
+            // Standard fallback value.
+            } else {
+                return {
+                    icon: ICONS.X,
+                    color: COLORS.RED,
+                    itemStatus: "N/A",
                     date: "N/A",
                 };
             }
     }
 };
 
+const kitStatusCidToString = {
+  728267588: "Initialized",
+  517216441: "Pending",
+  332067457: "Address Undeliverable",
+  849527480: "Address Printed",
+  241974920: "Assigned",
+  277438316: "Shipped",
+  375535639: "Received",
+};
+
+const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
+    const refusedMouthwashOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedMouthwash] === fieldMapping.yes;
+    let displayedFields;
+
+    // Research Mouthwash is part of a full specimen colllection (it uses biospecimenCollectionDetail structure like blood/urine).
+    if (itemName === "Research Mouthwash") {
+        const baselineCollection = participantModule[fieldMapping.biospecimenCollectionDetail]?.[fieldMapping.biospecimenBaselineCollection];
+        const mouthwashCollectionType = baselineCollection?.[fieldMapping.biospecimenMouthwashCollection];
+
+        // IF 684635302 = Yes AND 173836415.266600170.915179629 = Research (534621077), THEN green check and 'Collected' displays. Else, red x and 'Not Collected' displays.
+        const isCollected = participantModule[fieldMapping.baselineMouthwashCollectedFlag] === fieldMapping.yes
+            && mouthwashCollectionType === fieldMapping.biospecimenResearch;
+
+        // Date used: 173836415.266600170.448660695 (mouthwashDateTime) in biospecimenCollectionDetail.baseline
+        const collectionDate = isCollected ? formatMouthwashCollectionDate(baselineCollection?.[fieldMapping.mouthwashDateTime]) : "N/A";
+
+        displayedFields = {
+            icon: isCollected ?
+                {icon: ICONS.CHECKMARK, style: COLORS.GREEN} :
+                {icon: ICONS.X, style: COLORS.RED},
+            status: isCollected ? "Collected" : "Not Collected",
+            date: collectionDate,
+            setting: isCollected ? "Research" : "N/A",
+            refused: refusedMouthwashOption ? "Y" : "N",
+            extra: "N/A",
+        };
+    }
+    // Home Mouthwash (Initial, R1, R2) uses the kit tracking system (kitTrackingDetail structure)
+    else {
+        // Initial kits have some specific behavior vs. replacement kits
+        const isInitialKit = path === fieldMapping.bioKitMouthwash;
+        const homeMouthwashData = participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[path] || {};
+
+        const kitStatusCid = homeMouthwashData[fieldMapping.kitStatus];
+        const kitStatusStr = kitStatusCidToString[kitStatusCid];
+
+        // IF kitType = homeMouthwash AND kitStatus = received, THEN Green check displays. Else, red x displays.
+        const isCollected = homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash
+            && kitStatusCid === fieldMapping.kitStatusValues.received;
+
+        // Date from kitReceivedTime when collected
+        const collectionDate = isCollected ? formatMouthwashCollectionDate(homeMouthwashData[fieldMapping.kitReceivedTime]) : "N/A";
+
+        displayedFields = {
+            icon: isCollected ?
+                {icon: ICONS.CHECKMARK, style: COLORS.GREEN} :
+                {icon: ICONS.X, style: COLORS.RED},
+            status: path ? isCollected ? "Collected" : "Not Collected" : "Error: Path is required for home mouthwash samples",
+            date: collectionDate,
+            setting: isCollected ? "Home" : "N/A",
+            refused: isInitialKit ? refusedMouthwashOption ? "Y" : "N" : "N/A", // Refused = Y/N for initial kit. Always N/A for R1 & R2)
+            extra: kitStatusStr ? "Kit " + kitStatusStr : "N/A",
+        };
+    }
+
+    return getTemplateRow(
+        displayedFields.icon.icon,
+        displayedFields.icon.style,
+        "Baseline",
+        "Sample",
+        itemName,
+        displayedFields.status,
+        displayedFields.date,
+        displayedFields.setting,
+        displayedFields.refused,
+        displayedFields.extra
+    );
+}
+
 const checkIncentiveIssued = (participantModule) => {
-    return participantModule[fieldMapping.paymentRoundup] &&
-    (participantModule[fieldMapping.paymentRoundup][fieldMapping.biospecimenFollowUp][fieldMapping.paymentIssued] === (fieldMapping.yes)) ? 
-    `Issued on ${formatUTCDate(participantModule[fieldMapping.paymentRoundup][fieldMapping.biospecimenFollowUp][fieldMapping.datePaymentIssued])}`: 
-    (participantModule[fieldMapping.paymentRoundup]?.[fieldMapping.biospecimenFollowUp]?.[fieldMapping.refusedBaselinePayment] === (fieldMapping.yes)) ? 
-    `Declined on ${formatUTCDate(participantModule[fieldMapping.paymentRoundup][fieldMapping.biospecimenFollowUp][fieldMapping.refusedBaselinePaymentDate])}`:
-    `N/A`
-}
-
-const biospecimenStatus = (biospecimenRow, biospecimenFlag) => {
-    let template = ``;
-    (biospecimenRow[fieldMapping.biospecimenCollectionDetail] &&
-    !(biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp])) ?  
-    (
-        template += `N/A`
-    ) : 
-    (
-        biospecimenRow[fieldMapping.biospecimenCollectionDetail] && (biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][biospecimenFlag]) === (fieldMapping.biospecimenResearch) ?  
-        (   
-            template += `Research`
-        ) : 
-        biospecimenRow[fieldMapping.biospecimenCollectionDetail] && (biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][biospecimenFlag]) === (fieldMapping.biospecimenClinical) ?
-        (
-            template += `Clinical`
-        ) :  
-        biospecimenRow[fieldMapping.biospecimenCollectionDetail] && (biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][biospecimenFlag]) === (fieldMapping.biospecimenHome) ?
-        (
-            template += `Home`
-        ) : (
-            template += `N/A`
-        )
-    )   
-    return template;
-}
-
-const setSampleDateTime = (biospecimenRow, biospecimenFlag, researchDateTime, clinicalDateTime) => {
-    let biospecimenSampleDateTime = ``;
+    const paymentRound = participantModule[fieldMapping.paymentRound];
+    if (!paymentRound) return "N/A";
     
-    (biospecimenRow[fieldMapping.biospecimenCollectionDetail] &&
-        
-         (biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][biospecimenFlag]) === (fieldMapping.biospecimenResearch) ?  
-            (   
-                biospecimenSampleDateTime += formatUTCDate(biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][researchDateTime])
-            ) : 
-        (biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][biospecimenFlag]) === (fieldMapping.biospecimenClinical) ?
-            (
-                biospecimenSampleDateTime += formatUTCDate(biospecimenRow[fieldMapping.biospecimenCollectionDetail][fieldMapping.biospecimenFollowUp][clinicalDateTime])
-            ) : ``
-    )   
-    return biospecimenSampleDateTime;
+    const baselineCollection = paymentRound[fieldMapping.biospecimenBaselineCollection];
+    if (!baselineCollection) return "N/A";
+    
+    if (baselineCollection[fieldMapping.paymentIssued] === fieldMapping.yes) {
+        return `Issued on ${formatUTCDate(baselineCollection[fieldMapping.datePaymentIssued])}`;
+    } else if (baselineCollection[fieldMapping.refusedBaselinePayment] === fieldMapping.yes) {
+        return `Declined on ${formatUTCDate(baselineCollection[fieldMapping.refusedBaselinePaymentDate])}`;
+    }
+    
+    return "N/A";
 }
 
-const biospecimenStatusMouthwash = (biospecimenRow) => {
-    let template = ``;
-    !(biospecimenRow) ?  
-    (
-        template += `N/A`
-    ) : 
-    (
-        (biospecimenRow[fieldMapping.biospecimenFlag]) === (fieldMapping.biospecimenClinical) ?
-        (
-            template += `Clinical`
-        ) : (
-            template += `Home`
-        )
-    )   
-    return template;
+const biospecimenStatus = (collection, biospecimenFlag, collectionRound) => {    
+    if (!collection) return "N/A";
+    
+    const collectionType = collection[biospecimenFlag];
+    
+    if (collectionType === fieldMapping.biospecimenResearch) {
+        return "Research";
+    } else if (collectionType === fieldMapping.biospecimenClinical) {
+        return "Clinical";
+    } else if (collectionType === fieldMapping.biospecimenHome) {
+        return "Home";
+    }
+    
+    return "N/A";
 }
 
-const getTemplateRow = (faIcon, color, timeline, category, item, status, date, setting, refused, extra) => {
-    let template = ``;
-    template += 
-    `
-        <td><i class="${faIcon}" style="${color};"></i></td>
+const setSampleDateTime = (collection, biospecimenFlag, researchCollectedDateTime, clinicalCollectedDateTime) => {
+    if (!collection) return "N/A";
+
+    const collectionType = collection[biospecimenFlag];
+
+    if (collectionType === fieldMapping.biospecimenResearch) {
+        return formatUTCDate(collection[researchCollectedDateTime]);
+    } else if (collectionType === fieldMapping.biospecimenClinical) {
+        return formatUTCDate(collection[clinicalCollectedDateTime]);
+    }
+
+    return "N/A";
+}
+
+// Note: formatUTCDate is used on all dates except for mouthwash collection dates (see Box doc linked at top of file)
+const formatMouthwashCollectionDate = (isoDateTime) => {
+    if (!isoDateTime) return "N/A";
+    
+    try {
+        const [yyyy, mm, dd] = isoDateTime.split("T")[0].split("-");
+        if (yyyy && mm && dd && yyyy.length === 4 && mm.length === 2 && dd.length === 2) {
+            return `${mm}/${dd}/${yyyy}`;
+        }
+
+        throw new Error("BAD TIMESTAMP FORMAT");
+
+    } catch (error) {
+        console.error("Error formatting mouthwash collection date:", error);
+        return error.message;
+    }
+};
+
+const getTemplateRow = (icon, color, timeline, category, item, status, date, setting, refused, extra) => {
+    return `
+        <td><i class="${icon} ${color}"></i></td>
         <td>${timeline}</td>
         <td>${category}</td>
         <td>${item}</td>
@@ -743,6 +651,5 @@ const getTemplateRow = (faIcon, color, timeline, category, item, status, date, s
         <td>${setting}</td>
         <td>${refused}</td>
         <td>${extra}</td>
-    `
-    return template;
+    `;
 }

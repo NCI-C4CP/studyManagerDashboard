@@ -2,7 +2,7 @@ import { renderParticipantDetails } from './participantDetails.js';
 import { clearLocalStorage } from '../index.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
 import { getIdToken, showAnimation, hideAnimation, getParticipants, sortByKey, renderSiteDropdown, resetPagination, triggerNotificationBanner } from './utils.js';
-import { appState } from './stateManager.js';
+import { participantState, appState } from './stateManager.js';
 import { nameToKeyObj, keyToNameObj, keyToShortNameObj, participantConceptIDToTextMapping, searchBubbleMap, tableHeaderMap } from './idsToName.js';
 
 export const importantColumns = [fieldMapping.fName, fieldMapping.mName, fieldMapping.lName, fieldMapping.birthMonth, fieldMapping.birthDay, fieldMapping.birthYear, fieldMapping.email, 'Connect_ID', fieldMapping.healthcareProvider];
@@ -23,7 +23,6 @@ const renderSearchBubbles = () => {
 }
 
 export const renderTable = (data, source) => {
-    localStorage.removeItem("participant");
     if (data.length === 0) return `No data found!`;
     
     // Display the site dropdown, active and passive filters, and verification status time filter for specific search sources

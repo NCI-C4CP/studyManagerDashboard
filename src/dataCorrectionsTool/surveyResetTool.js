@@ -1,8 +1,9 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
-import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
+import { updateNavBar } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 import { findParticipant } from '../participantLookup.js';
 import { baseAPI, getIdToken, hideAnimation, showAnimation } from '../utils.js';
+import { participantState } from '../stateManager.js';
 import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 import { triggerNotificationBanner } from '../utils.js';
 
@@ -20,9 +21,7 @@ const surveyModalBody = {
 
 export const setupSurveyResetToolPage = (participant) => {
     if (participant !== undefined) {
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
-        removeActiveClass('nav-link', 'active');
-        document.getElementById('participantVerificationBtn').classList.add('active');
+        updateNavBar('participantVerificationBtn');
         mainContent.innerHTML = renderDataCorrectionsSelectionContent(participant);
         handleSurveyTypeChange(participant);
         handleBackToToolSelect();
@@ -138,7 +137,7 @@ const handleSurveyTypeChange = (participant) => {
                     const response = await findParticipant(query);
                     hideAnimation();
                     const participantData = response.data[0];
-                    localStorage.setItem('participant', JSON.stringify(participantData));
+                    participantState.setParticipant(participantData);
 
                     if (participantData[ssnStatusFlag] === notStarted) { 
                         displayAlreadyResetNote();
@@ -225,7 +224,7 @@ const submitSurveyStatusReset = () => {
                     const response = await resetParticipantSurvey(selectedSurvey);
                     
                     if (response.code === 200 || response.data) {
-                        localStorage.setItem('participant', JSON.stringify(response.data));
+                        participantState.setParticipant(response.data);
                         updateSurveyStatusTextContent(response.data, selectedSurvey, response.code);
                         displayAlreadyResetNote();
                         triggerNotificationBanner("Survey has been successfully reset!", "success", 10000);
@@ -277,7 +276,7 @@ const enableSubmitButton = () => {
  * 
 */
 const resetParticipantSurvey = async (selectedSurvey) => { 
-    const participant = JSON.parse(localStorage.getItem('participant'));
+    const participant = participantState.getParticipant();
     const connectId = participant['Connect_ID'];
 
     try {

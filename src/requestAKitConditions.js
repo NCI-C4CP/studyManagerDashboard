@@ -1,13 +1,11 @@
-import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
+import { updateNavBar } from './navigationBar.js';
 import { baseAPI, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, escapeHTML } from './utils.js';
 
 let conceptsOptionsStr = "";
 let concepts = null;
 
 export const renderRequestAKitConditions = async () => {
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
-    removeActiveClass('nav-link', 'active');
-    document.getElementById('manageRequestAKitConditionsBtn')?.classList.add('active');
+    updateNavBar('manageRequestAKitConditionsBtn');
 
     showAnimation();
 

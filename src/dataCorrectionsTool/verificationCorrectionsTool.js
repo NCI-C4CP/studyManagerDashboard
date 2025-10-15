@@ -1,18 +1,16 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
-import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
+import { updateNavBar } from '../navigationBar.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner, formatUTCDate, convertToISO8601, escapeHTML } from '../utils.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 import { keyToVerificationStatus, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
-import { appState } from '../stateManager.js';
+import { appState, participantState } from '../stateManager.js';
 import { findParticipant } from '../participantLookup.js';
 import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 
 
 export const setupVerificationCorrectionsPage = (participant) => {
     if (participant !== undefined) {
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
-        removeActiveClass('nav-link', 'active');
-        document.getElementById('participantVerificationBtn').classList.add('active');
+        updateNavBar('participantVerificationBtn');
         mainContent.innerHTML = renderVerificationCorrections(participant);
         let selectedResponse = {};
         dropdownTrigger('dropdownVerification', 'dropdownMenuButtonVerificationOptns', selectedResponse);
@@ -294,7 +292,7 @@ const clickHandler = async (selectedOptions) => {
                 const query = `token=${selectedOptions.token}`;
                 const reloadedParticipant = await findParticipant(query);
                 reloadVerificationToolPage(reloadedParticipant.data[0], 'Correction(s) updated.', 'success');
-                localStorage.setItem("participant", JSON.stringify(reloadedParticipant.data[0]));
+                participantState.setParticipant(reloadedParticipant.data[0]);
             }
             else { 
                 triggerNotificationBanner('Error: No corrections were made.', 'warning')
