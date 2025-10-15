@@ -484,6 +484,23 @@ export const cancerScreeningHistorySurvey = (data) => {
     return getTemplateRow(icon, color, "Follow-Up 9-mo", "Survey", "Cancer Screening History", itemStatus, date, "N/A", refused, "N/A");
 };
 
+export const baselinePreferenceSurvey = (data) => {
+    const refusedAllFutureSurveys = data[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
+    const refusedAllFutureActivities = data[fieldMapping.refusedAllFutureActivities];
+    const refused = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes ? "Y" : "N";
+    let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.preferenceSurveyStatus, fieldMapping.preferenceSurveyStartDate, fieldMapping.preferenceSurveyCompletedDate);
+
+    if (!data[fieldMapping.preferenceSurveyStatus]) itemStatus = "Not Eligible";
+
+    const timeline = "Cross-Sectional 2025";
+    const category = "Survey";
+    const item = "ROI Preference Survey";
+    const setting = "N/A";
+    const extra = "N/A";
+
+    return getTemplateRow(icon, color, timeline, category, item, itemStatus, date, setting, refused, extra);
+};
+
 export const baselineMenstrualSurvey = (participant) => {
     let template = ``;
 

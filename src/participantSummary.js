@@ -5,7 +5,7 @@ import fieldMapping from './fieldToConceptIdMapping.js';
 import { userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey,
     baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineBloodSample, baselineUrineSample, baselineBiospecSurvey, baselineMenstrualSurvey,
     baselineMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, baselineBloodUrineSurvey, baselineMouthwashSurvey, baselinePromisSurvey,
-    baselinePayment, baselineExperienceSurvey, cancerScreeningHistorySurvey, dhqSurvey, baselinePhysActReport, dhq3Report} from './participantSummaryRow.js';
+    baselinePayment, baselineExperienceSurvey, cancerScreeningHistorySurvey, dhqSurvey, baselinePhysActReport, dhq3Report, baselinePreferenceSurvey} from './participantSummaryRow.js';
 import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, renderShowMoreDataModal, urls, triggerNotificationBanner } from './utils.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
 
@@ -106,6 +106,9 @@ export const render = (participant, reports) => {
                                 </tr>
                                 <tr class="row-color-survey-light">
                                     ${baselineExperienceSurvey(participant)}
+                                </tr>
+                                <tr class="row-color-survey-dark">
+                                    ${baselinePreferenceSurvey(participant)}
                                 </tr>
                                 <tr class="row-color-survey-dark">
                                     ${dhqSurvey(participant)}
