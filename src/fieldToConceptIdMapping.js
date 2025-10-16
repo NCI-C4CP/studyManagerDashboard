@@ -221,6 +221,10 @@ export default
     'cancerScreeningHistorySurveyStartDate': 609630315,
     'cancerScreeningHistorySurveyCompletedDate': 389890053,
 
+    'preferenceSurveyStatus': 278023676,
+    'preferenceSurveyStartDate': 993557295,
+    'preferenceSurveyCompletedDate': 543379310,
+
     'dhqSurveyStatus': 692560814,
     'dhqSurveyStartDate': 109610692,
     'dhqSurveyCompletedDate': 610227793,

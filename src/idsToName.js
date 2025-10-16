@@ -188,6 +188,7 @@ export const searchBubbleMap = new Map([
     [fieldMapping.lawStatusFlag1, 'Flag Base Mod LAW'],
     [fieldMapping.ssnFullflag, 'Full SSN'],
     [fieldMapping.ssnPartialFlag, 'Part SSN'],
+    [fieldMapping.preferenceSurveyStatus, 'Flag 2025 ROI Preference Survey'],
     [fieldMapping.refusedSurvey, 'Ref Base Survs'],
     [fieldMapping.refusedBlood, 'Ref Base Blood'],
     [fieldMapping.refusedUrine, 'Ref Base Ur'],
@@ -429,7 +430,8 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         case fieldMapping.bohStatusFlag1:
         case fieldMapping.mreStatusFlag1:
         case fieldMapping.lawStatusFlag1:
-        case fieldMapping.sasStatusFlag1: {
+        case fieldMapping.sasStatusFlag1:
+        case fieldMapping.preferenceSurveyStatus: {
             return surveyStatusMapping[rawValue] ?? 'Not Started';
         }
 

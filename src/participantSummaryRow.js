@@ -191,16 +191,6 @@ export const baselinePromisSurvey = (participant) => {
     return getTemplateRow(icon, color, "Follow-Up 3-mo", "Survey", "Quality of Life", itemStatus, date, "N/A", refusal, "N/A");
 };
 
-export const baselineExperienceSurvey = (participant) => {
-    const refusedAllFutureSurveys = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
-    const refusedAllFutureActivities = participant[fieldMapping.refusedAllFutureActivities];
-    const refusedExperienceSurvey = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedExperienceSurvey];
-    const refusal = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedExperienceSurvey === fieldMapping.yes ? "Y" : "N";
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.experienceSurvey, fieldMapping.experienceSurveyStartDate, fieldMapping.experienceCompleteDate);
-
-    return getTemplateRow(icon, color, "Cross-Sectional 2024", "Survey", "2024 Connect Experience", itemStatus, date, "N/A", refusal, "N/A");
-};
-
 export const dhqSurvey = (data) => {
     // Note: There's no DHQ-specific refusal, just the generic refusals that apply to all surveys
     const refusedAllFutureSurveys = data[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
@@ -226,6 +216,33 @@ export const cancerScreeningHistorySurvey = (data) => {
     let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.cancerScreeningHistorySurveyStatus, fieldMapping.cancerScreeningHistorySurveyStartDate, fieldMapping.cancerScreeningHistorySurveyCompletedDate);
 
     return getTemplateRow(icon, color, "Follow-Up 9-mo", "Survey", "Cancer Screening History", itemStatus, date, "N/A", refused, "N/A");
+};
+
+export const baselineExperienceSurvey = (participant) => {
+    const refusedAllFutureSurveys = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
+    const refusedAllFutureActivities = participant[fieldMapping.refusedAllFutureActivities];
+    const refusedExperienceSurvey = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedExperienceSurvey];
+    const refusal = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedExperienceSurvey === fieldMapping.yes ? "Y" : "N";
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.experienceSurvey, fieldMapping.experienceSurveyStartDate, fieldMapping.experienceCompleteDate);
+
+    return getTemplateRow(icon, color, "Cross-Sectional 2024", "Survey", "2024 Connect Experience", itemStatus, date, "N/A", refusal, "N/A");
+};
+
+export const baselinePreferenceSurvey = (data) => {
+    const refusedAllFutureSurveys = data[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
+    const refusedAllFutureActivities = data[fieldMapping.refusedAllFutureActivities];
+    const refused = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes ? "Y" : "N";
+    let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.preferenceSurveyStatus, fieldMapping.preferenceSurveyStartDate, fieldMapping.preferenceSurveyCompletedDate);
+
+    if (!data[fieldMapping.preferenceSurveyStatus]) itemStatus = "Not Eligible";
+
+    const timeline = "Cross-Sectional 2025";
+    const category = "Survey";
+    const item = "ROI Preference Survey";
+    const setting = "N/A";
+    const extra = "N/A";
+
+    return getTemplateRow(icon, color, timeline, category, item, itemStatus, date, setting, refused, extra);
 };
 
 /**

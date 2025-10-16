@@ -2,10 +2,11 @@ import { updateNavBar } from './navigationBar.js';
 import { renderParticipantHeader } from './participantHeader.js';
 import { closeModal } from './participantDetailsHelpers.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
-import { consentHandler, hipaaHandler, userProfile, verificationStatus, baselineBOHSurvey, baselineMRESurvey,baselineSASSurvey,
-    baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineBloodSample, baselineUrineSample, baselineResearchBUMSurvey, baselineMenstrualSurvey,
-    baselineResearchMouthwashSample, baselineHomeMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, baselineClinicalBloodUrineSurvey, baselineHomeMouthwashSurvey, baselinePromisSurvey,
-    baselinePayment, baselineExperienceSurvey, cancerScreeningHistorySurvey, dhqSurvey, baselinePhysActReport, dhq3Report} from './participantSummaryRow.js';
+import { consentHandler, hipaaHandler, userProfile, verificationStatus,
+    baselineBOHSurvey, baselineMRESurvey, baselineSASSurvey, baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineResearchBUMSurvey, baselineClinicalBloodUrineSurvey,
+    baselineHomeMouthwashSurvey, baselineMenstrualSurvey, baselinePromisSurvey, dhqSurvey, cancerScreeningHistorySurvey, baselineExperienceSurvey, baselinePreferenceSurvey,
+    baselineBloodSample, baselineUrineSample, baselineResearchMouthwashSample, baselineHomeMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, 
+    baselinePayment, baselinePhysActReport, dhq3Report } from './participantSummaryRow.js';
 import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, renderShowMoreDataModal, urls, triggerNotificationBanner } from './utils.js';
 import { participantState, reportsState } from './stateManager.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
@@ -96,13 +97,16 @@ export const render = (participant, reports) => {
                                     ${baselinePromisSurvey(participant)}
                                 </tr>
                                 <tr class="row-color-survey-light">
+                                    ${dhqSurvey(participant)}
+                                </tr>
+                                <tr class="row-color-survey-dark">
+                                    ${cancerScreeningHistorySurvey(participant)}
+                                </tr>
+                                <tr class="row-color-survey-light">
                                     ${baselineExperienceSurvey(participant)}
                                 </tr>
                                 <tr class="row-color-survey-dark">
-                                    ${dhqSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-light">
-                                    ${cancerScreeningHistorySurvey(participant)}
+                                    ${baselinePreferenceSurvey(participant)}
                                 </tr>
                                 <tr class="row-color-sample-dark">
                                     ${baselineBloodSample(participant)}
