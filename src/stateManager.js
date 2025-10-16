@@ -1,4 +1,6 @@
 // // State Management
+import { encryptString, decryptString } from './crypto.js';
+
 const createStore = (startState = {}) => {
     let state = JSON.parse(JSON.stringify(startState));
 
@@ -36,9 +38,18 @@ export const participantState = {
         }
 
       appState.setState({ participant });
-
       if (participant.token) {
-          sessionStorage.setItem('participantToken', participant.token);
+          // Encrypt and persist token for recovery
+          (async () => {
+              try {
+                  const uid = firebase?.auth?.().currentUser?.uid;
+                  if (!uid) return; // cannot derive key without uid
+                  const enc = await encryptString(participant.token, uid);
+                  sessionStorage.setItem('participantTokenEnc', enc);
+              } catch (e) {
+                  console.warn('participantState.setParticipant encryption failed');
+              }
+          })();
       } else {
           console.warn('participantState.setParticipant: participant missing token property');
       }
@@ -58,7 +69,7 @@ export const participantState = {
      */
     clearParticipant: () => {
         appState.setState({ participant: null });
-        sessionStorage.removeItem('participantToken');
+        sessionStorage.removeItem('participantTokenEnc');
         // Clear the recovery promise cache and associated reports
         participantRecoveryPromise = null;
 
@@ -71,8 +82,21 @@ export const participantState = {
      * Get participant token from sessionStorage for recovery
      * @return {string|null} The participant token or null if not set
      */
-    getParticipantToken: () => {
-        return sessionStorage.getItem('participantToken');
+    getParticipantToken: async () => {
+        try {
+            const uid = firebase?.auth?.().currentUser?.uid;
+            const payload = sessionStorage.getItem('participantTokenEnc');
+            if (!payload || !uid) return null;
+            try {
+                return await decryptString(payload, uid);
+            } catch (e) {
+                // tampered/old version. Clear and return null
+                sessionStorage.removeItem('participantTokenEnc');
+                return null;
+            }
+        } catch (error) {
+            return null;
+        }
     },
 
     /**
@@ -94,7 +118,7 @@ export const participantState = {
             return participantRecoveryPromise;
         }
 
-        const sessionToken = participantState.getParticipantToken();
+        const sessionToken = await participantState.getParticipantToken();
 
         if (!sessionToken) {
             return null;
