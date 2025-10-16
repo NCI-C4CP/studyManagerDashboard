@@ -366,11 +366,10 @@ const renderActivityCheck = () => {
                 </div>`
 }
 
-// TODO: why are we calling getIdToken twice here?
 const renderDashboard = async () => {
-    if (await getIdToken()) {
+    const idToken = await getIdToken();
+    if (idToken) {
         showAnimation();
-        const idToken = await getIdToken();
         const isAuthorized = await authorize(idToken);
 
         if (isAuthorized && isAuthorized.code === 200) {

@@ -511,7 +511,7 @@ const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
     const refusedMouthwashOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedMouthwash] === fieldMapping.yes;
     let displayedFields;
 
-    // Research Mouthwash is part of a full specimen colllection (it uses biospecimenCollectionDetail structure like blood/urine).
+    // Research Mouthwash is part of a full specimen collection (it uses biospecimenCollectionDetail structure like blood/urine).
     if (itemName === "Research Mouthwash") {
         const baselineCollection = participantModule[fieldMapping.biospecimenCollectionDetail]?.[fieldMapping.biospecimenBaselineCollection];
         const mouthwashCollectionType = baselineCollection?.[fieldMapping.biospecimenMouthwashCollection];
@@ -632,7 +632,7 @@ const formatMouthwashCollectionDate = (isoDateTime) => {
             return `${mm}/${dd}/${yyyy}`;
         }
 
-        throw new Error("BAD TIMESTAMP FORMAT");
+        throw new Error(`Invalid timestamp format: ${isoDateTime}`);
 
     } catch (error) {
         console.error("Error formatting mouthwash collection date:", error);
