@@ -1,8 +1,8 @@
 import { renderParticipantDetails } from './participantDetails.js';
 import { clearLocalStorage } from '../index.js';
-import fieldMapping from './fieldToConceptIdMapping.js'; 
-import { getIdToken, showAnimation, hideAnimation, getParticipants, sortByKey, renderSiteDropdown, resetPagination, triggerNotificationBanner } from './utils.js';
-import { participantState, appState } from './stateManager.js';
+import fieldMapping from './fieldToConceptIdMapping.js';
+import { getIdToken, showAnimation, hideAnimation, getParticipants, sortByKey, renderSiteDropdown, triggerNotificationBanner } from './utils.js';
+import { searchState } from './stateManager.js';
 import { nameToKeyObj, keyToNameObj, keyToShortNameObj, participantConceptIDToTextMapping, searchBubbleMap, tableHeaderMap } from './idsToName.js';
 
 export const importantColumns = [fieldMapping.fName, fieldMapping.mName, fieldMapping.lName, fieldMapping.birthMonth, fieldMapping.birthDay, fieldMapping.birthYear, fieldMapping.email, 'Connect_ID', fieldMapping.healthcareProvider];
@@ -60,7 +60,9 @@ export const renderTable = (data, source) => {
                     `: ``}
                     </div>`
 
-    let backToSearch = (source === 'participantLookup')? `<button class="btn btn-primary" id="back-to-search">Back to Search</button>`: "";
+    let backToSearch = (source === 'participantLookup')
+        ? `<button type="button" class="btn btn-primary" id="back-to-search" data-back-mode="lookup-form">Back to Search</button>`
+        : "";
     template += `
                 <div class="row">
                     <div class="col">
@@ -95,11 +97,11 @@ export  const renderParticipantSearchResults = (data, source) => {
         hideAnimation();
         return;
     }
-    
+
     const pageSize = 50;
     const dataLength = data.length;
     data.splice(pageSize, dataLength);
-    
+
     renderDataTable(data)
     addEventShowMoreInfo(data);
     if (source !== 'bubbleFilters') {
@@ -115,32 +117,36 @@ export  const renderParticipantSearchResults = (data, source) => {
 }
 
 export const renderFilters = () => {
+    const metadata = searchState.getCachedMetadata();
+    const startDateValue = metadata?.startDateFilter || '';
+    const endDateValue = metadata?.endDateFilter || '';
+    const participantType = metadata?.effectiveType || metadata?.predefinedType || '';
 
-    if (appState.getState().startDateFilter) {
+    if (startDateValue) {
         const startDate = document.getElementById('startDate');
-        startDate.value = appState.getState().startDateFilter;
+        startDate.value = startDateValue;
     }
 
-    if (appState.getState().endDateFilter) {
+    if (endDateValue) {
         const endDate = document.getElementById('endDate');
-        endDate.value = appState.getState().endDateFilter;
+        endDate.value = endDateValue;
     }
 
-    if (appState.getState().participantTypeFilter === 'active') {
+    if (participantType === 'active') {
         const activeButton = document.getElementById('activeFilter');
-        activeButton.classList.add('btn-info');
-        activeButton.classList.remove('btn-outline-info');
+        activeButton?.classList.add('btn-info');
+        activeButton?.classList.remove('btn-outline-info');
     }
 
-    if (appState.getState().participantTypeFilter === 'passive') {
+    if (participantType === 'passive') {
         const passiveButton = document.getElementById('passiveFilter');
-        passiveButton.classList.add('btn-info');
-        passiveButton.classList.remove('btn-outline-info');
+        passiveButton?.classList.add('btn-info');
+        passiveButton?.classList.remove('btn-outline-info');
     }
 
     const dropdownButton = document.getElementById('dropdownSites');
     if (dropdownButton) {
-        const siteCode = appState.getState().siteCode;
+        const siteCode = metadata?.siteCode;
         if (siteCode && siteCode !== nameToKeyObj.allResults) {
             const siteName = keyToShortNameObj[siteCode];
             dropdownButton.innerHTML = siteName;
@@ -167,13 +173,19 @@ const addEventActivePassiveFilter = () => {
     const passiveButton = document.getElementById('passiveFilter');
 
     const setupButton = (button, filterType) => {
-        button && button.addEventListener('click', () => {
+        button && button.addEventListener('click', async () => {
             const isActive = button.classList.contains('btn-info');
-            const newFilterType = isActive ? 'all' : filterType;
+            const metadata = searchState.getCachedMetadata();
+            const baseType = metadata?.predefinedType || 'all';
+            const newFilterType = isActive ? baseType : filterType;
 
-            appState.setState({ participantTypeFilter: newFilterType });
-            resetPagination();
-            reRenderMainTable();
+            await searchState.updatePredefinedMetadata({
+                effectiveType: newFilterType,
+                pageNumber: 1,
+                direction: '',
+                cursorHistory: []
+            });
+            await reRenderMainTable();
         });
     }
 
@@ -193,19 +205,28 @@ const addEventDateFilter = () => {
     const resetDateFilters = document.getElementById('resetDate');
 
     resetDateFilters && resetDateFilters.addEventListener('click', async () => {
-        appState.setState({ startDateFilter: ``, endDateFilter: ``});
-        resetPagination();
-        reRenderMainTable();
+        await searchState.updatePredefinedMetadata({
+            startDateFilter: '',
+            endDateFilter: '',
+            pageNumber: 1,
+            direction: '',
+            cursorHistory: []
+        });
+        await reRenderMainTable();
     });
 
     const setupDateInput = (input, dateType) => {
         input && (input.max = new Date().toISOString().split("T")[0]);
-        input && input.addEventListener('change', () => {
+        input && input.addEventListener('change', async () => {
             const newDate = input.value;
 
-            appState.setState({ [dateType]: newDate} );
-            resetPagination();
-            reRenderMainTable();
+            await searchState.updatePredefinedMetadata({
+                [dateType]: newDate,
+                pageNumber: 1,
+                direction: '',
+                cursorHistory: []
+            });
+            await reRenderMainTable();
         });
     }
 
@@ -222,14 +243,30 @@ const addEventDateFilter = () => {
 const addEventPagination = () => {
     const prevButton = document.getElementById('previousLink');
     const nextButton = document.getElementById('nextLink');
-    const currentPage = appState.getState().pageNumber;
-
     const setupPaginationButton = (button, type) => {
         button && button.addEventListener('click', async () => {
-            if (type === 'previous') appState.setState({ pageNumber: currentPage - 1, direction: 'previous' });
-            if (type === 'next') appState.setState({ pageNumber: currentPage + 1, direction: 'next' });
+            const latestMetadata = searchState.getCachedMetadata();
+            const currentPageNumber = latestMetadata?.pageNumber || 1;
+            let nextPage = currentPageNumber;
+            let direction = latestMetadata?.direction || '';
 
-            reRenderMainTable();
+            if (type === 'previous') {
+                nextPage = Math.max(1, currentPageNumber - 1);
+                direction = 'previous';
+            }
+
+            if (type === 'next') {
+                nextPage = currentPageNumber + 1;
+                direction = 'next';
+            }
+
+            await searchState.updatePredefinedMetadata({
+                pageNumber: nextPage,
+                direction,
+                cursorHistory: latestMetadata?.cursorHistory || []
+            });
+
+            await reRenderMainTable();
         });
     }
 
@@ -246,12 +283,17 @@ const addEventSiteFilter = () => {
     const dropdownButton = document.getElementById('dropdownMenuButtonSites');
 
     const setupDropdownButton = (button) => {
-        button && button.addEventListener('click', (e) => {
+        button && button.addEventListener('click', async (e) => {
             const siteKey = e.target.getAttribute('data-siteKey');
-            const siteCode = nameToKeyObj[siteKey];
+            const siteCode = nameToKeyObj?.[siteKey] ?? nameToKeyObj.allResults;
 
-            appState.setState({ siteCode });
-            reRenderMainTable();
+            await searchState.updatePredefinedMetadata({
+                siteCode,
+                pageNumber: 1,
+                direction: '',
+                cursorHistory: []
+            });
+            await reRenderMainTable();
         });
     }
     
@@ -273,7 +315,10 @@ export const reRenderMainTable = async () => {
     showAnimation();
 
     try {
-        const type = appState.getState().participantTypeFilter;
+        const metadata = searchState.getCachedMetadata();
+        const routeKey = metadata?.routeKey || metadata?.predefinedType || 'all';
+        const routeType = metadata?.predefinedType || 'all';
+        const type = metadata?.effectiveType || routeType;
         const response = await getParticipants();
 
         if (response?.code === 401) {
@@ -289,6 +334,22 @@ export const reRenderMainTable = async () => {
         const data = sortByKey(response.data, fieldMapping.healthcareProvider);
 
         if (data.length > 0) {
+            // Update search cache with new page data
+            const paginationState = searchState.getCachedMetadata() || metadata || {};
+            const searchMetadata = {
+                searchType: 'predefined',
+                predefinedType: paginationState.predefinedType || routeType,
+                effectiveType: paginationState.effectiveType || type,
+                routeKey: paginationState.routeKey || routeKey,
+                siteCode: paginationState.siteCode ?? nameToKeyObj.allResults,
+                startDateFilter: paginationState.startDateFilter ?? '',
+                endDateFilter: paginationState.endDateFilter ?? '',
+                pageNumber: paginationState.pageNumber || 1,
+                direction: paginationState.direction || '',
+                cursorHistory: paginationState.cursorHistory || []
+            };
+            searchState.setSearchResults(searchMetadata, data);
+
             renderTablePage(data, type);
 
             requestAnimationFrame(() => {
@@ -331,7 +392,9 @@ export const reRenderMainTable = async () => {
  */
 const paginationTemplate = () => {
 
-    const { pageNumber, cursorHistory } = appState.getState();
+    const metadata = searchState.getCachedMetadata();
+    const pageNumber = metadata?.pageNumber || 1;
+    const cursorHistory = metadata?.cursorHistory || [];
 
     return `
     <div class="pagination-container mt-3 mb-3 d-flex justify-content-center">
@@ -475,9 +538,9 @@ export const activeColumns = (data) => {
             }
             document.getElementById('currentPageNumber').innerHTML = `&nbsp;Page: 1&nbsp;`
             document.getElementById('nextLink').setAttribute('data-nextpage', 1);
-
-            if (appState.getState().startDateFilter) document.getElementById('startDate').value = appState.getState().startDateFilter;
-            if (appState.getState().endDateFilter) document.getElementById('endDate').value = appState.getState().endDateFilter;
+            const metadata = searchState.getCachedMetadata();
+            if (metadata?.startDateFilter) document.getElementById('startDate').value = metadata.startDateFilter;
+            if (metadata?.endDateFilter) document.getElementById('endDate').value = metadata.endDateFilter;
         })
     });
 }

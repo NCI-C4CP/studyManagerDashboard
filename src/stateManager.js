@@ -277,6 +277,170 @@ export const reportsState = {
     }
 };
 
+// Search State Management
+// Manages participant search results and metadata
+
+let searchMetadataCache = null;
+let searchResultsCache = null;
+
+const sanitizeMetadata = (metadata, overrides = {}) => {
+    if (!metadata && (!overrides || Object.keys(overrides).length === 0)) {
+        return null;
+    }
+
+    const merged = { ...(metadata || {}), ...(overrides || {}) };
+    const inferredType = merged.searchType || (merged.predefinedType || merged.routeKey ? 'predefined' : undefined);
+
+    if (inferredType === 'predefined') {
+        const predefinedType = merged.predefinedType ?? merged.effectiveType ?? merged.routeKey ?? '';
+        const effectiveType = merged.effectiveType ?? predefinedType;
+        const routeKey = merged.routeKey ?? predefinedType ?? effectiveType ?? '';
+
+        return {
+            searchType: 'predefined',
+            predefinedType,
+            effectiveType,
+            routeKey,
+            siteCode: merged.siteCode ?? '',
+            startDateFilter: merged.startDateFilter ?? '',
+            endDateFilter: merged.endDateFilter ?? '',
+            pageNumber: merged.pageNumber ?? 1,
+            direction: merged.direction ?? '',
+            cursorHistory: Array.isArray(merged.cursorHistory) ? merged.cursorHistory : [],
+        };
+    }
+
+    return { ...merged };
+};
+
+const persistMetadataAsync = (metadata) => {
+    if (!metadata) return;
+    (async () => {
+        try {
+            const uid = firebase?.auth?.().currentUser?.uid;
+            if (!uid) return; // cannot derive key without uid
+            const enc = await encryptString(JSON.stringify(metadata), uid);
+            sessionStorage.setItem('searchMetadataEnc', enc);
+        } catch (e) {
+            console.warn('searchState.persistMetadataAsync encryption failed', e);
+        }
+    })();
+};
+
+export const searchState = {
+    /**
+     * Set search results in memory and store encrypted metadata in sessionStorage
+     * @param {Object} searchMetadata - Search parameters and pagination state
+     * @param {Array} resultsArray - Array of participant objects for current page
+     */
+    setSearchResults: (searchMetadata, resultsArray) => {
+        if (!searchMetadata) {
+            console.warn('searchState.setSearchResults: metadata is null or undefined');
+            return;
+        }
+
+        const normalizedMetadata = sanitizeMetadata(searchMetadata);
+        searchResultsCache = Array.isArray(resultsArray) ? resultsArray : null;
+
+        searchMetadataCache = normalizedMetadata;
+        persistMetadataAsync(normalizedMetadata);
+    },
+
+    /**
+     * Initialize metadata for predefined searches (route + filters)
+     * @param {Object} metadata
+     */
+    initializePredefinedMetadata: async (metadata) => {
+        if (!metadata) return null;
+        const normalized = sanitizeMetadata({ searchType: 'predefined' }, metadata);
+        searchMetadataCache = normalized;
+        persistMetadataAsync(normalized);
+        return { ...normalized };
+    },
+
+    /**
+     * Merge metadata updates for predefined searches
+     * @param {Object} updates
+     */
+    updatePredefinedMetadata: async (updates = {}) => {
+        const base = searchMetadataCache && searchMetadataCache.searchType === 'predefined'
+            ? searchMetadataCache
+            : { searchType: 'predefined' };
+
+        const next = sanitizeMetadata(base, updates);
+        searchMetadataCache = next;
+        persistMetadataAsync(next);
+        return { ...next };
+    },
+
+    /**
+     * Get search results from memory
+     * @return {Array|null} The search results array or null if not set
+     */
+    getSearchResults: () => {
+        if (searchResultsCache) return searchResultsCache;
+        return null;
+    },
+
+    /**
+     * Get cached metadata synchronously
+     * @return {Object|null}
+     */
+    getCachedMetadata: () => {
+        if (!searchMetadataCache) return null;
+        return { ...searchMetadataCache };
+    },
+
+    /**
+     * Get decrypted search metadata from sessionStorage
+     * @return {Promise<Object|null>} The search metadata object or null if not set
+     */
+    getSearchMetadata: async () => {
+        if (searchMetadataCache) {
+            return { ...searchMetadataCache };
+        }
+
+        try {
+            const uid = firebase?.auth?.().currentUser?.uid;
+            const payload = sessionStorage.getItem('searchMetadataEnc');
+            if (!payload || !uid) return null;
+            try {
+                const decrypted = await decryptString(payload, uid);
+                const parsed = JSON.parse(decrypted);
+                const normalized = sanitizeMetadata(parsed);
+                searchMetadataCache = normalized;
+                return { ...normalized };
+            } catch (e) {
+                // tampered/old version. Clear and return null
+                sessionStorage.removeItem('searchMetadataEnc');
+                searchMetadataCache = null;
+                return null;
+            }
+        } catch (error) {
+            console.error('Error retrieving search metadata:', error);
+            return null;
+        }
+    },
+
+    /**
+     * Check if search metadata exists in sessionStorage (synchronous check)
+     * @return {boolean} True if search metadata exists, false otherwise
+     */
+    hasSearchResults: () => {
+        if (searchMetadataCache) return true;
+        return !!sessionStorage.getItem('searchMetadataEnc');
+    },
+
+    /**
+     * Clear search results from memory and sessionStorage
+     */
+    clearSearchResults: () => {
+        searchResultsCache = null;
+        searchMetadataCache = null;
+        sessionStorage.removeItem('searchMetadataEnc');
+    },
+};
+
 /**
  * Unsaved Changes Management -- Participant Details Page
  * Mark there are unsaved changes in the UI

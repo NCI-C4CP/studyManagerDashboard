@@ -1,6 +1,6 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantDetails } from './participantDetails.js';
-import { findParticipant, renderLookupResultsTable } from './participantLookup.js';
+import { findParticipant } from './participantLookup.js';
 import { appState, participantState, userSession, markUnsaved, clearUnsaved } from './stateManager.js';
 import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, escapeHTML } from './utils.js';
 
@@ -847,14 +847,12 @@ export const reloadParticipantData = async (token) => {
 }
 
 export const renderReturnSearchResults = () => {
-    const searchResultsButton = document.getElementById('displaySearchResultsBtn');
-    if (searchResultsButton) {
+    const searchResultsButton = document.getElementById('backToSearchResultsBtn');
+    if (searchResultsButton && searchResultsButton.parentNode) {
         const newSearchResultsButton = searchResultsButton.cloneNode(true);
         searchResultsButton.parentNode.replaceChild(newSearchResultsButton, searchResultsButton);
-        newSearchResultsButton.addEventListener('click', () => {
-            renderLookupResultsTable();
-        })
-}};
+    }
+};
 
 export const resetChanges = (participant) => {
     const cancelButtons = [document.getElementById("cancelChangesUpper"), document.getElementById("cancelChangesLower")];

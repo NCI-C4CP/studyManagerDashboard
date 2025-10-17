@@ -8,7 +8,7 @@ import {
   baseAPI,
 } from "./utils.js";
 import { renderParticipantHeader } from "./participantHeader.js";
-import { renderLookupResultsTable } from "./participantLookup.js";
+import { navigateBackToSearchResults } from "./participantLookup.js";
 import conceptIds from "./fieldToConceptIdMapping.js";
 
 let fileState = {};
@@ -94,7 +94,9 @@ const showNotAllowedToUpload = (participantData) => {
   `;
 
   document.querySelector("#backToSearchBtn").addEventListener("click", () => {
-    renderLookupResultsTable();
+    navigateBackToSearchResults().catch((error) => {
+      console.error('Error navigating back to search results:', error);
+    });
   });
 };
 
@@ -444,6 +446,8 @@ export const renderPathologyReportUploadPage = async (participantData) => {
   });
 
   document.querySelector("#backToSearchBtn").addEventListener("click", () => {
-    renderLookupResultsTable();
+    navigateBackToSearchResults().catch((error) => {
+      console.error('Error navigating back to search results:', error);
+    });
   });
 };
