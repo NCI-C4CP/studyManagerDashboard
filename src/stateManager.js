@@ -16,6 +16,9 @@ const createStore = (startState = {}) => {
     return {
         setState,
         getState,
+        // Note `set` and `get` are aliases for setState and getState. Added per @we-ai's request. Not yet implemented.
+        set: setState,
+        get: getState,
     };
 }
 
