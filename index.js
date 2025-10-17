@@ -265,22 +265,20 @@ const router = async () => {
         // Handle all other routes
         markNavigationSucceeded();
 
-        // Clear unsaved state and active participant for non-participant routes
         const isPredefinedParticipantSearchRoute = route.startsWith('#participants/');
+        const isParticipantWorkflowRoute = participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route);
 
-        if (!participantRoutes.includes(route) && !dataCorrectionsToolRoutes.includes(route) && !isPredefinedParticipantSearchRoute) {
+        if (route === '#participantLookup') {
             clearUnsaved();
             participantState.clearParticipant();
-            // Clear search state when leaving participant workflows (except participantLookup)
-            if (route !== '#participantLookup') {
-                searchState.clearSearchResults();
-            }
-        }
-
-        // Clear search state when navigating to participant lookup (fresh form)
-        if (route === '#participantLookup') {
             searchState.clearSearchResults();
             return renderParticipantLookup();
+        }
+
+        if (!isParticipantWorkflowRoute && !isPredefinedParticipantSearchRoute) {
+            clearUnsaved();
+            participantState.clearParticipant();
+            searchState.clearSearchResults();
         }
 
         if (route === '#participants/notyetverified') return renderParticipants('notyetverified');

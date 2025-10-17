@@ -4,6 +4,7 @@ import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantHeader } from './participantHeader.js';
 import { getDataAttributes, urls, escapeHTML, renderShowMoreDataModal } from './utils.js';
 import { appState, participantState, markUnsaved, clearUnsaved } from './stateManager.js';
+import { navigateBackToSearchResults } from './participantLookup.js';
 
 clearUnsaved();
 
@@ -444,7 +445,6 @@ const addSearchNavigationListeners = () => {
  */
 const handleBackToSearchResults = async () => {
     try {
-        const { navigateBackToSearchResults } = await import('./participantLookup.js');
         await navigateBackToSearchResults();
     } catch (error) {
         console.error('Error navigating back to search results:', error);
