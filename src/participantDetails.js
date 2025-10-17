@@ -1,9 +1,9 @@
-import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
-import { attachUpdateLoginMethodListeners, allStates, closeModal, getFieldValues, getImportantRows, getModalLabel, primaryPhoneTypes, renderReturnSearchResults, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, addFormInputFormattingListeners } from './participantDetailsHelpers.js';
+import { updateNavBar } from './navigationBar.js';
+import { attachUpdateLoginMethodListeners, allStates, closeModal, getFieldValues, getImportantRows, getIsNORCOrCCC, getModalLabel, primaryPhoneTypes, renderReturnSearchResults, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, addFormInputFormattingListeners } from './participantDetailsHelpers.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
 import { renderParticipantHeader } from './participantHeader.js';
-import { getDataAttributes, urls, markUnsaved, clearUnsaved, escapeHTML, renderShowMoreDataModal } from './utils.js';
-import { appState } from './stateManager.js';
+import { getDataAttributes, urls, escapeHTML, renderShowMoreDataModal } from './utils.js';
+import { appState, participantState, markUnsaved, clearUnsaved } from './stateManager.js';
 
 clearUnsaved();
 
@@ -30,10 +30,9 @@ const initLoginMechanism = (participant) => {
 
 export const renderParticipantDetails = (participant, changedOption = {}) => {
     initLoginMechanism(participant);
-    appState.setState({participant: participant});
-    
-    mainContent.innerHTML = render(participant, changedOption);
-    localStorage.setItem("participant", JSON.stringify(participant));
+    participantState.setParticipant(participant);
+
+    mainContent.innerHTML = renderParticipantDetailsForm(participant, changedOption);
     changeParticipantDetail(participant, changedOption);
     resetChanges(participant);
     
@@ -42,111 +41,104 @@ export const renderParticipantDetails = (participant, changedOption = {}) => {
     attachUpdateLoginMethodListeners(participant[fieldMapping.accountEmail], participant[fieldMapping.accountPhone], participant.token, participant.state.uid);
     submitClickHandler(participant, changedOption);
 
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
-    removeActiveClass('nav-link', 'active');
-    document.getElementById('participantDetailsBtn').classList.add('active');
+    updateNavBar('participantDetailsBtn');
 }
 
-export const render = (participant, changedOption) => {
-    const importantRows = getImportantRows(participant, changedOption);
-
+export const renderParticipantDetailsForm = (participant, changedOption) => {
     let template = `<div class="container">`
-    if (!participant) {
-        template +=` 
-            <div id="root">
-                Please select a participant first!
-            </div>
-        </div>
-        `
-    } else {
-        // Check participant status
-        const isParticipantDuplicate = participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate;
-        const isParticipantCannotBeVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.cannotBeVerified;
-        const isParticipantDataDestroyed = participant[fieldMapping.dataDestroyCategorical] === fieldMapping.requestedDataDestroySigned;
-        
-        let statusWarning = '';
-        let warningTitle = '';
-        let warningMessage = '';
-        
-        if (isParticipantDuplicate) {
-            warningTitle = 'Duplicate Account';
-            warningMessage = 'This participant has been marked as a duplicate account. Editing is disabled for this participant.';
-        } else if (isParticipantCannotBeVerified) {
-            warningTitle = 'Cannot Be Verified';
-            warningMessage = 'This participant cannot be verified. Editing is disabled for this participant.';
-        } else if (isParticipantDataDestroyed) {
-            warningTitle = 'Data Destroyed';
-            warningMessage = 'This participant\'s data has been destroyed. Editing is disabled for this participant.';
+
+    // Check participant status
+    const isParticipantDuplicate = participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate;
+    const isParticipantCannotBeVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.cannotBeVerified;
+    const isParticipantDataDestroyed = participant[fieldMapping.dataDestroyCategorical] === fieldMapping.requestedDataDestroySigned;
+    
+    let statusWarning = '';
+    let warningTitle = '';
+    let warningMessage = '';
+    
+    if (isParticipantDuplicate) {
+        const isNORCOrCCC = getIsNORCOrCCC();
+        warningTitle = 'Duplicate Account';
+        warningMessage = 'This participant has been marked as a duplicate account. Editing is disabled for this participant.';
+        if (isNORCOrCCC) {
+            warningMessage += ' NORC/CCC staff can edit login fields for duplicate accounts.';
         }
-        
-        if (warningTitle && warningMessage) {
-            statusWarning = `
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                    <h4 class="alert-heading">${warningTitle}</h4>
-                    <p>${warningMessage}</p>
-                </div>
-            `;
-        }
-        
-        template += `
-            <div id="root" > 
-            <div id="alert_placeholder"></div>
-            ${renderParticipantHeader(participant)}     
-            ${statusWarning}
-            ${renderBackToSearchDivAndButton()}
-            ${renderCancelChangesAndSaveChangesButtons('Upper')}
-            ${renderDetailsTableHeader()}
-        `;
-
-        const filteredImportantRows = importantRows.filter(row => row.display === true);
-        filteredImportantRows.forEach(row => {
-            
-            const conceptId = row.field;
-            const participantConsented = participant[fieldMapping.consentFlag] === fieldMapping.yes;
-            const hideLoginInformation = (conceptId === 'Change Login Phone' || conceptId === 'Change Login Email') && !participantConsented;
-            const shouldHideButton = !row.editable || hideLoginInformation;
-            const disableButton = hideLoginInformation || !row.editable;
-            const variableLabel = row.label;
-            const variableValue = Object.prototype.hasOwnProperty.call(changedOption, conceptId) ? changedOption[conceptId] : participant[conceptId];
-            const valueToRender = hideLoginInformation ? 'N/A' : getFieldValues(variableValue, conceptId);
-            const fieldHasChanges = Object.prototype.hasOwnProperty.call(changedOption, conceptId);
-            let rowBackgroundColor = row.isHeading ? '#f5f5f5' : null;
-            if (fieldHasChanges) rowBackgroundColor = '#FFFACA';
-
-            const buttonToRender = (row.isHeading || shouldHideButton) ? '' : getButtonToRender(variableLabel, conceptId, disableButton, isParticipantDataDestroyed, isParticipantDuplicate, isParticipantCannotBeVerified);
-            const saveChangesMessage = fieldHasChanges ? `<br><br><i>Please save changes<br>before exiting the page</i>` : '';
-
-            template += `
-                <tr class="detailedRow" style="text-align: left; background-color: ${rowBackgroundColor}" id="${conceptId}row">
-                    <th scope="row">
-                        <div class="mb-3">
-                            <label class="form-label">
-                                ${variableLabel}
-                            </label>
-                        </div>
-                    </th>
-                    <td style="text-align: left;" id="${conceptId}value">
-                        ${valueToRender}
-                        <br>
-                        <br>
-                        <div id="${conceptId}note" style="display:none"></div>
-                    </td> 
-                    <td style="text-align: left;">
-                        ${buttonToRender}
-                        ${saveChangesMessage}
-                    </td>
-                </tr>
-            `
-        });
-        template += `
-                    </tbody>
-                </table>
-                ${renderCancelChangesAndSaveChangesButtons('Lower')}
-            </div>
-        </div>
-        `;
-        template += `${renderShowMoreDataModal()}`
+    } else if (isParticipantCannotBeVerified) {
+        warningTitle = 'Cannot Be Verified';
+        warningMessage = 'This participant cannot be verified. Editing is disabled for this participant.';
+    } else if (isParticipantDataDestroyed) {
+        warningTitle = 'Data Destroyed';
+        warningMessage = 'This participant\'s data has been destroyed. Editing is disabled for this participant.';
     }
+    
+    if (warningTitle && warningMessage) {
+        statusWarning = `
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <h4 class="alert-heading">${warningTitle}</h4>
+                <p>${warningMessage}</p>
+            </div>
+        `;
+    }
+    
+    template += `
+        <div id="root" > 
+        <div id="alert_placeholder"></div>
+        ${renderParticipantHeader(participant)}     
+        ${statusWarning}
+        ${renderBackToSearchDivAndButton()}
+        ${renderCancelChangesAndSaveChangesButtons('Upper')}
+        ${renderDetailsTableHeader()}
+    `;
+
+    const importantRows = getImportantRows(participant, changedOption);
+    const filteredImportantRows = importantRows.filter(row => row.display === true);
+    filteredImportantRows.forEach(row => {
+        
+        const conceptId = row.field;
+        const participantConsented = participant[fieldMapping.consentFlag] === fieldMapping.yes;
+        const hideLoginInformation = (conceptId === 'Change Login Phone' || conceptId === 'Change Login Email') && !participantConsented;
+        const shouldHideButton = !row.editable || hideLoginInformation;
+        const disableButton = hideLoginInformation || !row.editable;
+        const variableLabel = row.label;
+        const variableValue = Object.prototype.hasOwnProperty.call(changedOption, conceptId) ? changedOption[conceptId] : participant[conceptId];
+        const valueToRender = hideLoginInformation ? 'N/A' : getFieldValues(variableValue, conceptId);
+        const fieldHasChanges = Object.prototype.hasOwnProperty.call(changedOption, conceptId);
+        let rowBackgroundColor = row.isHeading ? '#f5f5f5' : null;
+        if (fieldHasChanges) rowBackgroundColor = '#FFFACA';
+
+        const buttonToRender = (row.isHeading || shouldHideButton) ? '' : getButtonToRender(variableLabel, conceptId, disableButton, isParticipantDataDestroyed, isParticipantDuplicate, isParticipantCannotBeVerified);
+        const saveChangesMessage = fieldHasChanges ? `<br><br><i>Please save changes<br>before exiting the page</i>` : '';
+
+        template += `
+            <tr class="detailedRow" style="text-align: left; background-color: ${rowBackgroundColor}" id="${conceptId}row">
+                <th scope="row">
+                    <div class="mb-3">
+                        <label class="form-label">
+                            ${variableLabel}
+                        </label>
+                    </div>
+                </th>
+                <td style="text-align: left;" id="${conceptId}value">
+                    ${valueToRender}
+                    <br>
+                    <br>
+                    <div id="${conceptId}note" style="display:none"></div>
+                </td> 
+                <td style="text-align: left;">
+                    ${buttonToRender}
+                    ${saveChangesMessage}
+                </td>
+            </tr>
+        `
+    });
+    template += `
+                </tbody>
+            </table>
+            ${renderCancelChangesAndSaveChangesButtons('Lower')}
+        </div>
+    </div>
+    `;
+    template += `${renderShowMoreDataModal()}`
     return template;
 }
 

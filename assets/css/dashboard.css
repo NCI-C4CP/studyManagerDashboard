@@ -233,11 +233,11 @@ table {
 }
 
 .row-color-enrollment-dark td{
-    background-color: rgb(239, 185, 250); 
+    background-color: rgb(235, 210, 255);
 }
 
 .row-color-enrollment-light td{
-    background-color: rgb(243, 207, 250); 
+    background-color: rgb(240, 220, 255);
 }
 
 .row-color-payment td{
@@ -465,5 +465,55 @@ Responsive data corrections nav link display
 #dropBox.dragover {
     border-color: #0078d7;
     background-color: #eef6c7;
+}
+
+/*
+   Accessible colors and utility classes for participant summary icons/links (508/WCAG compliant)
+*/
+:root {
+    --color-success-508: #0F6D2A;  /* dark green */
+    --color-warning-508: #E65100;  /* orange */
+    --color-error-508:   #D32F2F;  /* red */
+    --color-link-508:    #0A5AB8;  /* dark blue */
+    --color-muted-508:   #4B5563;  /* dark gray for contrast compliance */
+}
+
+.icon--success {
+    color: var(--color-success-508) !important;
+}
+
+.icon--warning {
+    color: var(--color-warning-508) !important;
+}
+
+.icon--error {
+    color: var(--color-error-508) !important;
+}
+
+.link--action {
+    color: var(--color-link-508) !important;
+    text-decoration: underline !important;
+    cursor: pointer;
+}
+
+.link--disabled {
+    color: var(--color-muted-508) !important;
+    text-decoration: underline !important;
+    cursor: not-allowed;
+}
+
+/* Hide Firebase auth iframe from screen readers - it's used for authentication tracking, not content (508 compliance) */
+iframe[src*="firebaseapp.com/__/auth/iframe"] {
+    position: absolute !important;
+    left: -10000px !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+}
+
+.alert.alert-light {
+    background-color: #f8f9fa !important;
+    color: #212529 !important;
+    border-color: #dee2e6 !important;
 }
 

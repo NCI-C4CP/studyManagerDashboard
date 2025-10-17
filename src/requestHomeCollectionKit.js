@@ -1,4 +1,4 @@
-import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
+import { updateNavBar } from './navigationBar.js';
 import { renderParticipantHeader } from './participantHeader.js';
 import { findParticipant, renderLookupResultsTable } from './participantLookup.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
@@ -6,9 +6,7 @@ import { baseAPI, getIdToken, hideAnimation, showAnimation } from './utils.js';
 
 
 export const renderKitRequest = (participant) => {
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
-    removeActiveClass('nav-link', 'active');
-    document.getElementById('replaceHomeCollectionBtn').classList.add('active');
+    updateNavBar('replaceHomeCollectionBtn');
 
     mainContent.innerHTML = render(participant);
     bindEventRequestReplacementButton(participant?.['Connect_ID'], participant?.token);

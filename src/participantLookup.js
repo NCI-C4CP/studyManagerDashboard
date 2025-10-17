@@ -1,15 +1,13 @@
-import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
+import { updateNavBar } from './navigationBar.js';
 import { renderTable, filterBySiteKey, renderParticipantSearchResults, activeColumns, renderTablePage } from './participantCommons.js';
 import { getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls, escapeHTML, renderSiteDropdown, resetPagination } from './utils.js';
+import { participantState } from './stateManager.js';
 import { nameToKeyObj } from './idsToName.js';
 import { addFormInputFormattingListeners } from './participantDetailsHelpers.js';
 
 export function renderParticipantLookup(){
     resetPagination();
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
-    removeActiveClass('nav-link', 'active');
-    document.getElementById('participantLookupBtn').classList.add('active');
-    localStorage.removeItem("participant");
+    updateNavBar('participantLookupBtn');
 
     mainContent.innerHTML = renderParticipantSearch();
     
