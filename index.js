@@ -1,6 +1,6 @@
 import { renderParticipantLookup } from './src/participantLookup.js';
 import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements } from './src/navigationBar.js';
-import { renderTable, renderParticipantSearchResults, activeColumns, renderFilters, renderTablePage } from './src/participantCommons.js';
+import { renderTable, renderParticipantSearchResults, activeColumns, renderFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
@@ -16,8 +16,8 @@ import { renderSiteMessages } from './src/siteMessages.js';
 import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
-import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, resetPagination, resetFilters, escapeHTML, renderSiteDropdown, triggerNotificationBanner, showConfirmModal, showAlertModal } from './src/utils.js';
-import { appState, clearUnsaved, participantState, reportsState, userSession } from './src/stateManager.js';
+import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, escapeHTML, renderSiteDropdown, triggerNotificationBanner, showConfirmModal, showAlertModal } from './src/utils.js';
+import { appState, clearUnsaved, participantState, reportsState, userSession, searchState, buildPredefinedSearchMetadata } from './src/stateManager.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
 import { firebaseConfig as devFirebaseConfig } from "./config/dev/config.js";
@@ -264,11 +264,21 @@ const router = async () => {
 
         // Handle all other routes
         markNavigationSucceeded();
-        
-        // Clear unsaved state and active participant for non-participant routes
-        if (!participantRoutes.includes(route) && !dataCorrectionsToolRoutes.includes(route)) {
+
+        const isPredefinedParticipantSearchRoute = route.startsWith('#participants/');
+        const isParticipantWorkflowRoute = participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route);
+
+        if (route === '#participantLookup') {
             clearUnsaved();
             participantState.clearParticipant();
+            searchState.clearSearchResults();
+            return renderParticipantLookup();
+        }
+
+        if (!isParticipantWorkflowRoute && !isPredefinedParticipantSearchRoute) {
+            clearUnsaved();
+            participantState.clearParticipant();
+            searchState.clearSearchResults();
         }
 
         if (route === '#participants/notyetverified') return renderParticipants('notyetverified');
@@ -286,7 +296,6 @@ const router = async () => {
         else if (route === '#requestAKitConditions') return renderRequestAKitConditions();
         else if (route === '#ehrUpload') return renderEhrUploadPage();
         else if (route === '#logout') return clearLocalStorage();
-        else if (route === '#participantLookup') return renderParticipantLookup();
         else if (route !== '#home' && route !== '#') {
             console.error('Unhandled route. Going to home page. Route:', route);
             window.location.hash = '#home';
@@ -1108,16 +1117,58 @@ const filterDataBySiteCode = (siteCode) => {
  * 
  * @returns {Promise<void>}
  */
+const participantRouteSlugMap = {
+    profileNotSubmitted: 'profilenotsubmitted',
+    consentNotSubmitted: 'consentnotsubmitted',
+    notSignedIn: 'notsignedin'
+};
+
 const renderParticipants = async (type) => {
     try {
         showAnimation();
 
-        resetFilters();
-        resetPagination();
+        const routeKey = participantRouteSlugMap[type] || type;
+        const metadata = await searchState.getSearchMetadata();
+        const cachedResults = searchState.getSearchResults();
+        const metadataMatchesType = metadata?.searchType === 'predefined' && metadata?.predefinedType === type;
 
-        appState.setState({ participantTypeFilter: type, siteCode: nameToKeyObj.allResults });
+        if (cachedResults && metadataMatchesType) {
+            if (!metadata.routeKey || metadata.routeKey !== routeKey) {
+                await searchState.updatePredefinedMetadata({ routeKey });
+            }
+
+            const latestMetadata = searchState.getCachedMetadata() || metadata;
+            const renderType = latestMetadata?.effectiveType || latestMetadata?.predefinedType || type;
+
+            document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
+            updateActiveElements(type);
+            mainContent.innerHTML = renderTable(cachedResults, renderType);
+            renderParticipantSearchResults(cachedResults, renderType);
+            activeColumns(cachedResults);
+            renderFilters();
+            hideAnimation();
+            return;
+        }
+
+        if (!metadataMatchesType) {
+            await searchState.initializePredefinedMetadata({
+                predefinedType: type,
+                effectiveType: type,
+                routeKey,
+                siteCode: nameToKeyObj.allResults,
+                startDateFilter: '',
+                endDateFilter: '',
+                pageNumber: 1,
+                direction: '',
+                cursorHistory: []
+            });
+            
+        } else if (!metadata.routeKey || metadata.routeKey !== routeKey) {
+            await searchState.updatePredefinedMetadata({ routeKey });
+        }
+
         const response = await getParticipants();
-        
+
         if (response.code === 401) {
             clearLocalStorage();
             triggerNotificationBanner(
@@ -1125,18 +1176,34 @@ const renderParticipants = async (type) => {
                 'danger',
                 4000
             );
-            
+
         } else if (response.code !== 200) {
             throw new Error(`Failed to fetch participants: ${response.code} - ${response.message || 'Unknown error'}`);
         }
-
+        
         const data = sortByKey(response.data, fieldMapping.healthcareProvider);
+
+        // Cache search results and metadata for predefined searches
+        const paginationState = searchState.getCachedMetadata() || {
+            predefinedType: type,
+            effectiveType: type,
+            routeKey,
+            siteCode: nameToKeyObj.allResults,
+            startDateFilter: '',
+            endDateFilter: '',
+            pageNumber: 1,
+            direction: '',
+            cursorHistory: []
+        };
+        const searchMetadata = buildPredefinedSearchMetadata({ ...paginationState });
+        searchState.setSearchResults(searchMetadata, data);
 
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
         updateActiveElements(type);
-        mainContent.innerHTML = renderTable(data, type);
+        const renderType = searchMetadata.effectiveType || searchMetadata.predefinedType || type;
+        mainContent.innerHTML = renderTable(data, renderType);
 
-        renderParticipantSearchResults(data, type);
+        renderParticipantSearchResults(data, renderType);
         activeColumns(data);
         renderFilters();
 
@@ -1147,7 +1214,7 @@ const renderParticipants = async (type) => {
             'danger',
             4000
         );
-        
+
     } finally {
         hideAnimation();
     }

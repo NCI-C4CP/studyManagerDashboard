@@ -1,6 +1,6 @@
 import { updateNavBar } from './navigationBar.js';
 import { renderParticipantHeader } from './participantHeader.js';
-import { findParticipant, renderLookupResultsTable } from './participantLookup.js';
+import { findParticipant, navigateBackToSearchResults } from './participantLookup.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
 import { baseAPI, getIdToken, hideAnimation, showAnimation } from './utils.js';
 
@@ -368,6 +368,8 @@ const renderBackToSearchDivAndButton = () => {
     const searchResultsButton = document.getElementById('displaySearchResultsBtn');
     if (searchResultsButton) {
         searchResultsButton.addEventListener('click', () => {
-            renderLookupResultsTable();
+            navigateBackToSearchResults().catch((error) => {
+                console.error('Error navigating back to search results:', error);
+            });
         })
 }};

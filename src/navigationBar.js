@@ -187,10 +187,10 @@ export const updateActiveElements = (type) => {
     document.getElementById(buttonMap[type])?.classList.add('dd-item-active');
 };
 
-export const updateNavBar = (activeElement) => {
-    if (!activeElement) return;
+export const updateNavBar = (activeElementId) => {
+    if (!activeElementId) return;
     
     document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
-    document.getElementById(activeElement).classList.add('active');
+    document.getElementById(activeElementId).classList.add('active');
 }
