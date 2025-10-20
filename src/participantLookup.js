@@ -35,25 +35,25 @@ export function renderParticipantSearch() {
                     <div class="row form-row">
                         <form id="search" method="POST">
                             <div class="form-group">
-                                <label class="col-form-label search-label">First name</label>
+                                <label class="col-form-label search-label" for="firstName">First name</label>
                                 <input class="form-control" autocomplete="off" aria-autocomplete="none" type="text" id="firstName" placeholder="Enter First Name"/>
                             </div>
                             <div class="form-group">
-                                <label class="col-form-label search-label">Last name</label>
+                                <label class="col-form-label search-label" for="lastName">Last name</label>
                                 <input class="form-control" autocomplete="off" aria-autocomplete="none" type="text" id="lastName" placeholder="Enter Last Name"/>
                             </div>
                             <div class="form-group">
-                                <label class="col-form-label search-label">Date of birth</label>
+                                <label class="col-form-label search-label" for="dob">Date of birth</label>
                                 <input class="form-control" autocomplete="off" aria-autocomplete="none" type="date" id="dob"/>
                             </div>
                             <div class="form-group">
-                                <label class="col-form-label search-label">Phone number</label>
+                                <label class="col-form-label search-label" for="phone">Phone number</label>
                                 <input class="form-control phone-input" autocomplete="off" aria-autocomplete="none" id="phone" placeholder="(999) 999-9999" maxlength="14"/>
                             </div>
                             <span><i> (OR) </i></span>
                             <br />
                             <div class="form-group">
-                                <label class="col-form-label search-label">Email</label>
+                                <label class="col-form-label search-label" for="email">Email</label>
                                 <input class="form-control" autocomplete="off" aria-autocomplete="none" type="email" id="email" placeholder="Enter Email"/>
                             </div>
                             ${renderSiteDropdown('lookup', 'dropdownMenuLookupSites')}
@@ -70,17 +70,17 @@ export function renderParticipantSearch() {
                     <div class="row form-row">
                         <form id="searchId" method="POST">
                             <div class="form-group">
-                                <label class="col-form-label search-label">Connect ID</label>
+                                <label class="col-form-label search-label" for="connectId">Connect ID</label>
                                 <input class="form-control" autocomplete="off" aria-autocomplete="none" type="text" maxlength="10" id="connectId" placeholder="Enter ConnectID"/>
                             </div>
                             <span><i> (OR) </i></span>
                             <div class="form-group">
-                                <label class="col-form-label search-label">Token</label>
+                                <label class="col-form-label search-label" for="token">Token</label>
                                 <input class="form-control" autocomplete="off" aria-autocomplete="none" type="text" maxlength="36" id="token" placeholder="Enter Token"/>
                             </div>
                             <span><i> (OR) </i></span>
                             <div class="form-group">
-                                <label class="col-form-label search-label">Study ID</label>
+                                <label class="col-form-label search-label" for="studyId">Study ID</label>
                                 <input class="form-control" autocomplete="off" aria-autocomplete="none" type="text" maxlength="36" id="studyId" placeholder="Enter StudyID"/>
                             </div>
                             <div id="search-connect-id-failed" class="search-not-found" hidden>
