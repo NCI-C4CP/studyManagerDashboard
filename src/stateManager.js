@@ -333,6 +333,9 @@ const persistMetadataAsync = (metadata) => {
 export const searchState = {
     /**
      * Set search results in memory and store encrypted metadata in sessionStorage
+     * Two search types:
+     *   --predefined searches are participant lists from the navigation menu, including 'all', 'verified', 'cannotbeverified', etc.
+     *   --lookup searches are individual participant details from the participant lookup form, including 'firstName', 'lastName', 'dob', 'phone', 'email', 'connectId', 'token', 'studyId'
      * @param {Object} searchMetadata - Search parameters and pagination state
      * @param {Array} resultsArray - Array of participant objects for current page
      */
