@@ -1,5 +1,5 @@
 import { updateNavBar } from './navigationBar.js';
-import { attachUpdateLoginMethodListeners, allStates, closeModal, getFieldValues, getImportantRows, getIsNORCOrCCC, getModalLabel, primaryPhoneTypes, renderReturnSearchResults, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, addFormInputFormattingListeners } from './participantDetailsHelpers.js';
+import { attachUpdateLoginMethodListeners, allStates, closeModal, getFieldValues, getImportantRows, getIsNORCOrCCC, getModalLabel, primaryPhoneTypes, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, addFormInputFormattingListeners } from './participantDetailsHelpers.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantHeader } from './participantHeader.js';
 import { getDataAttributes, urls, escapeHTML, renderShowMoreDataModal } from './utils.js';
@@ -39,7 +39,6 @@ export const renderParticipantDetails = (participant, changedOption = {}) => {
     resetChanges(participant);
     
     viewParticipantSummary(participant);
-    renderReturnSearchResults();
     attachUpdateLoginMethodListeners(participant[fieldMapping.accountEmail], participant[fieldMapping.accountPhone], participant.token, participant.state.uid);
     submitClickHandler(participant, changedOption);
     addSearchNavigationListeners();

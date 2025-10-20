@@ -300,10 +300,8 @@ export const renderCachedSearchResults = async () => {
         attachBackToSearchHandler();
 
     } else if (metadata) {
-        showAnimation();
         const queryString = rebuildQueryString(metadata);
         await performSearch(queryString, metadata.siteFilter, 'search-failed', metadata);
-        hideAnimation();
 
     } else {
         console.error('Error in renderCachedSearchResults: No search metadata found, falling back to empty lookup form');

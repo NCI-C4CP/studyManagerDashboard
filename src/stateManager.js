@@ -16,7 +16,7 @@ const createStore = (startState = {}) => {
     return {
         setState,
         getState,
-        // Note `set` and `get` are aliases for setState and getState. Added per @we-ai's request. Not yet implemented.
+        // Note: `set` and `get` are implemented as aliases for setState and getState. Added per @we-ai's request.
         set: setState,
         get: getState,
     };
@@ -443,6 +443,14 @@ export const searchState = {
         sessionStorage.removeItem('searchMetadataEnc');
     },
 };
+
+/**
+ * Compose normalized metadata for predefined participant searches.
+ * Accepts a base object and applies defaults.
+ * @param {Object} baseObj - Partial metadata (from cache or route context)
+ * @returns {Object} Normalized predefined search metadata (searches including 'all', 'verified', 'cannotbeverified', etc.)
+ */
+export const buildPredefinedSearchMetadata = (baseObj = {}) => sanitizeMetadata({ searchType: 'predefined' }, baseObj);
 
 /**
  * Unsaved Changes Management -- Participant Details Page

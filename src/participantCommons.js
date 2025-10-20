@@ -2,7 +2,7 @@ import { renderParticipantDetails } from './participantDetails.js';
 import { clearLocalStorage } from '../index.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { getIdToken, showAnimation, hideAnimation, getParticipants, sortByKey, renderSiteDropdown, triggerNotificationBanner } from './utils.js';
-import { searchState } from './stateManager.js';
+import { searchState, buildPredefinedSearchMetadata } from './stateManager.js';
 import { nameToKeyObj, keyToNameObj, keyToShortNameObj, participantConceptIDToTextMapping, searchBubbleMap, tableHeaderMap } from './idsToName.js';
 
 export const importantColumns = [fieldMapping.fName, fieldMapping.mName, fieldMapping.lName, fieldMapping.birthMonth, fieldMapping.birthDay, fieldMapping.birthYear, fieldMapping.email, 'Connect_ID', fieldMapping.healthcareProvider];
@@ -336,8 +336,7 @@ export const reRenderMainTable = async () => {
         if (data.length > 0) {
             // Update search cache with new page data
             const paginationState = searchState.getCachedMetadata() || metadata || {};
-            const searchMetadata = {
-                searchType: 'predefined',
+            const searchMetadata = buildPredefinedSearchMetadata({
                 predefinedType: paginationState.predefinedType || routeType,
                 effectiveType: paginationState.effectiveType || type,
                 routeKey: paginationState.routeKey || routeKey,
@@ -347,7 +346,7 @@ export const reRenderMainTable = async () => {
                 pageNumber: paginationState.pageNumber || 1,
                 direction: paginationState.direction || '',
                 cursorHistory: paginationState.cursorHistory || []
-            };
+            });
             searchState.setSearchResults(searchMetadata, data);
 
             renderTablePage(data, type);

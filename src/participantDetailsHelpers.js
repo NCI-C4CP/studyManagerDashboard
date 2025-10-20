@@ -846,14 +846,6 @@ export const reloadParticipantData = async (token) => {
     }
 }
 
-export const renderReturnSearchResults = () => {
-    const searchResultsButton = document.getElementById('backToSearchResultsBtn');
-    if (searchResultsButton && searchResultsButton.parentNode) {
-        const newSearchResultsButton = searchResultsButton.cloneNode(true);
-        searchResultsButton.parentNode.replaceChild(newSearchResultsButton, searchResultsButton);
-    }
-};
-
 export const resetChanges = (participant) => {
     const cancelButtons = [document.getElementById("cancelChangesUpper"), document.getElementById("cancelChangesLower")];
 

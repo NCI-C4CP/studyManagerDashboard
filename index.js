@@ -17,7 +17,7 @@ import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
 import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, escapeHTML, renderSiteDropdown, triggerNotificationBanner, showConfirmModal, showAlertModal } from './src/utils.js';
-import { appState, clearUnsaved, participantState, reportsState, userSession, searchState } from './src/stateManager.js';
+import { appState, clearUnsaved, participantState, reportsState, userSession, searchState, buildPredefinedSearchMetadata } from './src/stateManager.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
 import { firebaseConfig as devFirebaseConfig } from "./config/dev/config.js";
@@ -1185,7 +1185,6 @@ const renderParticipants = async (type) => {
 
         // Cache search results and metadata for predefined searches
         const paginationState = searchState.getCachedMetadata() || {
-            searchType: 'predefined',
             predefinedType: type,
             effectiveType: type,
             routeKey,
@@ -1196,18 +1195,7 @@ const renderParticipants = async (type) => {
             direction: '',
             cursorHistory: []
         };
-        const searchMetadata = {
-            searchType: 'predefined',
-            predefinedType: paginationState.predefinedType || type,
-            effectiveType: paginationState.effectiveType || paginationState.predefinedType || type,
-            routeKey: paginationState.routeKey || routeKey,
-            siteCode: paginationState.siteCode ?? nameToKeyObj.allResults,
-            startDateFilter: paginationState.startDateFilter ?? '',
-            endDateFilter: paginationState.endDateFilter ?? '',
-            pageNumber: paginationState.pageNumber || 1,
-            direction: paginationState.direction || '',
-            cursorHistory: paginationState.cursorHistory || []
-        };
+        const searchMetadata = buildPredefinedSearchMetadata({ ...paginationState });
         searchState.setSearchResults(searchMetadata, data);
 
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
