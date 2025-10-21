@@ -383,7 +383,7 @@ const renderTextInputBox = (participantValue, conceptId) => {
 };
 
 const renderPhoneInputBox = (participantValue, conceptId) => {
-    const isMainPhoneField = primaryPhoneTypes.includes(parseInt(conceptId))
+    const isMainPhoneField = primaryPhoneTypes.includes(parseInt(conceptId)) && conceptId !== fieldMapping.accountPhone // auth/account phone is in a separate section
     const mainPhoneFieldNote = isMainPhoneField ? " Note: At least one phone number is required." : "";
 
     return `

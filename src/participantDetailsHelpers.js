@@ -901,7 +901,7 @@ export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail,
                     e.preventDefault();
                     const { switchPackage, changedOption } = getUpdatedAuthenticationFormValues(participantAuthenticationEmail, participantAuthenticationPhone);
                     if (switchPackage && changedOption) {
-                        await processParticipantLoginMethod(participantAuthenticationEmail, participantToken, participantUid, switchPackage, changedOption, 'update');
+                        await processParticipantLoginMethod(participantAuthenticationEmail, switchPackage, changedOption, 'update');
                     }
                 });
             }
@@ -910,7 +910,7 @@ export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail,
                 const removeEmailLoginBtn = document.getElementById('removeUserLoginEmail');
                 if (removeEmailLoginBtn) {
                     removeEmailLoginBtn.addEventListener('click', async () => {
-                        await processParticipantLoginMethod(participantAuthenticationEmail, participantToken, participantUid, {}, {}, 'removeEmail');
+                        await processParticipantLoginMethod(participantAuthenticationEmail, {}, {}, 'removeEmail');
                     });
                 }
             }
@@ -919,7 +919,7 @@ export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail,
                 const removePhoneLoginBtn = document.getElementById('removeUserLoginPhone');
                 if (removePhoneLoginBtn) {
                     removePhoneLoginBtn.addEventListener('click', async () => {
-                        await processParticipantLoginMethod(participantAuthenticationEmail, participantToken, participantUid, {}, {}, 'removePhone');
+                        await processParticipantLoginMethod(participantAuthenticationEmail, {}, {}, 'removePhone');
                     });
                 }
 
@@ -1027,21 +1027,21 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
 }
 
 const getLoginRemovalSwitchPackage = (processType, participantAuthenticationEmail, participantUid) => {
-    const switchPackage = {};
-    const changedOption = {};
+    const removalAuthData = {};
+    const removalChangedData = {};
     if (processType === 'removeEmail') {
         const placeholderForEmailRemoval = `noreply${participantUid}@NCI-C4CP.github.io`;
-        switchPackage['email'] = placeholderForEmailRemoval;
-        switchPackage['flag'] = 'updateEmail';
-        changedOption[fieldMapping.accountEmail] = placeholderForEmailRemoval;
-        changedOption[fieldMapping.signInMechanism] = 'phone';
+        removalAuthData['email'] = placeholderForEmailRemoval;
+        removalAuthData['flag'] = 'updateEmail';
+        removalChangedData[fieldMapping.accountEmail] = placeholderForEmailRemoval;
+        removalChangedData[fieldMapping.signInMechanism] = 'phone';
     } else if (processType === 'removePhone') {
-        switchPackage['email'] = participantAuthenticationEmail;
-        switchPackage['flag'] = 'replaceSignin';
-        changedOption[fieldMapping.accountPhone] = '';
-        changedOption[fieldMapping.signInMechanism] = 'password';
+        removalAuthData['email'] = participantAuthenticationEmail;
+        removalAuthData['flag'] = 'replaceSignin';
+        removalChangedData[fieldMapping.accountPhone] = '';
+        removalChangedData[fieldMapping.signInMechanism] = 'password';
     }
-    return { switchPackage, changedOption };
+    return { removalAuthData, removalChangedData };
 };
 
 /**
@@ -1052,25 +1052,57 @@ const getLoginRemovalSwitchPackage = (processType, participantAuthenticationEmai
  * For removal operations: Switch package is populated inside this function based on current login information
  * Post updated login data to Firebase Auth. On success, also post updated login data to Firestore
  * @param {string} participantAuthenticationEmail - the participant's current email login 
- * @param {string} participantToken - the participant's current token
- * @param {string} participantUid - the participant's current uid
- * @param {object} switchPackage - the data object sent to firebaseAuth to update the participant's login method
+ * @param {object} authUpdateObj - the data object sent to firebaseAuth to update the participant's login method
  * @param {object} changedOption - the data object sent to firestore to update the participant's login data
  * @param {string} processType - the type of process to be performed -> update, removeEmail, removePhone
  */
-const processParticipantLoginMethod = async (participantAuthenticationEmail, participantToken, participantUid, switchPackage, changedOption, processType) => {        
+const processParticipantLoginMethod = async (participantAuthenticationEmail, authUpdateObj, changedOption, processType) => {
+    const participant = participantState.getParticipant();
+    const participantUid = participant['state']['uid'];
+    const participantToken = participant['token'];
+    authUpdateObj['uid'] = participantUid;
+    changedOption['token'] = participantToken;
+    console.log('participant Connect ID', participant["Connect_ID"], 'uid', participantUid, 'token', participantToken);
+
     if (processType === 'removeEmail' || processType === 'removePhone') {
-        ({switchPackage, changedOption} = getLoginRemovalSwitchPackage(processType, participantAuthenticationEmail, participantUid));
+        
+        // Validate that we have the required email for removal operations
+        if (processType === 'removePhone' && !participantAuthenticationEmail) {
+            throw new Error('Cannot remove phone login: participant authentication email is required');
+        }
+        
+        // Get the removal-specific data and merge it with existing objects
+        const { removalAuthData, removalChangedData } = getLoginRemovalSwitchPackage(processType, participantAuthenticationEmail, participantUid);
+        
+        // Merge removal data with existing objects instead of overwriting
+        Object.assign(authUpdateObj, removalAuthData);
+        Object.assign(changedOption, removalChangedData);
     }
 
     const confirmation = confirm('Are you sure want to continue with this update?');
     if (confirmation) {
-        showAnimation();
         try {
-            switchPackage['uid'] = participantUid;
-            changedOption['token'] = participantToken;
+            showAnimation()
+            const isParticipantConsented = participant[fieldMapping.consentFlag] === fieldMapping.yes;
+            if (isParticipantConsented) {
+                if (primaryPhoneTypes.some(phoneKey => phoneKey in changedOption)) {
+                    changedOption = handleAllPhoneNoField(changedOption, participant);
+                }
+                if (primaryEmailTypes.some(emailKey => emailKey in changedOption)) {
+                    changedOption = handleAllEmailField(changedOption, participant);
+                }
+            }
+
             const url = `${baseAPI}/dashboard?api=updateUserAuthentication`;
-            const signinMechanismPayload = { "data": switchPackage };
+            const signinMechanismPayload = { "data": authUpdateObj };
+            
+            // Validate required fields
+            if (!authUpdateObj.uid) {
+                throw new Error('Missing uid in auth update payload');
+            }
+            if (!authUpdateObj.flag) {
+                throw new Error('Missing flag in auth update payload');
+            }
             
             const idToken = await getIdToken();
             const response = await postLoginData(url, signinMechanismPayload, idToken);
@@ -1078,24 +1110,28 @@ const processParticipantLoginMethod = async (participantAuthenticationEmail, par
 
             if (response.status === 200) {
                 const updateResult = await updateParticipantFirestoreProfile(changedOption, idToken);
-                hideAnimation();
                 if (!updateResult) {
                     showAuthUpdateAPIError('modalBody', "IMPORTANT: There was an error updating the participant's profile.\n\nPLEASE PROCESS THE OPERATION AGAIN.");
                     console.error('Failed to update participant Firestore profile');
+
                 } else {
-                    await updateUIOnAuthResponse(switchPackage, changedOption, responseJSON, response.status);
-                }   
+                    await updateUIOnAuthResponse(authUpdateObj, changedOption, responseJSON, response.status);
+                }
+
             } else {
-                hideAnimation();
                 showAuthUpdateAPIError('modalBody', responseJSON.message);
             }
+
         } catch (error) {
-            hideAnimation();
             console.error(error);
             showAuthUpdateAPIError('modalBody', 'Operation Unsuccessful!');
+
+        } finally {
+            hideAnimation();
         }
     }
 }
+
 
 /**
  * Package the updated participant login data to firestore
@@ -1118,7 +1154,7 @@ const updateParticipantFirestoreProfile = async (updatedOptions, bearerToken) =>
         return true;
     } else { 
         hideAnimation();
-        console.error(`Error in updating participant data (updateParticipantFirestoreProfile()): ${responseJSON.error}`);
+        console.error(`Error in updating participant data (updateParticipantFirestoreProfile()): ${responseJSON.error || responseJSON.message || 'Unknown error'}`);
         return false;
     }
 }
@@ -1644,6 +1680,7 @@ export const viewParticipantSummary = (participant) => {
     }
 }
 
+// TODO: auth/account phone number has +1 prepended and it needs to stay that way.
 const cleanPhoneNumber = (changedOption) => {
     allPhoneTypes.forEach(phoneNumber => {
         if (phoneNumber in changedOption) {
@@ -1656,12 +1693,11 @@ const cleanPhoneNumber = (changedOption) => {
 const firstNameTypes = [fieldMapping.consentFirstName, fieldMapping.fName, fieldMapping.prefName];
 const lastNameTypes = [fieldMapping.consentLastName, fieldMapping.lName];
 
-// Only primary phone types go to User Profile history.
-export const primaryPhoneTypes = [fieldMapping.cellPhone, fieldMapping.homePhone, fieldMapping.otherPhone];
-// All phone types get cleaned for Firestore.
+// Only primary phone types go to the query.allPhoneNo array (used for participant search). All phone types get cleaned for Firestore.
+// Edge case: Account phone number (Firebase Auth login) retains the +1 prefix in the participant profile, but not in the query.allPhoneNo array.
+export const primaryPhoneTypes = [fieldMapping.cellPhone, fieldMapping.homePhone, fieldMapping.otherPhone, fieldMapping.accountPhone];
 const allPhoneTypes = [...primaryPhoneTypes, fieldMapping.altContactMobilePhone, fieldMapping.altContactHomePhone];
-
-const emailTypes = [fieldMapping.prefEmail, fieldMapping.email1, fieldMapping.email2];
+const primaryEmailTypes = [fieldMapping.accountEmail, fieldMapping.prefEmail, fieldMapping.email1, fieldMapping.email2];
 
 /**
  * Process the user's update and submit the new user data to Firestore.
@@ -1698,7 +1734,7 @@ export const submitClickHandler = async (participant, changedOption) => {
                 if (firstNameTypes.some(firstNameKey => firstNameKey in changedUserDataForProfile)) changedUserDataForProfile = handleNameField(firstNameTypes, 'firstName', changedUserDataForProfile, participant);
                 if (lastNameTypes.some(lastNameKey => lastNameKey in changedUserDataForProfile)) changedUserDataForProfile = handleNameField(lastNameTypes, 'lastName', changedUserDataForProfile, participant);
                 if (primaryPhoneTypes.some(phoneKey => phoneKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllPhoneNoField(changedUserDataForProfile, participant);
-                if (emailTypes.some(emailKey => emailKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllEmailField(changedUserDataForProfile, participant);
+                if (primaryEmailTypes.some(emailKey => emailKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllEmailField(changedUserDataForProfile, participant);
                 
                 const isSuccess = await processUserDataUpdate(changedUserDataForProfile, changedUserDataForHistory, participant[fieldMapping.userProfileHistory], participant.state.uid, adminUserEmail, isParticipantVerified);
                 if (!isSuccess) {
@@ -1755,20 +1791,59 @@ const handleNameField = (nameTypes, fieldName, changedUserDataForProfile, partic
  * If a number is in the changedUserDataForProfile, the participant has added this phone number. Add it to the allPhoneNo field.
  * Then check the userData profile for an existing value at the field being updated. The participant is updating this phone number. Remove it from the allPhoneNo field.
  * If an empty string is in the changedUserDataForProfile, the participant has removed this phone number. Remove it from the allPhoneNo field.
+ * Note: only removes old values if no other phone number field still uses that value.
+ * Edge case: if the old value is used in another phone number field, it needs to remain in the array.
+ * Example: if the participant has a primary phone number of 123-456-7890 and a secondary phone number of 123-456-7890,
+ * and the participant updates the primary phone number to 123-456-7891, the secondary phone number should remain in the array.
  */
+/**
+ * Normalize phone number for query array (remove +1 prefix, keep only 10 digits for consistent search experience)
+ * @param {string} phoneNumber - phone number with or without +1 prefix
+ * @returns {string} - 10-digit phone number for search
+ */
+const normalizePhoneForQuery = (phoneNumber) => {
+    if (!phoneNumber) return '';
+    // Remove +1 prefix and any non-digit characters, then take last 10 digits
+    const digits = phoneNumber.replace(/\D/g, '');
+    return digits.length >= 10 ? digits.slice(-10) : digits;
+};
+
 const handleAllPhoneNoField = (changedUserDataForProfile, participant) => {
     const allPhoneNo = participant.query.allPhoneNo ?? [];
     
     primaryPhoneTypes.forEach(phoneType => {
-      if (changedUserDataForProfile[phoneType] && !allPhoneNo.includes(changedUserDataForProfile[phoneType])) {
-        allPhoneNo.push(changedUserDataForProfile[phoneType]);
+      const newValue = changedUserDataForProfile[phoneType];
+      const oldValue = participant[phoneType];
+      
+      // Add new value if it exists and isn't already in the array (normalize for search)
+      if (newValue) {
+        const normalizedNewValue = normalizePhoneForQuery(newValue);
+        if (normalizedNewValue && !allPhoneNo.includes(normalizedNewValue)) {
+          allPhoneNo.push(normalizedNewValue);
+        }
       }
   
-      if (changedUserDataForProfile[phoneType] || changedUserDataForProfile[phoneType] === '') {
-        const indexToRemove = allPhoneNo.indexOf(participant[phoneType]);  
-        if (indexToRemove !== -1) {
-          allPhoneNo.splice(indexToRemove, 1);
-        }  
+      // Only remove old value if the field is being explicitly deleted (empty string) or being changed to a different value.
+      // Edge case: ensure no other field still uses the old value. If it does, it needs to remain in the array.
+      if (newValue === '' || (newValue && newValue !== oldValue)) {
+        if (oldValue) {
+          const normalizedOldValue = normalizePhoneForQuery(oldValue);
+          const indexToRemove = allPhoneNo.indexOf(normalizedOldValue);
+          
+          if (indexToRemove !== -1) {
+            // Check if any other phone field still uses this value (skip the current field)
+            const isValueStillUsed = primaryPhoneTypes.some(otherPhoneType => {
+              if (otherPhoneType === phoneType) return false;
+              const otherValue = changedUserDataForProfile[otherPhoneType] ?? participant[otherPhoneType];
+              return otherValue && normalizePhoneForQuery(otherValue) === normalizedOldValue;
+            });
+            
+            // Only remove if no other field still uses this value
+            if (!isValueStillUsed) {
+              allPhoneNo.splice(indexToRemove, 1);
+            }
+          }
+        }
       }
     });
   
@@ -1781,20 +1856,46 @@ const handleAllPhoneNoField = (changedUserDataForProfile, participant) => {
    * Handle the allEmails field in the user profile
    * If an email is in the changedUserDataForProfile, the participant has added this email. Add it to the allEmails field.
    * If an email is in the changedUserDataForHistory, the participant has removed this email. Remove it from the allEmails field.
+   * Note: only removes old values if no other field still uses that value.
+   * Edge case: if the old value is used in another email field, it needs to remain in the array.
+   * Example: if the participant has a primary email of test@example.com and a secondary email of test@example.com,
+   * and the participant updates the primary email to test2@example.com, the secondary email should remain in the array.
    */
   const handleAllEmailField = (changedUserDataForProfile, participant) => {
     const allEmails = participant.query.allEmails ?? [];
   
-    emailTypes.forEach(emailType => {
-      if (changedUserDataForProfile[emailType] && !allEmails.includes(changedUserDataForProfile[emailType])) {
-        allEmails.push(changedUserDataForProfile[emailType].trim()?.toLowerCase());
+    primaryEmailTypes.forEach(emailType => {
+      const newValue = changedUserDataForProfile[emailType];
+      const oldValue = participant[emailType];
+      
+      // Add new value if it exists, isn't already in the array, and isn't a noreply placeholder
+      if (newValue && !newValue.startsWith('noreply') && !allEmails.includes(newValue.trim()?.toLowerCase())) {
+        allEmails.push(newValue.trim()?.toLowerCase());
       }
   
-      if (changedUserDataForProfile[emailType] || changedUserDataForProfile[emailType] === '') {
-        const indexToRemove = allEmails.indexOf(participant[emailType]);  
-        if (indexToRemove !== -1) {
-          allEmails.splice(indexToRemove, 1);
-        }  
+      // Remove old value if the field is being explicitly deleted (empty string)
+      // OR the field is being changed to a different value AND no other field still uses the old value
+      // OR the old value is a noreply placeholder (should always be removed)
+      if (newValue === '' || (newValue && newValue !== oldValue) || (oldValue && oldValue.startsWith('noreply'))) {
+        if (oldValue) {
+          const oldValueLower = oldValue.trim()?.toLowerCase();
+          const indexToRemove = allEmails.indexOf(oldValueLower);
+          
+          if (indexToRemove !== -1) {
+            // Always remove noreply emails, or check if any other field still uses this value
+            const isNoreplyEmail = oldValue.startsWith('noreply');
+            const isValueStillUsed = !isNoreplyEmail && primaryEmailTypes.some(otherEmailType => {
+              if (otherEmailType === emailType) return false; // Skip the current field
+              const otherValue = changedUserDataForProfile[otherEmailType] ?? participant[otherEmailType];
+              return otherValue && otherValue.trim()?.toLowerCase() === oldValueLower;
+            });
+            
+            // Remove if it's a noreply email or no other field still uses this value
+            if (isNoreplyEmail || !isValueStillUsed) {
+              allEmails.splice(indexToRemove, 1);
+            }
+          }
+        }
       }
     });
   
@@ -1986,6 +2087,7 @@ const prepareUserHistoryData = (data) => {
     return data;
 }
 
+// TODO: temp pull out? Need to handle this?
 const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
     const userHistoryMap = {};
     const keys = [

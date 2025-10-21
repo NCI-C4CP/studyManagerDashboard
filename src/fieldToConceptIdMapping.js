@@ -338,8 +338,6 @@ export default
     'duplicateType': 148197146,
     'updateRecruitType': 793822265,
     'signInMechanism': 995036844,
-    'signInPassword': 101178950,
-    'signInPhone': 804918759,
     'accountEmail': 421823980,
     'accountPhone': 348474836,
     'accountName': 756862764,
