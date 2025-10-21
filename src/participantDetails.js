@@ -1,9 +1,10 @@
 import { updateNavBar } from './navigationBar.js';
-import { attachUpdateLoginMethodListeners, allStates, closeModal, getFieldValues, getImportantRows, getIsNORCOrCCC, getModalLabel, primaryPhoneTypes, renderReturnSearchResults, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, addFormInputFormattingListeners } from './participantDetailsHelpers.js';
-import fieldMapping from './fieldToConceptIdMapping.js'; 
+import { attachUpdateLoginMethodListeners, allStates, closeModal, getFieldValues, getImportantRows, getIsNORCOrCCC, getModalLabel, primaryPhoneTypes, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, addFormInputFormattingListeners } from './participantDetailsHelpers.js';
+import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantHeader } from './participantHeader.js';
 import { getDataAttributes, urls, escapeHTML, renderShowMoreDataModal } from './utils.js';
 import { appState, participantState, markUnsaved, clearUnsaved } from './stateManager.js';
+import { navigateBackToSearchResults } from './participantLookup.js';
 
 clearUnsaved();
 
@@ -31,15 +32,16 @@ const initLoginMechanism = (participant) => {
 export const renderParticipantDetails = (participant, changedOption = {}) => {
     initLoginMechanism(participant);
     participantState.setParticipant(participant);
+    window.scrollTo({ top: 0, behavior: 'auto' });
 
     mainContent.innerHTML = renderParticipantDetailsForm(participant, changedOption);
     changeParticipantDetail(participant, changedOption);
     resetChanges(participant);
     
     viewParticipantSummary(participant);
-    renderReturnSearchResults();
     attachUpdateLoginMethodListeners(participant[fieldMapping.accountEmail], participant[fieldMapping.accountPhone], participant.token, participant.state.uid);
     submitClickHandler(participant, changedOption);
+    addSearchNavigationListeners();
 
     updateNavBar('participantDetailsBtn');
 }
@@ -249,15 +251,15 @@ const getButtonToRender = (variableLabel, conceptId, disableButton, isParticipan
 const renderBackToSearchDivAndButton = () => {
     return `
         <div class="float-left">
-            <button type="button" class="btn btn-primary" id="displaySearchResultsBtn">Back to Search</button>    
+            <button type="button" class="btn btn-primary me-2" id="backToSearchResultsBtn">Back to Search Results</button>
+            <button type="button" class="btn btn-secondary" id="backToParticipantLookupBtn">Participant Lookup</button>
         </div>
-        
     `;
 };
 
 const renderDetailsTableHeader = () => {
     return `
-        <table class="table detailsTable"> <h4 style="text-align: center;"> Participant Details </h4>
+        <table class="table detailsTable"> <h4 style="text-align: center;">Participant Details</h4>
             <thead style="position: sticky;" class="thead-dark"> 
                 <tr>
                     <th style="text-align: left;" scope="col">Field</th>
@@ -311,8 +313,7 @@ const renderFormInModal = (participant, changedOption, conceptId, participantKey
             <span style="font-size: 12px;" id="showNote"><i></i></span>
             <br/>
             <div style="display:inline-block;">
-                <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
-                &nbsp;
+                <button type="button" class="btn btn-danger me-2" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary" id="editModal" data-toggle="modal">Submit</button>
             </div>
         </form>
@@ -322,8 +323,7 @@ const renderFormInModal = (participant, changedOption, conceptId, participantKey
 const renderCancelChangesAndSaveChangesButtons = (position) => {
     return `
         <div class="float-right" style="display:inline-block;">
-            <button type="button" id="cancelChanges${position}" class="btn btn-danger">Cancel Changes</button>
-            &nbsp;
+            <button type="button" id="cancelChanges${position}" class="btn btn-danger me-2">Cancel Changes</button>
             <button type="submit" id="updateMemberData" class="updateMemberData btn btn-primary">Save Changes</button>
         </div>
         </br>
@@ -419,4 +419,34 @@ const renderLanguageSelector = (participant, participantValue, conceptId) => {
             <option value="${fieldMapping.language.es}" ${participant[fieldMapping.preferredLanguage] ? (languageList[participant[fieldMapping.preferredLanguage]] == 1 ? 'selected':'') : ''}>Spanish</option>
         </select>
         `
+};
+
+/**
+ * Add event listeners for search navigation buttons
+ */
+const addSearchNavigationListeners = () => {
+    const backToSearchResultsBtn = document.getElementById('backToSearchResultsBtn');
+    const backToParticipantLookupBtn = document.getElementById('backToParticipantLookupBtn');
+
+    if (backToSearchResultsBtn) {
+        backToSearchResultsBtn.addEventListener('click', handleBackToSearchResults);
+    }
+
+    if (backToParticipantLookupBtn) {
+        backToParticipantLookupBtn.addEventListener('click', () => {
+            location.hash = '#participantLookup';
+        });
+    }
+};
+
+/**
+ * Handle "Back to Search Results" button click: delegated to the shared nav helper.
+ */
+const handleBackToSearchResults = async () => {
+    try {
+        await navigateBackToSearchResults();
+    } catch (error) {
+        console.error('Error navigating back to search results:', error);
+        location.hash = '#participantLookup';
+    }
 };

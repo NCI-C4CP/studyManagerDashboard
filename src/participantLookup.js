@@ -1,16 +1,16 @@
 import { updateNavBar } from './navigationBar.js';
 import { renderTable, filterBySiteKey, renderParticipantSearchResults, activeColumns, renderTablePage } from './participantCommons.js';
-import { getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls, escapeHTML, renderSiteDropdown, resetPagination } from './utils.js';
-import { participantState } from './stateManager.js';
+import { getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls, escapeHTML, renderSiteDropdown } from './utils.js';
+import { participantState, searchState } from './stateManager.js';
 import { nameToKeyObj } from './idsToName.js';
 import { addFormInputFormattingListeners } from './participantDetailsHelpers.js';
 
 export function renderParticipantLookup(){
-    resetPagination();
+    searchState.clearSearchResults(); // Clear search cache when showing fresh lookup form
     updateNavBar('participantLookupBtn');
 
     mainContent.innerHTML = renderParticipantSearch();
-    
+
     // Add all event listeners after DOM updates
     requestAnimationFrame(() => {
         addEventSearch();
@@ -138,7 +138,22 @@ const addEventSearch = () => {
         if (params.size === 0) {
             return alert('Please enter at least one field to search');
         };
-        performSearch(params.toString(), sitePref, "search-failed");
+
+        // Create search metadata for caching
+        const searchMetadata = {
+            searchType: 'lookup',
+            firstName: firstName || undefined,
+            lastName: lastName || undefined,
+            dob: dob || undefined,
+            phone: phone || undefined,
+            email: email || undefined,
+            siteFilter: sitePref,
+            pageNumber: 1,
+            direction: '',
+            cursorHistory: []
+        };
+
+        performSearch(params.toString(), sitePref, "search-failed", searchMetadata);
     })
 };
 
@@ -161,7 +176,19 @@ export const addEventSearchId = () => {
             return alert('Please enter at least one field to search');
         };
 
-        performSearch(params.toString(), "allResults", "search-connect-id-failed");
+        // Create search metadata for caching
+        const searchMetadata = {
+            searchType: 'lookup',
+            connectId: connectId || undefined,
+            token: token || undefined,
+            studyId: studyId || undefined,
+            siteFilter: "allResults",
+            pageNumber: 1,
+            direction: '',
+            cursorHistory: []
+        };
+
+        performSearch(params.toString(), "allResults", "search-connect-id-failed", searchMetadata);
     })
 };
 
@@ -179,7 +206,7 @@ const alertTrigger = () => {
     return template;
 }
 
-export const performSearch = async (query, siteAbbr, failedElem) => {
+export const performSearch = async (query, siteAbbr, failedElem, cacheMetadata = null) => {
     try {
         showAnimation();
 
@@ -196,19 +223,20 @@ export const performSearch = async (query, siteAbbr, failedElem) => {
             document.getElementById(failedElem).hidden = false;
             return alertTrigger();
         }
-        
+
+        // Cache search results and metadata
+        if (cacheMetadata) {
+            searchState.setSearchResults(cacheMetadata, siteFilteredData);
+        }
+
         renderTablePage(siteFilteredData, 'participantLookup');
-        
-        const element = document.getElementById('back-to-search');
-        element.addEventListener('click', () => { 
-            renderParticipantLookup();
-        });
-        
+        attachBackToSearchHandler();
+
     } catch (error) {
         console.error('Error during participant search:', error);
         document.getElementById(failedElem).hidden = false;
         alertTrigger();
-        
+
     } finally {
         hideAnimation();
     }
@@ -242,8 +270,106 @@ export const findParticipant = async (query) => {
     }
 }
 
-// TODO: Oct 2025 -- from pt details page, render previous search results.
-export const renderLookupResultsTable = () => {
-    const loadDetailsPage = '#participants/all'
-    location.replace(window.location.origin + window.location.pathname + loadDetailsPage); // updates url to participantsAll
-}
+/**
+ * Rebuild query string from search metadata for re-fetching results
+ * @param {Object} metadata - Search metadata object
+ * @return {string} Query string for API call
+ */
+export const rebuildQueryString = (metadata) => {
+    const params = new URLSearchParams();
+    if (metadata.firstName) params.append('firstName', metadata.firstName);
+    if (metadata.lastName) params.append('lastName', metadata.lastName);
+    if (metadata.dob) params.append('dob', metadata.dob.replace(/-/g, ''));
+    if (metadata.phone) params.append('phone', metadata.phone.replace(/\D/g, ''));
+    if (metadata.email) params.append('email', metadata.email);
+    if (metadata.connectId) params.append('connectId', metadata.connectId);
+    if (metadata.token) params.append('token', metadata.token);
+    if (metadata.studyId) params.append('studyId', metadata.studyId);
+    return params.toString();
+};
+
+/**
+ * Render cached search results or re-fetch if not in memory
+ * If results are in memory, render them. Else, re-fetch with stored metadata.
+ */
+export const renderCachedSearchResults = async () => {
+    const cachedResults = searchState.getSearchResults();
+    const metadata = await searchState.getSearchMetadata();
+
+    if (cachedResults) {
+        renderTablePage(cachedResults, 'participantLookup');
+        attachBackToSearchHandler();
+
+    } else if (metadata) {
+        const queryString = rebuildQueryString(metadata);
+        await performSearch(queryString, metadata.siteFilter, 'search-failed', metadata);
+
+    } else {
+        console.error('Error in renderCachedSearchResults: No search metadata found, falling back to empty lookup form');
+        renderParticipantLookup();
+    }
+};
+
+/**
+ * Navigate back to the user's most recent search results.
+ * Lookup searches render cached rows (or re-fetch with saved params).
+ * Predefined searches route back to the stored participants slug so the
+ * router can restore pagination, filters, and results from the cache.
+ */
+export const navigateBackToSearchResults = async () => {
+    try {
+        const metadata = await searchState.getSearchMetadata();
+
+        if (!metadata) {
+            renderParticipantLookup();
+            return;
+        }
+
+        if (metadata.searchType === 'lookup') {
+            await renderCachedSearchResults();
+            return;
+        }
+
+        if (metadata.searchType === 'predefined') {
+            const routeKey = metadata.routeKey || metadata.predefinedType || 'all';
+
+            if (!metadata.routeKey || metadata.routeKey !== routeKey) {
+                await searchState.updatePredefinedMetadata({ routeKey });
+            }
+
+            const targetHash = `#participants/${routeKey}`;
+            if (window.location.hash === targetHash) {
+                window.dispatchEvent(new HashChangeEvent('hashchange'));
+            } else {
+                window.location.hash = targetHash;
+            }
+            return;
+        }
+
+        renderParticipantLookup();
+    } catch (error) {
+        console.error('navigateBackToSearchResults error:', error);
+        renderParticipantLookup();
+    }
+};
+
+/**
+ * Attach handler to the "Back to Search" button within lookup results
+ */
+export const attachBackToSearchHandler = () => {
+    const element = document.getElementById('back-to-search');
+    if (!element) return;
+    element.onclick = () => {
+        const mode = element.dataset.backMode;
+
+        if (mode === 'lookup-form') {
+            renderParticipantLookup();
+            return;
+        }
+
+        navigateBackToSearchResults().catch((error) => {
+            console.error('Error navigating back to search results:', error);
+            renderParticipantLookup();
+        });
+    };
+};
