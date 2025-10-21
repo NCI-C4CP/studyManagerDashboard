@@ -34,27 +34,28 @@ export function renderParticipantSearch() {
                 <div class="col-lg">
                     <div class="row form-row">
                         <form id="search" method="POST">
+                            <!-- NOTE: aria-autocomplete="none" used as a workaround to suppress Edge autofill behavior -->
                             <div class="form-group">
                                 <label class="col-form-label search-label" for="firstName">First name</label>
-                                <input class="form-control" autocomplete="off" aria-autocomplete="none" type="text" id="firstName" placeholder="Enter First Name"/>
+                                <input class="form-control" autocomplete="off" aria-autocomplete="none" name="searchFirstName" type="text" id="firstName" placeholder="Enter First Name"/>
                             </div>
                             <div class="form-group">
                                 <label class="col-form-label search-label" for="lastName">Last name</label>
-                                <input class="form-control" autocomplete="off" aria-autocomplete="none" type="text" id="lastName" placeholder="Enter Last Name"/>
+                                <input class="form-control" autocomplete="off" aria-autocomplete="none" name="searchLastName" type="text" id="lastName" placeholder="Enter Last Name"/>
                             </div>
                             <div class="form-group">
                                 <label class="col-form-label search-label" for="dob">Date of birth</label>
-                                <input class="form-control" autocomplete="off" aria-autocomplete="none" type="date" id="dob"/>
+                                <input class="form-control" autocomplete="off" aria-autocomplete="none" name="searchDOB" type="date" id="dob"/>
                             </div>
                             <div class="form-group">
                                 <label class="col-form-label search-label" for="phone">Phone number</label>
-                                <input class="form-control phone-input" autocomplete="off" aria-autocomplete="none" id="phone" placeholder="(999) 999-9999" maxlength="14"/>
+                                <input class="form-control phone-input" autocomplete="off" aria-autocomplete="none" name="searchPhone" id="phone" placeholder="(999) 999-9999" maxlength="14"/>
                             </div>
                             <span><i> (OR) </i></span>
                             <br />
                             <div class="form-group">
                                 <label class="col-form-label search-label" for="email">Email</label>
-                                <input class="form-control" autocomplete="off" aria-autocomplete="none" type="email" id="email" placeholder="Enter Email"/>
+                                <input class="form-control" autocomplete="off" aria-autocomplete="none" name="searchEmail" type="email" id="email" placeholder="Enter Email"/>
                             </div>
                             ${renderSiteDropdown('lookup', 'dropdownMenuLookupSites')}
                             <div id="search-failed" class="search-not-found" hidden>
