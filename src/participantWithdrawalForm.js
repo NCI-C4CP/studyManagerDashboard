@@ -767,20 +767,22 @@ const handleResponseSubmission = async (selectedRefusalWithdrawalCheckboxes, sel
     let checkboxes = document.getElementsByName('options');
     checkboxes.forEach(checkbox => { if (checkbox.checked) {  selectedReasonsForWithdrawal.push(checkbox)} });
 
-    const completeRefusalData = processRefusalWithdrawalResponses(selectedReasonsForWithdrawal, selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate);
-
     try {
+        const completeRefusalData = await processRefusalWithdrawalResponses(selectedReasonsForWithdrawal, selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate);
         const updatedParticipant = await sendRefusalWithdrawalResponses(completeRefusalData);
+        if (!updatedParticipant) {
+            return;
+        }
         participantState.setParticipant(updatedParticipant);
         navigateToParticipantSummary(updatedParticipant);
 
     } catch (error) {
         console.error('Error in handleResponseSubmission():', error);
-        alert('An error occurred. Please try again.');
+        alert(error?.message || 'An error occurred. Please try again.');
     }
 }
 
-const processRefusalWithdrawalResponses = (selectedReasonsForWithdrawal, selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate) => {
+const processRefusalWithdrawalResponses = async (selectedReasonsForWithdrawal, selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate) => {
     let sendRefusalData = {};
     let highestStatus = [];
     sendRefusalData[fieldMapping.refusalOptions] = {};
@@ -950,7 +952,14 @@ const processRefusalWithdrawalResponses = (selectedReasonsForWithdrawal, selecte
     let refusalObj = sendRefusalData[fieldMapping.refusalOptions]
     if (JSON.stringify(refusalObj) === '{}') delete sendRefusalData[fieldMapping.refusalOptions]
 
-    sendRefusalData['token'] = participantState.getParticipantToken();
+    const currentParticipant = participantState.getParticipant();
+    const token = currentParticipant?.token || await participantState.getParticipantToken();
+
+    if (!token) {
+        throw new Error('Unable to locate participant token. Please reselect the participant and try again.');
+    }
+
+    sendRefusalData['token'] = token;
 
     return sendRefusalData;
 }
@@ -1072,7 +1081,7 @@ async function sendRefusalWithdrawalResponses(sendRefusalData) {
     } catch (error) {
         console.error('Error in sendRefusalWithdrawalResponses:', error);
         alert(`Error: ${error.message || 'An unexpected error occurred. Please try again.'}`);
-        
+        return null;
     } finally {
         hideAnimation();
     }
