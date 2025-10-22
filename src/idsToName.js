@@ -430,8 +430,17 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         case fieldMapping.bohStatusFlag1:
         case fieldMapping.mreStatusFlag1:
         case fieldMapping.lawStatusFlag1:
-        case fieldMapping.sasStatusFlag1:
+        case fieldMapping.sasStatusFlag1: {
+            return surveyStatusMapping[rawValue] ?? 'Not Started';
+        }
+
+        // Cross-Sectional Survey Status
         case fieldMapping.preferenceSurveyStatus: {
+            // If no data exists for this survey, participant is not eligible
+            if (!rawValue) {
+                return 'Not Eligible';
+            }
+            // Otherwise use the standard survey status mapping
             return surveyStatusMapping[rawValue] ?? 'Not Started';
         }
 
