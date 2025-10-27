@@ -20,8 +20,8 @@ export default
     "consentVersion": 454205108,
 
     // hipaa
-    "hippaDate": 262613359,
-    "hippaFlag": 558435199,
+    "hipaaDate": 262613359,
+    "hipaaFlag": 558435199,
     "hipaaVersion": 412000022,
 
     // user profile
@@ -137,13 +137,13 @@ export default
     "biospecimenClinical": 664882224,
     "biospecimenHome": 103209024,
     "biospecimenCollectionDetail": 173836415,
-    "biospecimenFollowUp": 266600170,
+    "biospecimenBaselineCollection": 266600170,
 	"biospecimenFollowUp1": 496823485,
 	"biospecimenFollowUp2": 650465111,
     "biospecimenFollowUp3": 303552867,
     "biosepcimenBloodCollection": 592099155,
     "biosepcimenUrineCollection": 718172863,
-    "biosepcimenMouthwashdCollection": 915179629,
+    "biospecimenMouthwashCollection": 915179629,
 
     "bohStatusFlag1": 949302066,
     "bohCompletedDate1": 517311251,
@@ -168,14 +168,15 @@ export default
     // "ssn": "D_716117818",
     "ssnStatusFlag": 126331570,
     "ssnFullflag": 311580100,
-    "ssnFulldate": 454067894,
+    "ssnSurveyStartedDate": 943232079,
+    "ssnSurveyCompletedDate": 315032037,
 
     "ssnPartialFlag": 914639140,
     "ssnPartialDate": 598680838,
 
-    "bloodFlag": 878865966,
-    "bloodDateTime": 561681068,
-    "clinicalBloodDateTime": 982213346,
+    "baselineBloodCollectedFlag": 878865966,
+    "researchBloodCollectedDateTime": 561681068,
+    "clinicalBloodCollectedDateTime": 982213346,
     "refusedBlood": 194410742,
     "biospecimenBlood": 878865966,
 
@@ -184,7 +185,7 @@ export default
     "clinicalUrineDateTime": 139245758,
     "refusedUrine": 949501163,
 
-    "mouthwash": 684635302,
+    "baselineMouthwashCollectedFlag": 684635302,
     "mouthwashDateTime": 448660695,
     "refusedMouthwash": 277479354,
 
@@ -220,6 +221,10 @@ export default
     'cancerScreeningHistorySurveyStartDate': 609630315,
     'cancerScreeningHistorySurveyCompletedDate': 389890053,
 
+    'preferenceSurveyStatus': 278023676,
+    'preferenceSurveyStartDate': 993557295,
+    'preferenceSurveyCompletedDate': 543379310,
+
     'dhqSurveyStatus': 692560814,
     'dhqSurveyStartDate': 109610692,
     'dhqSurveyCompletedDate': 610227793,
@@ -231,7 +236,6 @@ export default
     "baselineEMRpushDate": 143523420,
 
     "baselinePaymentFlag": 117044491,
-    "paymentRoundup": 130371375,
     "paymentRound": 130371375,
     "baselinePayment": 266600170,
     "eligiblePayment": 731498909,

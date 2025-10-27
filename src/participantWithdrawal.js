@@ -1,39 +1,35 @@
-import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
+import { updateNavBar } from './navigationBar.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantHeader, getParticipantStatus, getParticipantSuspendedDate } from './participantHeader.js';
 import { renderWithdrawalForm, viewOptionsSelected, proceedToNextPage, autoSelectOptions, addEventMonthSelection } from './participantWithdrawalForm.js'
 
 
-export const renderParticipantWithdrawal = (participant) => {
-    if (participant !== undefined) {
-        const mainContent = document.getElementById('mainContent');
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
-        removeActiveClass('nav-link', 'active');
-        document.getElementById('participantWithdrawalBtn').classList.add('active');
+export const renderParticipantWithdrawal = (participant) => {    
+    const mainContent = document.getElementById('mainContent');
+    updateNavBar('participantWithdrawalBtn');
+    
+    // Deny access if participant is duplicate. Provide warning message and nav buttons.
+    if (participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate) {
+        mainContent.innerHTML = buildAccessDeniedTemplate(participant);
         
-        // Deny access if participant is duplicate. Provide warning message and nav buttons.
-        if (participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate) {
-            mainContent.innerHTML = buildAccessDeniedTemplate(participant);
-            
-            document.getElementById('goToParticipantSummaryBtn').addEventListener('click', () => {
-                window.location.hash = '#participantSummary';
-            });
-            document.getElementById('goToParticipantDetailsBtn').addEventListener('click', () => {
-                window.location.hash = '#participantDetails';
-            });
-            document.getElementById('goToParticipantLookupBtn').addEventListener('click', () => {
-                window.location.hash = '#participantLookup';
-            });
-            return;
-        }
-        
-        mainContent.innerHTML = buildWithdrawalTemplate(participant);
-        autoSelectOptions();
-        viewOptionsSelected();
-        proceedToNextPage();
-        addEventMonthSelection('suspendContactUntilMonth', 'suspendContactUntilDay', 'suspendContactUntilYear');
-        checkPreviousWithdrawalStatus(participant);
+        document.getElementById('goToParticipantSummaryBtn').addEventListener('click', () => {
+            window.location.hash = '#participantSummary';
+        });
+        document.getElementById('goToParticipantDetailsBtn').addEventListener('click', () => {
+            window.location.hash = '#participantDetails';
+        });
+        document.getElementById('goToParticipantLookupBtn').addEventListener('click', () => {
+            window.location.hash = '#participantLookup';
+        });
+        return;
     }
+    
+    mainContent.innerHTML = buildWithdrawalTemplate(participant);
+    autoSelectOptions();
+    viewOptionsSelected();
+    proceedToNextPage();
+    addEventMonthSelection('suspendContactUntilMonth', 'suspendContactUntilDay', 'suspendContactUntilYear');
+    checkPreviousWithdrawalStatus(participant);
 }
 
 export const buildAccessDeniedTemplate = (participant) => {
@@ -56,27 +52,16 @@ export const buildAccessDeniedTemplate = (participant) => {
 }
 
 export const buildWithdrawalTemplate = (participant) => {
-    localStorage.setItem('token', participant.token)
-    let template = `<div class="container-fluid">`
-    if (!participant) {
-        template +=` 
-            <div id="root">
-            Please select a participant first!
-            </div>
-        </div>
-         `
-    } else {
-        template += `
-                <div id="root root-margin">
-                    ${renderParticipantHeader(participant)}
-                    <div id="alert_placeholder"></div>
-                    <div id="formMainPage">
-                    ${renderWithdrawalForm(participant)}
-                    </div>
+    return `
+        <div class="container-fluid">
+            <div id="root root-margin">
+                ${renderParticipantHeader(participant)}
+                <div id="alert_placeholder"></div>
+                <div id="formMainPage">
+                  ${renderWithdrawalForm()}
                 </div>
-                `;
-    }
-    return template;
+            </div>
+        </div>`;
 }
 
 const checkPreviousWithdrawalStatus = (participant) => {

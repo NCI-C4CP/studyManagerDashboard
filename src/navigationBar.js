@@ -122,7 +122,7 @@ export const removeActiveClass = (className, activeClass) => {
 // Track if we've already set up the navbar collapse listener
 let navbarCollapseSetup = false;
 
-export const setupNavbarCollapse = () => {
+const setupNavbarCollapse = () => {
     // Only set up once to prevent duplicate listeners
     if (navbarCollapseSetup) {
         return;
@@ -149,4 +149,48 @@ export const setupNavbarCollapse = () => {
         
         navbarCollapseSetup = true;
     }
+}
+
+/**
+ * Helper function to update active navigation elements based on participant type
+ * 
+ * @function updateActiveElements
+ * @param {string} type - The participant filter type
+ */
+export const updateActiveElements = (type) => {
+    
+    const titleMap = {
+        'all': 'All Participants',
+        'notyetverified': 'Not Verified Participants',
+        'cannotbeverified': 'Cannot Be Verified Participants',
+        'verified': 'Verified Participants',
+        'profileNotSubmitted': 'Profile Not Submitted',
+        'consentNotSubmitted': 'Consent Not Submitted',
+        'notSignedIn': 'Not Signed In'
+    };
+
+    const buttonMap = {
+        'all': 'allBtn',
+        'notyetverified': 'notVerifiedBtn',
+        'cannotbeverified': 'cannotVerifiedBtn',
+        'verified': 'verifiedBtn',
+        'profileNotSubmitted': 'profileNotSubmitted',
+        'consentNotSubmitted': 'consentNotSubmitted',
+        'notSignedIn': 'notSignedIn'
+    };
+    
+    removeActiveClass('dropdown-item', 'dd-item-active');
+    removeActiveClass('nav-link', 'active');
+
+    document.getElementById('participants').innerHTML = `<i class="fas fa-users"></i> ${titleMap[type]}`;
+    document.getElementById('participants').classList.add('active');
+    document.getElementById(buttonMap[type])?.classList.add('dd-item-active');
+};
+
+export const updateNavBar = (activeElementId) => {
+    if (!activeElementId) return;
+    
+    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
+    removeActiveClass('nav-link', 'active');
+    document.getElementById(activeElementId).classList.add('active');
 }
