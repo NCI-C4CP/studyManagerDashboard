@@ -1062,7 +1062,6 @@ const processParticipantLoginMethod = async (participantAuthenticationEmail, aut
     const participantToken = participant['token'];
     authUpdateObj['uid'] = participantUid;
     changedOption['token'] = participantToken;
-    console.log('participant Connect ID', participant["Connect_ID"], 'uid', participantUid, 'token', participantToken);
 
     if (processType === 'removeEmail' || processType === 'removePhone') {
         
@@ -1086,10 +1085,23 @@ const processParticipantLoginMethod = async (participantAuthenticationEmail, aut
             const isParticipantConsented = participant[fieldMapping.consentFlag] === fieldMapping.yes;
             if (isParticipantConsented) {
                 if (primaryPhoneTypes.some(phoneKey => phoneKey in changedOption)) {
-                    changedOption = handleAllPhoneNoField(changedOption, participant);
+                    changedOption = handleQueryArrayField(
+                        primaryPhoneTypes,
+                        'query.allPhoneNo',
+                        normalizePhoneForQuery,
+                        changedOption,
+                        participant
+                    );
                 }
                 if (primaryEmailTypes.some(emailKey => emailKey in changedOption)) {
-                    changedOption = handleAllEmailField(changedOption, participant);
+                    changedOption = handleQueryArrayField(
+                        primaryEmailTypes,
+                        'query.allEmails',
+                        normalizeEmailForQuery,
+                        changedOption,
+                        participant,
+                        (val) => !val.startsWith('noreply')
+                    );
                 }
             }
 
@@ -1208,7 +1220,28 @@ const showAuthUpdateAPIError = (bodyId, message) => {
 }
 
 export const updateParticipantAfterFormSave = (participant, changedUserDataForProfile) => {
-    const updatedParticipant = { ...participant, ...changedUserDataForProfile };
+    const updatedParticipant = { ...participant };
+
+    // Handles nested keys instead of shallow merge with ...changedUserDataForProfile
+    Object.entries(changedUserDataForProfile).forEach(([key, value]) => {
+        if (typeof key === 'string' && key.includes('.')) {
+            const pathSegments = key.split('.');
+            const finalKey = pathSegments[pathSegments.length - 1];
+            let target = updatedParticipant;
+            for (let i = 0; i < pathSegments.length - 1; i++) {
+                const segment = pathSegments[i];
+                const currentValue = target[segment];
+                if (typeof currentValue !== 'object' || currentValue === null) {
+                    target[segment] = {};
+                }
+                target = target[segment];
+            }
+            target[finalKey] = value;
+        } else {
+            updatedParticipant[key] = value;
+        }
+    });
+
     appState.setState({ participant: updatedParticipant });
     return updatedParticipant;
 }
@@ -1680,7 +1713,6 @@ export const viewParticipantSummary = (participant) => {
     }
 }
 
-// TODO: auth/account phone number has +1 prepended and it needs to stay that way.
 const cleanPhoneNumber = (changedOption) => {
     allPhoneTypes.forEach(phoneNumber => {
         if (phoneNumber in changedOption) {
@@ -1731,10 +1763,43 @@ export const submitClickHandler = async (participant, changedOption) => {
                 showAnimation();
 
                 let { changedUserDataForProfile, changedUserDataForHistory } = findChangedUserDataValues(changedOption, participant);
-                if (firstNameTypes.some(firstNameKey => firstNameKey in changedUserDataForProfile)) changedUserDataForProfile = handleNameField(firstNameTypes, 'firstName', changedUserDataForProfile, participant);
-                if (lastNameTypes.some(lastNameKey => lastNameKey in changedUserDataForProfile)) changedUserDataForProfile = handleNameField(lastNameTypes, 'lastName', changedUserDataForProfile, participant);
-                if (primaryPhoneTypes.some(phoneKey => phoneKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllPhoneNoField(changedUserDataForProfile, participant);
-                if (primaryEmailTypes.some(emailKey => emailKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllEmailField(changedUserDataForProfile, participant);
+                if (firstNameTypes.some(firstNameKey => firstNameKey in changedUserDataForProfile)) {
+                    changedUserDataForProfile = handleQueryArrayField(
+                        firstNameTypes,
+                        'query.firstName',
+                        normalizeNameForQuery,
+                        changedUserDataForProfile,
+                        participant
+                    );
+                }
+                if (lastNameTypes.some(lastNameKey => lastNameKey in changedUserDataForProfile)) {
+                    changedUserDataForProfile = handleQueryArrayField(
+                        lastNameTypes,
+                        'query.lastName',
+                        normalizeNameForQuery,
+                        changedUserDataForProfile,
+                        participant
+                    );
+                }
+                if (primaryPhoneTypes.some(phoneKey => phoneKey in changedUserDataForProfile)) {
+                    changedUserDataForProfile = handleQueryArrayField(
+                        primaryPhoneTypes,
+                        'query.allPhoneNo',
+                        normalizePhoneForQuery,
+                        changedUserDataForProfile,
+                        participant
+                    );
+                }
+                if (primaryEmailTypes.some(emailKey => emailKey in changedUserDataForProfile)) {
+                    changedUserDataForProfile = handleQueryArrayField(
+                        primaryEmailTypes,
+                        'query.allEmails',
+                        normalizeEmailForQuery,
+                        changedUserDataForProfile,
+                        participant,
+                        (val) => !val.startsWith('noreply')
+                    );
+                }
                 
                 const isSuccess = await processUserDataUpdate(changedUserDataForProfile, changedUserDataForHistory, participant[fieldMapping.userProfileHistory], participant.state.uid, adminUserEmail, isParticipantVerified);
                 if (!isSuccess) {
@@ -1758,46 +1823,17 @@ export const submitClickHandler = async (participant, changedOption) => {
     }
 };
 
-/**
- * Handle the query.frstName and query.lastName fields.
- * Check changedUserDataForProfile the participant profile for all name types. If a name is in changedUserDataForProfile, Add it to the queryNameArray.
- * Else, check the existing participant profile and add that to the queryNameArray.
- * If a nameType is an empty string in changedUserData, don't add it to the queryNameArray even if it exists in the participant profile. The empty string means the participant wants the name removed.
- * Lastly, remove duplicates. This happens when consent name matches the first or last name.
- * @param {array} nameTypes - array of name types to check.
- * @param {string} fieldName - the name of the field to update.
- * @param {object} changedUserDataForProfile - the changed user data.
- * @param {object} participant - the existing participant object.
- */
-const handleNameField = (nameTypes, fieldName, changedUserDataForProfile, participant) => {
-    const queryNameArray = [];
-    nameTypes.forEach(nameType => {
-        if (changedUserDataForProfile[nameType]) {
-            queryNameArray.push(changedUserDataForProfile[nameType].toLowerCase());
-        } else if (participant[nameType] && changedUserDataForProfile[nameType] !== '') {
-            queryNameArray.push(participant[nameType].toLowerCase());
-        }
-    });
-
-    const uniqueNameArray = Array.from(new Set(queryNameArray));
-
-    changedUserDataForProfile[`query.${fieldName}`] = uniqueNameArray;
-
-    return changedUserDataForProfile;
+const compareArraysIgnoreOrder = (a = [], b = []) => {
+    if (a.length !== b.length) return false;
+    const setA = new Set(a);
+    for (const val of b) {
+        if (!setA.has(val)) return false;
+    }
+    return true;
 };
 
 /**
- * Handle the allPhoneNo field in the user profile
- * If a number is in the changedUserDataForProfile, the participant has added this phone number. Add it to the allPhoneNo field.
- * Then check the userData profile for an existing value at the field being updated. The participant is updating this phone number. Remove it from the allPhoneNo field.
- * If an empty string is in the changedUserDataForProfile, the participant has removed this phone number. Remove it from the allPhoneNo field.
- * Note: only removes old values if no other phone number field still uses that value.
- * Edge case: if the old value is used in another phone number field, it needs to remain in the array.
- * Example: if the participant has a primary phone number of 123-456-7890 and a secondary phone number of 123-456-7890,
- * and the participant updates the primary phone number to 123-456-7891, the secondary phone number should remain in the array.
- */
-/**
- * Normalize phone number for query array (remove +1 prefix, keep only 10 digits for consistent search experience)
+ * Remove +1 prefix, keep only 10 digits for consistent search experience
  * @param {string} phoneNumber - phone number with or without +1 prefix
  * @returns {string} - 10-digit phone number for search
  */
@@ -1808,103 +1844,53 @@ const normalizePhoneForQuery = (phoneNumber) => {
     return digits.length >= 10 ? digits.slice(-10) : digits;
 };
 
-const handleAllPhoneNoField = (changedUserDataForProfile, participant) => {
-    const allPhoneNo = participant.query.allPhoneNo ?? [];
-    
-    primaryPhoneTypes.forEach(phoneType => {
-      const newValue = changedUserDataForProfile[phoneType];
-      const oldValue = participant[phoneType];
-      
-      // Add new value if it exists and isn't already in the array (normalize for search)
-      if (newValue) {
-        const normalizedNewValue = normalizePhoneForQuery(newValue);
-        if (normalizedNewValue && !allPhoneNo.includes(normalizedNewValue)) {
-          allPhoneNo.push(normalizedNewValue);
-        }
-      }
-  
-      // Only remove old value if the field is being explicitly deleted (empty string) or being changed to a different value.
-      // Edge case: ensure no other field still uses the old value. If it does, it needs to remain in the array.
-      if (newValue === '' || (newValue && newValue !== oldValue)) {
-        if (oldValue) {
-          const normalizedOldValue = normalizePhoneForQuery(oldValue);
-          const indexToRemove = allPhoneNo.indexOf(normalizedOldValue);
-          
-          if (indexToRemove !== -1) {
-            // Check if any other phone field still uses this value (skip the current field)
-            const isValueStillUsed = primaryPhoneTypes.some(otherPhoneType => {
-              if (otherPhoneType === phoneType) return false;
-              const otherValue = changedUserDataForProfile[otherPhoneType] ?? participant[otherPhoneType];
-              return otherValue && normalizePhoneForQuery(otherValue) === normalizedOldValue;
-            });
-            
-            // Only remove if no other field still uses this value
-            if (!isValueStillUsed) {
-              allPhoneNo.splice(indexToRemove, 1);
-            }
-          }
-        }
-      }
-    });
-  
-    changedUserDataForProfile['query.allPhoneNo'] = allPhoneNo;
-    
-    return changedUserDataForProfile;
-  };
-  
-  /**
-   * Handle the allEmails field in the user profile
-   * If an email is in the changedUserDataForProfile, the participant has added this email. Add it to the allEmails field.
-   * If an email is in the changedUserDataForHistory, the participant has removed this email. Remove it from the allEmails field.
-   * Note: only removes old values if no other field still uses that value.
-   * Edge case: if the old value is used in another email field, it needs to remain in the array.
-   * Example: if the participant has a primary email of test@example.com and a secondary email of test@example.com,
-   * and the participant updates the primary email to test2@example.com, the secondary email should remain in the array.
-   */
-  const handleAllEmailField = (changedUserDataForProfile, participant) => {
-    const allEmails = participant.query.allEmails ?? [];
-  
-    primaryEmailTypes.forEach(emailType => {
-      const newValue = changedUserDataForProfile[emailType];
-      const oldValue = participant[emailType];
-      
-      // Add new value if it exists, isn't already in the array, and isn't a noreply placeholder
-      if (newValue && !newValue.startsWith('noreply') && !allEmails.includes(newValue.trim()?.toLowerCase())) {
-        allEmails.push(newValue.trim()?.toLowerCase());
-      }
-  
-      // Remove old value if the field is being explicitly deleted (empty string)
-      // OR the field is being changed to a different value AND no other field still uses the old value
-      // OR the old value is a noreply placeholder (should always be removed)
-      if (newValue === '' || (newValue && newValue !== oldValue) || (oldValue && oldValue.startsWith('noreply'))) {
-        if (oldValue) {
-          const oldValueLower = oldValue.trim()?.toLowerCase();
-          const indexToRemove = allEmails.indexOf(oldValueLower);
-          
-          if (indexToRemove !== -1) {
-            // Always remove noreply emails, or check if any other field still uses this value
-            const isNoreplyEmail = oldValue.startsWith('noreply');
-            const isValueStillUsed = !isNoreplyEmail && primaryEmailTypes.some(otherEmailType => {
-              if (otherEmailType === emailType) return false; // Skip the current field
-              const otherValue = changedUserDataForProfile[otherEmailType] ?? participant[otherEmailType];
-              return otherValue && otherValue.trim()?.toLowerCase() === oldValueLower;
-            });
-            
-            // Remove if it's a noreply email or no other field still uses this value
-            if (isNoreplyEmail || !isValueStillUsed) {
-              allEmails.splice(indexToRemove, 1);
-            }
-          }
-        }
-      }
-    });
-  
-    changedUserDataForProfile['query.allEmails'] = allEmails;
-    
-    return changedUserDataForProfile;
-  };
+const normalizeEmailForQuery = (email) => {
+    return (email || '').trim().toLowerCase();
+};
 
-  /**
+const normalizeNameForQuery = (name) => {
+    return (name || '').trim().toLowerCase();
+};
+
+/**
+ * Build a query array from an effective snapshot of fields
+ * Values come from changed (if provided) otherwise from participant
+ * Empty strings and falsy values are skipped; uniqueness enforced via Set
+ */
+const buildQueryArray = (participant, changed, types, normalizeFn, filterFn) => {
+    const values = new Set();
+    types.forEach((fieldType) => {
+        if (Object.prototype.hasOwnProperty.call(changed, fieldType)) {
+            const raw = changed[fieldType];
+            if (raw) {
+                const normalized = normalizeFn(raw);
+                if (normalized && (!filterFn || filterFn(normalized))) values.add(normalized);
+            }
+        } else if (participant && participant[fieldType]) {
+            const normalized = normalizeFn(participant[fieldType]);
+            if (normalized && (!filterFn || filterFn(normalized))) values.add(normalized);
+        }
+    });
+    return Array.from(values);
+};
+
+// Handler to keep query.* arrays in sync with profile changes
+const handleQueryArrayField = (types, queryKey, normalizeFn, changedUserDataForProfile, participant, filterFn = null) => {
+    const [rootKey, arrayKey] = queryKey.split('.');
+    const existingArray = rootKey && arrayKey && Array.isArray(participant?.[rootKey]?.[arrayKey])
+        ? participant[rootKey][arrayKey]
+        : [];
+
+    const nextArray = buildQueryArray(participant, changedUserDataForProfile, types, normalizeFn, filterFn);
+
+    if (!compareArraysIgnoreOrder(nextArray, existingArray)) {
+        changedUserDataForProfile[queryKey] = nextArray;
+    }
+
+    return changedUserDataForProfile;
+};
+
+/**
  * Iterate the new values, compare them to existing values, and return the changed values.
  * write an empty string to firestore if the history value is null/undefined/empty
  * write an empty string to firestore if the profile value is null/undefined/empty 
