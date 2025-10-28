@@ -225,7 +225,7 @@ export const baselineExperienceSurvey = (participant) => {
     const refusal = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedExperienceSurvey === fieldMapping.yes ? "Y" : "N";
     const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.experienceSurvey, fieldMapping.experienceSurveyStartDate, fieldMapping.experienceCompleteDate);
 
-    return getTemplateRow(icon, color, "Cross-Sectional 2024", "Survey", "2024 Connect Experience", itemStatus, date, "N/A", refusal, "N/A");
+    return getTemplateRow(icon, color, "Cross-Sectional 2024", "Survey", "Connect Experience", itemStatus, date, "N/A", refusal, "N/A");
 };
 
 export const baselinePreferenceSurvey = (data) => {
@@ -238,7 +238,7 @@ export const baselinePreferenceSurvey = (data) => {
 
     const timeline = "Cross-Sectional 2025";
     const category = "Survey";
-    const item = "ROI Preference Survey";
+    const item = "ROI Preference";
     const setting = "N/A";
     const extra = "N/A";
 
