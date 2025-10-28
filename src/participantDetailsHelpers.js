@@ -1781,24 +1781,30 @@ export const submitClickHandler = async (participant, changedOption) => {
                         participant
                     );
                 }
-                if (primaryPhoneTypes.some(phoneKey => phoneKey in changedUserDataForProfile)) {
-                    changedUserDataForProfile = handleQueryArrayField(
-                        primaryPhoneTypes,
-                        'query.allPhoneNo',
-                        normalizePhoneForQuery,
-                        changedUserDataForProfile,
-                        participant
-                    );
-                }
-                if (primaryEmailTypes.some(emailKey => emailKey in changedUserDataForProfile)) {
-                    changedUserDataForProfile = handleQueryArrayField(
-                        primaryEmailTypes,
-                        'query.allEmails',
-                        normalizeEmailForQuery,
-                        changedUserDataForProfile,
-                        participant,
-                        (val) => !val.startsWith('noreply')
-                    );
+
+                // There isn't currently a likely case where a participant has not consented and other profile data is being updated.
+                // However, these two arrays will not exist or be created/updated pre-consent, so this check is a safeguard.
+                const isParticipantConsented = participant[fieldMapping.consentFlag] === fieldMapping.yes;
+                if (isParticipantConsented) {
+                    if (primaryPhoneTypes.some(phoneKey => phoneKey in changedUserDataForProfile)) {
+                        changedUserDataForProfile = handleQueryArrayField(
+                            primaryPhoneTypes,
+                            'query.allPhoneNo',
+                            normalizePhoneForQuery,
+                            changedUserDataForProfile,
+                            participant
+                        );
+                    }
+                    if (primaryEmailTypes.some(emailKey => emailKey in changedUserDataForProfile)) {
+                        changedUserDataForProfile = handleQueryArrayField(
+                            primaryEmailTypes,
+                            'query.allEmails',
+                            normalizeEmailForQuery,
+                            changedUserDataForProfile,
+                            participant,
+                            (val) => !val.startsWith('noreply')
+                        );
+                    }
                 }
                 
                 const isSuccess = await processUserDataUpdate(changedUserDataForProfile, changedUserDataForHistory, participant[fieldMapping.userProfileHistory], participant.state.uid, adminUserEmail, isParticipantVerified);
