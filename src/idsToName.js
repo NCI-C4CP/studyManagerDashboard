@@ -120,8 +120,8 @@ export const searchBubbleMap = new Map([
     [fieldMapping.consentFlag, 'Consent Sub'],
     [fieldMapping.consentDate, 'D/T Consent Sub'],
     [fieldMapping.consentVersion, 'Consent Vers'],
-    [fieldMapping.hippaFlag, 'HIPAA Auth'],
-    [fieldMapping.hippaDate, 'D/T HIPAA Auth'],
+    [fieldMapping.hipaaFlag, 'HIPAA Auth'],
+    [fieldMapping.hipaaDate, 'D/T HIPAA Auth'],
     [fieldMapping.hipaaVersion, 'HIPAA Vers'],
     [fieldMapping.userProfileFlag, 'UP Sub'],
     [fieldMapping.userProfileDateTime, 'D/T UP Sub'],
@@ -188,6 +188,7 @@ export const searchBubbleMap = new Map([
     [fieldMapping.lawStatusFlag1, 'Flag Base Mod LAW'],
     [fieldMapping.ssnFullflag, 'Full SSN'],
     [fieldMapping.ssnPartialFlag, 'Part SSN'],
+    [fieldMapping.preferenceSurveyStatus, 'Flag 2025 ROI Preference Survey'],
     [fieldMapping.refusedSurvey, 'Ref Base Survs'],
     [fieldMapping.refusedBlood, 'Ref Base Blood'],
     [fieldMapping.refusedUrine, 'Ref Base Ur'],
@@ -430,6 +431,16 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         case fieldMapping.mreStatusFlag1:
         case fieldMapping.lawStatusFlag1:
         case fieldMapping.sasStatusFlag1: {
+            return surveyStatusMapping[rawValue] ?? 'Not Started';
+        }
+
+        // Cross-Sectional Survey Status
+        case fieldMapping.preferenceSurveyStatus: {
+            // If no data exists for this survey, participant is not eligible
+            if (!rawValue) {
+                return 'Not Eligible';
+            }
+            // Otherwise use the standard survey status mapping
             return surveyStatusMapping[rawValue] ?? 'Not Started';
         }
 

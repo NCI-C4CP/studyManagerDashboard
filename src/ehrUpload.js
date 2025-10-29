@@ -1,4 +1,4 @@
-import { dashboardNavBarLinks, removeActiveClass } from "./navigationBar.js";
+import { updateNavBar } from "./navigationBar.js";
 import { getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, baseAPI } from "./utils.js";
 
 let fileState = {
@@ -417,9 +417,7 @@ const uploadEhrUsingSignedUrls = async () => {
 };
 
 export const renderEhrUploadPage = async () => {
-  document.getElementById("navBarLinks").innerHTML = dashboardNavBarLinks();
-  removeActiveClass("nav-link", "active");
-  document.getElementById("ehrUploadBtn").classList.add("active");
+  updateNavBar('ehrUploadBtn');
 
   const mainContent = document.getElementById("mainContent");
   mainContent.innerHTML = setupEhrUploadPage();

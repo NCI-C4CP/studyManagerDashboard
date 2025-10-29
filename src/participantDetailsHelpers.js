@@ -1,9 +1,8 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
-import { render, renderParticipantDetails } from './participantDetails.js';
-import { findParticipant, renderLookupResultsTable } from './participantLookup.js';
-import { renderParticipantSummary } from './participantSummary.js';
-import { appState } from './stateManager.js';
-import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, escapeHTML, markUnsaved, clearUnsaved } from './utils.js';
+import { renderParticipantDetails } from './participantDetails.js';
+import { findParticipant } from './participantLookup.js';
+import { appState, participantState, userSession, markUnsaved, clearUnsaved } from './stateManager.js';
+import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, escapeHTML } from './utils.js';
 
 export const allStates = {
     "Alabama":1,
@@ -311,10 +310,15 @@ export const getImportantRows = (participant, changedOption) => {
     const isParticipantDataDestroyed = participant[fieldMapping.dataDestroyCategorical] === fieldMapping.requestedDataDestroySigned;
     const isParticipantDuplicate = participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate;
     const isParticipantCannotBeVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.cannotBeVerified;
-    
+
     // Condition handles editing restrictions
     const isEditable = !isParticipantDataDestroyed && !isParticipantDuplicate && !isParticipantCannotBeVerified;
-    
+
+    // For duplicate accounts, allow NORC/CCC staff to edit login fields only.
+    // https://github.com/episphere/connect/issues/1472 -- This is a main way they resolve duplicate account login issues.
+    const isNORCOrCCC = getIsNORCOrCCC();
+    const canEditLoginForDuplicateAccounts = isParticipantDuplicate && isNORCOrCCC && !isParticipantDataDestroyed;
+
     const isCellPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.cellPhone);
     const isHomePhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.homePhone);
     const isOtherPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.otherPhone);
@@ -720,22 +724,19 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: `Change Login Email`,
             label: 'Email Login',
-            editable: isEditable,
+            editable: isEditable || canEditLoginForDuplicateAccounts,
             display: appState.getState().loginMechanism.email,
             validationType: 'none'
         },
         { field: `Change Login Phone`,
             label: 'Phone Login',
-            editable: isEditable,
+            editable: isEditable || canEditLoginForDuplicateAccounts,
             display:  appState.getState().loginMechanism.phone,
             validationType: 'none'
         }
     ];
 
-    // Concatenate all rows. Only display login rows for authorized users
-    const userLoginEmail = appState.getState().userSession?.email ?? '';
-    const permDomains = /(nih.gov|norc.org)$/i;
-    const shouldIncludeLoginChangeRows = permDomains.test(userLoginEmail.split('@')[1]);
+    // Concatenate all rows. Only display login rows for NORC/CCC staff.
     const finalParticipantRows = [
         ...participantDataRows,
         ...mailingAddressRows,
@@ -744,10 +745,10 @@ export const getImportantRows = (participant, changedOption) => {
         ...alternateContactRows,
         ...birthDateRows,
         ...identificationRows,
-        ...(shouldIncludeLoginChangeRows ? loginChangeInfoArray : [])
+        ...(isNORCOrCCC ? loginChangeInfoArray : [])
     ];
 
-    return finalParticipantRows; 
+    return finalParticipantRows;
 };
 
 /**
@@ -820,23 +821,30 @@ export const getModalLabel = (participantKey) => {
 };
 
 export const reloadParticipantData = async (token) => {
-    showAnimation();
-    const query = `token=${token}`
-    const reloadedParticipant = await findParticipant(query);
-    mainContent.innerHTML = render(reloadedParticipant.data[0], {});
-    renderParticipantDetails(reloadedParticipant.data[0]);
-    hideAnimation();
-}
+    try {
+        showAnimation();
+        const query = `token=${token}`;
+        const response = await findParticipant(query);
 
-export const renderReturnSearchResults = () => {
-    const searchResultsButton = document.getElementById('displaySearchResultsBtn');
-    if (searchResultsButton) {
-        const newSearchResultsButton = searchResultsButton.cloneNode(true);
-        searchResultsButton.parentNode.replaceChild(newSearchResultsButton, searchResultsButton);
-        newSearchResultsButton.addEventListener('click', () => {
-            renderLookupResultsTable();
-        })
-}};
+        if (response.code === 200 && response.data && response.data[0]) {
+            const participant = response.data[0];
+            
+            participantState.setParticipant(participant);
+            renderParticipantDetails(participant);
+            
+        } else {
+            console.error('Failed to reload participant data:', response);
+            triggerNotificationBanner('Error reloading participant data', 'danger', 4000);
+        }
+
+    } catch (error) {
+        console.error('Error in reloadParticipantData:', error);
+        triggerNotificationBanner('Error reloading participant data', 'danger', 4000);
+
+    } finally {
+        hideAnimation();
+    }
+}
 
 export const resetChanges = (participant) => {
     const cancelButtons = [document.getElementById("cancelChangesUpper"), document.getElementById("cancelChangesLower")];
@@ -1138,10 +1146,7 @@ const updateUIOnAuthResponse = async (switchPackage, changedOption, responseData
         showAuthUpdateAPIAlert('success', 'Operation successful!');
         closeModal();
 
-        if (["updatePhone", "updateEmail", "replaceSignin"].includes(switchPackage.flag)) {
-            document.getElementById('Change Login Emailrow').children[1].innerHTML = 'Updating login data';
-            document.getElementById('Change Login Phonerow').children[1].innerHTML = 'Updating login data';
-        }
+        // Reload participant data and route through state manager
         await reloadParticipantData(changedOption.token);
     } else {
         const errorMessage = responseData.error || 'Operation Unsuccessful!';
@@ -1630,10 +1635,11 @@ export const validPhoneNumberFormat =
   /^[\+]?(?:1|1-|1\.|1\s+)?[(]?[0-9]{3}[)]?(?:-|\s+|\.)?[0-9]{3}(?:-|\s+|\.)?[0-9]{4}$/;
 
 export const viewParticipantSummary = (participant) => {
-    const a = document.getElementById('viewSummary');
-    if (a) {
-        a.addEventListener('click',  () => {  
-            renderParticipantSummary(participant);
+    const viewSummaryBtn = document.getElementById('viewSummary');
+    if (viewSummaryBtn) {
+        viewSummaryBtn.addEventListener('click',  () => {
+            // Router handles fetching reports and rendering
+            window.location.hash = '#participantSummary';
         })
     }
 }
@@ -1667,7 +1673,7 @@ const emailTypes = [fieldMapping.prefEmail, fieldMapping.email1, fieldMapping.em
  */
 export const submitClickHandler = async (participant, changedOption) => {
     const isParticipantVerified = participant[fieldMapping.verifiedFlag] == fieldMapping.verified;
-    const adminEmail = appState.getState().userSession?.email ?? '';
+    const adminUserEmail = userSession.getUserEmail();
     const submitButtons = document.getElementsByClassName('updateMemberData');
     
     // Remove existing listeners to prevent duplicates
@@ -1694,7 +1700,7 @@ export const submitClickHandler = async (participant, changedOption) => {
                 if (primaryPhoneTypes.some(phoneKey => phoneKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllPhoneNoField(changedUserDataForProfile, participant);
                 if (emailTypes.some(emailKey => emailKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllEmailField(changedUserDataForProfile, participant);
                 
-                const isSuccess = await processUserDataUpdate(changedUserDataForProfile, changedUserDataForHistory, participant[fieldMapping.userProfileHistory], participant.state.uid, adminEmail, isParticipantVerified);
+                const isSuccess = await processUserDataUpdate(changedUserDataForProfile, changedUserDataForHistory, participant[fieldMapping.userProfileHistory], participant.state.uid, adminUserEmail, isParticipantVerified);
                 if (!isSuccess) {
                     throw new Error('Error: There was an error processing your changes. Please try again.');
                 }
@@ -2079,4 +2085,9 @@ export const postUserDataUpdate = async (changedUserData) => {
     }
 }
 
-
+// Check if user is NORC or CCC staff (but not site staff).
+export const getIsNORCOrCCC = () => {
+    const adminUserEmail = userSession.getUserEmail();
+    const permDomains = /(nih.gov|norc.org)$/i;
+    return permDomains.test(adminUserEmail.split('@')[1]);
+}

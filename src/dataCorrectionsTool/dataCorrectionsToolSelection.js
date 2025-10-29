@@ -1,12 +1,10 @@
-import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
+import { updateNavBar } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 
 export const setupDataCorrectionsSelectionToolPage = (participant) => {
     if (participant !== undefined) {
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
-        removeActiveClass('nav-link', 'active');
-        document.getElementById('participantVerificationBtn').classList.add('active');
-        mainContent.innerHTML = renderDataCorrectionsSelectionContent(participant);        
+        updateNavBar('participantVerificationBtn');
+        mainContent.innerHTML = renderDataCorrectionsSelectionContent(participant);
         setupContinueNavigationHandler();
         setupDropdownSelectionHandler();
     }

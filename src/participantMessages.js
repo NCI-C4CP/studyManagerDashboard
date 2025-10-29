@@ -1,4 +1,4 @@
-import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
+import { updateNavBar } from './navigationBar.js';
 import { renderParticipantHeader } from './participantHeader.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { baseAPI, humanReadableFromISO, getIdToken } from './utils.js';
@@ -10,9 +10,8 @@ const headerImportantColumns = [
 ];
 
 export const renderParticipantMessages = async (participant) => {
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
-    removeActiveClass('nav-link', 'active');
-    document.getElementById('participantMessageBtn').classList.add('active');
+    updateNavBar('participantMessageBtn');
+    
     if (participant !== null) {
         mainContent.innerHTML = await render(participant);
     }

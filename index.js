@@ -1,6 +1,6 @@
 import { renderParticipantLookup } from './src/participantLookup.js';
-import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, removeActiveClass } from './src/navigationBar.js';
-import { renderTable, renderParticipantSearchResults, activeColumns, renderFilters, renderTablePage } from './src/participantCommons.js';
+import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements } from './src/navigationBar.js';
+import { renderTable, renderParticipantSearchResults, activeColumns, renderFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
@@ -16,8 +16,8 @@ import { renderSiteMessages } from './src/siteMessages.js';
 import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
-import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, resetPagination, resetFilters, escapeHTML, renderSiteDropdown, triggerNotificationBanner, clearUnsaved, clearParticipant, showConfirmModal, showAlertModal } from './src/utils.js';
-import fieldMapping from './src/fieldToConceptIdMapping.js';
+import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, escapeHTML, renderSiteDropdown, triggerNotificationBanner, showConfirmModal, showAlertModal } from './src/utils.js';
+import { appState, clearUnsaved, participantState, reportsState, userSession, searchState, buildPredefinedSearchMetadata } from './src/stateManager.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
 import { firebaseConfig as devFirebaseConfig } from "./config/dev/config.js";
@@ -26,8 +26,33 @@ import { firebaseConfig as prodFirebaseConfig } from "./config/prod/config.js";
 import { SSOConfig as devSSOConfig} from './config/dev/identityProvider.js';
 import { SSOConfig as stageSSOConfig} from './config/stage/identityProvider.js';
 import { SSOConfig as prodSSOConfig} from './config/prod/identityProvider.js';
-import { appState } from './src/stateManager.js';
+import fieldMapping from './src/fieldToConceptIdMapping.js';
 
+// Firebase auth iframe handler -- accessibility issues found when checking 508 compliance - ensure the persistent Firebase auth iframe hidden from screen readers
+const hideFirebaseIframeAccessibility = () => {
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === Node.ELEMENT_NODE && 
+                    node.tagName === 'IFRAME' && 
+                    node.src && 
+                    node.src.includes('firebaseapp.com/__/auth/iframe')) {
+                    
+                    node.setAttribute('aria-hidden', 'true');
+                    node.setAttribute('title', 'Firebase Authentication (hidden)');
+                    node.setAttribute('role', 'presentation');
+                }
+            });
+        });
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+};
+
+document.addEventListener('DOMContentLoaded', hideFirebaseIframeAccessibility);
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker
@@ -103,6 +128,13 @@ window.onload = async () => {
         !isLocalDev && window.DD_RUM && window.DD_RUM.init({ ...datadogConfig, env: 'dev' });
     }
 
+    // Set session-level persistence for Firebase Auth
+    try {
+        await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
+    } catch (error) {
+        console.error('Error setting Firebase Auth persistence:', error);
+    }
+
     !isLocalDev && window.DD_RUM && window.DD_RUM.startSessionReplayRecording();
 
     // TODO: Initialize appState here (Oct 2025).
@@ -110,10 +142,6 @@ window.onload = async () => {
     
     router();
     activityCheckController();
-    
-    // TODO: manage user session in sessionStorage
-    const userSession = localStorage.getItem('userSession');
-    userSession && appState.setState({ userSession: JSON.parse(userSession) });
 
     const statsData = localStorage.getItem("statsData");
     const statsDataUpdateTime = localStorage.getItem("statsDataUpdateTime");
@@ -186,7 +214,7 @@ const router = async () => {
     const markNavigationSucceeded = () => { previousHash = route; };
 
     // Authenticated
-    if (await userLoggedIn() || localStorage.dashboard) {
+    if (await userLoggedIn()) {
 
         // If authenticated and on login route, send to home
         if (route === '#login') {
@@ -197,7 +225,13 @@ const router = async () => {
 
         // Handle participant-dependent routes
         if (participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route)) {
-            const participant = JSON.parse(localStorage.getItem("participant"));
+            // Show loading while attempting to get/recover participant
+            showAnimation();
+
+            const participant = await participantState.getParticipantFromState();
+
+            hideAnimation();
+
             if (!participant) {
                 await showAlertModal({
                     title: 'Participant Required',
@@ -212,11 +246,9 @@ const router = async () => {
 
             // Phys Act report data needs to be fetched from BQ. DHQ Report data is found in the participant object.
             if (route === '#participantSummary') {
-                let reports = {};
-                let physActReport = await retrievePhysicalActivityReport(participant);
-                if (physActReport) {
-                    reports.physActReport = physActReport;
-                }
+                showAnimation();
+                const reports = await reportsState.getReportsFromState(participant, retrievePhysicalActivityReport);
+                hideAnimation();
                 return renderParticipantSummary(participant, reports);
             }
             else if (route === '#participantDetails') return renderParticipantDetails(participant)
@@ -232,11 +264,21 @@ const router = async () => {
 
         // Handle all other routes
         markNavigationSucceeded();
-        
-        // Clear unsaved state and active participant for non-participant routes
-        if (!participantRoutes.includes(route) && !dataCorrectionsToolRoutes.includes(route)) {
+
+        const isPredefinedParticipantSearchRoute = route.startsWith('#participants/');
+        const isParticipantWorkflowRoute = participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route);
+
+        if (route === '#participantLookup') {
             clearUnsaved();
-            clearParticipant();
+            participantState.clearParticipant();
+            searchState.clearSearchResults();
+            return renderParticipantLookup();
+        }
+
+        if (!isParticipantWorkflowRoute && !isPredefinedParticipantSearchRoute) {
+            clearUnsaved();
+            participantState.clearParticipant();
+            searchState.clearSearchResults();
         }
 
         if (route === '#participants/notyetverified') return renderParticipants('notyetverified');
@@ -254,7 +296,6 @@ const router = async () => {
         else if (route === '#requestAKitConditions') return renderRequestAKitConditions();
         else if (route === '#ehrUpload') return renderEhrUploadPage();
         else if (route === '#logout') return clearLocalStorage();
-        else if (route === '#participantLookup') return renderParticipantLookup();
         else if (route !== '#home' && route !== '#') {
             console.error('Unhandled route. Going to home page. Route:', route);
             window.location.hash = '#home';
@@ -263,7 +304,7 @@ const router = async () => {
     }
 
     // Not authenticated
-    clearParticipant();
+    participantState.clearParticipant();
     if (route !== '#login') {
         window.location.hash = '#login';
         return;
@@ -282,53 +323,45 @@ const headsupBanner = () => {
 };
 
 const loginPage = () => {
-    // TODO: rm localStorage.dashboard usage.
-    if (localStorage.dashboard) {
-        window.location.hash = '#home';
-        return;
-    }
-    else {
-        document.getElementById('navBarLinks').innerHTML = renderNavBarLinks();
-        const mainContent = document.getElementById('mainContent')
-        mainContent.innerHTML = renderLogin();
+    document.getElementById('navBarLinks').innerHTML = renderNavBarLinks();
+    const mainContent = document.getElementById('mainContent')
+    mainContent.innerHTML = renderLogin();
 
-        const form = document.getElementById('ssoLogin');
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('ssoEmail').value;
-            let tenantID = '';
-            let provider = '';
-            
-            if(location.host === urls.prod) {
-                let config = prodSSOConfig(email);
-                tenantID = config.tenantID;
-                provider = config.provider;
-            }
-            else if(location.host === urls.stage) {
-                let config = stageSSOConfig(email);
-                tenantID = config.tenantID;
-                provider = config.provider;
-            }
-            else {
-                let config = devSSOConfig(email);
-                tenantID = config.tenantID;
-                provider = config.provider;
-            }
+    const form = document.getElementById('ssoLogin');
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('ssoEmail').value;
+        let tenantID = '';
+        let provider = '';
+        
+        if(location.host === urls.prod) {
+            let config = prodSSOConfig(email);
+            tenantID = config.tenantID;
+            provider = config.provider;
+        }
+        else if(location.host === urls.stage) {
+            let config = stageSSOConfig(email);
+            tenantID = config.tenantID;
+            provider = config.provider;
+        }
+        else {
+            let config = devSSOConfig(email);
+            tenantID = config.tenantID;
+            provider = config.provider;
+        }
 
-            const saml = new firebase.auth.SAMLAuthProvider(provider);
-            firebase.auth().tenantId = tenantID;
-            firebase.auth().signInWithPopup(saml)
-                .then((result) => {
-                    appState.setState({userSession:{email: result.user.email}});
-                    localStorage.setItem('userSession', JSON.stringify({email: result.user.email}));
-                    location.hash = '#home';
-                    router();
-                })
-                .catch((error) => {
-                    console.log(error);
-                });
-        });
-    }
+        const saml = new firebase.auth.SAMLAuthProvider(provider);
+        firebase.auth().tenantId = tenantID;
+        firebase.auth().signInWithPopup(saml)
+            .then((result) => {
+                userSession.setUser({email: result.user.email});
+                location.hash = '#home'
+                router();
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+    });
 };
 
 const renderActivityCheck = () => {
@@ -343,18 +376,18 @@ const renderActivityCheck = () => {
 }
 
 const renderDashboard = async () => {
-    if (localStorage.dashboard || await getIdToken()) {
+    const idToken = await getIdToken();
+    if (idToken) {
         showAnimation();
-        const idToken = await getIdToken();
         const isAuthorized = await authorize(idToken);
 
         if (isAuthorized && isAuthorized.code === 200) {
             localStorage.setItem('isParent', isAuthorized.isParent)
             localStorage.setItem('coordinatingCenter', isAuthorized.coordinatingCenter)
             localStorage.setItem('helpDesk', isAuthorized.helpDesk)
-            document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
-            removeActiveClass('nav-link', 'active');
-            document.getElementById('dashboardBtn').classList.add('active');
+
+            updateNavBar('dashboardBtn');
+
             mainContent.innerHTML = '';
             mainContent.innerHTML = renderActivityCheck();
             location.host !== urls.prod ? mainContent.innerHTML = headsupBanner() : ``
@@ -506,7 +539,7 @@ const handleSiteSelection = (siteTextContent = 'All Sites', siteKey = 'allResult
 };
 
 const retrievePhysicalActivityReport = async (participant) => {
-    if (!participant || !participant.state || !participant.state.uid) {
+    if (!participant || !participant.state || !participant.state.uid || !participant.Connect_ID) {
         return null;
     }
     
@@ -1050,10 +1083,9 @@ const reRenderDashboard = async (siteTextContent, siteKey) => {
 export const clearLocalStorage = () => {
     firebase.auth().signOut();
     hideAnimation();
-    delete localStorage.dashboard;
-    delete localStorage.participant;
-    delete localStorage.userSession;
-    appState.setState({userSession: {}});
+    // Clear user session and participant data
+    userSession.clearUser();
+    participantState.clearParticipant();
     window.location.hash = '#';
 };
 
@@ -1085,16 +1117,58 @@ const filterDataBySiteCode = (siteCode) => {
  * 
  * @returns {Promise<void>}
  */
+const participantRouteSlugMap = {
+    profileNotSubmitted: 'profilenotsubmitted',
+    consentNotSubmitted: 'consentnotsubmitted',
+    notSignedIn: 'notsignedin'
+};
+
 const renderParticipants = async (type) => {
     try {
         showAnimation();
 
-        resetFilters();
-        resetPagination();
+        const routeKey = participantRouteSlugMap[type] || type;
+        const metadata = await searchState.getSearchMetadata();
+        const cachedResults = searchState.getSearchResults();
+        const metadataMatchesType = metadata?.searchType === 'predefined' && metadata?.predefinedType === type;
 
-        appState.setState({ participantTypeFilter: type, siteCode: nameToKeyObj.allResults });
+        if (cachedResults && metadataMatchesType) {
+            if (!metadata.routeKey || metadata.routeKey !== routeKey) {
+                await searchState.updatePredefinedMetadata({ routeKey });
+            }
+
+            const latestMetadata = searchState.getCachedMetadata() || metadata;
+            const renderType = latestMetadata?.effectiveType || latestMetadata?.predefinedType || type;
+
+            document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
+            updateActiveElements(type);
+            mainContent.innerHTML = renderTable(cachedResults, renderType);
+            renderParticipantSearchResults(cachedResults, renderType);
+            activeColumns(cachedResults);
+            renderFilters();
+            hideAnimation();
+            return;
+        }
+
+        if (!metadataMatchesType) {
+            await searchState.initializePredefinedMetadata({
+                predefinedType: type,
+                effectiveType: type,
+                routeKey,
+                siteCode: nameToKeyObj.allResults,
+                startDateFilter: '',
+                endDateFilter: '',
+                pageNumber: 1,
+                direction: '',
+                cursorHistory: []
+            });
+            
+        } else if (!metadata.routeKey || metadata.routeKey !== routeKey) {
+            await searchState.updatePredefinedMetadata({ routeKey });
+        }
+
         const response = await getParticipants();
-        
+
         if (response.code === 401) {
             clearLocalStorage();
             triggerNotificationBanner(
@@ -1102,18 +1176,34 @@ const renderParticipants = async (type) => {
                 'danger',
                 4000
             );
-            
+
         } else if (response.code !== 200) {
             throw new Error(`Failed to fetch participants: ${response.code} - ${response.message || 'Unknown error'}`);
         }
-
+        
         const data = sortByKey(response.data, fieldMapping.healthcareProvider);
+
+        // Cache search results and metadata for predefined searches
+        const paginationState = searchState.getCachedMetadata() || {
+            predefinedType: type,
+            effectiveType: type,
+            routeKey,
+            siteCode: nameToKeyObj.allResults,
+            startDateFilter: '',
+            endDateFilter: '',
+            pageNumber: 1,
+            direction: '',
+            cursorHistory: []
+        };
+        const searchMetadata = buildPredefinedSearchMetadata({ ...paginationState });
+        searchState.setSearchResults(searchMetadata, data);
 
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
         updateActiveElements(type);
-        mainContent.innerHTML = renderTable(data, type);
+        const renderType = searchMetadata.effectiveType || searchMetadata.predefinedType || type;
+        mainContent.innerHTML = renderTable(data, renderType);
 
-        renderParticipantSearchResults(data, type);
+        renderParticipantSearchResults(data, renderType);
         activeColumns(data);
         renderFilters();
 
@@ -1124,47 +1214,11 @@ const renderParticipants = async (type) => {
             'danger',
             4000
         );
-        
+
     } finally {
         hideAnimation();
     }
 }
-
-/**
- * Helper function to update active navigation elements based on participant type
- * 
- * @function updateActiveElements
- * @param {string} type - The participant filter type
- */
-const updateActiveElements = (type) => {
-    
-    const titleMap = {
-        'all': 'All Participants',
-        'notyetverified': 'Not Verified Participants',
-        'cannotbeverified': 'Cannot Be Verified Participants',
-        'verified': 'Verified Participants',
-        'profileNotSubmitted': 'Profile Not Submitted',
-        'consentNotSubmitted': 'Consent Not Submitted',
-        'notSignedIn': 'Not Signed In'
-    };
-
-    const buttonMap = {
-        'all': 'allBtn',
-        'notyetverified': 'notVerifiedBtn',
-        'cannotbeverified': 'cannotVerifiedBtn',
-        'verified': 'verifiedBtn',
-        'profileNotSubmitted': 'profileNotSubmitted',
-        'consentNotSubmitted': 'consentNotSubmitted',
-        'notSignedIn': 'notSignedIn'
-    };
-    
-    removeActiveClass('dropdown-item', 'dd-item-active');
-    removeActiveClass('nav-link', 'active');
-
-    document.getElementById('participants').innerHTML = `<i class="fas fa-users"></i> ${titleMap[type]}`;
-    document.getElementById('participants').classList.add('active');
-    document.getElementById(buttonMap[type])?.classList.add('dd-item-active');
-};
 
 const activityCheckController = () => {
     let time;

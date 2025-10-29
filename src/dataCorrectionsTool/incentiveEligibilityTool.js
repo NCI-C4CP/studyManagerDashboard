@@ -1,8 +1,9 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
-import { dashboardNavBarLinks, removeActiveClass } from '../navigationBar.js';
+import { updateNavBar } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
 import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner, formatUTCDate, convertToISO8601 } from '../utils.js';
+import { participantState } from '../stateManager.js';
 import { findParticipant } from '../participantLookup.js';
 
 let participantPaymentRound = null;
@@ -16,9 +17,7 @@ const conceptIdToPaymentRoundMapping = {
 
 export const setupIncentiveEligibilityToolPage = (participant) => { 
     if (participant !== undefined) {
-        document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
-        removeActiveClass('nav-link', 'active');
-        document.getElementById('participantVerificationBtn').classList.add('active');
+        updateNavBar('participantVerificationBtn');
         mainContent.innerHTML = renderIncentiveEligibilityToolContent(participant);
         handlePaymentRoundSelect(participant);
         handleBackToToolSelect();
@@ -154,7 +153,7 @@ const handlePaymentRoundSelect = (participant) => {
                     const response = await findParticipant(query);
                     hideAnimation();
                     const participantData = response.data[0];
-                    localStorage.setItem('participant', JSON.stringify(participantData));
+                    participantState.setParticipant(participantData);
 
                     const isNORCPaymentEligible = participantData?.[paymentRound]?.[baselinePayment]?.[norcPaymentEligibility] === no;
                     const isIncentiveEligible = participantData?.[paymentRound]?.[baselinePayment]?.[eligiblePayment] === no;
@@ -311,7 +310,7 @@ const handleConfirmClick = async (participant) => {
 
             if (updateResponse.code === 200) { 
                 triggerNotificationBanner("Participant incentive eligibility status updated successfully!", "success" ,14000);
-                localStorage.setItem('participant', JSON.stringify(currentParticipantData));
+                participantState.setParticipant(currentParticipantData);
                 document.getElementById('incentiveStatusText').textContent = 'Incentive Eligibility Status: Eligible';
                 document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
                 document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${formatUTCDate(currentParticipantData?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds

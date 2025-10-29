@@ -1,4 +1,4 @@
-import { dashboardNavBarLinks, removeActiveClass } from './navigationBar.js';
+import { updateNavBar } from './navigationBar.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner } from './utils.js';
 import { appState } from './stateManager.js';
 
@@ -25,9 +25,7 @@ export const createNotificationSchema = async () => {
 };
 
 const renderSchemaPage = async (schemaData = null) => {
-  document.getElementById("navBarLinks").innerHTML = dashboardNavBarLinks();
-  removeActiveClass("nav-link", "active");
-  document.getElementById("notifications").classList.add("active");
+  updateNavBar('notifications');
 
   if (!concepts) {
     concepts = await getConcepts();

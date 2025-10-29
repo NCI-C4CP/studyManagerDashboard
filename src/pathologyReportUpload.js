@@ -1,4 +1,4 @@
-import { dashboardNavBarLinks, removeActiveClass } from "./navigationBar.js";
+import { updateNavBar } from "./navigationBar.js";
 import {
   getIdToken,
   hideAnimation,
@@ -8,7 +8,7 @@ import {
   baseAPI,
 } from "./utils.js";
 import { renderParticipantHeader } from "./participantHeader.js";
-import { renderLookupResultsTable } from "./participantLookup.js";
+import { navigateBackToSearchResults } from "./participantLookup.js";
 import conceptIds from "./fieldToConceptIdMapping.js";
 
 let fileState = {};
@@ -94,7 +94,9 @@ const showNotAllowedToUpload = (participantData) => {
   `;
 
   document.querySelector("#backToSearchBtn").addEventListener("click", () => {
-    renderLookupResultsTable();
+    navigateBackToSearchResults().catch((error) => {
+      console.error('Error navigating back to search results:', error);
+    });
   });
 };
 
@@ -302,14 +304,12 @@ const getUploadedPathologyReportNames = async () => {
 };
 
 export const renderPathologyReportUploadPage = async (participantData) => {
-  document.getElementById("navBarLinks").innerHTML = dashboardNavBarLinks();
-  removeActiveClass("nav-link", "active");
-  document.getElementById("pathologyReportUploadBtn").classList.add("active");
+  updateNavBar('pathologyReportUploadBtn');
 
   const isAllowedToUpload =
     participantData[conceptIds.verifiedFlag] === conceptIds.verified &&
     participantData[conceptIds.consentFlag] === conceptIds.yes &&
-    participantData[conceptIds.hippaFlag] === conceptIds.yes &&
+    participantData[conceptIds.hipaaFlag] === conceptIds.yes &&
     participantData[conceptIds.withdrawConsent] === conceptIds.no &&
     participantData[conceptIds.revokeHIPAA] === conceptIds.no &&
     participantData[conceptIds.destroyData] === conceptIds.no;
@@ -446,6 +446,8 @@ export const renderPathologyReportUploadPage = async (participantData) => {
   });
 
   document.querySelector("#backToSearchBtn").addEventListener("click", () => {
-    renderLookupResultsTable();
+    navigateBackToSearchResults().catch((error) => {
+      console.error('Error navigating back to search results:', error);
+    });
   });
 };

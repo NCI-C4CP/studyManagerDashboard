@@ -1,7 +1,7 @@
 import en from "../i18n/en.js";
 import es from "../i18n/es.js";
 import { nameToKeyObj } from './idsToName.js';
-import { appState } from './stateManager.js';
+import { participantState, searchState } from './stateManager.js';
 
 const i18n = {
     es, en
@@ -47,29 +47,6 @@ export const convertToISO8601 = (dateString, useEST) => {
     }
   }
   return dateObj.toISOString();
-};
-
-
-// TODO: move markUnsaved, clearUnsaved, and clearParticipant to stateManager once it's implemented.
-/**
- * Mark there are unsaved changes in the UI
- */
-export const markUnsaved = () => {
-  appState.setState({ hasUnsavedChanges: true });
-};
-
-/**
- * Clear the unsaved changes indicator
- */
-export const clearUnsaved = () => {
-  appState.setState({ hasUnsavedChanges: false });
-};
-
-export const clearParticipant = () => {
-  appState.setState({ participant: null });
-  // TODO: remove localStorage usage during appState transition
-  // (maybe session storage for pt data?)
-  localStorage.removeItem('participant');
 };
 
 import { keyToNameObj } from './idsToName.js';
@@ -561,61 +538,83 @@ export const sortByKey = (arr, key) => {
  * @throws {Error} If the API request fails
  */
 export const getParticipants = async () => {
-	
-	const { participantTypeFilter, siteCode, startDateFilter, endDateFilter, cursorHistory, pageNumber, direction } = appState.getState();
-  appState.setState({direction: ``});
+    const metadata = await searchState.getSearchMetadata();
 
-	const params = new URLSearchParams();
-	params.append('api', 'getParticipants');
-  params.append('limit', 50);
-	params.append('type', participantTypeFilter || 'all');
-
-	if (siteCode && siteCode !== nameToKeyObj.allResults) {
-		params.append('site', siteCode);
-	}
-
-	if (startDateFilter) {
-		params.append('from', `${startDateFilter}T00:00:00.000Z`);
-	}
-
-	if (endDateFilter) {
-		params.append('to', `${endDateFilter}T23:59:59.999Z`);
-	}
-
-  if (pageNumber > 1) {
-      params.append('cursor', cursorHistory[pageNumber - 2]);
-  }
-
-	const url = `${baseAPI}/dashboard?${params.toString()}`;
-	
-	try {
-		const token = await getIdToken();
-		const response = await fetch(url, {
-			method: 'GET',
-			headers: {
-				Authorization: `Bearer ${token}`,
-			}
-		});
-
-    const responseObj = await response.json();
-
-    if (responseObj.cursor) {
-      if (direction === 'previous') cursorHistory.pop();
-      
-      cursorHistory[pageNumber - 1] = responseObj.cursor;
-      appState.setState({cursorHistory});
+    if (!metadata || metadata.searchType !== 'predefined') {
+        throw new Error('Predefined search metadata is not initialized');
     }
 
-		return responseObj;
-	}
-	catch (error) {
-		console.error("Error fetching participants:", error);
-		return error;
-	}
-}
+    const {
+        effectiveType,
+        predefinedType,
+        siteCode,
+        startDateFilter,
+        endDateFilter,
+        pageNumber = 1,
+        direction = '',
+        cursorHistory = []
+    } = metadata;
 
-export const resetPagination = () => { appState.setState({cursorHistory: [], pageNumber: 1});}
-export const resetFilters = () => { appState.setState({participantTypeFilter: '', siteCode: '', startDateFilter: '', endDateFilter: ''});}
+    const resolvedType = effectiveType || predefinedType || 'all';
+    const cursorHistoryCopy = Array.isArray(cursorHistory) ? [...cursorHistory] : [];
+
+    const params = new URLSearchParams();
+    params.append('api', 'getParticipants');
+    params.append('limit', 50);
+    params.append('type', resolvedType);
+
+    if (siteCode && siteCode !== nameToKeyObj.allResults) {
+        params.append('site', siteCode);
+    }
+
+    if (startDateFilter) {
+        params.append('from', `${startDateFilter}T00:00:00.000Z`);
+    }
+
+    if (endDateFilter) {
+        params.append('to', `${endDateFilter}T23:59:59.999Z`);
+    }
+
+    if (pageNumber > 1) {
+        const priorPageCursor = cursorHistoryCopy[pageNumber - 2];
+        if (priorPageCursor) {
+            params.append('cursor', priorPageCursor);
+        }
+    }
+
+    const url = `${baseAPI}/dashboard?${params.toString()}`;
+
+    try {
+        const token = await getIdToken();
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            }
+        });
+
+        const responseObj = await response.json();
+
+        const updatedCursorHistory = [...cursorHistoryCopy];
+        if (responseObj.cursor) {
+            if (direction === 'previous') {
+                updatedCursorHistory.pop();
+            }
+            updatedCursorHistory[pageNumber - 1] = responseObj.cursor;
+        }
+
+        await searchState.updatePredefinedMetadata({
+            cursorHistory: updatedCursorHistory,
+            direction: ''
+        });
+
+        return responseObj;
+    }
+    catch (error) {
+        console.error('Error fetching participants:', error);
+        return error;
+    }
+}
 
 // Ensure that the date is a valid ISO 8601 string
 export function timestampValidation(iso8601String) {
