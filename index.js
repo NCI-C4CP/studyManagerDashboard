@@ -17,7 +17,7 @@ import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
 import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, escapeHTML, renderSiteDropdown, triggerNotificationBanner, showConfirmModal, showAlertModal } from './src/utils.js';
-import { appState, clearUnsaved, participantState, reportsState, userSession, searchState, buildPredefinedSearchMetadata } from './src/stateManager.js';
+import { appState, clearUnsaved, initializeAppState, participantState, reportsState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, clearSession } from './src/stateManager.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
 import { firebaseConfig as devFirebaseConfig } from "./config/dev/config.js";
@@ -137,19 +137,8 @@ window.onload = async () => {
 
     !isLocalDev && window.DD_RUM && window.DD_RUM.startSessionReplayRecording();
 
-    // TODO: Initialize appState here (Oct 2025).
-    //await initializeAppState();
-    
-    router();
+    await router();
     activityCheckController();
-
-    const statsData = localStorage.getItem("statsData");
-    const statsDataUpdateTime = localStorage.getItem("statsDataUpdateTime");
-    if (statsData && Date.now() - parseInt(statsDataUpdateTime) < statsDataTimeLimit) {
-      appState.setState({statsData: JSON.parse(statsData), statsDataUpdateTime});
-    } else {
-      appState.setState({statsData: {}, statsDataUpdateTime: 0});
-    }
 };
 
 window.onhashchange = () => {
@@ -174,7 +163,6 @@ const dataCorrectionsToolRoutes = [
     '#verificationCorrectionsTool',
 ];
 
-// TODO: centralize in appState
 // Track previous hash for 'no participant selected' and 'unsaved changes' guards.
 let previousHash = window.location.hash;
 
@@ -192,11 +180,10 @@ let previousHash = window.location.hash;
 const router = async () => {
     const hash = decodeURIComponent(window.location.hash);
     const route = hash || '#';
-    const isParent = localStorage.getItem('isParent')
 
     // Guard: Unsaved changes in participant details form
-    const state = appState.getState() || {};
-    if (state.hasUnsavedChanges) {
+    const stateSnapshot = appState.getState() || {};
+    if (stateSnapshot.hasUnsavedChanges) {
         const proceed = await showConfirmModal({
             title: 'Unsaved Changes',
             message: 'You have unsaved changes. Continue and lose your edits?',
@@ -215,6 +202,7 @@ const router = async () => {
 
     // Authenticated
     if (await userLoggedIn()) {
+        await initializeAppState();
 
         // If authenticated and on login route, send to home
         if (route === '#login') {
@@ -255,7 +243,7 @@ const router = async () => {
             else if (route === '#participantMessages') return renderParticipantMessages(participant)
             else if (route === '#requestHomeCollectionKit') return renderKitRequest(participant)
             else if (route === '#pathologyReportUpload') return renderPathologyReportUploadPage(participant)
-            else if (route === '#participantWithdrawal') return renderParticipantWithdrawal(participant)
+            else if (route === '#participantWithdrawal') return await renderParticipantWithdrawal(participant)
             else if (route === '#dataCorrectionsToolSelection') return setupDataCorrectionsSelectionToolPage(participant)
             else if (route === '#verificationCorrectionsTool') return setupVerificationCorrectionsPage(participant)
             else if (route === '#surveyResetTool') return setupSurveyResetToolPage(participant)
@@ -295,12 +283,12 @@ const router = async () => {
         else if (route === '#notifications/showDraftSchemas') return showDraftSchemas();
         else if (route === '#requestAKitConditions') return renderRequestAKitConditions();
         else if (route === '#ehrUpload') return renderEhrUploadPage();
-        else if (route === '#logout') return clearLocalStorage();
+        else if (route === '#logout') return clearSession();
         else if (route !== '#home' && route !== '#') {
             console.error('Unhandled route. Going to home page. Route:', route);
             window.location.hash = '#home';
         }
-        return renderDashboard();
+        return await renderDashboard();
     }
 
     // Not authenticated
@@ -382,19 +370,21 @@ const renderDashboard = async () => {
         const isAuthorized = await authorize(idToken);
 
         if (isAuthorized && isAuthorized.code === 200) {
-            localStorage.setItem('isParent', isAuthorized.isParent)
-            localStorage.setItem('coordinatingCenter', isAuthorized.coordinatingCenter)
-            localStorage.setItem('helpDesk', isAuthorized.helpDesk)
+            await roleState.setRoleFlags({
+                isParent: isAuthorized.isParent,
+                coordinatingCenter: isAuthorized.coordinatingCenter,
+                helpDesk: isAuthorized.helpDesk,
+            });
 
             updateNavBar('dashboardBtn');
 
             mainContent.innerHTML = '';
             mainContent.innerHTML = renderActivityCheck();
             location.host !== urls.prod ? mainContent.innerHTML = headsupBanner() : ``
-            renderCharts(idToken);
+            await renderCharts(idToken);
         }
         if (isAuthorized.code === 401) {
-            clearLocalStorage();
+            clearSession();
         }
     } else {
         hideAnimation();
@@ -403,28 +393,26 @@ const renderDashboard = async () => {
 }
 
 const renderCharts = async (accessToken) => {
-    let statsData = {};
-    let currentTime = Date.now();
-    const statsDataUpdateTime = appState.getState().statsDataUpdateTime ?? 0;
+    const currentTime = Date.now();
+    const cachedStatsData = statsState.getStats();
+    const statsDataUpdateTime = statsState.getStatsUpdateTime();
+    const hasCachedStats = cachedStatsData && Object.keys(cachedStatsData).length > 0;
+    const { isParent } = roleState.getRoleFlags();
+    let statsData = cachedStatsData;
 
-    if (currentTime - statsDataUpdateTime < statsDataTimeLimit) {
-      statsData = appState.getState().statsData;
-    } else {
+    if (!hasCachedStats || currentTime - statsDataUpdateTime >= statsDataTimeLimit) {
       const response = await getStatsForDashboard(accessToken);
       if (response.code !== 200) return;
-      
+
       [statsData] = response.data;
       if (!statsData || Object.keys(statsData).length === 0) return;
 
-      appState.setState({statsData, statsDataUpdateTime: currentTime});
-      localStorage.setItem("statsData", JSON.stringify(statsData));
-      localStorage.setItem("statsDataUpdateTime", currentTime);
+      await statsState.setStats(statsData, currentTime);
+      statsData = statsState.getStats();
     }
 
-    localStorage.setItem('dropDownstatusFlag', false);
-    if (localStorage.getItem('isParent') === 'true') {
-        localStorage.setItem('dropDownstatusFlag', true);
-
+    await uiState.setSiteDropdownVisible(isParent);
+    if (isParent) {
         let siteSelectionRow = document.getElementById('siteSelection');
         if (!siteSelectionRow) {
             siteSelectionRow = document.createElement('div');
@@ -1080,22 +1068,13 @@ const reRenderDashboard = async (siteTextContent, siteKey) => {
 };
 
 
-export const clearLocalStorage = () => {
-    firebase.auth().signOut();
-    hideAnimation();
-    // Clear user session and participant data
-    userSession.clearUser();
-    participantState.clearParticipant();
-    window.location.hash = '#';
-};
-
 /**
  * Filter and return data matching the site code
  * @param {number} siteCode - site code
  * @returns {object}
  */
 const filterDataBySiteCode = (siteCode) => {
-  const statsData = appState.getState().statsData;
+  const statsData = statsState.getStats();
   if (siteCode === nameToKeyObj.allResults) {
     return statsData;
   }
@@ -1170,7 +1149,7 @@ const renderParticipants = async (type) => {
         const response = await getParticipants();
 
         if (response.code === 401) {
-            clearLocalStorage();
+            clearSession();
             triggerNotificationBanner(
                 'Not authorized. Please log in again.',
                 'danger',
@@ -1227,7 +1206,7 @@ const activityCheckController = () => {
         time = setTimeout(() => {
             const resposeTimeout = setTimeout(() => {
                 // log out user if they don't respond to warning after 5 minutes.
-                clearLocalStorage();
+                clearSession();
             }, 300000)
             // Show warning after 20 minutes of no activity.
             const button = document.createElement('button');
@@ -1247,7 +1226,7 @@ const activityCheckController = () => {
             document.body.removeChild(button);
             Array.from(document.getElementsByClassName('log-out-user')).forEach(e => {
                 e.addEventListener('click', () => {
-                    clearLocalStorage();
+                    clearSession();
                 })
             })
             Array.from(document.getElementsByClassName('extend-user-session')).forEach(e => {

@@ -1,6 +1,6 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, escapeHTML } from './utils.js';
-import { participantState } from './stateManager.js';
+import { participantState, uiState } from './stateManager.js';
 import { renderRefusalOptions, renderCauseOptions } from './participantWithdrawalRender.js';
 
 export const renderWithdrawalForm = () => {
@@ -854,12 +854,13 @@ const processRefusalWithdrawalResponses = async (selectedReasonsForWithdrawal, s
         updateWhoRequested(sendRefusalData, fieldMapping.whoRequestedSuspendedContact, fieldMapping.whoRequestedSuspendedContactOther)
     }
 
-    const previousSuspendedStatus = localStorage.getItem('suspendContact');
-    if (previousSuspendedStatus === 'true' && suspendDate === '//') sendRefusalData[fieldMapping.suspendContact] = ``
-    localStorage.removeItem('suspendContact');
+    const { hasPriorSuspendedContact, hasPriorParticipationStatus } = uiState.getWithdrawalStatusFlags();
+    if (hasPriorSuspendedContact) {
+        if (suspendDate === '//') sendRefusalData[fieldMapping.suspendContact] = '';
+        await uiState.setWithdrawalStatusFlags({ hasPriorSuspendedContact: false });
+    }
 
-    const previousRefusalStatus = localStorage.getItem('participationStatus');
-    if (previousRefusalStatus === 'true') {
+    if (hasPriorParticipationStatus) {
         const prevParticipantStatusScore =   { "No Refusal": 0,
                                             "Refused some activities": 1,  
                                             "Refused all future activities": 2,
@@ -873,7 +874,7 @@ const processRefusalWithdrawalResponses = async (selectedReasonsForWithdrawal, s
         highestStatus.push(parseInt(prevParticipantStatusSelection))
     }
 
-    if (previousRefusalStatus === 'true' && suspendDate !== '//') sendRefusalData[fieldMapping.participationStatus] = fieldMapping.noRefusal
+    if (hasPriorParticipationStatus && suspendDate !== '//') sendRefusalData[fieldMapping.participationStatus] = fieldMapping.noRefusal
     
     source === 'causeOfDeath'
         ? combineResponses(selectedReasonsForWithdrawal, sendRefusalData, suspendDate)

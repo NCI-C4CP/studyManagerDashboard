@@ -1,7 +1,7 @@
 import en from "../i18n/en.js";
 import es from "../i18n/es.js";
 import { nameToKeyObj } from './idsToName.js';
-import { participantState, searchState } from './stateManager.js';
+import { participantState, searchState, uiState } from './stateManager.js';
 
 const i18n = {
     es, en
@@ -141,6 +141,7 @@ export const conceptToSiteMapping = {
  */
 export const renderSiteDropdown = (context = 'lookup', menuId = 'dropdownMenuButtonSites') => {
     const showPreferenceLabel = context === 'lookup';
+    const isVisible = uiState.isSiteDropdownVisible();
 
     const sitesDropdown = [
         { key: 'allResults', id: 'all', name: 'All Sites' },
@@ -160,7 +161,7 @@ export const renderSiteDropdown = (context = 'lookup', menuId = 'dropdownMenuBut
     ];
     
     return `
-        <div class="dropdown" ${localStorage.getItem('dropDownstatusFlag') === 'false' ? 'hidden' : ''}>
+        <div class="dropdown" ${isVisible ? '' : 'hidden'}>
             ${showPreferenceLabel ? `<label class="col-form-label search-label">Site Preference</label> &nbsp;` : ''}
             <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownSites" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-siteKey="allResults">
                 All Sites

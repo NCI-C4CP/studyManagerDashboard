@@ -1,8 +1,7 @@
 import { renderParticipantDetails } from './participantDetails.js';
-import { clearLocalStorage } from '../index.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { getIdToken, showAnimation, hideAnimation, getParticipants, sortByKey, renderSiteDropdown, triggerNotificationBanner } from './utils.js';
-import { searchState, buildPredefinedSearchMetadata } from './stateManager.js';
+import { searchState, buildPredefinedSearchMetadata, clearSession } from './stateManager.js';
 import { nameToKeyObj, keyToNameObj, keyToShortNameObj, participantConceptIDToTextMapping, searchBubbleMap, tableHeaderMap } from './idsToName.js';
 
 export const importantColumns = [fieldMapping.fName, fieldMapping.mName, fieldMapping.lName, fieldMapping.birthMonth, fieldMapping.birthDay, fieldMapping.birthYear, fieldMapping.email, 'Connect_ID', fieldMapping.healthcareProvider];
@@ -322,7 +321,7 @@ export const reRenderMainTable = async () => {
         const response = await getParticipants();
 
         if (response?.code === 401) {
-            clearLocalStorage();
+            clearSession();
             return;
         }
 

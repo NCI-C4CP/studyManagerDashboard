@@ -1,6 +1,73 @@
-// // State Management
 import { encryptString, decryptString } from './crypto.js';
+import { hideAnimation } from './utils.js';
 
+/**
+ * Default values for all encrypted stores
+ */
+
+const STATS_DEFAULTS = Object.freeze({
+    statsData: {},
+    statsDataUpdateTime: 0,
+});
+
+const ROLE_DEFAULTS = Object.freeze({
+    isParent: false,
+    coordinatingCenter: false,
+    helpDesk: false,
+});
+
+const WITHDRAWAL_DEFAULTS = Object.freeze({
+    hasPriorParticipationStatus: false,
+    hasPriorSuspendedContact: false,
+});
+
+const UI_DEFAULTS = Object.freeze({
+    siteDropdownVisible: false,
+    withdrawalFlags: WITHDRAWAL_DEFAULTS,
+});
+
+const encryptedStoreLoaders = [];
+let activeUID = undefined;
+
+/**
+ * State Management and Encryption utilities
+ */
+
+// Protect against mutation and/or shared refs. Return a deep clone of the value.
+const deepClone = (value, fallback = {}) => {
+    const source = value === undefined || value === null ? fallback : value;
+    if (source === undefined || source === null) return JSON.parse(JSON.stringify({}));
+    if (typeof source !== 'object') return source;
+    try {
+        return JSON.parse(JSON.stringify(source));
+    } catch (error) {
+        console.warn('deepClone: failed to clone value', value, error);
+        return JSON.parse(JSON.stringify(fallback));
+    }
+};
+
+// Return a boolean value from a string or number
+const asBoolean = (value) => {
+    if (typeof value === 'string') {
+        const trimmed = value.trim().toLowerCase();
+        if (trimmed === 'true' || trimmed === '1') return true;
+        if (trimmed === 'false' || trimmed === '0') return false;
+    }
+    if (typeof value === 'number') {
+        if (Number.isNaN(value)) return false;
+        return value !== 0;
+    }
+    if (typeof value === 'bigint') {
+        return value !== 0n;
+    }
+    return !!value;
+};
+
+/**
+ * Create a store for the application state and initialize it with the default values
+ * @param {object} initialState - The initial state of the store
+ * @returns {object} The store object
+ */
 const createStore = (startState = {}) => {
     let state = JSON.parse(JSON.stringify(startState));
 
@@ -22,7 +89,223 @@ const createStore = (startState = {}) => {
     };
 }
 
-export const appState = createStore();
+export const appState = createStore({
+    hasUnsavedChanges: false,
+    participant: null,
+    reports: null,
+});
+
+/**
+ * Persist encrypted store state to sessionStorage
+ * @param {string} sessionStorageKey - The key to store the encrypted value under
+ * @param {*} value - The value to encrypt and persist
+ * @param {string} uid - The user ID to derive encryption key from (must be provided by caller)
+ */
+const persistEncryptedStore = async (sessionStorageKey, value, uid) => {
+    try {
+        const serialized = JSON.stringify(value);
+        const encrypted = await encryptString(serialized, uid);
+        sessionStorage.setItem(sessionStorageKey, encrypted);
+    } catch (error) {
+        console.warn(`Failed to persist store "${sessionStorageKey}"`, error);
+    }
+};
+
+/**
+ * Create an encrypted store for the application state
+ * @param {object} stateKey - The key of the state in the appState object
+ * @param {object} defaults - The default values for the store
+ * @param {function} validationFn - The function to validate the state
+ * @param {string} sessionStorageKey - The key of the state in the sessionStorage
+ * @returns {object} The store object
+ */
+const createEncryptedStore = ({ stateKey, defaults, validationFn, sessionStorageKey }) => {
+    const getDefaultState = () => deepClone(defaults);
+
+    const writeStoreState = (stateValue) => {
+        const validatedState = validationFn(stateValue);
+        appState.setState({ [stateKey]: validatedState });
+        return validatedState;
+    };
+
+    const readStoreState = () => {
+        const currentState = appState.getState()[stateKey];
+        // Only validate defaults - existing state is already validated by writeStoreState
+        return currentState !== undefined ? currentState : validationFn(getDefaultState());
+    };
+
+    const loadFromStorage = async (uid) => {
+        let loadedState = getDefaultState();
+
+        if (uid) {
+            const encryptedData = sessionStorage.getItem(sessionStorageKey);
+            if (encryptedData) {
+                try {
+                    const decryptedData = await decryptString(encryptedData, uid);
+                    const parsedState = JSON.parse(decryptedData);
+                    loadedState = parsedState;
+                } catch (error) {
+                    console.warn(`Failed to load store "${stateKey}"`, error);
+                    sessionStorage.removeItem(sessionStorageKey);
+                    loadedState = getDefaultState();
+                }
+            }
+        }
+
+        writeStoreState(loadedState);
+        return loadedState;
+    };
+
+    encryptedStoreLoaders.push(loadFromStorage);
+    writeStoreState(getDefaultState());
+
+    return {
+        get: () => deepClone(readStoreState()),
+        set: async (update) => {
+            const currentState = readStoreState();
+            const updatedValue = typeof update === 'function' ? update(deepClone(currentState)) : update;
+            const validatedState = writeStoreState(updatedValue);
+
+            const uid = firebase?.auth?.().currentUser?.uid ?? null;
+            if (uid) {
+                await persistEncryptedStore(sessionStorageKey, validatedState, uid);
+            }
+        },
+        clear: () => {
+            sessionStorage.removeItem(sessionStorageKey);
+            writeStoreState(getDefaultState());
+        },
+    };
+};
+
+// Initialize appState just after user authenticates
+export const initializeAppState = async () => {
+    const uid = firebase?.auth?.().currentUser?.uid ?? null;
+
+    if (activeUID === uid) {
+        return appState.getState();
+    }
+
+    await Promise.all(encryptedStoreLoaders.map((loadFromStorage) => loadFromStorage(uid)));
+    activeUID = uid;
+    return appState.getState();
+};
+
+/**
+ * Validation helpers
+ */
+
+const validateBooleanFlags = (defaults, candidate = {}) => {
+    const inputData = candidate && typeof candidate === 'object' ? candidate : {};
+    const validatedFlags = {};
+    for (const key in defaults) {
+        validatedFlags[key] = asBoolean(inputData[key]);
+    }
+    return validatedFlags;
+};
+
+const validateStats = (candidate = {}) => {
+    const inputData = candidate && typeof candidate === 'object' ? candidate : {};
+    const statsData = deepClone(inputData.statsData);
+    const timestamp = Number(inputData.statsDataUpdateTime ?? 0);
+    return {
+        statsData,
+        statsDataUpdateTime: Number.isFinite(timestamp) && timestamp >= 0 ? timestamp : 0,
+    };
+};
+
+const validateRoleFlags = (candidate = {}) => {
+    return validateBooleanFlags(ROLE_DEFAULTS, candidate);
+};
+
+const validateWithdrawalFlags = (candidate = {}) => {
+    return validateBooleanFlags(WITHDRAWAL_DEFAULTS, candidate);
+};
+
+const validateUi = (candidate = {}) => {
+    const inputData = candidate && typeof candidate === 'object' ? candidate : {};
+    return {
+        siteDropdownVisible: asBoolean(inputData.siteDropdownVisible),
+        withdrawalFlags: validateWithdrawalFlags(inputData.withdrawalFlags),
+    };
+};
+
+/**
+ * Encrypted stores for the state objects. Note: encryption is required for sessionStorage usage (security scanner).
+ */
+
+const statsStore = createEncryptedStore({
+    stateKey: 'stats',
+    defaults: STATS_DEFAULTS,
+    validationFn: validateStats,
+    sessionStorageKey: 'statsStateEnc',
+});
+
+const roleStore = createEncryptedStore({
+    stateKey: 'roleFlags',
+    defaults: ROLE_DEFAULTS,
+    validationFn: validateRoleFlags,
+    sessionStorageKey: 'roleFlagsEnc',
+});
+
+const uiStore = createEncryptedStore({
+    stateKey: 'uiFlags',
+    defaults: UI_DEFAULTS,
+    validationFn: validateUi,
+    sessionStorageKey: 'uiFlagsEnc',
+});
+
+/**
+ * State exports
+ */
+
+export const statsState = {
+    setStats: async (statsData = {}, statsDataUpdateTime = 0) => {
+        await statsStore.set({ statsData, statsDataUpdateTime });
+    },
+    getStats: () => deepClone(statsStore.get().statsData),
+    getStatsUpdateTime: () => statsStore.get().statsDataUpdateTime,
+    clear: () => statsStore.clear(),
+};
+
+export const roleState = {
+    setRoleFlags: async (roleFlags = {}) => {
+        await roleStore.set((prev) => ({
+            isParent: asBoolean(roleFlags.isParent ?? prev.isParent),
+            coordinatingCenter: asBoolean(roleFlags.coordinatingCenter ?? prev.coordinatingCenter),
+            helpDesk: asBoolean(roleFlags.helpDesk ?? prev.helpDesk),
+        }));
+    },
+    getRoleFlags: () => ({ ...roleStore.get() }),
+    clear: () => roleStore.clear(),
+};
+
+export const uiState = {
+    setSiteDropdownVisible: async (isVisible = false) => {
+        await uiStore.set((prev) => ({
+            ...prev,
+            siteDropdownVisible: asBoolean(isVisible),
+        }));
+    },
+    isSiteDropdownVisible: () => uiStore.get().siteDropdownVisible,
+    setWithdrawalStatusFlags: async (flags = {}) => {
+        await uiStore.set((prev) => ({
+            ...prev,
+            withdrawalFlags: {
+                hasPriorParticipationStatus: asBoolean(flags.hasPriorParticipationStatus ?? prev.withdrawalFlags.hasPriorParticipationStatus),
+                hasPriorSuspendedContact: asBoolean(flags.hasPriorSuspendedContact ?? prev.withdrawalFlags.hasPriorSuspendedContact),
+            },
+        }));
+    },
+    getWithdrawalStatusFlags: () => ({ ...uiStore.get().withdrawalFlags }),
+    clearWithdrawalStatusFlags: async () => {
+        await uiStore.set((prev) => ({
+            ...prev,
+            withdrawalFlags: validateWithdrawalFlags(WITHDRAWAL_DEFAULTS),
+        }));
+    },
+    clear: () => uiStore.clear(),
+};
 
 // Participant State Management
 // Cache for in-flight recovery promise to prevent concurrent recovery attempts.
@@ -40,22 +323,22 @@ export const participantState = {
             return;
         }
 
-      appState.setState({ participant });
-      if (participant.token) {
-          // Encrypt and persist token for recovery
-          (async () => {
-              try {
-                  const uid = firebase?.auth?.().currentUser?.uid;
-                  if (!uid) return; // cannot derive key without uid
-                  const enc = await encryptString(participant.token, uid);
-                  sessionStorage.setItem('participantTokenEnc', enc);
-              } catch (e) {
-                  console.warn('participantState.setParticipant encryption failed');
-              }
-          })();
-      } else {
-          console.warn('participantState.setParticipant: participant missing token property');
-      }
+        appState.setState({ participant });
+        if (participant.token) {
+            // Encrypt and persist token for recovery
+            (async () => {
+                try {
+                    const uid = firebase?.auth?.().currentUser?.uid;
+                    if (!uid) return; // cannot derive key without uid
+                    const enc = await encryptString(participant.token, uid);
+                    sessionStorage.setItem('participantTokenEnc', enc);
+                } catch (e) {
+                    console.warn('participantState.setParticipant encryption failed', e);
+                }
+            })();
+        } else {
+            console.warn('participantState.setParticipant: participant missing token property');
+        }
     },
 
     /**
@@ -98,6 +381,7 @@ export const participantState = {
                 return null;
             }
         } catch (error) {
+            console.warn('participantState.getParticipantToken error', error);
             return null;
         }
     },
@@ -236,11 +520,11 @@ export const reportsState = {
      * @param {Object} reports - The reports object (e.g., { physActReport: {...} })
      */
     setReports: (reports) => {
-      if (!reports) {
-          console.warn('reportsState.setReports: reports is null or undefined');
-          return;
-      }
-      appState.setState({ reports });
+        if (!reports) {
+            console.warn('reportsState.setReports: reports is null or undefined');
+            return;
+        }
+        appState.setState({ reports });
     },
 
     /**
@@ -373,10 +657,10 @@ export const searchState = {
             ? searchMetadataCache
             : { searchType: 'predefined' };
 
-        const next = sanitizeMetadata(base, updates);
-        searchMetadataCache = next;
-        persistMetadataAsync(next);
-        return { ...next };
+        const mergedMetadata = sanitizeMetadata(base, updates);
+        searchMetadataCache = mergedMetadata;
+        persistMetadataAsync(mergedMetadata);
+        return { ...mergedMetadata };
     },
 
     /**
@@ -468,4 +752,19 @@ export const markUnsaved = () => {
  */
 export const clearUnsaved = () => {
     appState.setState({ hasUnsavedChanges: false });
+};
+
+/**
+ * Clear the user session and reset the application state
+ */
+export const clearSession = () => {
+    firebase.auth().signOut();
+    hideAnimation();
+    userSession.clearUser();
+    participantState.clearParticipant();
+    roleState.clear();
+    uiState.clear();
+    statsState.clear();
+    activeUID = undefined;
+    window.location.hash = '#';
 };
