@@ -159,7 +159,7 @@ export const renderSiteDropdown = (context = 'lookup', menuId = 'dropdownMenuBut
         { key: 'snfrdHealth', id: 'snfrdHealth', name: 'Sanford Health' },
         { key: 'uChiM', id: 'uChiM', name: 'UofC Medicine' },
         // Add NCI for dev and local environments
-        ...((location.host !== urls.prod && location.host !== urls.stage) ?
+        ...((typeof location !== 'undefined' && location.host !== urls.prod && location.host !== urls.stage) ?
             [{ key: 'nci', id: 'nci', name: 'NCI' }] : [])
     ];
     
