@@ -113,11 +113,14 @@ export const urls = {
   'dev': 'nci-c4cp.github.io'
 }
 
-let api = ``;
-if(location.host === urls.prod) api = 'https://api-myconnect.cancer.gov';
-else if(location.host === urls.stage) api = 'https://api-myconnect-stage.cancer.gov';
-else api = 'https://us-central1-nih-nci-dceg-connect-dev.cloudfunctions.net';
-export const baseAPI = api;
+export const resolveBaseAPI = (hostOverride) => {
+  const host = hostOverride ?? (typeof location !== 'undefined' ? location.host : '');
+  if (host === urls.prod) return 'https://api-myconnect.cancer.gov';
+  if (host === urls.stage) return 'https://api-myconnect-stage.cancer.gov';
+  return 'https://us-central1-nih-nci-dceg-connect-dev.cloudfunctions.net';
+};
+
+export const baseAPI = resolveBaseAPI();
 
 export const conceptToSiteMapping = {
   531629870: 'HP',
@@ -156,7 +159,7 @@ export const renderSiteDropdown = (context = 'lookup', menuId = 'dropdownMenuBut
         { key: 'snfrdHealth', id: 'snfrdHealth', name: 'Sanford Health' },
         { key: 'uChiM', id: 'uChiM', name: 'UofC Medicine' },
         // Add NCI for dev and local environments
-        ...((location.host !== urls.prod) && (location.host !== urls.stage) ? 
+        ...((location.host !== urls.prod && location.host !== urls.stage) ?
             [{ key: 'nci', id: 'nci', name: 'NCI' }] : [])
     ];
     
