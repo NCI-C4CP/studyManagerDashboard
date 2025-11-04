@@ -872,9 +872,10 @@ const processRefusalWithdrawalResponses = async (selectedReasonsForWithdrawal, s
         let prevParticipantStatusSelection = fieldMapping[participant[fieldMapping.participationStatus]]
         prevParticipantStatusSelection = prevParticipantStatusScore[prevParticipantStatusSelection]
         highestStatus.push(parseInt(prevParticipantStatusSelection))
-    }
 
-    if (hasPriorParticipationStatus && suspendDate !== '//') sendRefusalData[fieldMapping.participationStatus] = fieldMapping.noRefusal
+        if (suspendDate !== '//') sendRefusalData[fieldMapping.participationStatus] = fieldMapping.noRefusal
+        await uiState.setWithdrawalStatusFlags({ hasPriorParticipationStatus: false });
+    }
     
     source === 'causeOfDeath'
         ? combineResponses(selectedReasonsForWithdrawal, sendRefusalData, suspendDate)

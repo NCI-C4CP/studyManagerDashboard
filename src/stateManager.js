@@ -106,7 +106,9 @@ const persistEncryptedStore = async (sessionStorageKey, value, uid) => {
     try {
         const serialized = JSON.stringify(value);
         const encrypted = await encryptString(serialized, uid);
-        sessionStorage.setItem(sessionStorageKey, encrypted);
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem(sessionStorageKey, encrypted);
+        }
     } catch (error) {
         console.warn(`Failed to persist store "${sessionStorageKey}"`, error);
     }
@@ -139,7 +141,7 @@ const createEncryptedStore = ({ stateKey, defaults, validationFn, sessionStorage
     const loadFromStorage = async (uid) => {
         let loadedState = getDefaultState();
 
-        if (uid) {
+        if (uid && typeof sessionStorage !== 'undefined') {
             const encryptedData = sessionStorage.getItem(sessionStorageKey);
             if (encryptedData) {
                 try {
@@ -174,7 +176,9 @@ const createEncryptedStore = ({ stateKey, defaults, validationFn, sessionStorage
             }
         },
         clear: () => {
-            sessionStorage.removeItem(sessionStorageKey);
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.removeItem(sessionStorageKey);
+            }
             writeStoreState(getDefaultState());
         },
     };
@@ -368,7 +372,9 @@ export const participantState = {
      */
     clearParticipant: () => {
         appState.setState({ participant: null });
-        sessionStorage.removeItem('participantTokenEnc');
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('participantTokenEnc');
+        }
         // Clear the recovery promise cache and associated reports
         participantRecoveryPromise = null;
 
@@ -384,8 +390,9 @@ export const participantState = {
     getParticipantToken: async () => {
         try {
             const uid = firebase?.auth?.().currentUser?.uid;
+            if (typeof sessionStorage === 'undefined' || !uid) return null;
             const payload = sessionStorage.getItem('participantTokenEnc');
-            if (!payload || !uid) return null;
+            if (!payload) return null;
             try {
                 return await decryptString(payload, uid);
             } catch (e) {
@@ -439,7 +446,9 @@ export const participantState = {
                     // Token is invalid or participant not found
                     console.warn('Participant recovery failed: invalid token or participant not found');
                     appState.setState({ participant: null });
-                    sessionStorage.removeItem('participantTokenEnc');
+                    if (typeof sessionStorage !== 'undefined') {
+                        sessionStorage.removeItem('participantTokenEnc');
+                    }
                     return null;
                 }
 
@@ -481,7 +490,9 @@ export const userSession = {
      */
     setUser: (userData) => {
         if (userData && userData.email) {
-            sessionStorage.setItem('userSession', JSON.stringify(userData));
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.setItem('userSession', JSON.stringify(userData));
+            }
         } else {
             console.warn('userSession.setUser: userData missing or invalid');
         }
@@ -493,6 +504,7 @@ export const userSession = {
      */
     getUser: () => {
         try {
+            if (typeof sessionStorage === 'undefined') return null;
             const userSession = sessionStorage.getItem('userSession');
             return userSession ? JSON.parse(userSession) : null;
         } catch (error) {
@@ -514,7 +526,9 @@ export const userSession = {
      * Clear user session data
      */
     clearUser: () => {
-        sessionStorage.removeItem('userSession');
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('userSession');
+        }
     },
 
     /**
@@ -705,8 +719,9 @@ export const searchState = {
 
         try {
             const uid = firebase?.auth?.().currentUser?.uid;
+            if (typeof sessionStorage === 'undefined' || !uid) return null;
             const payload = sessionStorage.getItem('searchMetadataEnc');
-            if (!payload || !uid) return null;
+            if (!payload) return null;
             try {
                 const decrypted = await decryptString(payload, uid);
                 const parsed = JSON.parse(decrypted);
@@ -731,6 +746,7 @@ export const searchState = {
      */
     hasSearchResults: () => {
         if (searchMetadataCache) return true;
+        if (typeof sessionStorage === 'undefined') return false;
         return !!sessionStorage.getItem('searchMetadataEnc');
     },
 
@@ -740,7 +756,9 @@ export const searchState = {
     clearSearchResults: () => {
         searchResultsCache = null;
         searchMetadataCache = null;
-        sessionStorage.removeItem('searchMetadataEnc');
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('searchMetadataEnc');
+        }
     },
 };
 
@@ -771,7 +789,7 @@ export const clearUnsaved = () => {
  * Clear the user session and reset the application state
  */
 export const clearSession = () => {
-    firebase.auth().signOut();
+    firebase?.auth?.().signOut();
     hideAnimation();
     userSession.clearUser();
     participantState.clearParticipant();

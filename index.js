@@ -396,7 +396,7 @@ const renderCharts = async (accessToken) => {
     const currentTime = Date.now();
     const cachedStatsData = statsState.getStats();
     const statsDataUpdateTime = statsState.getStatsUpdateTime();
-    const hasCachedStats = cachedStatsData && Object.keys(cachedStatsData).length > 0;
+    const hasCachedStats = cachedStatsData && typeof cachedStatsData === 'object' && Object.keys(cachedStatsData).length > 0;
     const { isParent } = roleState.getRoleFlags();
     let statsData = cachedStatsData;
 
