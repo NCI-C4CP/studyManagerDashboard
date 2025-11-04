@@ -28,6 +28,7 @@ const UI_DEFAULTS = Object.freeze({
 
 const encryptedStoreLoaders = [];
 let activeUID = undefined;
+let participantLookupLoader = () => import('./participantLookup.js');
 
 /**
  * State Management and Encryption utilities
@@ -191,6 +192,15 @@ export const initializeAppState = async () => {
     return appState.getState();
 };
 
+export const resetAppStateUID = () => {
+    activeUID = undefined;
+};
+
+// Override the participant lookup loader for testing
+export const setParticipantLookupLoader = (loader) => {
+    participantLookupLoader = typeof loader === 'function' ? loader : () => import('./participantLookup.js');
+};
+
 /**
  * Validation helpers
  */
@@ -331,7 +341,9 @@ export const participantState = {
                     const uid = firebase?.auth?.().currentUser?.uid;
                     if (!uid) return; // cannot derive key without uid
                     const enc = await encryptString(participant.token, uid);
-                    sessionStorage.setItem('participantTokenEnc', enc);
+                    if (typeof sessionStorage !== 'undefined') {
+                        sessionStorage.setItem('participantTokenEnc', enc);
+                    }
                 } catch (e) {
                     console.warn('participantState.setParticipant encryption failed', e);
                 }
@@ -405,17 +417,16 @@ export const participantState = {
             return participantRecoveryPromise;
         }
 
-        const sessionToken = await participantState.getParticipantToken();
-
-        if (!sessionToken) {
-            return null;
-        }
-
-        // Create and cache the recovery promise
         participantRecoveryPromise = (async () => {
             try {
+                const sessionToken = await participantState.getParticipantToken();
+
+                if (!sessionToken) {
+                    return null;
+                }
+
                 // Dynamic import to avoid circular dependency
-                const { findParticipant } = await import('./participantLookup.js');
+                const { findParticipant } = await participantLookupLoader();
                 const response = await findParticipant(`token=${sessionToken}`);
 
                 if (response.code === 200 && response.data && response.data[0]) {
@@ -427,6 +438,7 @@ export const participantState = {
                     // Token is invalid or participant not found
                     console.warn('Participant recovery failed: invalid token or participant not found');
                     appState.setState({ participant: null });
+                    sessionStorage.removeItem('participantTokenEnc');
                     return null;
                 }
 
@@ -600,18 +612,18 @@ const sanitizeMetadata = (metadata, overrides = {}) => {
     return { ...merged };
 };
 
-const persistMetadataAsync = (metadata) => {
+const persistSearchMetadata = async (metadata) => {
     if (!metadata) return;
-    (async () => {
-        try {
-            const uid = firebase?.auth?.().currentUser?.uid;
-            if (!uid) return; // cannot derive key without uid
-            const enc = await encryptString(JSON.stringify(metadata), uid);
+    try {
+        const uid = firebase?.auth?.().currentUser?.uid;
+        if (!uid) return; // cannot derive key without uid
+        const enc = await encryptString(JSON.stringify(metadata), uid);
+        if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem('searchMetadataEnc', enc);
-        } catch (e) {
-            console.warn('searchState.persistMetadataAsync encryption failed', e);
         }
-    })();
+    } catch (e) {
+        console.warn('searchState.persistSearchMetadata encryption failed', e);
+    }
 };
 
 export const searchState = {
@@ -623,7 +635,7 @@ export const searchState = {
      * @param {Object} searchMetadata - Search parameters and pagination state
      * @param {Array} resultsArray - Array of participant objects for current page
      */
-    setSearchResults: (searchMetadata, resultsArray) => {
+    setSearchResults: async (searchMetadata, resultsArray) => {
         if (!searchMetadata) {
             console.warn('searchState.setSearchResults: metadata is null or undefined');
             return;
@@ -633,7 +645,7 @@ export const searchState = {
         searchResultsCache = Array.isArray(resultsArray) ? resultsArray : null;
 
         searchMetadataCache = normalizedMetadata;
-        persistMetadataAsync(normalizedMetadata);
+        await persistSearchMetadata(normalizedMetadata);
     },
 
     /**
@@ -644,7 +656,7 @@ export const searchState = {
         if (!metadata) return null;
         const normalized = sanitizeMetadata({ searchType: 'predefined' }, metadata);
         searchMetadataCache = normalized;
-        persistMetadataAsync(normalized);
+        await persistSearchMetadata(normalized);
         return { ...normalized };
     },
 
@@ -659,7 +671,7 @@ export const searchState = {
 
         const mergedMetadata = sanitizeMetadata(base, updates);
         searchMetadataCache = mergedMetadata;
-        persistMetadataAsync(mergedMetadata);
+        await persistSearchMetadata(mergedMetadata);
         return { ...mergedMetadata };
     },
 
@@ -765,6 +777,8 @@ export const clearSession = () => {
     roleState.clear();
     uiState.clear();
     statsState.clear();
-    activeUID = undefined;
+    reportsState.clearReports();
+    appState.setState({ hasUnsavedChanges: false });
+    resetAppStateUID();
     window.location.hash = '#';
 };
