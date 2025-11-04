@@ -114,6 +114,7 @@ const persistEncryptedStore = async (sessionStorageKey, value, uid) => {
 
 /**
  * Create an encrypted store for the application state
+ * Important so data in appState can survive page reloads.
  * @param {object} stateKey - The key of the state in the appState object
  * @param {object} defaults - The default values for the store
  * @param {function} validationFn - The function to validate the state
