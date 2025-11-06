@@ -1,10 +1,11 @@
 import { updateNavBar } from './navigationBar.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantHeader, getParticipantStatus, getParticipantSuspendedDate } from './participantHeader.js';
-import { renderWithdrawalForm, viewOptionsSelected, proceedToNextPage, autoSelectOptions, addEventMonthSelection } from './participantWithdrawalForm.js'
+import { renderWithdrawalForm, viewOptionsSelected, proceedToNextPage, autoSelectOptions, addEventMonthSelection } from './participantWithdrawalForm.js';
+import { uiState } from './stateManager.js';
 
 
-export const renderParticipantWithdrawal = (participant) => {    
+export const renderParticipantWithdrawal = async (participant) => {    
     const mainContent = document.getElementById('mainContent');
     updateNavBar('participantWithdrawalBtn');
     
@@ -29,7 +30,7 @@ export const renderParticipantWithdrawal = (participant) => {
     viewOptionsSelected();
     proceedToNextPage();
     addEventMonthSelection('suspendContactUntilMonth', 'suspendContactUntilDay', 'suspendContactUntilYear');
-    checkPreviousWithdrawalStatus(participant);
+    await checkPreviousWithdrawalStatus(participant);
 }
 
 export const buildAccessDeniedTemplate = (participant) => {
@@ -64,11 +65,16 @@ export const buildWithdrawalTemplate = (participant) => {
         </div>`;
 }
 
-const checkPreviousWithdrawalStatus = (participant) => {
+const checkPreviousWithdrawalStatus = async (participant) => {
     let template = ``;
     let alertList = document.getElementById('alert_placeholder');
+    const withdrawalFlags = {
+        hasPriorParticipationStatus: false,
+        hasPriorSuspendedContact: false,
+    };
+
     if (participant[fieldMapping.participationStatus] !== fieldMapping.noRefusal && participant[fieldMapping.participationStatus] !== ``) {
-        localStorage.setItem('participationStatus', true)
+        withdrawalFlags.hasPriorParticipationStatus = true;
         template += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
                         Previously Selected Refusal Option(s): <b> ${getParticipantSelectedRefusals(participant)} </b>
                         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -76,7 +82,7 @@ const checkPreviousWithdrawalStatus = (participant) => {
                         </button>
                     </div>`
     } else if (participant[fieldMapping.suspendContact] !== "" && participant[fieldMapping.suspendContact] !== ``) {
-        localStorage.setItem('suspendContact', true)
+        withdrawalFlags.hasPriorSuspendedContact = true;
         template += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
                         <b> ${getParticipantSuspendedDate(participant)} </b>
                         <button type="button" class="close" data-dismiss="alert" aria-label="Close">
@@ -84,7 +90,9 @@ const checkPreviousWithdrawalStatus = (participant) => {
                         </button>
                     </div>`
     }
+
     alertList.innerHTML = template;
+    await uiState.setWithdrawalStatusFlags(withdrawalFlags);
 }
 
 const getParticipantSelectedRefusals = (participant) => {
