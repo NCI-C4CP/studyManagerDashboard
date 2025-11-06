@@ -1,6 +1,6 @@
 import { renderParticipantLookup } from './src/participantLookup.js';
 import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements } from './src/navigationBar.js';
-import { renderTable, renderParticipantSearchResults, activeColumns, renderFilters } from './src/participantCommons.js';
+import { renderTable, renderParticipantSearchResults, setupActiveColumns, renderFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
@@ -1123,7 +1123,7 @@ const renderParticipants = async (type) => {
             updateActiveElements(type);
             mainContent.innerHTML = renderTable(cachedResults, renderType);
             renderParticipantSearchResults(cachedResults, renderType);
-            activeColumns(cachedResults);
+            setupActiveColumns(cachedResults);
             renderFilters();
             hideAnimation();
             return;
@@ -1175,7 +1175,7 @@ const renderParticipants = async (type) => {
             cursorHistory: []
         };
         const searchMetadata = buildPredefinedSearchMetadata({ ...paginationState });
-        searchState.setSearchResults(searchMetadata, data);
+        await searchState.setSearchResults(searchMetadata, data);
 
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
         updateActiveElements(type);
@@ -1183,7 +1183,7 @@ const renderParticipants = async (type) => {
         mainContent.innerHTML = renderTable(data, renderType);
 
         renderParticipantSearchResults(data, renderType);
-        activeColumns(data);
+        setupActiveColumns(data);
         renderFilters();
 
     } catch (error) {

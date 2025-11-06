@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "lint": "eslint \"src/**/*.js\" \"tests/**/*.js\" index.js serviceWorker.js",
-    "test": "mocha --require esbuild-register \"tests/**/*.spec.js\"",
+    "test": "mocha --require ./tests/test-setup.js --require esbuild-register \"tests/**/*.spec.js\"",
     "test:watch": "npm run test -- --watch"
   },
   "engines": {

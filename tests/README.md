@@ -128,11 +128,10 @@ describe('myModule', () => {
 ### Async Utilities
 
 ```javascript
-import { waitForAsyncTasks } from './helpers.js';
+import { participantState } from '../src/stateManager.js';
 
 it('waits for async encryption', async () => {
-  participantState.setParticipant({ id: 1, token: 'secret' });
-  await waitForAsyncTasks(); // Wait for fire-and-forget async operations
+  await participantState.setParticipant({ id: 1, token: 'secret' });
 
   expect(sessionStorage.getItem('participantTokenEnc')).to.be.a('string');
 });
@@ -160,13 +159,87 @@ it('warns when setting invalid data', () => {
 import {
   createMockParticipant,
   createMockUserSession,
-  createMockReports,
+  createMockPhysicalActivityReport,
+  createMockParticipantLookupLoader,
 } from './helpers.js';
 
 it('processes participant data', () => {
   const participant = createMockParticipant('user-42', { id: 42, name: 'Custom Name' });
   const result = processParticipant(participant);
   expect(result).to.be.ok;
+});
+```
+
+### State Management Helpers
+
+```javascript
+import { clearAllState, clearSearchState } from './helpers.js';
+
+// Clear all application state (useful for comprehensive reset)
+beforeEach(async () => {
+  setupTestEnvironment();
+  installFirebaseStub({ uid: 'test-user' });
+  await clearAllState(); // Clears all state managers, sessionStorage, etc.
+});
+
+// Clear only search-related state
+beforeEach(async () => {
+  await clearSearchState(); // Only clears searchState and uiState
+});
+```
+
+### DOM Fixture Helpers
+
+```javascript
+import { createDOMFixture, cleanupDOMFixture } from './helpers.js';
+
+describe('myModule', () => {
+  let mainContent;
+
+  beforeEach(() => {
+    setupTestEnvironment();
+    // Create a DOM fixture element
+    mainContent = createDOMFixture('mainContent', 'div', { class: 'test-container' });
+  });
+
+  afterEach(() => {
+    // Clean up the fixture
+    cleanupDOMFixture(mainContent);
+    teardownTestEnvironment();
+  });
+});
+```
+
+### Complete Test Suite Setup
+
+```javascript
+import { setupTestSuite } from './helpers.js';
+
+describe('myModule', () => {
+  let firebaseStub;
+  let cleanup;
+  let mainContent;
+
+  beforeEach(async () => {
+    // This sets up everything
+    const suite = await setupTestSuite({
+      firebaseUid: 'test-user',
+      onSignOut: () => console.log('Signed out'),
+      clearState: true,
+      domFixtures: [
+        { id: 'mainContent', tagName: 'div' },
+        { id: 'sidebar', tagName: 'aside' },
+      ],
+    });
+    
+    firebaseStub = suite.firebaseStub;
+    cleanup = suite.cleanup;
+    mainContent = suite.domFixtures[0];
+  });
+
+  afterEach(() => {
+    cleanup(); // Handles all cleanup
+  });
 });
 ```
 

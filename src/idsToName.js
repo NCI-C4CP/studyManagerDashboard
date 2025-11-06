@@ -93,7 +93,7 @@ export const tableHeaderMap = new Map([
 ]);
 
 // Bubbles that can be selected and added to the table.
-// When selected, the CID is added to the importantColumns array and the heading name is fetched from the searchBubbleMap.
+// When selected, the CID is added to uiState.activeColumns and the heading name is fetched from the searchBubbleMap.
 export const searchBubbleMap = new Map([
     ['Connect_ID', 'Connect ID'],
     ['pin', 'Pin'],

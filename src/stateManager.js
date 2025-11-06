@@ -1,5 +1,6 @@
 import { encryptString, decryptString } from './crypto.js';
 import { hideAnimation } from './utils.js';
+import { normalizeColumnValue } from './participantCommons.js';
 
 /**
  * Default values for all encrypted stores
@@ -24,6 +25,7 @@ const WITHDRAWAL_DEFAULTS = Object.freeze({
 const UI_DEFAULTS = Object.freeze({
     siteDropdownVisible: false,
     withdrawalFlags: WITHDRAWAL_DEFAULTS,
+    activeColumns: undefined,
 });
 
 const encryptedStoreLoaders = [];
@@ -242,6 +244,7 @@ const validateUi = (candidate = {}) => {
     return {
         siteDropdownVisible: asBoolean(inputData.siteDropdownVisible),
         withdrawalFlags: validateWithdrawalFlags(inputData.withdrawalFlags),
+        activeColumns: Array.isArray(inputData.activeColumns) ? inputData.activeColumns : undefined,
     };
 };
 
@@ -295,6 +298,7 @@ export const roleState = {
     clear: () => roleStore.clear(),
 };
 
+
 export const uiState = {
     setSiteDropdownVisible: async (isVisible = false) => {
         await uiStore.set((prev) => ({
@@ -319,6 +323,32 @@ export const uiState = {
             withdrawalFlags: validateWithdrawalFlags(WITHDRAWAL_DEFAULTS),
         }));
     },
+    /**
+     * Get active columns from uiState (synchronous)
+     * @return {Array|undefined} Array of active column keys (normalized: numbers for concept IDs, strings for non-numeric keys) or undefined if not set
+     */
+    getActiveColumns: () => {
+        return uiStore.get().activeColumns;
+    },
+    /**
+     * Update active columns in uiState
+     * Normalizes column values: numeric strings become numbers, non-numeric strings remain strings
+     * @param {Array} columns - Array of column keys (strings or numbers)
+     */
+    updateActiveColumns: async (columns) => {
+        if (!Array.isArray(columns)) {
+            console.warn('uiState.updateActiveColumns: columns must be an array');
+            return;
+        }
+
+        // Normalize all column values for consistent storage
+        const normalizedColumns = columns.map(col => normalizeColumnValue(col));
+
+        await uiStore.set((prev) => ({
+            ...prev,
+            activeColumns: normalizedColumns,
+        }));
+    },
     clear: () => uiStore.clear(),
 };
 
@@ -332,29 +362,28 @@ export const participantState = {
      * Set participant data in memory and store `token` in sessionStorage for recovery on page refresh
      * @param {Object} participant - The participant object with token property
      */
-    setParticipant: (participant) => {
+    setParticipant: async (participant) => {
         if (!participant) {
             console.warn('participantState.setParticipant: participant is null or undefined');
             return;
         }
 
         appState.setState({ participant });
-        if (participant.token) {
-            // Encrypt and persist token for recovery
-            (async () => {
-                try {
-                    const uid = firebase?.auth?.().currentUser?.uid;
-                    if (!uid) return; // cannot derive key without uid
-                    const enc = await encryptString(participant.token, uid);
-                    if (typeof sessionStorage !== 'undefined') {
-                        sessionStorage.setItem('participantTokenEnc', enc);
-                    }
-                } catch (e) {
-                    console.warn('participantState.setParticipant encryption failed', e);
-                }
-            })();
-        } else {
+        if (!participant.token) {
             console.warn('participantState.setParticipant: participant missing token property');
+            return;
+        }
+
+        // Encrypt and persist token for recovery
+        try {
+            const uid = firebase?.auth?.().currentUser?.uid;
+            if (!uid) return; // cannot derive key without uid
+            const enc = await encryptString(participant.token, uid);
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.setItem('participantTokenEnc', enc);
+            }
+        } catch (e) {
+            console.warn('participantState.setParticipant encryption failed', e);
         }
     },
 
@@ -624,6 +653,7 @@ const sanitizeMetadata = (metadata, overrides = {}) => {
         };
     }
 
+    // For lookup searches
     return { ...merged };
 };
 

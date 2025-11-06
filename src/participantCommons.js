@@ -1,10 +1,52 @@
 import { renderParticipantDetails } from './participantDetails.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { getIdToken, showAnimation, hideAnimation, getParticipants, sortByKey, renderSiteDropdown, triggerNotificationBanner } from './utils.js';
-import { searchState, buildPredefinedSearchMetadata, clearSession } from './stateManager.js';
+import { searchState, buildPredefinedSearchMetadata, clearSession, uiState } from './stateManager.js';
 import { nameToKeyObj, keyToNameObj, keyToShortNameObj, participantConceptIDToTextMapping, searchBubbleMap, tableHeaderMap } from './idsToName.js';
 
-export const importantColumns = [fieldMapping.fName, fieldMapping.mName, fieldMapping.lName, fieldMapping.birthMonth, fieldMapping.birthDay, fieldMapping.birthYear, fieldMapping.email, 'Connect_ID', fieldMapping.healthcareProvider];
+// Default columns shown when no state is set
+export const defaultColumns = [fieldMapping.fName, fieldMapping.mName, fieldMapping.lName, fieldMapping.birthMonth, fieldMapping.birthDay, fieldMapping.birthYear, fieldMapping.email, 'Connect_ID', fieldMapping.healthcareProvider];
+
+// Tracks the most recent active-column update so callers/tests can await completion.
+let lastActiveColumnsUpdatePromise = Promise.resolve();
+
+/**
+ * Normalize a column value: convert numeric strings to numbers, keep non-numeric strings as strings
+ * Handles concept IDs (numbers) vs string keys (e.g., 'Connect_ID', 'token', 'pin')
+ * @param {string|number} value - Column value to normalize
+ * @returns {string|number} Normalized value (number if numeric, string otherwise)
+ */
+export const normalizeColumnValue = (value) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string' && !isNaN(value) && value.trim() !== '') {
+        return parseInt(value, 10);
+    }
+    return value; // Keep non-numeric strings (e.g. 'Connect_ID', 'token', 'pin') as-is
+};
+
+/**
+ * Normalize an array of column values
+ * @param {Array} columns - Array of column values to normalize
+ * @returns {Array} Array of normalized column values
+ */
+const normalizeColumnArray = (columns) => {
+    if (!Array.isArray(columns)) return columns;
+    return columns.map(normalizeColumnValue);
+};
+
+/**
+ * Get the currently active columns from state, or return defaults if state is not set
+ * @returns {Array} Array of column keys (normalized: numbers for concept IDs, strings for non-numeric keys)
+ */
+export const getActiveColumns = () => {
+    const activeColumns = uiState.getActiveColumns();
+    if (!activeColumns) {
+        return defaultColumns;
+    }
+    const normalized = normalizeColumnArray(activeColumns);
+    // Ensure we always return an array (normalizeColumnArray might return undefined for non-arrays)
+    return Array.isArray(normalized) ? normalized : defaultColumns;
+};
 
 const renderSearchBubbles = () => {
     let template = `<div class="row">
@@ -114,6 +156,12 @@ export  const renderParticipantSearchResults = (data, source) => {
         addEventSiteFilter();
     }
 }
+
+export const waitForActiveColumnsUpdate = () => lastActiveColumnsUpdatePromise;
+
+export const resetActiveColumnsUpdateTracker = () => {
+    lastActiveColumnsUpdatePromise = Promise.resolve();
+};
 
 export const renderFilters = () => {
     const metadata = searchState.getCachedMetadata();
@@ -304,7 +352,7 @@ export const renderTablePage = (data, type) => {
     mainContent.innerHTML = renderTable(data, type);
     
     renderParticipantSearchResults(data, type);
-    activeColumns(data);
+    setupActiveColumns(data);
     if (type !== 'participantLookup') {
         renderFilters();
     }
@@ -346,7 +394,7 @@ export const reRenderMainTable = async () => {
                 direction: paginationState.direction || '',
                 cursorHistory: paginationState.cursorHistory || []
             });
-            searchState.setSearchResults(searchMetadata, data);
+            await searchState.setSearchResults(searchMetadata, data);
 
             renderTablePage(data, type);
 
@@ -418,15 +466,14 @@ const paginationTemplate = () => {
  
 /**
  * Fields from tableHeaderMap are always included in the table.
- * Selected bubbles are added to 'importantColumns' as they're selected.
- * Build the table headers from the importantColumns, checking tableHeaderMap and searchBubbleMap for the column names.
+ * Selected bubbles update uiState.activeColumns.
+ * Build the table headers from the active columns (from state or defaults), checking tableHeaderMap and searchBubbleMap for the column names.
  * @returns {string} - HTML string for the table headers
  */
 
 const buildSearchResultsTableHeader = () => {
-    const headerStringArray = importantColumns.map((columnKey) => {
-        if (!isNaN(columnKey)) columnKey = parseInt(columnKey);
-
+    const activeColumns = getActiveColumns();
+    const headerStringArray = activeColumns.map((columnKey) => {
         const columnName = tableHeaderMap.get(columnKey) ?? searchBubbleMap.get(columnKey) ?? columnKey;
         return `<th class="sticky-row">${columnName}</th>`;
     });
@@ -443,11 +490,12 @@ const buildTableTemplate = (data) => {
     let template = buildSearchResultsTableHeader();
     template += '<tbody>';
 
+    const activeColumns = getActiveColumns();
     data.forEach(participant => {
         let rowHtml = `<tr><td><button class="btn btn-primary select-participant" data-token="${participant.token}">Select</button></td>`;
 
-        // importantColumns are the columns to display
-        importantColumns.forEach(columnKey => {
+        // activeColumns (from state or defaults) are the columns to display
+        activeColumns.forEach(columnKey => {
             const rawValue = participant[columnKey];
             const cellContent = participantConceptIDToTextMapping(rawValue, columnKey, participant);
             // Append the table cell
@@ -515,30 +563,46 @@ export const filterBySiteKey = (data, siteAbbr) => {
     return data.filter(participant => participant[fieldMapping.healthcareProvider] === siteCode);
 }
 
-export const activeColumns = (data) => {
+export const setupActiveColumns = (data) => {
     let btns = document.getElementsByName('column-filter');
+    const currentColumns = getActiveColumns();
+    
     Array.from(btns).forEach(btn => {
-        let value = btn.dataset.column;
-        if(importantColumns.indexOf(value) !== -1) {
+        const value = btn.dataset.column;
+        // Normalize the value (convert numeric strings to numbers), then check if it's active.
+        const normalizedValue = normalizeColumnValue(value);
+        if (currentColumns.includes(normalizedValue)) {
             btn.classList.add('filter-active');
         }
+        
         btn.addEventListener('click', async (e) => {
             e.stopPropagation()
-            if(!btn.classList.contains('filter-active')){
+
+            // Get fresh columns from state
+            const columns = getActiveColumns();
+            let updatedColumns = [];
+            
+            if (!btn.classList.contains('filter-active')) {
                 btn.classList.add('filter-active');
-                importantColumns.push(value);
-                renderParticipantSearchResults(data, 'bubbleFilters');
-            }
-            else{
+                updatedColumns = [...columns, normalizedValue];
+
+            } else {
                 btn.classList.remove('filter-active');
-                importantColumns.splice(importantColumns.indexOf(value), 1);
-                renderParticipantSearchResults(data, 'bubbleFilters');
+                updatedColumns = columns.filter(col => col !== normalizedValue);
             }
-            document.getElementById('currentPageNumber').innerHTML = `&nbsp;Page: 1&nbsp;`
-            document.getElementById('nextLink').setAttribute('data-nextpage', 1);
-            const metadata = searchState.getCachedMetadata();
-            if (metadata?.startDateFilter) document.getElementById('startDate').value = metadata.startDateFilter;
-            if (metadata?.endDateFilter) document.getElementById('endDate').value = metadata.endDateFilter;
+
+            lastActiveColumnsUpdatePromise = (async () => {
+                await uiState.updateActiveColumns(updatedColumns);
+                renderParticipantSearchResults(data, 'bubbleFilters');
+                
+                document.getElementById('currentPageNumber').innerHTML = `&nbsp;Page: 1&nbsp;`
+                document.getElementById('nextLink').setAttribute('data-nextpage', 1);
+                const metadata = searchState.getCachedMetadata();
+                if (metadata?.startDateFilter) document.getElementById('startDate').value = metadata.startDateFilter;
+                if (metadata?.endDateFilter) document.getElementById('endDate').value = metadata.endDateFilter;
+            })();
+            
+            await lastActiveColumnsUpdatePromise;
         })
     });
 }

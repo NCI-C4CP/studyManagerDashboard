@@ -292,7 +292,7 @@ const clickHandler = async (selectedOptions) => {
                 const query = `token=${selectedOptions.token}`;
                 const reloadedParticipant = await findParticipant(query);
                 reloadVerificationToolPage(reloadedParticipant.data[0], 'Correction(s) updated.', 'success');
-                participantState.setParticipant(reloadedParticipant.data[0]);
+                await participantState.setParticipant(reloadedParticipant.data[0]);
             }
             else { 
                 triggerNotificationBanner('Error: No corrections were made.', 'warning')

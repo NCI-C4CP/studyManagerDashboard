@@ -1,5 +1,5 @@
 import { updateNavBar } from './navigationBar.js';
-import { renderTable, filterBySiteKey, renderParticipantSearchResults, activeColumns, renderTablePage } from './participantCommons.js';
+import { renderTable, filterBySiteKey, renderParticipantSearchResults, renderTablePage } from './participantCommons.js';
 import { getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls, escapeHTML, renderSiteDropdown } from './utils.js';
 import { participantState, searchState } from './stateManager.js';
 import { nameToKeyObj } from './idsToName.js';
@@ -226,7 +226,7 @@ export const performSearch = async (query, siteAbbr, failedElem, cacheMetadata =
 
         // Cache search results and metadata
         if (cacheMetadata) {
-            searchState.setSearchResults(cacheMetadata, siteFilteredData);
+            await searchState.setSearchResults(cacheMetadata, siteFilteredData);
         }
 
         renderTablePage(siteFilteredData, 'participantLookup');

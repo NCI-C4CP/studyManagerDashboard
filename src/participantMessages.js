@@ -4,11 +4,6 @@ import fieldMapping from './fieldToConceptIdMapping.js';
 import { baseAPI, humanReadableFromISO, getIdToken } from './utils.js';
 
 
-const headerImportantColumns = [
-    { field: fieldMapping.fName },
-    { field: fieldMapping.lName },
-];
-
 export const renderParticipantMessages = async (participant) => {
     updateNavBar('participantMessageBtn');
     

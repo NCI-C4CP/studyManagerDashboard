@@ -153,7 +153,7 @@ const handlePaymentRoundSelect = (participant) => {
                     const response = await findParticipant(query);
                     hideAnimation();
                     const participantData = response.data[0];
-                    participantState.setParticipant(participantData);
+                    await participantState.setParticipant(participantData);
 
                     const isNORCPaymentEligible = participantData?.[paymentRound]?.[baselinePayment]?.[norcPaymentEligibility] === no;
                     const isIncentiveEligible = participantData?.[paymentRound]?.[baselinePayment]?.[eligiblePayment] === no;
@@ -310,7 +310,7 @@ const handleConfirmClick = async (participant) => {
 
             if (updateResponse.code === 200) { 
                 triggerNotificationBanner("Participant incentive eligibility status updated successfully!", "success" ,14000);
-                participantState.setParticipant(currentParticipantData);
+                await participantState.setParticipant(currentParticipantData);
                 document.getElementById('incentiveStatusText').textContent = 'Incentive Eligibility Status: Eligible';
                 document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
                 document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${formatUTCDate(currentParticipantData?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds

@@ -828,8 +828,7 @@ export const reloadParticipantData = async (token) => {
         if (response.code === 200 && response.data && response.data[0]) {
             const participant = response.data[0];
             
-            participantState.setParticipant(participant);
-            renderParticipantDetails(participant);
+            await renderParticipantDetails(participant);
             
         } else {
             console.error('Failed to reload participant data:', response);

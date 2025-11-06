@@ -589,7 +589,7 @@ const resetClickHandlers = async (participantUid) => {
             const json = await postResetUserData(participantUid);
             closeModal();
             if(json.code === 200) {
-                refreshParticipantAfterReset(json.data.data);
+                await refreshParticipantAfterReset(json.data.data);
 
             } else if (json.code === 404) {
                 participantRefreshError('Unable to find participant.');
@@ -655,7 +655,7 @@ const postResetUserData = async (uid) => {
 }
 
 const refreshParticipantAfterReset = async (participant) => {
-    participantState.setParticipant(participant);
+    await participantState.setParticipant(participant);
     reportsState.clearReports();
 
     window.location.hash = '#participantSummary';
@@ -666,4 +666,3 @@ const participantRefreshError = async (errorMsg) => {
     hideAnimation();
     triggerNotificationBanner(`Error resetting participant: ${errorMsg}`, 'danger');
 }
-
