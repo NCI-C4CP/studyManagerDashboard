@@ -867,8 +867,8 @@ export const resetChanges = (participant) => {
 
 /**
  * Handle the listeners for the login update forms
- * for login updates (email or phone), switch package and changedOption are generated from the form
- * for login removal, switch package and changedOption are generated from the participant object
+ * for login updates (email or phone), authUpdateObj and changedOption are generated from the form
+ * for login removal, authUpdateObj and changedOption are generated from the participant object
  */
 export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail, participantAuthenticationPhone, participantToken, participantUid) => {
     const createListener = (loginType) => {
@@ -898,9 +898,9 @@ export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail,
             if (formResponse) {
                 formResponse.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const { switchPackage, changedOption } = getUpdatedAuthenticationFormValues(participantAuthenticationEmail, participantAuthenticationPhone);
-                    if (switchPackage && changedOption) {
-                        await processParticipantLoginMethod(participantAuthenticationEmail, switchPackage, changedOption, 'update');
+                    const { authUpdateObj, changedOption } = getUpdatedAuthenticationFormValues(participantAuthenticationEmail, participantAuthenticationPhone);
+                    if (authUpdateObj && changedOption) {
+                        await processParticipantLoginMethod(participantAuthenticationEmail, authUpdateObj, changedOption, 'update');
                     }
                 });
             }
@@ -988,7 +988,7 @@ const capitalizeFirstLetter = (string) => {
 };
 
 const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, participantAuthenticationPhone) => {
-    const switchPackage = {};
+    const authUpdateObj = {};
     const changedOption = {};
     const phoneField = document.getElementById('newPhone');
     const emailField = document.getElementById('newEmail');
@@ -1000,8 +1000,8 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
         let cleanedPhoneNumber = phoneField.value.toString();
         if (cleanedPhoneNumber.startsWith('+1')) cleanedPhoneNumber = cleanedPhoneNumber.substring(2);
         cleanedPhoneNumber = cleanedPhoneNumber.replace(/\D/g, '').trim();
-        switchPackage['phone'] = cleanedPhoneNumber;
-        switchPackage['flag'] = 'updatePhone';
+        authUpdateObj['phone'] = cleanedPhoneNumber;
+        authUpdateObj['flag'] = 'updatePhone';
         changedOption[fieldMapping.signInMechanism] = 'phone';
         changedOption[fieldMapping.accountPhone] = `+1`+ cleanedPhoneNumber;
     } else if (emailField &&  emailField.value === document.getElementById('confirmEmail').value) {
@@ -1009,8 +1009,8 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
             alert('Invalid email format. Please enter a valid email address in the format: abc@example.com');
             return {}, {};
         }
-        switchPackage['email'] = emailField.value;
-        switchPackage['flag'] = 'updateEmail';
+        authUpdateObj['email'] = emailField.value;
+        authUpdateObj['flag'] = 'updateEmail';
         changedOption[fieldMapping.signInMechanism] = 'password';
         changedOption[fieldMapping.accountEmail] = emailField.value;
     } else {
@@ -1022,10 +1022,10 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
         changedOption[fieldMapping.signInMechanism] = 'passwordAndPhone';
     }
 
-    return { switchPackage, changedOption };
+    return { authUpdateObj, changedOption };
 }
 
-const getLoginRemovalSwitchPackage = (processType, participantAuthenticationEmail, participantUid) => {
+const getLoginRemovalAuthData = (processType, participantAuthenticationEmail, participantUid) => {
     const removalAuthData = {};
     const removalChangedData = {};
     if (processType === 'removeEmail') {
@@ -1047,8 +1047,8 @@ const getLoginRemovalSwitchPackage = (processType, participantAuthenticationEmai
  * Process the participant's login method
  * Possibilities include: update email, update phone, remove email, remove phone
  * Removal of one auth method is only possible if the participant has both an email and phone login
- * For update operations: Switch package is populated from the form and passed in
- * For removal operations: Switch package is populated inside this function based on current login information
+ * For update operations: authUpdateObj is populated from the form and passed in
+ * For removal operations: authUpdateObj is populated inside this function based on current login information
  * Post updated login data to Firebase Auth. On success, also post updated login data to Firestore
  * @param {string} participantAuthenticationEmail - the participant's current email login 
  * @param {object} authUpdateObj - the data object sent to firebaseAuth to update the participant's login method
@@ -1070,7 +1070,7 @@ const processParticipantLoginMethod = async (participantAuthenticationEmail, aut
         }
         
         // Get the removal-specific data and merge it with existing objects
-        const { removalAuthData, removalChangedData } = getLoginRemovalSwitchPackage(processType, participantAuthenticationEmail, participantUid);
+        const { removalAuthData, removalChangedData } = getLoginRemovalAuthData(processType, participantAuthenticationEmail, participantUid);
         
         // Merge removal data with existing objects instead of overwriting
         Object.assign(authUpdateObj, removalAuthData);
@@ -1126,7 +1126,7 @@ const processParticipantLoginMethod = async (participantAuthenticationEmail, aut
                     console.error('Failed to update participant Firestore profile');
 
                 } else {
-                    await updateUIOnAuthResponse(authUpdateObj, changedOption, responseJSON, response.status);
+                    await updateUIOnAuthResponse(changedOption, responseJSON, response.status);
                 }
 
             } else {
@@ -1186,7 +1186,7 @@ const postLoginData = async (url = '', data = {}, bearerToken) => {
     }
 }
 
-const updateUIOnAuthResponse = async (switchPackage, changedOption, responseData, status) => {
+const updateUIOnAuthResponse = async (changedOption, responseData, status) => {
     hideAnimation();
 
     if (status === 200) {
