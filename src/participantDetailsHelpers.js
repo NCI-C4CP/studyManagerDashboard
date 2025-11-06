@@ -1,7 +1,7 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantDetails } from './participantDetails.js';
 import { findParticipant } from './participantLookup.js';
-import { appState, participantState, userSession, markUnsaved, clearUnsaved } from './stateManager.js';
+import { appState, participantState, roleState, userSession, markUnsaved, clearUnsaved } from './stateManager.js';
 import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, escapeHTML } from './utils.js';
 
 export const allStates = {
@@ -322,8 +322,7 @@ export const getImportantRows = (participant, changedOption) => {
     const isCellPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.cellPhone);
     const isHomePhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.homePhone);
     const isOtherPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.otherPhone);
-    const coordinatingCenter = localStorage.getItem('coordinatingCenter');
-    const helpDesk = localStorage.getItem('helpDesk');
+    const { coordinatingCenter, helpDesk } = roleState.getRoleFlags();
 
     // Participant Data Rows
     const participantDataRows = [ 
@@ -705,7 +704,7 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: fieldMapping.preferredLanguage,
             label: 'Preferred Language',
-            editable: (helpDesk === 'true' || coordinatingCenter === 'true') && isEditable,
+            editable: (helpDesk || coordinatingCenter) && isEditable,
             display: true,
             validationType: 'none',
             isRequired: false
