@@ -870,7 +870,7 @@ export const resetChanges = (participant) => {
  * for login updates (email or phone), authUpdateObj and changedOption are generated from the form
  * for login removal, authUpdateObj and changedOption are generated from the participant object
  */
-export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail, participantAuthenticationPhone, participantToken, participantUid) => {
+export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail, participantAuthenticationPhone) => {
     const createListener = (loginType) => {
         const typeName = capitalizeFirstLetter(loginType);
         return () => {
@@ -1077,10 +1077,10 @@ const processParticipantLoginMethod = async (participantAuthenticationEmail, aut
         Object.assign(changedOption, removalChangedData);
     }
 
-    const confirmation = confirm('Are you sure want to continue with this update?');
+    const confirmation = confirm('Are you sure you want to continue with this update?');
     if (confirmation) {
         try {
-            showAnimation()
+            showAnimation();
             const isParticipantConsented = participant[fieldMapping.consentFlag] === fieldMapping.yes;
             if (isParticipantConsented) {
                 if (primaryPhoneTypes.some(phoneKey => phoneKey in changedOption)) {
@@ -1104,9 +1104,6 @@ const processParticipantLoginMethod = async (participantAuthenticationEmail, aut
                 }
             }
 
-            const url = `${baseAPI}/dashboard?api=updateUserAuthentication`;
-            const signinMechanismPayload = { "data": authUpdateObj };
-            
             // Validate required fields
             if (!authUpdateObj.uid) {
                 throw new Error('Missing uid in auth update payload');
@@ -1114,6 +1111,9 @@ const processParticipantLoginMethod = async (participantAuthenticationEmail, aut
             if (!authUpdateObj.flag) {
                 throw new Error('Missing flag in auth update payload');
             }
+
+            const url = `${baseAPI}/dashboard?api=updateUserAuthentication`;
+            const signinMechanismPayload = { "data": authUpdateObj };
             
             const idToken = await getIdToken();
             const response = await postLoginData(url, signinMechanismPayload, idToken);
@@ -1858,8 +1858,7 @@ const normalizeNameForQuery = (name) => {
 };
 
 /**
- * Build a query array from an effective snapshot of fields
- * Values come from changed (if provided) otherwise from participant
+ * Build a query array from: `changed` (if provided) otherwise from `participant`
  * Empty strings and falsy values are skipped; uniqueness enforced via Set
  */
 const buildQueryArray = (participant, changed, types, normalizeFn, filterFn) => {
@@ -2078,7 +2077,6 @@ const prepareUserHistoryData = (data) => {
     return data;
 }
 
-// TODO: temp pull out? Need to handle this?
 const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
     const userHistoryMap = {};
     const keys = [
