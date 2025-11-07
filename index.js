@@ -17,7 +17,7 @@ import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
 import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, escapeHTML, renderSiteDropdown, triggerNotificationBanner, showConfirmModal, showAlertModal } from './src/utils.js';
-import { appState, clearUnsaved, initializeAppState, participantState, reportsState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, clearSession } from './src/stateManager.js';
+import { appState, clearUnsaved, initializeAppState, participantState, reportsState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, signOutAndClearSession } from './src/stateManager.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
 import { firebaseConfig as devFirebaseConfig } from "./config/dev/config.js";
@@ -283,7 +283,7 @@ const router = async () => {
         else if (route === '#notifications/showDraftSchemas') return showDraftSchemas();
         else if (route === '#requestAKitConditions') return renderRequestAKitConditions();
         else if (route === '#ehrUpload') return renderEhrUploadPage();
-        else if (route === '#logout') return clearSession();
+        else if (route === '#logout') return signOutAndClearSession();
         else if (route !== '#home' && route !== '#') {
             console.error('Unhandled route. Going to home page. Route:', route);
             window.location.hash = '#home';
@@ -384,7 +384,7 @@ const renderDashboard = async () => {
             await renderCharts(idToken);
         }
         if (isAuthorized.code === 401) {
-            clearSession();
+            signOutAndClearSession();
         }
     } else {
         hideAnimation();
@@ -1149,7 +1149,7 @@ const renderParticipants = async (type) => {
         const response = await getParticipants();
 
         if (response.code === 401) {
-            clearSession();
+            signOutAndClearSession();
             triggerNotificationBanner(
                 'Not authorized. Please log in again.',
                 'danger',
@@ -1206,7 +1206,7 @@ const activityCheckController = () => {
         time = setTimeout(() => {
             const resposeTimeout = setTimeout(() => {
                 // log out user if they don't respond to warning after 5 minutes.
-                clearSession();
+                signOutAndClearSession();
             }, 300000)
             // Show warning after 20 minutes of no activity.
             const button = document.createElement('button');
@@ -1226,7 +1226,7 @@ const activityCheckController = () => {
             document.body.removeChild(button);
             Array.from(document.getElementsByClassName('log-out-user')).forEach(e => {
                 e.addEventListener('click', () => {
-                    clearSession();
+                    signOutAndClearSession();
                 })
             })
             Array.from(document.getElementsByClassName('extend-user-session')).forEach(e => {
