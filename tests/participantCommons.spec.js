@@ -1,9 +1,15 @@
 import { expect } from 'chai';
-import { renderTable, renderParticipantSearchResults, renderTablePage, setupActiveColumns, defaultColumns, filterBySiteKey, getActiveColumns, waitForActiveColumnsUpdate } from '../src/participantCommons.js';
+import { renderTable, renderParticipantSearchResults, renderTablePage, setupActiveColumns, filterBySiteKey, getActiveColumns, waitForActiveColumnsUpdate, normalizeColumnValue } from '../src/participantCommons.js';
 import { searchState, buildPredefinedSearchMetadata, uiState } from '../src/stateManager.js';
-import { searchBubbleMap, tableHeaderMap } from '../src/idsToName.js';
+import { bubbleCategories, bubbleFieldMap, defaultColumnKeys } from '../src/participantColumnConfig.js';
 import { setupTestEnvironment, teardownTestEnvironment, installFirebaseStub, createMockParticipant, createDOMFixture, cleanupDOMFixture, clearAllState } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
+const getDefaultColumnsWithBubbles = () =>
+  defaultColumnKeys.filter((columnKey) => bubbleFieldMap.has(columnKey));
+
+const formatBadgeCount = (count) => (count === 0 ? 'None' : `${count} selected`);
+const getFieldKeyValue = (field) =>
+  typeof field === 'object' && field !== null ? field.key : field;
 
 describe('participantCommons - Bubble Filter Functionality', () => {
   let firebaseStub;
@@ -26,22 +32,76 @@ describe('participantCommons - Bubble Filter Functionality', () => {
   });
 
   describe('renderTable - Bubble Filter Rendering', () => {
-    it('should render bubble filters from searchBubbleMap', () => {
+    it('should render grouped bubble filters with dividers and default category bubbles', () => {
       const mockData = [createMockParticipant('test-1')];
       const html = renderTable(mockData, 'participantLookup');
 
-      expect(html).to.include('columnFilter');
-      expect(html).to.include('column-filter');
+      expect(html).to.include('columnFilterDiv');
 
       // Create a temporary container to parse and check bubbles
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;
-      const bubbleContainer = tempDiv.querySelector('#columnFilter');
+      const bubbleContainer = tempDiv.querySelector('#columnFilterDiv');
       expect(bubbleContainer).to.not.be.null;
+
+      const defaultCategory = bubbleContainer.querySelector('[data-category-key="default-columns"]');
+      expect(defaultCategory).to.not.be.null;
+      const defaultButtons = defaultCategory.querySelectorAll('button[name="column-filter"]');
+      const defaultColumnsWithButtons = getDefaultColumnsWithBubbles();
+      expect(defaultButtons.length).to.equal(defaultColumnsWithButtons.length);
+      expect(defaultCategory.querySelector('summary span').textContent).to.include('Default Columns');
+      expect(defaultCategory.hasAttribute('open')).to.be.false;
+      const defaultBody = defaultCategory.querySelector('.bubble-category-body');
+      expect(defaultBody).to.not.be.null;
+      expect(defaultBody.getAttribute('style')).to.include('margin-top');
+
+      const nonDefaultCategories = bubbleContainer.querySelectorAll(
+        '[data-category-key]:not([data-category-key="default-columns"])'
+      );
+      const expectedCategoryCount = bubbleCategories.length - 1;
+      expect(nonDefaultCategories.length).to.equal(expectedCategoryCount);
+
+      const allCategories = Array.from(bubbleContainer.querySelectorAll('[data-category-key]'));
+      expect(allCategories.length).to.equal(bubbleCategories.length);
+      const firstCategory = allCategories[0];
+      expect(firstCategory).to.not.be.null;
+      expect(firstCategory.hasAttribute('open')).to.be.true;
+      const lastCategory = allCategories[allCategories.length - 1];
+      expect(lastCategory.getAttribute('data-category-key')).to.equal('default-columns');
+      expect(lastCategory.hasAttribute('open')).to.be.false;
+
+      bubbleCategories.forEach((category) => {
+        const categorySummary = bubbleContainer.querySelector(
+          `[data-category-key="${category.key}"] summary`
+        );
+        expect(categorySummary, `summary for ${category.key}`).to.not.be.null;
+        expect(categorySummary.textContent).to.include(category.label);
+      });
 
       const bubbles = bubbleContainer.querySelectorAll('button[name="column-filter"]');
       expect(bubbles.length).to.be.greaterThan(0);
-      expect(bubbles.length).to.equal(searchBubbleMap.size);
+      expect(bubbles.length).to.be.at.least(bubbleFieldMap.size);
+    });
+
+    it('should render default column chips with matching labels and selected state', () => {
+      const mockData = [createMockParticipant('test-1')];
+      const html = renderTable(mockData, 'participantLookup');
+
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      const defaultCategory = tempDiv.querySelector('[data-category-key="default-columns"]');
+      expect(defaultCategory).to.not.be.null;
+
+      const buttons = Array.from(
+        defaultCategory.querySelectorAll('button[name="column-filter"]')
+      );
+      expect(buttons.length).to.equal(getDefaultColumnsWithBubbles().length);
+
+      buttons.forEach((button) => {
+        const key = normalizeColumnValue(button.dataset.column);
+        const expectedLabel = bubbleFieldMap.get(key);
+        expect(button.textContent.trim()).to.equal(expectedLabel);
+      });
     });
 
     it('should render bubbles with correct data-column attributes', () => {
@@ -55,14 +115,25 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       bubbles.forEach((bubble) => {
         expect(bubble.hasAttribute('data-column')).to.be.true;
         const columnKey = bubble.getAttribute('data-column');
-        // searchBubbleMap has both string and numeric keys, so check both
-        const hasStringKey = searchBubbleMap.has(columnKey);
-        const hasNumericKey = !isNaN(columnKey) && searchBubbleMap.has(parseInt(columnKey));
+        // bubbleFieldMap has both string and numeric keys, so check both
+        const hasStringKey = bubbleFieldMap.has(columnKey);
+        const hasNumericKey = !isNaN(columnKey) && bubbleFieldMap.has(parseInt(columnKey));
         expect(hasStringKey || hasNumericKey).to.be.true;
       });
     });
 
-    it('should render bubbles with correct labels from searchBubbleMap', () => {
+    it('should include a reset to default fields button', () => {
+      const mockParticipant = [createMockParticipant('test-1')];
+      const html = renderTable(mockParticipant, 'participantLookup');
+
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      const resetButton = tempDiv.querySelector('#resetToDefaultFieldsButton');
+      expect(resetButton).to.not.be.null;
+      expect(resetButton.textContent.trim()).to.equal('Reset To Default Fields');
+    });
+
+    it('should render bubbles with correct labels from bubbleFieldMap', () => {
       const mockData = [createMockParticipant('test-1')];
       const html = renderTable(mockData, 'participantLookup');
 
@@ -73,12 +144,30 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       bubbles.forEach((bubble) => {
         const columnKey = bubble.getAttribute('data-column');
         // Try string key first, then numeric key
-        let expectedLabel = searchBubbleMap.get(columnKey);
+        let expectedLabel = bubbleFieldMap.get(columnKey);
         if (!expectedLabel && !isNaN(columnKey)) {
-          expectedLabel = searchBubbleMap.get(parseInt(columnKey));
+          expectedLabel = bubbleFieldMap.get(parseInt(columnKey));
         }
         expect(expectedLabel).to.not.be.undefined;
         expect(bubble.textContent.trim()).to.equal(expectedLabel);
+      });
+    });
+
+    it('should use category-provided labels for each bubble', () => {
+      const mockData = [createMockParticipant('test-1')];
+      const html = renderTable(mockData, 'participantLookup');
+
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+
+      bubbleCategories.forEach((category) => {
+        const categoryContainer = tempDiv.querySelector(`[data-category-key="${category.key}"]`);
+        expect(categoryContainer, `missing container for ${category.key}`).to.not.be.null;
+
+        const buttons = categoryContainer.querySelectorAll('button[name="column-filter"]');
+        const expectedLabels = category.fields.map((field) => field.label);
+        const actualLabels = Array.from(buttons).map((btn) => btn.textContent.trim());
+        expect(actualLabels).to.deep.equal(expectedLabels);
       });
     });
 
@@ -108,6 +197,19 @@ describe('participantCommons - Bubble Filter Functionality', () => {
 
   describe('activeColumns - Column Visibility Control', () => {
     let mockData;
+    const ensureColumnState = async (columnKey, shouldBeActive) => {
+      const normalizedKey = normalizeColumnValue(columnKey);
+      const activeCols = getActiveColumns();
+      if (activeCols.includes(normalizedKey) === shouldBeActive) {
+        return;
+      }
+      const button = Array.from(document.getElementsByName('column-filter')).find(
+        (btn) => btn.dataset.column === columnKey
+      );
+      expect(button, `button for ${columnKey}`).to.not.be.null;
+      button.click();
+      await waitForActiveColumnsUpdate();
+    };
 
     beforeEach(() => {
       mockData = [
@@ -134,13 +236,13 @@ describe('participantCommons - Bubble Filter Functionality', () => {
 
       const bubbles = document.getElementsByName('column-filter');
       
-      // Filter defaultColumns to only include those that have bubbles (are in searchBubbleMap)
-      // This ensures the test stays in sync with actual defaultColumns and won't drift over time
-      const defaultColumnsWithBubbles = defaultColumns.filter((columnKey) => {
-        // Check if columnKey exists in searchBubbleMap (handles both string and number keys)
-        return searchBubbleMap.has(columnKey) || 
-               (typeof columnKey === 'number' && searchBubbleMap.has(columnKey.toString())) ||
-               (typeof columnKey === 'string' && !isNaN(columnKey) && searchBubbleMap.has(parseInt(columnKey, 10)));
+      // Filter default columns to only include those that have bubbles (are in bubbleFieldMap)
+      const defaultColumnsWithBubbles = defaultColumnKeys.filter((columnKey) => {
+        return (
+          bubbleFieldMap.has(columnKey) ||
+          (typeof columnKey === 'number' && bubbleFieldMap.has(columnKey.toString())) ||
+          (typeof columnKey === 'string' && !isNaN(columnKey) && bubbleFieldMap.has(parseInt(columnKey, 10)))
+        );
       });
 
       defaultColumnsWithBubbles.forEach((columnKey) => {
@@ -183,12 +285,122 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       expect(activeColsAfter.length).to.equal(initialColumnCount + 1);
     });
 
+    it('should display accurate category badge counts after setup', () => {
+      mainContent.innerHTML = renderTable(mockData, 'participantLookup');
+      renderParticipantSearchResults(mockData, 'participantLookup');
+      setupActiveColumns(mockData);
+
+      const activeCols = getActiveColumns();
+
+      bubbleCategories.forEach((category) => {
+        const badge = document.querySelector(`[data-category-count="${category.key}"]`);
+        expect(badge, `badge for ${category.key}`).to.not.be.null;
+        const expectedCount = category.fields.reduce((count, field) => {
+          const normalizedKey = normalizeColumnValue(getFieldKeyValue(field));
+          return activeCols.includes(normalizedKey) ? count + 1 : count;
+        }, 0);
+        expect(badge.textContent.trim()).to.equal(formatBadgeCount(expectedCount));
+      });
+
+      const defaultBadge = document.querySelector('[data-category-count="default-columns"]');
+      if (defaultBadge) {
+        const expectedCount = getDefaultColumnsWithBubbles().reduce((count, fieldKey) => {
+          const normalizedKey = normalizeColumnValue(fieldKey);
+          return activeCols.includes(normalizedKey) ? count + 1 : count;
+        }, 0);
+        const activeDefaultButtons = document.querySelectorAll(
+          '[data-category-key="default-columns"] button.filter-active'
+        ).length;
+        expect(
+          defaultBadge.textContent.trim(),
+          `default category active buttons: ${activeDefaultButtons}`
+        ).to.equal(formatBadgeCount(expectedCount));
+      }
+    });
+
+    it('should update category badge counts when toggling filters', async () => {
+      mainContent.innerHTML = renderTable(mockData, 'participantLookup');
+      renderParticipantSearchResults(mockData, 'participantLookup');
+      setupActiveColumns(mockData);
+
+      const identifiersBadge = document.querySelector('[data-category-count="identifiers"]');
+      expect(identifiersBadge).to.not.be.null;
+
+      const identifiersCategory = bubbleCategories.find((category) => category.key === 'identifiers');
+      expect(identifiersCategory).to.not.be.undefined;
+
+      const getBadgeText = () =>
+        document.querySelector('[data-category-count="identifiers"]').textContent.trim();
+
+      const getExpectedBadgeText = () => {
+        const activeCols = getActiveColumns();
+        const expectedCount = identifiersCategory.fields.reduce((count, field) => {
+          const normalizedKey = normalizeColumnValue(getFieldKeyValue(field));
+          return activeCols.includes(normalizedKey) ? count + 1 : count;
+        }, 0);
+        return formatBadgeCount(expectedCount);
+      };
+
+      const assertBadgeMatchesState = () => {
+        expect(getBadgeText()).to.equal(getExpectedBadgeText());
+      };
+
+      const tokenBubble = Array.from(document.getElementsByName('column-filter')).find(
+        (btn) => btn.dataset.column === 'token'
+      );
+      expect(tokenBubble).to.not.be.null;
+
+      assertBadgeMatchesState();
+
+      tokenBubble.click();
+      await waitForActiveColumnsUpdate();
+      assertBadgeMatchesState();
+
+      tokenBubble.click();
+      await waitForActiveColumnsUpdate();
+      assertBadgeMatchesState();
+    });
+
+    it('should reset columns to defaults and collapse categories via the reset button', async () => {
+      mainContent.innerHTML = renderTable(mockData, 'participantLookup');
+      renderParticipantSearchResults(mockData, 'participantLookup');
+      setupActiveColumns(mockData);
+
+      const tokenBubble = Array.from(document.getElementsByName('column-filter')).find(
+        (btn) => btn.dataset.column === 'token'
+      );
+      const connectIdBubble = Array.from(document.getElementsByName('column-filter')).find(
+        (btn) => btn.dataset.column === 'Connect_ID'
+      );
+
+      expect(tokenBubble).to.not.be.null;
+      expect(connectIdBubble).to.not.be.null;
+
+      tokenBubble.click();
+      await waitForActiveColumnsUpdate();
+      connectIdBubble.click();
+      await waitForActiveColumnsUpdate();
+      expect(getActiveColumns()).to.not.deep.equal(defaultColumnKeys);
+
+      const resetToDefaultFieldsButton = document.getElementById('resetToDefaultFieldsButton');
+      expect(resetToDefaultFieldsButton).to.not.be.null;
+      resetToDefaultFieldsButton.click();
+      await waitForActiveColumnsUpdate();
+
+      expect(getActiveColumns()).to.deep.equal(defaultColumnKeys);
+
+      const categories = Array.from(document.querySelectorAll('[data-category-key]'));
+      expect(categories[0].open).to.be.true;
+      categories.slice(1).forEach((el) => expect(el.open).to.be.false);
+    });
+
+
     it('should remove column when active bubble is clicked', async () => {
       mainContent.innerHTML = renderTable(mockData, 'participantLookup');
       renderParticipantSearchResults(mockData, 'participantLookup');
       setupActiveColumns(mockData);
 
-      // Find a default column bubble that's in searchBubbleMap (Connect_ID is a good choice)
+      // Find a default column bubble that's in bubbleFieldMap (Connect_ID is a good choice)
       const connectIdBubble = Array.from(document.getElementsByName('column-filter')).find(
         (btn) => btn.dataset.column === 'Connect_ID'
       );
@@ -242,6 +454,9 @@ describe('participantCommons - Bubble Filter Functionality', () => {
         (btn) => btn.dataset.column === 'pin'
       );
 
+      await ensureColumnState('token', false);
+      await ensureColumnState('pin', false);
+
       const initialCount = getActiveColumns().length;
 
       // Add token
@@ -267,6 +482,40 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       expect(activeCols.length).to.equal(initialCount + 1);
     });
 
+    it('should keep duplicate bubbles (default + category) in sync', async () => {
+      mainContent.innerHTML = renderTable(mockData, 'participantLookup');
+      renderParticipantSearchResults(mockData, 'participantLookup');
+      setupActiveColumns(mockData);
+
+      const defaultConnectButton = document.querySelector(
+        '[data-category-key="default-columns"] button[data-column="Connect_ID"]'
+      );
+      const identifierConnectButton = document.querySelector(
+        '[data-category-key="identifiers"] button[data-column="Connect_ID"]'
+      );
+
+      expect(defaultConnectButton).to.not.be.null;
+      expect(identifierConnectButton).to.not.be.null;
+
+      const assertButtonsMatch = (expectedActive) => {
+        expect(defaultConnectButton.classList.contains('filter-active')).to.equal(expectedActive);
+        expect(identifierConnectButton.classList.contains('filter-active')).to.equal(expectedActive);
+      };
+
+      await ensureColumnState('Connect_ID', true);
+      assertButtonsMatch(true);
+
+      defaultConnectButton.click();
+      await waitForActiveColumnsUpdate();
+      assertButtonsMatch(false);
+      expect(getActiveColumns().includes('Connect_ID')).to.be.false;
+
+      identifierConnectButton.click();
+      await waitForActiveColumnsUpdate();
+      assertButtonsMatch(true);
+      expect(getActiveColumns().includes('Connect_ID')).to.be.true;
+    });
+
     it('should update table headers when columns are added/removed', async () => {
       mainContent.innerHTML = renderTable(mockData, 'participantLookup');
       renderParticipantSearchResults(mockData, 'participantLookup');
@@ -290,7 +539,7 @@ describe('participantCommons - Bubble Filter Functionality', () => {
 
       // Check that token header exists
       const tokenHeader = Array.from(headersAfter).find(
-        (th) => th.textContent.trim() === searchBubbleMap.get('token')
+        (th) => th.textContent.trim() === bubbleFieldMap.get('token')
       );
       expect(tokenHeader).to.not.be.null;
     });
@@ -310,7 +559,7 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       renderTablePage(mockData, 'participantLookup');
 
       expect(mainContent.innerHTML).to.include('dataTable');
-      expect(mainContent.innerHTML).to.include('columnFilter');
+      expect(mainContent.innerHTML).to.include('columnFilterDiv');
       expect(mainContent.innerHTML).to.include('back-to-search');
 
       const bubbles = document.getElementsByName('column-filter');
@@ -329,7 +578,7 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       renderTablePage(mockData, 'all');
 
       expect(mainContent.innerHTML).to.include('dataTable');
-      expect(mainContent.innerHTML).to.include('columnFilter');
+      expect(mainContent.innerHTML).to.include('columnFilterDiv');
       expect(mainContent.innerHTML).to.not.include('back-to-search');
 
       const bubbles = document.getElementsByName('column-filter');
@@ -343,13 +592,13 @@ describe('participantCommons - Bubble Filter Functionality', () => {
 
       const bubbles = document.getElementsByName('column-filter');
       
-      // Filter defaultColumns to only include those that have bubbles (are in searchBubbleMap)
-      // This ensures the test stays in sync with actual defaultColumns and won't drift over time
-      const defaultColumnsWithBubbles = defaultColumns.filter((columnKey) => {
-        // Check if columnKey exists in searchBubbleMap (handles both string and number keys)
-        return searchBubbleMap.has(columnKey) || 
-               (typeof columnKey === 'number' && searchBubbleMap.has(columnKey.toString())) ||
-               (typeof columnKey === 'string' && !isNaN(columnKey) && searchBubbleMap.has(parseInt(columnKey, 10)));
+      // Filter default columns to only include those that have bubbles (are in bubbleFieldMap)
+      const defaultColumnsWithBubbles = defaultColumnKeys.filter((columnKey) => {
+        return (
+          bubbleFieldMap.has(columnKey) ||
+          (typeof columnKey === 'number' && bubbleFieldMap.has(columnKey.toString())) ||
+          (typeof columnKey === 'string' && !isNaN(columnKey) && bubbleFieldMap.has(parseInt(columnKey, 10)))
+        );
       });
 
       defaultColumnsWithBubbles.forEach((columnKey) => {
@@ -484,7 +733,7 @@ describe('participantCommons - Bubble Filter Functionality', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle bubbles for columns not in searchBubbleMap', () => {
+    it('should handle bubbles for columns not in bubbleFieldMap', () => {
       const mockData = [createMockParticipant('test-1')];
       mainContent.innerHTML = renderTable(mockData, 'participantLookup');
       renderParticipantSearchResults(mockData, 'participantLookup');
@@ -617,10 +866,10 @@ describe('participantCommons - Bubble Filter Functionality', () => {
     it('should use default columns when no saved state exists', () => {
       renderTablePage(mockData, 'participantLookup');
 
-      // Use imported defaultColumns to ensure test stays in sync with production code
+      // Use defaultColumnKeys to ensure test stays in sync with production code
       const activeCols = getActiveColumns();
-      expect(activeCols.length).to.equal(defaultColumns.length);
-      defaultColumns.forEach((col) => {
+      expect(activeCols.length).to.equal(defaultColumnKeys.length);
+      defaultColumnKeys.forEach((col) => {
         expect(activeCols.includes(col) || activeCols.includes(col.toString())).to.be.true;
       });
     });
@@ -850,7 +1099,7 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       });
     });
 
-    it('should render bubbles with correct labels from searchBubbleMap for concept IDs', async () => {
+    it('should render bubbles with correct labels from bubbleFieldMap for concept IDs', async () => {
       mainContent.innerHTML = renderTable(mockData, 'participantLookup');
 
       // Test numeric concept ID bubbles
