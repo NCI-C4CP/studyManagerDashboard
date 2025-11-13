@@ -186,13 +186,13 @@ const selectNewFiles = (newFiles) => {
   }
 
   let allExtensionSet = new Set(newFileSummary.extensionSet);
-  if (fileState.extension === "" && newFileSummary.extensionSet.size === 1) {
-    fileState.extension = [...newFileSummary.extensionSet][0];
-  } else if (fileState.extension !== "") {
+  if (fileState.extension !== "") {
     allExtensionSet.add(fileState.extension);
   }
 
-  if (allExtensionSet.size > 1) {
+  if (fileState.extension === "" && allExtensionSet.size === 1) {
+    fileState.extension = [...allExtensionSet][0];
+  } else if (allExtensionSet.size > 1) {
     triggerNotificationBanner(`Upload files should be in the same file type, but multiple file types (${[...allExtensionSet].join(", ")}) are selected.`, "warning");
     return;
   }
@@ -359,7 +359,7 @@ const formatBytes = (bytes) => {
   if (bytes === 0) return "0 Bytes";
   const base = 1024;
   const units = ["Bytes", "KB", "MB", "GB"];
-  const idx = Math.floor(Math.log(bytes) / Math.log(base));
+  const idx = Math.min(Math.floor(Math.log(bytes) / Math.log(base)), units.length - 1);
   return (bytes / Math.pow(base, idx)).toFixed(1) + " " + units[idx];
 };
 
