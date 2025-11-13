@@ -2,15 +2,13 @@ import { updateNavBar } from "./navigationBar.js";
 import { getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, baseAPI, escapeHTML } from "./utils.js";
 
 let fileState = {
-  // invalidFileNames: [],
-  fileExtension: "", // ".csv" | ".csv.gz" | ".parquet". Cannot be mixed in one upload.
+  extension: "", // ".csv" | ".csv.gz" | ".parquet". Cannot be mixed in one upload.
   toBeSelectedDuplicate: [],
   selected: [],
   toBeUploadedDuplicate: [],
   toBeUploaded: [],
-  // uploadedFileNames: [],
-  prevDelivery: { name: "", uploadedFileNames: [] },
-  currDelivery: { name: "", uploadedFileNames: [] },
+  prevDelivery: null,
+  currDelivery: null,
 };
 let modalStatus = ""; // "" | "duplicateSelection" | "missingOptionalFiles" | "duplicateUploads"
 const validExtensions = [".csv", ".csv.gz", ".parquet"];
@@ -106,7 +104,7 @@ const setupEhrUploadPage = () => {
                     </div>
                 </form>
                 <div id="uploadedFilesWrapper" style="margin-top: 24px; display: none;">
-                  <h3 style="text-align: center;">Uploaded EHR Files in Today's Delivery</h3>
+                  <h3 id="uploadedFilesTitle" style="text-align: center;">Uploaded EHR Files in Current Delivery</h3>
                   <div id="uploadedFilesBox" style="border: 2px solid #0078d7; padding: 15px; border-radius: 0.5rem; background: #f8faff">
                       <div id="uploadedFileNames"></div>
                   </div>
@@ -164,37 +162,34 @@ const hideWarningModal = () => {
 
 const selectNewFiles = (newFiles) => {
   const fileArray = Array.from(newFiles);
-  const selectedFileCount = fileState.selected.length;
-  const newFilesData = {
-    extensionSet : new Set(),
+  const newFileSummary = {
+    extensionSet: new Set(),
     selected: [],
     toBeSelectedDuplicate: [],
     invalidFileNames: [],
   };
-  // fileState.toBeSelectedDuplicate = [];
-  // fileState.invalidFileNames = [];
 
   for (const file of fileArray) {
     const { isValid, ext } = checkEhrFileName(file.name);
     if (!isValid) {
-      newFilesData.invalidFileNames.push(file.name);
+      newFileSummary.invalidFileNames.push(file.name);
       continue;
     }
 
-    newFilesData.extensionSet.add(ext);
-    const idxInSelectedFiles = fileState.selected.findIndex((selectedFile) => selectedFile.name === file.name);
-    if (idxInSelectedFiles === -1) {
-      newFilesData.selected.push(file);
+    newFileSummary.extensionSet.add(ext);
+    const isFileSelected = fileState.selected.some((selectedFile) => selectedFile.name === file.name);
+    if (isFileSelected) {
+      newFileSummary.toBeSelectedDuplicate.push(file);
     } else {
-      newFilesData.toBeSelectedDuplicate.push(file);
+      newFileSummary.selected.push(file);
     }
   }
 
-  let allExtensionSet = new Set(newFilesData.extensionSet);
-  if (fileState.fileExtension === "" && newFilesData.extensionSet.size === 1) {
-    fileState.fileExtension = [...newFilesData.extensionSet][0];
-  } else if (fileState.fileExtension !== "") {
-    allExtensionSet.add(fileState.fileExtension);
+  let allExtensionSet = new Set(newFileSummary.extensionSet);
+  if (fileState.extension === "" && newFileSummary.extensionSet.size === 1) {
+    fileState.extension = [...newFileSummary.extensionSet][0];
+  } else if (fileState.extension !== "") {
+    allExtensionSet.add(fileState.extension);
   }
 
   if (allExtensionSet.size > 1) {
@@ -202,15 +197,15 @@ const selectNewFiles = (newFiles) => {
     return;
   }
 
-  if (newFilesData.invalidFileNames.length > 0) {
+  if (newFileSummary.invalidFileNames.length > 0) {
     const msg = `The following ${
-      newFilesData.invalidFileNames.length > 1 ? "files don't" : "file doesn't"
+      newFileSummary.invalidFileNames.length > 1 ? "files don't" : "file doesn't"
     } match file naming convention, thus cannot be selected`;
 
-    triggerNotificationBanner(`Please select files with correct naming convention. ${msg}:<br>${newFilesData.invalidFileNames.sort().join("<br>")}`, "warning");
+    triggerNotificationBanner(`Please select files with correct naming convention. ${msg}:<br>${newFileSummary.invalidFileNames.sort().join("<br>")}`, "warning");
   }
 
-  fileState.toBeSelectedDuplicate = newFilesData.toBeSelectedDuplicate;
+  fileState.toBeSelectedDuplicate = newFileSummary.toBeSelectedDuplicate;
   if (fileState.toBeSelectedDuplicate.length > 0) {
     const headingText = "Duplicate Selection";
     let msg = `Below file is already selected. Do you want to replace it with the new file?`;
@@ -222,19 +217,17 @@ const selectNewFiles = (newFiles) => {
     showWarningModal(headingText, msg, fileState.toBeSelectedDuplicate.map((file) => file.name), "duplicateSelection");
   }
 
-  fileState.selected = fileState.selected.concat(newFilesData.selected);
-  if (fileState.selected.length > selectedFileCount) {
-    refreshSelectedFiles();
-  }
+  fileState.selected = fileState.selected.concat(newFileSummary.selected);
+  refreshSelectedFiles();
 };
 
 const refreshSelectedFiles = () => {
   const selectedFileNamesDiv = document.querySelector("#selectedFileNames");
   const uploadBtn = document.querySelector("#uploadBtn");
+  selectedFileNamesDiv.innerHTML = "";
 
   if (fileState.selected.length === 0) {
     uploadBtn.disabled = true;
-    selectedFileNamesDiv.innerHTML = "";
     return;
   }
 
@@ -256,28 +249,36 @@ const refreshSelectedFiles = () => {
         refreshSelectedFiles();
       });
 
-      selectedFileNamesDiv.replaceChildren(...Array.from(div.children));
+      selectedFileNamesDiv.appendChild(div);
     });
 };
 
-const showUploadedFiles = (updatedFileNames) => {
-  if (!updatedFileNames || updatedFileNames.length === 0) return;
+const showUploadedFiles = () => {
+  let titleText = "";
+  let uploadedFileNames = [];
+  if (fileState.currDelivery) {
+    titleText = `Uploaded EHR Files in Current Delivery (${fileState.currDelivery.name})`;
+    uploadedFileNames = fileState.currDelivery.uploadedFileNames || [];
+  } else if (fileState.prevDelivery) {
+    titleText = `Uploaded EHR Files in Previous Delivery (${fileState.prevDelivery.name})`;
+    uploadedFileNames = fileState.prevDelivery.uploadedFileNames || [];
+  }
 
-  updatedFileNames.forEach((filename) => {
-    if (!fileState.uploadedFileNames.includes(filename)) {
-      fileState.uploadedFileNames.push(filename);
-    }
-  });
+  if (uploadedFileNames.length === 0) {
+    document.querySelector("#uploadedFilesWrapper").style.display = "none";
+    return;
+  }
 
   const ul = document.createElement("ul");
   ul.style = "text-align: left; padding-left: 20px;";
-  fileState.uploadedFileNames.sort().forEach((filename) => {
+  uploadedFileNames.sort().forEach((filename) => {
     const li = document.createElement("li");
     li.style = "font-weight: bold;";
     li.textContent = `${filename}`;
     ul.appendChild(li);
   });
 
+  document.querySelector("#uploadedFilesTitle").textContent = titleText;
   document.querySelector("#uploadedFileNames").replaceChildren(ul);
   document.querySelector("#uploadedFilesWrapper").style.display = "";
 };
@@ -286,7 +287,6 @@ const getAndShowUploadedEhrNames = async () => {
   showAnimation();
   const url = `${baseAPI}/dashboard/?api=getUploadedEhrNames`;
   const idToken = await getIdToken();
-  let allFilenames = [];
   try {
     const resp = await fetch(url, {
       method: "GET",
@@ -296,7 +296,20 @@ const getAndShowUploadedEhrNames = async () => {
     });
     const respJson = await resp.json();
     if (respJson.code === 200) {
-      allFilenames = respJson.data.allFilenames || [];
+      const { name, uploadStartedAt, uploadedFileNames } = respJson.data || {};
+      if (name && uploadStartedAt && Array.isArray(uploadedFileNames) && uploadedFileNames.length > 0) {
+        const currDateStr = new Date().toLocaleDateString("en-CA");
+        const uploadStartDateStr = new Date(uploadStartedAt).toLocaleDateString("en-CA");
+        if (uploadStartDateStr < currDateStr) {
+          fileState.prevDelivery = { name, uploadStartedAt, uploadedFileNames };
+        } else if (uploadStartDateStr === currDateStr) {
+          fileState.currDelivery = { name, uploadStartedAt, uploadedFileNames };
+          if (fileState.extension === "" && uploadedFileNames[0].length > 0) {
+            const result = checkEhrFileName(uploadedFileNames[0]);
+            fileState.extension = result.ext;
+          }
+        }
+      }
     } else {
       console.error("Failed to fetch uploaded file names:", respJson.message);
       triggerNotificationBanner("Failed to fetch uploaded file names: " + respJson.message, "danger");
@@ -304,7 +317,7 @@ const getAndShowUploadedEhrNames = async () => {
   } catch (e) {
     triggerNotificationBanner("Error fetching uploaded file names: " + e.message, "danger");
   } finally {
-    showUploadedFiles(allFilenames);
+    showUploadedFiles();
   }
 
   hideAnimation();
@@ -312,18 +325,20 @@ const getAndShowUploadedEhrNames = async () => {
 
 const checkDuplicateUploads = () => {
   fileState = { ...fileState, toBeUploadedDuplicate: [], toBeUploaded: [] };
-  const fileNameSet = new Set();
+  const checkedNameSet = new Set();
+  const uploadedFileNames = fileState.currDelivery?.uploadedFileNames || [];
 
   for (const file of fileState.selected) {
-    if (fileNameSet.has(file.name)) continue;
+    if (checkedNameSet.has(file.name)) continue;
 
-    const idx = fileState.uploadedFileNames.findIndex((uploadedFilename) => uploadedFilename === file.name);
-    if (idx !== -1) {
+    const isDuplicate = uploadedFileNames.some((filename) => filename === file.name);
+    if (isDuplicate) {
       fileState.toBeUploadedDuplicate.push(file);
     } else {
       fileState.toBeUploaded.push(file);
     }
-    fileNameSet.add(file.name);
+
+    checkedNameSet.add(file.name);
   }
 
   if (fileState.toBeUploadedDuplicate.length > 0) {
@@ -351,8 +366,8 @@ const formatBytes = (bytes) => {
 const showUploadStatus = (filename, loaded, total) => {
   const span = document.getElementById(`filename-${filename}`);
   if (span) {
-    span.textContent = `${filename}: ${percent}% (${formatBytes(loaded)}/${formatBytes(total)})`;
     const percent = Math.round((loaded / total) * 100);
+    span.textContent = `${filename}: ${percent}% (${formatBytes(loaded)}/${formatBytes(total)})`;
 
     if (percent === 100) {
       span.style.color = "green";
@@ -394,7 +409,6 @@ const uploadFileWithProgress = (file, signedUrl) => {
   });
 };
 
-
 const uploadEhrUsingSignedUrls = async () => {
   hideWarningModal();
   showAnimation();
@@ -402,6 +416,15 @@ const uploadEhrUsingSignedUrls = async () => {
     filename: file.name,
     contentType: file.type || "application/octet-stream",
   }));
+
+  if (fileState.currDelivery === null) {
+    // Further enhancement: allow user to specify delivery name (YYYY-MM-DD)
+    fileState.currDelivery = {
+      name: new Date().toLocaleDateString("en-CA"),
+      uploadStartedAt: new Date().toISOString(),
+      uploadedFileNames: [],
+    };
+  }
 
   try {
     const idToken = await getIdToken();
@@ -411,7 +434,11 @@ const uploadEhrUsingSignedUrls = async () => {
         "Content-Type": "application/json",
         Authorization: "Bearer " + idToken,
       },
-      body: JSON.stringify({ fileInfoArray }),
+      body: JSON.stringify({
+        fileInfoArray,
+        name: fileState.currDelivery.name,
+        uploadStartedAt: fileState.currDelivery.uploadStartedAt,
+      }),
     });
 
     const respJson = await resp.json();
@@ -453,11 +480,11 @@ const uploadEhrUsingSignedUrls = async () => {
 
     const failureFileNames = failureDataArray.map((data) => data.filename);
     fileState.selected = fileState.selected.filter((file) => failureFileNames.includes(file.name));
-    if (fileState.currBatchName === "") {
-      fileState.currBatchName = new Date().toLocaleDateString("en-CA");
-    }
     refreshSelectedFiles();
-    showUploadedFiles(successFileNames);
+    fileState.currDelivery.uploadedFileNames = Array.from(
+      new Set([...fileState.currDelivery.uploadedFileNames, ...successFileNames])
+    );
+    showUploadedFiles();
   } catch (err) {
     triggerNotificationBanner("Error uploading files. " + err.message, "danger");
   }
@@ -466,7 +493,7 @@ const uploadEhrUsingSignedUrls = async () => {
 };
 
 export const renderEhrUploadPage = async () => {
-  updateNavBar('ehrUploadBtn');
+  updateNavBar("ehrUploadBtn");
 
   const mainContent = document.getElementById("mainContent");
   mainContent.innerHTML = setupEhrUploadPage();
@@ -544,8 +571,7 @@ export const renderEhrUploadPage = async () => {
       })
     );
 
-    const isInitialUploadOfBatch = fileState.currDelivery.name === "";
-    if (isInitialUploadOfBatch) {
+    if (fileState.currDelivery === null) {
       const missingRequiredNames = ehrRequiredNames.filter((name) => !selectedNameSet.has(name));
       if (missingRequiredNames.length > 0) {
         triggerNotificationBanner(
