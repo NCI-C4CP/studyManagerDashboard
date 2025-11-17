@@ -560,7 +560,7 @@ const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
         const kitStatusCid = homeMouthwashData[fieldMapping.kitStatus];
         let kitStatusStr = kitStatusCidToString[kitStatusCid];
 
-        if(homeMouthwashData[fieldMapping.kitRequestEligible] &&!kitStatusCid) {
+        if(homeMouthwashData[fieldMapping.kitRequestEligible] && !kitStatusCid) {
             kitStatusStr = 'Invited';
         } else if(kitStatusStr) {
             kitStatusStr = 'Kit ' + kitStatusStr;
