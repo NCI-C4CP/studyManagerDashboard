@@ -96,11 +96,14 @@ const render = (participant) => {
         const poBoxRegex = /^(?:P\.?\s*O\.?\s*(?:Box|B\.?)?|Post\s+Office\s+(?:Box|B\.?)?)\s*(\s*#?\s*\d*)((?:\s+(.+))?$)$/i;
         const physicalAddressLineOne = participant[fieldMapping.physicalAddress1];
         const mailingAddressLineOne = participant[fieldMapping.address1];
+        const isMailingAddrIntl = participant[fieldMapping.isIntlAddr] === fieldMapping.yes;
+        const isPhysicalAddrIntl = participant[fieldMapping.physicalAddrIntl] === fieldMapping.yes;
+
         if (
-            (!physicalAddressLineOne || poBoxRegex.test(physicalAddressLineOne)) &&
-            (!mailingAddressLineOne || poBoxRegex.test(mailingAddressLineOne) || participant[fieldMapping.isPOBox] === fieldMapping.yes)
+            (!physicalAddressLineOne || poBoxRegex.test(physicalAddressLineOne) || isPhysicalAddrIntl) &&
+            (!mailingAddressLineOne || poBoxRegex.test(mailingAddressLineOne) || participant[fieldMapping.isPOBox] === fieldMapping.yes || isMailingAddrIntl)
         ) {
-            // PO Boxes should not provide the checkbox to override and send a kit anyway
+            // PO Boxes and international addresses should not provide the checkbox to override and send a kit anyway
             initialKitSectionText = renderInvalidAddressSection(false, 'initial');
             replacementKitSectionText = renderInvalidAddressSection(false, 'replacement');
         } else if (participant[fieldMapping.verifiedFlag] !== fieldMapping.verified) {

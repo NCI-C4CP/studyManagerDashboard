@@ -558,7 +558,15 @@ const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
         const homeMouthwashData = participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[path] || {};
 
         const kitStatusCid = homeMouthwashData[fieldMapping.kitStatus];
-        const kitStatusStr = kitStatusCidToString[kitStatusCid];
+        let kitStatusStr = kitStatusCidToString[kitStatusCid];
+
+        if(homeMouthwashData[fieldMapping.kitRequestEligible] &&!kitStatusCid) {
+            kitStatusStr = 'Invited';
+        } else if(kitStatusStr) {
+            kitStatusStr = 'Kit ' + kitStatusStr;
+        } else {
+            kitStatusStr = 'N/A';
+        }
 
         // IF kitType = homeMouthwash AND kitStatus = received, THEN Green check displays. Else, red x displays.
         const isCollected = homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash
@@ -575,7 +583,7 @@ const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
             date: collectionDate,
             setting: isCollected ? "Home" : "N/A",
             refused: isInitialKit ? refusedMouthwashOption ? "Y" : "N" : "N/A", // Refused = Y/N for initial kit. Always N/A for R1 & R2)
-            extra: kitStatusStr ? "Kit " + kitStatusStr : "N/A",
+            extra: kitStatusStr,
         };
     }
 
