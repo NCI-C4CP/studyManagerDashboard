@@ -55,23 +55,32 @@ export default
     // Mailing address
     "address1":521824358,
     "address2":442166669,
+    "address3": 512754567,
     "city":703385619,    
     "state":634434746,
+    "country": 639871686,
     "zip":892050548,
+    "isIntlAddr": 856368376,
     // Physical address
     "physicalAddress1":207908218,
     "physicalAddress2":224392018,
+    "physicalAddress3": 987244039,
     "physicalCity":451993790,    
     "physicalState":187799450,
+    "physicalCountry": 782945615,
     "physicalZip":449168732,
+    "physicalAddrIntl": 805662986,
     "isPOBox":250235523,
     // Alternate address
     "doesAltAddressExist": 646504105,
     "altAddress1": 284580415,
     "altAddress2": 728926441,
+    "altAddress3": 161642261,
     "altCity": 907038282,
     "altState": 970839481,
+    "altCountry": 934567929,
     "altZip": 379899229,
+    "isIntlAltAddress": 306739670,
     "isPOBoxAltAddress": 810747471,
     // Alternate contact
     "altContactFirstName": 661719912,
@@ -590,7 +599,7 @@ export default
         shipped: 277438316,
         received: 375535639
     },
-
+    kitRequestEligible: 638781731,
 
     surveyStatus: {
         notStarted: 972455046,
