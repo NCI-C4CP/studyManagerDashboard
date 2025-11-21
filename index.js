@@ -264,7 +264,7 @@ export const router = async () => {
             const navRequested = participantLookupNavRequest?.() || false;
             const metadata = await searchState.getSearchMetadata();
             if (!navRequested && metadata?.searchType === 'lookup') {
-                return renderCachedSearchResults();
+                return await renderCachedSearchResults();
             }
             searchState.clearSearchResults();
             return renderParticipantLookup();

@@ -55,6 +55,7 @@ src/stateManager.js     →  tests/stateManager.spec.js
 src/utils.js            →  tests/utils.spec.js
 src/crypto.js           →  tests/crypto.spec.js
 src/participantLookup.js →  tests/participantLookup.spec.js
+index.js                →  tests/index.spec.js
 ```
 
 ## Test Structure
@@ -241,6 +242,16 @@ describe('myModule', () => {
     cleanup(); // Handles all cleanup
   });
 });
+```
+
+### Global Test Stubs
+
+`tests/test-setup.js` provides lightweight globals to let browser-only modules load in Node/JSDOM:
+- `PDFLib` and `download` are stubbed for report generators.
+- `showdown` is stubbed for markdown conversions in notifications.
+- `requestAnimationFrame` is polyfilled if missing.
+
+If you add a module that depends on a window-global library, stub it here so imports don’t fail under Mocha.
 ```
 
 ## Writing New Tests

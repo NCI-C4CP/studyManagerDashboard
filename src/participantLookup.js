@@ -321,7 +321,6 @@ export const renderCachedSearchResults = async () => {
         await performSearch(queryString, metadata.siteFilter, 'search-failed', metadata);
 
     } else {
-        console.error('Error in renderCachedSearchResults: No search metadata found, falling back to empty lookup form');
         renderParticipantLookup();
     }
 };
