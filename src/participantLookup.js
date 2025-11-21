@@ -1,5 +1,5 @@
 import { updateNavBar } from './navigationBar.js';
-import { renderTable, filterBySiteKey, renderParticipantSearchResults, renderTablePage } from './participantCommons.js';
+import { filterBySiteKey, renderTablePage } from './participantCommons.js';
 import { getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls, escapeHTML, renderSiteDropdown } from './utils.js';
 import { participantState, searchState } from './stateManager.js';
 import { nameToKeyObj } from './idsToName.js';
