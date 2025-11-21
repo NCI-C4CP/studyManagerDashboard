@@ -5,14 +5,19 @@ import { participantState, searchState } from './stateManager.js';
 import { nameToKeyObj } from './idsToName.js';
 import { addFormInputFormattingListeners } from './participantDetailsHelpers.js';
 
+const getMainContent = () => (typeof document !== 'undefined' ? document.getElementById('mainContent') : null);
+
 export function renderParticipantLookup(){
     searchState.clearSearchResults(); // Clear search cache when showing fresh lookup form
     updateNavBar('participantLookupBtn');
 
+    const mainContent = getMainContent();
+    if (!mainContent) return;
     mainContent.innerHTML = renderParticipantSearch();
 
     // Add all event listeners after DOM updates
     requestAnimationFrame(() => {
+        if (typeof document === 'undefined') return;
         addEventSearch();
         addEventSearchId();
         addFormInputFormattingListeners();
@@ -103,6 +108,7 @@ export function renderParticipantSearch() {
 
 
 const triggerLookup = () => {
+    if (typeof document === 'undefined') return;
     const dropdownMenuButton = document.getElementById('dropdownMenuLookupSites');
     const dropdownFilter = document.getElementById('dropdownSites');
 
@@ -115,6 +121,7 @@ const triggerLookup = () => {
 }
 
 const addEventSearch = () => {
+    if (typeof document === 'undefined') return;
     const form = document.getElementById('search');
 
     if(!form) return;
@@ -158,6 +165,7 @@ const addEventSearch = () => {
 };
 
 export const addEventSearchId = () => {
+    if (typeof document === 'undefined') return;
     const form = document.getElementById('searchId');
     if(!form) return;
     form.addEventListener('submit', e => {
@@ -193,7 +201,9 @@ export const addEventSearchId = () => {
 };
 
 const alertTrigger = () => {
+    if (typeof document === 'undefined') return '';
     let alertList = document.getElementById('alert_placeholder');
+    if (!alertList) return '';
     let template = ``;
     template += `
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -220,7 +230,10 @@ export const performSearch = async (query, siteAbbr, failedElem, cacheMetadata =
         // Otherwise, pt data is filtered during the query in ConnectFaas.
         const siteFilteredData = filterBySiteKey(response.data, siteAbbr);
         if (siteFilteredData.length === 0) {
-            document.getElementById(failedElem).hidden = false;
+            if (typeof document !== 'undefined') {
+                const failedEl = document.getElementById(failedElem);
+                if (failedEl) failedEl.hidden = false;
+            }
             return alertTrigger();
         }
 
@@ -234,7 +247,10 @@ export const performSearch = async (query, siteAbbr, failedElem, cacheMetadata =
 
     } catch (error) {
         console.error('Error during participant search:', error);
-        document.getElementById(failedElem).hidden = false;
+        if (typeof document !== 'undefined') {
+            const failedEl = document.getElementById(failedElem);
+            if (failedEl) failedEl.hidden = false;
+        }
         alertTrigger();
 
     } finally {

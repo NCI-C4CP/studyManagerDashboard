@@ -76,7 +76,7 @@ export const installFirebaseStub = ({ uid = 'test-user', onSignOut } = {}) => {
 
   authStub = {
     get currentUser() {
-      return currentUid ? { uid: currentUid } : null;
+      return currentUid ? { uid: currentUid, getIdToken: async () => 'fake-id-token' } : null;
     },
     setUid: (nextUid) => {
       currentUid = nextUid || null;
@@ -87,8 +87,11 @@ export const installFirebaseStub = ({ uid = 'test-user', onSignOut } = {}) => {
     },
     setPersistence: async () => {},
     onAuthStateChanged: (callback) => {
-      callback(currentUid ? { uid: currentUid } : null);
-      return () => {};
+      const unsubscribe = () => {};
+      setTimeout(() => {
+        callback(currentUid ? { uid: currentUid, getIdToken: async () => 'fake-id-token' } : null);
+      }, 0);
+      return unsubscribe;
     },
   };
 

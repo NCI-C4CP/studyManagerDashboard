@@ -1,6 +1,21 @@
 import { urls } from './utils.js';
 import { roleState } from './stateManager.js';
 
+/**
+ * Handle participant lookup nav when already on the participantLookup hash
+ * @returns {boolean} - True if a participant lookup nav request was made, false otherwise
+ */
+let participantLookupNavRequested = false;
+export const participantLookupNavRequest = () => {
+    const requested = participantLookupNavRequested;
+    participantLookupNavRequested = false;
+    return requested;
+};
+
+export const setParticipantLookupNavRequest = (value = false) => {
+    participantLookupNavRequested = !!value;
+};
+
 export const renderNavBarLinks = () => {
     return `
         <li class="nav-item active">
@@ -112,6 +127,7 @@ export const  renderLogin = () => {
 }
 
 export const removeActiveClass = (className, activeClass) => {
+    if (typeof document === 'undefined') return;
     let fileIconElement = document.getElementsByClassName(className);
     Array.from(fileIconElement).forEach(elm => {
         elm.classList.remove(activeClass);
@@ -122,32 +138,51 @@ export const removeActiveClass = (className, activeClass) => {
 let navbarCollapseSetup = false;
 
 const setupNavbarCollapse = () => {
+    if (typeof document === 'undefined') return;
     // Only set up once to prevent duplicate listeners
     if (navbarCollapseSetup) {
         return;
     }
     
-    // Use event delegation on the navbar container for better performance
+    // Use event delegation on the navbar container
     const navbarContainer = document.getElementById('navBarLinks');
-    if (navbarContainer) {
-        navbarContainer.addEventListener('click', (event) => {
-            // Check if the clicked element is a navigation link
-            const link = event.target.closest('a[href^="#"]');
-            if (link) {
-                // Close the navbar after navigation completes using requestAnimationFrame
-                requestAnimationFrame(() => {
-                    const navbarToggler = document.getElementById('hamburger_menu_button');
-                    const navbarCollapse = document.getElementById('navbarNavAltMarkup');
-                    
-                    if (navbarToggler && navbarCollapse && navbarCollapse.classList.contains('show')) {
-                        navbarToggler.click();
+    if (!navbarContainer) {
+        return;
+    }
+
+    navbarContainer.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href^="#"]');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+
+        // force the hash change event when already on the participantLookup hash
+        if (href === '#participantLookup' && href === window.location.hash) {
+            event.preventDefault();
+            participantLookupNavRequested = true;
+            requestAnimationFrame(() => {
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new HashChangeEvent('hashchange'));
+                    if (typeof window.onhashchange === 'function') {
+                        window.onhashchange();
                     }
-                });
+                }
+            });
+        } else if (href === '#participantLookup') {
+            participantLookupNavRequested = true;
+        }
+
+        requestAnimationFrame(() => {
+            const navbarToggler = document.getElementById('hamburger_menu_button');
+            const navbarCollapse = document.getElementById('navbarNavAltMarkup');
+            
+            if (navbarToggler && navbarCollapse && navbarCollapse.classList.contains('show')) {
+                navbarToggler.click();
             }
         });
-        
-        navbarCollapseSetup = true;
-    }
+    });
+    
+    navbarCollapseSetup = true;
 }
 
 /**
@@ -188,8 +223,13 @@ export const updateActiveElements = (type) => {
 
 export const updateNavBar = (activeElementId) => {
     if (!activeElementId) return;
-    
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
+    if (typeof document === 'undefined') return;
+
+    const navBarLinks = document.getElementById('navBarLinks');
+    if (!navBarLinks) return;
+
+    navBarLinks.innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
-    document.getElementById(activeElementId).classList.add('active');
+    const activeElement = document.getElementById(activeElementId);
+    activeElement?.classList.add('active');
 }

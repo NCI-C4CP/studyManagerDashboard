@@ -26,6 +26,7 @@ const UI_DEFAULTS = Object.freeze({
     siteDropdownVisible: false,
     withdrawalFlags: WITHDRAWAL_DEFAULTS,
     activeColumns: undefined,
+    filtersExpanded: true,
 });
 
 const encryptedStoreLoaders = [];
@@ -245,6 +246,7 @@ const validateUi = (candidate = {}) => {
         siteDropdownVisible: asBoolean(inputData.siteDropdownVisible),
         withdrawalFlags: validateWithdrawalFlags(inputData.withdrawalFlags),
         activeColumns: Array.isArray(inputData.activeColumns) ? inputData.activeColumns : undefined,
+        filtersExpanded: inputData.filtersExpanded === undefined ? true : asBoolean(inputData.filtersExpanded),
     };
 };
 
@@ -349,6 +351,13 @@ export const uiState = {
             activeColumns: normalizedColumns,
         }));
     },
+    setFiltersExpanded: async (isExpanded = true) => {
+        await uiStore.set((prev) => ({
+            ...prev,
+            filtersExpanded: asBoolean(isExpanded),
+        }));
+    },
+    isFiltersExpanded: () => uiStore.get().filtersExpanded,
     clear: () => uiStore.clear(),
 };
 

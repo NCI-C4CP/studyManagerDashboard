@@ -273,6 +273,30 @@ describe('stateManager', () => {
         hasPriorSuspendedContact: true,
       });
     });
+
+    it('defaults filtersExpanded to true and persists updates', async () => {
+      expect(uiState.isFiltersExpanded()).to.equal(true);
+
+      await uiState.setFiltersExpanded(false);
+      expect(uiState.isFiltersExpanded()).to.equal(false);
+      expect(window.sessionStorage.getItem('uiFlagsEnc')).to.be.a('string');
+
+      appState.setState({
+        uiFlags: {
+          siteDropdownVisible: false,
+          withdrawalFlags: {
+            hasPriorParticipationStatus: false,
+            hasPriorSuspendedContact: false,
+          },
+          activeColumns: undefined,
+          filtersExpanded: true,
+        },
+      });
+      resetAppStateUID();
+      await initializeAppState();
+
+      expect(uiState.isFiltersExpanded()).to.equal(false);
+    });
   });
 
   describe('participantState', () => {

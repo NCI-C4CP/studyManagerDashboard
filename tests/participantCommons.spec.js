@@ -7,9 +7,43 @@ import fieldMapping from '../src/fieldToConceptIdMapping.js';
 const getDefaultColumnsWithBubbles = () =>
   defaultColumnKeys.filter((columnKey) => bubbleFieldMap.has(columnKey));
 
-const formatBadgeCount = (count) => (count === 0 ? 'None' : `${count} selected`);
+const formatBadgeCount = (count) => (count === 0 ? '' : `${count} selected`);
 const getFieldKeyValue = (field) =>
   typeof field === 'object' && field !== null ? field.key : field;
+
+const toColumnKeyString = (key) => String(key);
+const deriveColumnMetadata = () => {
+  const columnKeys = new Set();
+  const labelsByKey = new Map();
+
+  bubbleCategories.forEach((category) => {
+    (category.fields ?? []).forEach((field) => {
+      const keyValue = getFieldKeyValue(field);
+      const keyString = toColumnKeyString(keyValue);
+      columnKeys.add(keyString);
+
+      if (!labelsByKey.has(keyString)) {
+        labelsByKey.set(keyString, new Set());
+      }
+      labelsByKey.get(keyString).add(field.label);
+    });
+  });
+
+  return { columnKeys, labelsByKey };
+};
+
+const { columnKeys: expectedColumnKeys, labelsByKey: columnLabelsByKey } = deriveColumnMetadata();
+
+const expectBadgeDisplay = (badge, expectedCount) => {
+  const text = badge.textContent.trim();
+  if (expectedCount === 0) {
+    expect(text).to.equal('');
+    expect(badge.classList.contains('d-none')).to.be.true;
+  } else {
+    expect(text).to.equal(formatBadgeCount(expectedCount));
+    expect(badge.classList.contains('d-none')).to.be.false;
+  }
+};
 
 describe('participantCommons - Bubble Filter Functionality', () => {
   let firebaseStub;
@@ -83,6 +117,57 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       expect(bubbles.length).to.be.at.least(bubbleFieldMap.size);
     });
 
+    it('renders header, total badge, reset button, and toggle text', () => {
+      const mockData = [createMockParticipant('test-1')];
+      mainContent.innerHTML = renderTable(mockData, 'participantLookup');
+      renderParticipantSearchResults(mockData, 'participantLookup');
+      setupActiveColumns(mockData);
+
+      const heading = document.querySelector('#bubbleFiltersContainer h5');
+      expect(heading).to.not.be.null;
+      expect(heading.textContent.trim()).to.equal('Fields to Display');
+
+      const totalBadge = document.getElementById('bubbleFiltersTotalBadge');
+      expect(totalBadge).to.not.be.null;
+      expect(totalBadge.classList.contains('d-none')).to.be.false;
+      expect(totalBadge.textContent.trim()).to.equal(formatBadgeCount(getActiveColumns().length));
+
+      const resetButton = document.getElementById('resetToDefaultFieldsButton');
+      expect(resetButton).to.not.be.null;
+      expect(resetButton.textContent.trim()).to.equal('Reset To Default Fields');
+
+      const toggleButton = document.getElementById('toggleBubbleFilters');
+      const toggleLabel = document.getElementById('bubbleFiltersToggleLabel');
+      expect(toggleButton).to.not.be.null;
+      expect(toggleLabel.textContent.trim()).to.equal('Hide field selectors');
+      expect(toggleButton.getAttribute('aria-expanded')).to.equal('true');
+    });
+
+    it('respects stored collapsed state and updates on toggle', async () => {
+      await uiState.setFiltersExpanded(false);
+
+      const mockData = [createMockParticipant('test-1')];
+      mainContent.innerHTML = renderTable(mockData, 'participantLookup');
+      renderParticipantSearchResults(mockData, 'participantLookup');
+      setupActiveColumns(mockData);
+
+      const filtersBody = document.getElementById('bubbleFiltersBody');
+      const toggleButton = document.getElementById('toggleBubbleFilters');
+      const toggleLabel = document.getElementById('bubbleFiltersToggleLabel');
+
+      expect(filtersBody.classList.contains('d-none')).to.be.true;
+      expect(toggleLabel.textContent.trim()).to.equal('Show field selectors');
+      expect(toggleButton.getAttribute('aria-expanded')).to.equal('false');
+
+      toggleButton.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(filtersBody.classList.contains('d-none')).to.be.false;
+      expect(toggleLabel.textContent.trim()).to.equal('Hide field selectors');
+      expect(toggleButton.getAttribute('aria-expanded')).to.equal('true');
+      expect(uiState.isFiltersExpanded()).to.equal(true);
+    });
+
     it('should render default column chips with matching labels and selected state', () => {
       const mockData = [createMockParticipant('test-1')];
       const html = renderTable(mockData, 'participantLookup');
@@ -115,10 +200,8 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       bubbles.forEach((bubble) => {
         expect(bubble.hasAttribute('data-column')).to.be.true;
         const columnKey = bubble.getAttribute('data-column');
-        // bubbleFieldMap has both string and numeric keys, so check both
-        const hasStringKey = bubbleFieldMap.has(columnKey);
-        const hasNumericKey = !isNaN(columnKey) && bubbleFieldMap.has(parseInt(columnKey));
-        expect(hasStringKey || hasNumericKey).to.be.true;
+        expect(columnKey).to.not.equal('');
+        expect(expectedColumnKeys.has(columnKey)).to.be.true;
       });
     });
 
@@ -143,13 +226,17 @@ describe('participantCommons - Bubble Filter Functionality', () => {
 
       bubbles.forEach((bubble) => {
         const columnKey = bubble.getAttribute('data-column');
-        // Try string key first, then numeric key
-        let expectedLabel = bubbleFieldMap.get(columnKey);
-        if (!expectedLabel && !isNaN(columnKey)) {
-          expectedLabel = bubbleFieldMap.get(parseInt(columnKey));
+        const labelOptions = columnLabelsByKey.get(columnKey);
+        const bubbleLabel = bubble.textContent.trim();
+
+        if (labelOptions?.size) {
+          expect(labelOptions.has(bubbleLabel)).to.be.true;
+        } else {
+          const normalizedKey = normalizeColumnValue(columnKey);
+          const expectedLabel = bubbleFieldMap.get(normalizedKey);
+          expect(expectedLabel).to.not.be.undefined;
+          expect(bubbleLabel).to.equal(expectedLabel);
         }
-        expect(expectedLabel).to.not.be.undefined;
-        expect(bubble.textContent.trim()).to.equal(expectedLabel);
       });
     });
 
@@ -299,7 +386,7 @@ describe('participantCommons - Bubble Filter Functionality', () => {
           const normalizedKey = normalizeColumnValue(getFieldKeyValue(field));
           return activeCols.includes(normalizedKey) ? count + 1 : count;
         }, 0);
-        expect(badge.textContent.trim()).to.equal(formatBadgeCount(expectedCount));
+        expectBadgeDisplay(badge, expectedCount);
       });
 
       const defaultBadge = document.querySelector('[data-category-count="default-columns"]');
@@ -311,10 +398,13 @@ describe('participantCommons - Bubble Filter Functionality', () => {
         const activeDefaultButtons = document.querySelectorAll(
           '[data-category-key="default-columns"] button.filter-active'
         ).length;
-        expect(
-          defaultBadge.textContent.trim(),
-          `default category active buttons: ${activeDefaultButtons}`
-        ).to.equal(formatBadgeCount(expectedCount));
+        expectBadgeDisplay(defaultBadge, expectedCount);
+        if (expectedCount === 0) {
+          expect(
+            activeDefaultButtons,
+            'default category should have zero active buttons when badge is hidden'
+          ).to.equal(0);
+        }
       }
     });
 
@@ -329,20 +419,17 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       const identifiersCategory = bubbleCategories.find((category) => category.key === 'identifiers');
       expect(identifiersCategory).to.not.be.undefined;
 
-      const getBadgeText = () =>
-        document.querySelector('[data-category-count="identifiers"]').textContent.trim();
-
-      const getExpectedBadgeText = () => {
+      const getExpectedBadgeCount = () => {
         const activeCols = getActiveColumns();
-        const expectedCount = identifiersCategory.fields.reduce((count, field) => {
+        return identifiersCategory.fields.reduce((count, field) => {
           const normalizedKey = normalizeColumnValue(getFieldKeyValue(field));
           return activeCols.includes(normalizedKey) ? count + 1 : count;
         }, 0);
-        return formatBadgeCount(expectedCount);
       };
 
       const assertBadgeMatchesState = () => {
-        expect(getBadgeText()).to.equal(getExpectedBadgeText());
+        const badge = document.querySelector('[data-category-count="identifiers"]');
+        expectBadgeDisplay(badge, getExpectedBadgeCount());
       };
 
       const tokenBubble = Array.from(document.getElementsByName('column-filter')).find(
@@ -1052,7 +1139,7 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       { key: 'pin', label: 'Pin' },
       { key: 'studyId', label: 'Study ID' },
       { key: 'Connect_ID', label: 'Connect ID' },
-      { key: fieldMapping.verifiedFlag, label: 'Verif Status' },
+      { key: fieldMapping.verifiedFlag, label: 'Verif Stat' },
       { key: fieldMapping.consentFlag, label: 'Consent Sub' },
       { key: fieldMapping.recruitmentType, label: 'Recruit Type' },
     ];
@@ -1108,7 +1195,9 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       );
 
       expect(verifiedBubble).to.not.be.null;
-      expect(verifiedBubble.textContent.trim()).to.equal('Verif Status');
+      const expectedLabel = bubbleFieldMap.get(fieldMapping.verifiedFlag);
+      expect(expectedLabel, 'missing bubbleFieldMap label for verifiedFlag').to.be.a('string');
+      expect(verifiedBubble.textContent.trim()).to.equal(expectedLabel);
 
       uiState.clear();
     });
@@ -1119,14 +1208,31 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       setupActiveColumns(mockData);
 
       const bubblesToAdd = ['token', 'pin', 'studyId'];
-      const initialCount = getActiveColumns().length;
-
-      for (const bubbleKey of bubblesToAdd) {
-        const bubble = Array.from(document.getElementsByName('column-filter')).find(
-          (btn) => btn.dataset.column === bubbleKey
+      const findBubble = (key) =>
+        Array.from(document.getElementsByName('column-filter')).find(
+          (btn) => btn.dataset.column === key
         );
 
+      const ensureBubbleInactive = async (key) => {
+        const bubble = findBubble(key);
+        expect(bubble, `missing bubble for key ${key}`).to.not.be.undefined;
+        if (bubble.classList.contains('filter-active')) {
+          bubble.click();
+          await waitForActiveColumnsUpdate();
+        }
         expect(bubble.classList.contains('filter-active')).to.be.false;
+        return bubble;
+      };
+
+      const targetBubbles = [];
+      for (const bubbleKey of bubblesToAdd) {
+        const bubble = await ensureBubbleInactive(bubbleKey);
+        targetBubbles.push({ key: bubbleKey, bubble });
+      }
+
+      const initialCount = getActiveColumns().length;
+
+      for (const { bubble } of targetBubbles) {
         bubble.click();
         await waitForActiveColumnsUpdate();
         expect(bubble.classList.contains('filter-active')).to.be.true;

@@ -7,10 +7,21 @@ import { bubbleCategories, bubbleFieldMap, defaultColumnKeys } from './participa
 
 // Tracks the most recent active-column update so callers/tests can await completion.
 let lastActiveColumnsUpdatePromise = Promise.resolve();
-const formatCategoryCount = (count) => (count === 0 ? 'None' : `${count} selected`);
+const formatCategoryCount = (count) => `${count} selected`;
+const applyBadgeState = (badgeEl, count) => {
+    if (count === 0) {
+        badgeEl.textContent = '';
+        badgeEl.classList.add('d-none');
+        return;
+    }
+
+    badgeEl.classList.remove('d-none');
+    badgeEl.textContent = formatCategoryCount(count);
+};
 
 let columnFilterClickHandler = null;
 let resetButtonHandler = null;
+let filterToggleHandler = null;
 
 const buildButtonsByColumn = (container) => {
     const buttons = Array.from(container.querySelectorAll('button[name="column-filter"]'));
@@ -50,6 +61,59 @@ const resetBubbleCategoryExpansion = () => {
         .forEach((detailsEl, index) => {
             detailsEl.open = index === 0;
         });
+};
+
+const updateTotalFieldsBadge = () => {
+    const totalBadge = document.getElementById('bubbleFiltersTotalBadge');
+    if (!totalBadge) return;
+
+    const totalCount = getActiveColumns()?.length || 0;
+    applyBadgeState(totalBadge, totalCount);
+};
+
+const getFiltersExpandedState = () => {
+    const stored = uiState.isFiltersExpanded?.();
+    return stored === undefined ? true : stored;
+};
+
+const updateBubbleFiltersVisibility = (isExpanded) => {
+    const filtersBody = document.getElementById('bubbleFiltersBody');
+    const toggleButton = document.getElementById('toggleBubbleFilters');
+    const toggleLabel = document.getElementById('bubbleFiltersToggleLabel');
+    const toggleIcon = document.getElementById('bubbleFiltersToggleIcon');
+
+    filtersBody?.classList.toggle('d-none', !isExpanded);
+    if (toggleButton) {
+        toggleButton.setAttribute('aria-expanded', isExpanded);
+    }
+    if (toggleLabel) {
+        toggleLabel.textContent = isExpanded ? 'Hide field selectors' : 'Show field selectors';
+    }
+    if (toggleIcon) {
+        toggleIcon.classList.toggle('fa-caret-up', isExpanded);
+        toggleIcon.classList.toggle('fa-caret-down', !isExpanded);
+    }
+};
+
+const setupBubbleFiltersToggle = () => {
+    const toggleButton = document.getElementById('toggleBubbleFilters');
+    if (!toggleButton) return;
+
+    const initialExpanded = getFiltersExpandedState();
+    updateBubbleFiltersVisibility(initialExpanded);
+
+    if (filterToggleHandler) {
+        toggleButton.removeEventListener('click', filterToggleHandler);
+    }
+
+    filterToggleHandler = async (event) => {
+        event.preventDefault();
+        const nextExpanded = !getFiltersExpandedState();
+        updateBubbleFiltersVisibility(nextExpanded);
+        await uiState.setFiltersExpanded(nextExpanded);
+    };
+
+    toggleButton.addEventListener('click', filterToggleHandler);
 };
 
 const syncPagination = () => {
@@ -133,21 +197,15 @@ const renderBubbleCategory = (category, isFirst = false) => {
     if (!category?.fields?.length) return '';
 
     const buttons = category.fields.map((field) => renderBubbleButton(field.key, field.label)).join('');
-    const description = category.description
-        ? `<p class="text-muted small mb-2 w-100">${category.description}</p>`
-        : '';
     const openAttribute = isFirst ? ' open' : '';
 
     return `
         <details class="bubble-category" data-category-key="${category.key}"${openAttribute}>
             <summary class="bubble-category-summary d-flex justify-content-between align-items-center">
                 <span>${category.label}</span>
-                <span class="badge badge-pill badge-info category-count" data-category-count="${category.key}">
-                    ${formatCategoryCount(0)}
-                </span>
+                <span class="badge badge-pill badge-info category-count d-none" data-category-count="${category.key}"></span>
             </summary>
             <div class="bubble-category-body d-flex flex-wrap align-items-center" style="margin-top: 1rem;">
-                ${description}
                 ${buttons}
             </div>
         </details>
@@ -155,15 +213,34 @@ const renderBubbleCategory = (category, isFirst = false) => {
 };
 
 const renderSearchBubbles = () => {
+    const filtersExpanded = getFiltersExpandedState();
+    const toggleLabel = filtersExpanded ? 'Hide field selectors' : 'Show field selectors';
+    const toggleIconDirection = filtersExpanded ? 'up' : 'down';
     const sections = bubbleCategories.map((category, index) => renderBubbleCategory(category, index === 0));
 
     return `
         <div class="row">
-            <div class="col" id="columnFilterDiv">
-                <div class="d-flex justify-content-between align-items-end mb-3">
-                    <button class="btn btn-outline-dark btn-sm" id="resetToDefaultFieldsButton">Reset To Default Fields</button>
+            <div class="col">
+                <div class="sub-div-shadow p-3 mb-3 rounded" id="bubbleFiltersContainer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <h5 class="mb-0 mr-2">Fields to Display</h5>
+                            <button class="btn btn-outline-dark btn-sm ml-2" id="resetToDefaultFieldsButton">Reset To Default Fields</button>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span id="bubbleFiltersTotalBadge" class="badge badge-pill badge-info d-none mr-3 ml-3"></span>
+                            <button type="button" class="btn btn-link p-0 text-decoration-none" id="toggleBubbleFilters" aria-expanded="${filtersExpanded}" aria-controls="bubbleFiltersBody">
+                                <span id="bubbleFiltersToggleLabel" class="mr-2">${toggleLabel}</span>
+                                <i id="bubbleFiltersToggleIcon" class="fa fa-caret-${toggleIconDirection}" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="bubbleFiltersBody" class="${filtersExpanded ? '' : 'd-none'} mt-3">
+                        <div id="columnFilterDiv">
+                            ${sections.join('')}
+                        </div>
+                    </div>
                 </div>
-                ${sections.join('')}
             </div>
         </div>
     `;
@@ -200,7 +277,7 @@ export const renderTable = (data, source) => {
                                         <span class="small text-muted mr-1">To:</span>
                                         <input type="date" class="form-control" id="endDate" style="width:160px; height:40px;">
                                     </div>
-                                    <button type="button" class="btn btn-outline-danger" id="resetDate">Reset</button>
+                                    <button type="button" class="btn btn-outline-danger" id="resetDate">Reset date filters</button>
                                 </form>
                             </div>
                         </div>
@@ -666,6 +743,8 @@ export const setupActiveColumns = (data) => {
     const columnFilterDiv = document.getElementById('columnFilterDiv');
     if (!columnFilterDiv) return;
 
+    setupBubbleFiltersToggle();
+
     const buttonsByColumn = buildButtonsByColumn(columnFilterDiv);
 
     const syncBubblesAndColumns = async (updatedColumns, onAfterUpdate) => {
@@ -709,7 +788,7 @@ export const setupActiveColumns = (data) => {
 
     columnFilterDiv.addEventListener('click', columnFilterClickHandler);
 
-    const resetButton = columnFilterDiv.querySelector('#resetToDefaultFieldsButton');
+    const resetButton = document.getElementById('resetToDefaultFieldsButton');
     if (resetButton) {
         if (resetButtonHandler) {
             resetButton.removeEventListener('click', resetButtonHandler);
@@ -735,8 +814,10 @@ const updateBubbleCategoryCounts = () => {
         if (!badge || !body) return;
 
         const activeButtons = body.querySelectorAll('button.filter-active');
-        badge.textContent = formatCategoryCount(activeButtons.length);
+        applyBadgeState(badge, activeButtons.length);
     });
+
+    updateTotalFieldsBadge();
 };
 
 const alertTrigger = () => {

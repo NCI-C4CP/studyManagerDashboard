@@ -36,3 +36,56 @@ if (typeof globalThis !== 'undefined' && !globalThis.requestAnimationFrame) {
   globalThis.cancelAnimationFrame = global.window.cancelAnimationFrame.bind(global.window);
 }
 
+// Stub PDFLib and download for tests that import report modules in Node/JSDOM
+const pdfStub = {
+  PDFDocument: {
+    load: async () => ({
+      getPages: () => [
+        {
+          drawImage: () => {},
+          drawText: () => {},
+        },
+      ],
+      embedPng: async () => ({}),
+      embedFont: async () => ({}),
+      save: async () => new Uint8Array(),
+    }),
+  },
+  StandardFonts: {
+    Helvetica: 'Helvetica',
+    HelveticaBold: 'Helvetica-Bold',
+  },
+  rgb: () => ({}),
+};
+
+if (typeof globalThis !== 'undefined' && !globalThis.PDFLib) {
+  globalThis.PDFLib = pdfStub;
+}
+
+if (typeof global !== 'undefined' && !global.PDFLib) {
+  global.PDFLib = pdfStub;
+}
+
+if (typeof window !== 'undefined' && !window.PDFLib) {
+  window.PDFLib = pdfStub;
+}
+
+if (typeof globalThis !== 'undefined' && typeof globalThis.download !== 'function') {
+  globalThis.download = () => {};
+}
+
+// Stub showdown for tests (used in notifications)
+const showdownStub = {
+  Converter: function Converter() {
+    this.makeHtml = (str) => str || '';
+  },
+};
+if (typeof globalThis !== 'undefined' && !globalThis.showdown) {
+  globalThis.showdown = showdownStub;
+}
+if (typeof global !== 'undefined' && !global.showdown) {
+  global.showdown = showdownStub;
+}
+if (typeof window !== 'undefined' && !window.showdown) {
+  window.showdown = showdownStub;
+}

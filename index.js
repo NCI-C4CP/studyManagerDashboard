@@ -1,5 +1,5 @@
-import { renderParticipantLookup } from './src/participantLookup.js';
-import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements } from './src/navigationBar.js';
+import { renderParticipantLookup, renderCachedSearchResults } from './src/participantLookup.js';
+import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements, participantLookupNavRequest } from './src/navigationBar.js';
 import { renderTable, renderParticipantSearchResults, setupActiveColumns, renderFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
@@ -177,7 +177,7 @@ let previousHash = window.location.hash;
  * window.onhashchange directs the calls to router.
  * @returns {void} 
  */
-const router = async () => {
+export const router = async () => {
     const hash = decodeURIComponent(window.location.hash);
     const route = hash || '#';
 
@@ -256,9 +256,16 @@ const router = async () => {
         const isPredefinedParticipantSearchRoute = route.startsWith('#participants/');
         const isParticipantWorkflowRoute = participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route);
 
+        // Handle specific routing from lookup -> results + restoring results on page refresh + nav bar usage
         if (route === '#participantLookup') {
             clearUnsaved();
             participantState.clearParticipant();
+            updateNavBar('participantLookupBtn');
+            const navRequested = participantLookupNavRequest?.() || false;
+            const metadata = await searchState.getSearchMetadata();
+            if (!navRequested && metadata?.searchType === 'lookup') {
+                return renderCachedSearchResults();
+            }
             searchState.clearSearchResults();
             return renderParticipantLookup();
         }

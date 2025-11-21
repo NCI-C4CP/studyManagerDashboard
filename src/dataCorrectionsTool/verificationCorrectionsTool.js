@@ -2,7 +2,7 @@ import fieldMapping from '../fieldToConceptIdMapping.js';
 import { updateNavBar } from '../navigationBar.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner, formatUTCDate, convertToISO8601, escapeHTML } from '../utils.js';
 import { renderParticipantHeader } from '../participantHeader.js';
-import { keyToVerificationStatus, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
+import { verificationStatusMapping, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
 import { appState, participantState } from '../stateManager.js';
 import { findParticipant } from '../participantLookup.js';
 import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
@@ -39,7 +39,7 @@ export const renderVerificationCorrections = (participant) => {
                                 <div style="position:relative; left:20px; top:2px;">
                                     <br />
                                     <h6><b>Verification Status</b></h6>
-                                    <p>- Current Verification Status: <b>${keyToVerificationStatus[participant[fieldMapping.verifiedFlag]]}</b></p>
+                                    <p>- Current Verification Status: <b>${verificationStatusMapping[participant[fieldMapping.verifiedFlag]]}</b></p>
                                     <div class="dropdown dropright" id="verificationDropdownLookup1">
                                         - Update Verification Type:
                                         <button class="btn btn-info dropdown-toggle" type="button" id="dropdownVerification" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" 
@@ -221,7 +221,7 @@ const optionsHandler = (participant) => {
 
 const checkIncorrectSelections = (participant, selectedOptions) => {
     if (selectedOptions[fieldMapping.verifiedFlag] && selectedOptions[fieldMapping.verifiedFlag] === participant[fieldMapping.verifiedFlag]) {
-        triggerNotificationBanner(`Verficiation status already set to <b>${keyToVerificationStatus[selectedOptions[fieldMapping.verifiedFlag]]}</b>`, 'warning')
+        triggerNotificationBanner(`Verficiation status already set to <b>${verificationStatusMapping[selectedOptions[fieldMapping.verifiedFlag]]}</b>`, 'warning')
         return false;
     }
     if (selectedOptions[`state.${fieldMapping.duplicateType}`] && selectedOptions[`state.${fieldMapping.duplicateType}`] === participant[`state.${fieldMapping.duplicateType}`]) {
@@ -238,7 +238,7 @@ const checkIncorrectSelections = (participant, selectedOptions) => {
 const renderSelectedOptions = (selectedOptions) => {
     let template = ``
     if (selectedOptions[fieldMapping.verifiedFlag]) {
-        template += `- Update Verification Type : ${keyToVerificationStatus[selectedOptions[fieldMapping.verifiedFlag]]} <br />`
+        template += `- Update Verification Type : ${verificationStatusMapping[selectedOptions[fieldMapping.verifiedFlag]]} <br />`
     }
     if (selectedOptions[fieldMapping.verficationDate]) {
         template += `- Update Verification Date : ${formatUTCDate(selectedOptions[fieldMapping.verficationDate])} <br />`

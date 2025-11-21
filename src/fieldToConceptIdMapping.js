@@ -55,23 +55,29 @@ export default
     // Mailing address
     "address1":521824358,
     "address2":442166669,
+    "address3": 512754567,
     "city":703385619,    
     "state":634434746,
     "zip":892050548,
+    "country": 639871686,
     // Physical address
     "physicalAddress1":207908218,
     "physicalAddress2":224392018,
+    "physicalAddress3": 987244039,
     "physicalCity":451993790,    
     "physicalState":187799450,
     "physicalZip":449168732,
+    "physicalCountry": 782945615,
     "isPOBox":250235523,
     // Alternate address
     "doesAltAddressExist": 646504105,
     "altAddress1": 284580415,
     "altAddress2": 728926441,
+    "altAddress3": 161642261,
     "altCity": 907038282,
     "altState": 970839481,
     "altZip": 379899229,
+    "altCountry": 934567929,
     "isPOBoxAltAddress": 810747471,
     // Alternate contact
     "altContactFirstName": 661719912,
@@ -118,14 +124,10 @@ export default
 
     'prefPhone': 127547625,
 
+    "notYetEligible": 789467219,
     "notStarted": 972455046,
     "started": 615768760,
     "submitted": 231311385,
-
-    "notYetEligible1": 789467219,
-    "notStarted1": 972455046,
-    "started1": 615768760,
-    "submitted1": 231311385,
 
     "yes": 353358909,
     "no": 104430631,
@@ -141,23 +143,23 @@ export default
 	"biospecimenFollowUp1": 496823485,
 	"biospecimenFollowUp2": 650465111,
     "biospecimenFollowUp3": 303552867,
-    "biosepcimenBloodCollection": 592099155,
-    "biosepcimenUrineCollection": 718172863,
+    "biospecimenBloodCollection": 592099155,
+    "biospecimenUrineCollection": 718172863,
     "biospecimenMouthwashCollection": 915179629,
 
-    "bohStatusFlag1": 949302066,
+    "bohStatusFlag": 949302066,
     "bohCompletedDate1": 517311251,
     "bohStartDate1": 205553981,
 
-    "mreStatusFlag1": 536735468,
+    "mreStatusFlag": 536735468,
     "mreCompletedDate1": 832139544,
     "mreStartDate1": 541836531,
      
-    "sasStatusFlag1": 976570371,
+    "sasStatusFlag": 976570371,
     "sasCompletedDate1": 770257102,
     "sasStartDate1": 386488297,
 
-    "lawStatusFlag1": 663265240,
+    "lawStatusFlag": 663265240,
     "lawCompletedDate1": 264644252,
     "lawStartDate1": 452942800,
 
@@ -167,7 +169,7 @@ export default
 
     // "ssn": "D_716117818",
     "ssnStatusFlag": 126331570,
-    "ssnFullflag": 311580100,
+    "ssnFullFlag": 311580100,
     "ssnSurveyStartedDate": 943232079,
     "ssnSurveyCompletedDate": 315032037,
 
@@ -247,7 +249,7 @@ export default
     "refusedBaselinePaymentDate": 438636757,
     "paymentChosen": 945795905,
 
-    // de-identified age
+    // de-identified
     "ageRange1": 713781738,
     "ageRange2": 631272782,
     "ageRange3": 124276120,
@@ -257,15 +259,21 @@ export default
     "ageRange7": 771230670,
     "ageRange8": 722846087,
 
-    // de-identified
     "female": 536341288,
     "male": 654207589,
     "intersex": 830573274,
     "neitherMF": 395528052,
 
-    // de-identified
     "white": 768826601,
     "other": 181769837,
+
+    "eligAlgorithmVersion": 749475364,
+    "ihcsMemberStatus": 477091792,
+    "ihcsMemberStatusValues": {
+        "memberHealthPlan": 939572698,
+        "nonMemberPatient": 512786135,
+        "memberAndPatient": 582670006,
+    },
 
     //unavailable
     "unavailable": 178420302,
