@@ -1,7 +1,7 @@
 import { renderParticipantDetails } from './participantDetails.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { getIdToken, showAnimation, hideAnimation, getParticipants, sortByKey, renderSiteDropdown, triggerNotificationBanner } from './utils.js';
-import { searchState, buildPredefinedSearchMetadata, clearSession, uiState } from './stateManager.js';
+import { searchState, buildPredefinedSearchMetadata, signOutAndClearSession, uiState } from './stateManager.js';
 import { nameToKeyObj, keyToNameObj, keyToShortNameObj, participantConceptIDToTextMapping } from './idsToName.js';
 import { bubbleCategories, bubbleFieldMap, defaultColumnKeys } from './participantColumnConfig.js';
 
@@ -552,7 +552,7 @@ export const reRenderMainTable = async () => {
         const response = await getParticipants();
 
         if (response?.code === 401) {
-            clearSession();
+            signOutAndClearSession();
             return;
         }
 

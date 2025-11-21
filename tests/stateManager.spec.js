@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import {
   appState,
   buildPredefinedSearchMetadata,
-  clearSession,
+  signOutAndClearSession,
   clearUnsaved,
   initializeAppState,
   markUnsaved,
@@ -842,7 +842,7 @@ describe('stateManager', () => {
       appState.setState({ hasUnsavedChanges: true });
       window.location.hash = '#test';
 
-      clearSession();
+      signOutAndClearSession();
 
       expect(signOutCalled).to.equal(true);
       expect(statsState.getStats()).to.deep.equal({});
@@ -860,7 +860,7 @@ describe('stateManager', () => {
       expect(appState.getState().hasUnsavedChanges).to.equal(false);
       expect(reportsState.getReports()).to.equal(null);
       // Note: window.location.hash is skipped in tests because JSDOM doesn't support mutable hash
-      // In production, clearSession() sets window.location.hash = '#'
+      // In production, signOutAndClearSession() correctly sets window.location.hash = '#'
       expect(loader.style.display).to.equal('none');
     });
   });

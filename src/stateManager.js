@@ -30,7 +30,7 @@ const UI_DEFAULTS = Object.freeze({
 });
 
 const encryptedStoreLoaders = [];
-let activeUID = undefined;
+let activeUID = null;
 let participantLookupLoader = () => import('./participantLookup.js');
 
 /**
@@ -40,7 +40,7 @@ let participantLookupLoader = () => import('./participantLookup.js');
 // Protect against mutation and/or shared refs. Return a deep clone of the value.
 const deepClone = (value, fallback = {}) => {
     const source = value === undefined || value === null ? fallback : value;
-    if (source === undefined || source === null) return JSON.parse(JSON.stringify({}));
+    if (source === undefined || source === null) return {};
     if (typeof source !== 'object') return source;
     try {
         return JSON.parse(JSON.stringify(source));
@@ -201,7 +201,7 @@ export const initializeAppState = async () => {
 };
 
 export const resetAppStateUID = () => {
-    activeUID = undefined;
+    activeUID = null;
 };
 
 // Override the participant lookup loader for testing
@@ -827,7 +827,7 @@ export const clearUnsaved = () => {
 /**
  * Clear the user session and reset the application state
  */
-export const clearSession = () => {
+export const signOutAndClearSession = () => {
     firebase?.auth?.().signOut();
     hideAnimation();
     userSession.clearUser();

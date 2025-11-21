@@ -39,7 +39,7 @@ export const renderParticipantDetails = async (participant, changedOption = {}) 
     resetChanges(participant);
     
     viewParticipantSummary(participant);
-    attachUpdateLoginMethodListeners(participant[fieldMapping.accountEmail], participant[fieldMapping.accountPhone], participant.token, participant.state.uid);
+    attachUpdateLoginMethodListeners(participant[fieldMapping.accountEmail], participant[fieldMapping.accountPhone]);
     submitClickHandler(participant, changedOption);
     addSearchNavigationListeners();
 
@@ -383,7 +383,7 @@ const renderTextInputBox = (participantValue, conceptId) => {
 };
 
 const renderPhoneInputBox = (participantValue, conceptId) => {
-    const isMainPhoneField = primaryPhoneTypes.includes(parseInt(conceptId))
+    const isMainPhoneField = primaryPhoneTypes.includes(parseInt(conceptId)) && parseInt(conceptId) !== fieldMapping.accountPhone // auth/account phone is in a separate section
     const mainPhoneFieldNote = isMainPhoneField ? " Note: At least one phone number is required." : "";
 
     return `
