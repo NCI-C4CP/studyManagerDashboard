@@ -2,7 +2,7 @@ import { renderParticipantDetails } from './participantDetails.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { getIdToken, showAnimation, hideAnimation, getParticipants, sortByKey, renderSiteDropdown, triggerNotificationBanner } from './utils.js';
 import { searchState, buildPredefinedSearchMetadata, signOutAndClearSession, uiState } from './stateManager.js';
-import { nameToKeyObj, keyToNameObj, keyToShortNameObj, participantConceptIDToTextMapping } from './idsToName.js';
+import { nameToKeyObj, keyToShortNameObj, participantConceptIDToTextMapping } from './idsToName.js';
 import { bubbleCategories, bubbleFieldMap, defaultColumnKeys } from './participantColumnConfig.js';
 
 // Tracks the most recent active-column update so callers/tests can await completion.
