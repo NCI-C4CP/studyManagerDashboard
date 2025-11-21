@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
-import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, waitForAsyncTasks, installFirebaseStub } from './helpers.js';
+import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 
 const createPdfLibStub = () => {
   const stubPage = {
