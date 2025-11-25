@@ -1,18 +1,23 @@
 import { updateNavBar } from './navigationBar.js';
-import { renderTable, filterBySiteKey, renderParticipantSearchResults, activeColumns, renderTablePage } from './participantCommons.js';
+import { filterBySiteKey, renderTablePage } from './participantCommons.js';
 import { getDataAttributes, getIdToken, showAnimation, hideAnimation, baseAPI, urls, escapeHTML, renderSiteDropdown } from './utils.js';
 import { participantState, searchState } from './stateManager.js';
 import { nameToKeyObj } from './idsToName.js';
 import { addFormInputFormattingListeners } from './participantDetailsHelpers.js';
 
+const getMainContent = () => (typeof document !== 'undefined' ? document.getElementById('mainContent') : null);
+
 export function renderParticipantLookup(){
     searchState.clearSearchResults(); // Clear search cache when showing fresh lookup form
     updateNavBar('participantLookupBtn');
 
+    const mainContent = getMainContent();
+    if (!mainContent) return;
     mainContent.innerHTML = renderParticipantSearch();
 
     // Add all event listeners after DOM updates
     requestAnimationFrame(() => {
+        if (typeof document === 'undefined') return;
         addEventSearch();
         addEventSearchId();
         addFormInputFormattingListeners();
@@ -103,6 +108,7 @@ export function renderParticipantSearch() {
 
 
 const triggerLookup = () => {
+    if (typeof document === 'undefined') return;
     const dropdownMenuButton = document.getElementById('dropdownMenuLookupSites');
     const dropdownFilter = document.getElementById('dropdownSites');
 
@@ -115,6 +121,7 @@ const triggerLookup = () => {
 }
 
 const addEventSearch = () => {
+    if (typeof document === 'undefined') return;
     const form = document.getElementById('search');
 
     if(!form) return;
@@ -158,6 +165,7 @@ const addEventSearch = () => {
 };
 
 export const addEventSearchId = () => {
+    if (typeof document === 'undefined') return;
     const form = document.getElementById('searchId');
     if(!form) return;
     form.addEventListener('submit', e => {
@@ -193,7 +201,9 @@ export const addEventSearchId = () => {
 };
 
 const alertTrigger = () => {
+    if (typeof document === 'undefined') return '';
     let alertList = document.getElementById('alert_placeholder');
+    if (!alertList) return '';
     let template = ``;
     template += `
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -220,13 +230,16 @@ export const performSearch = async (query, siteAbbr, failedElem, cacheMetadata =
         // Otherwise, pt data is filtered during the query in ConnectFaas.
         const siteFilteredData = filterBySiteKey(response.data, siteAbbr);
         if (siteFilteredData.length === 0) {
-            document.getElementById(failedElem).hidden = false;
+            if (typeof document !== 'undefined') {
+                const failedEl = document.getElementById(failedElem);
+                if (failedEl) failedEl.hidden = false;
+            }
             return alertTrigger();
         }
 
         // Cache search results and metadata
         if (cacheMetadata) {
-            searchState.setSearchResults(cacheMetadata, siteFilteredData);
+            await searchState.setSearchResults(cacheMetadata, siteFilteredData);
         }
 
         renderTablePage(siteFilteredData, 'participantLookup');
@@ -234,7 +247,10 @@ export const performSearch = async (query, siteAbbr, failedElem, cacheMetadata =
 
     } catch (error) {
         console.error('Error during participant search:', error);
-        document.getElementById(failedElem).hidden = false;
+        if (typeof document !== 'undefined') {
+            const failedEl = document.getElementById(failedElem);
+            if (failedEl) failedEl.hidden = false;
+        }
         alertTrigger();
 
     } finally {
@@ -305,7 +321,6 @@ export const renderCachedSearchResults = async () => {
         await performSearch(queryString, metadata.siteFilter, 'search-failed', metadata);
 
     } else {
-        console.error('Error in renderCachedSearchResults: No search metadata found, falling back to empty lookup form');
         renderParticipantLookup();
     }
 };
