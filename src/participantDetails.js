@@ -1,10 +1,11 @@
 import { updateNavBar } from './navigationBar.js';
-import { attachUpdateLoginMethodListeners, allStates, allCountries, isAddressInternational, closeModal, getFieldValues, getImportantRows, getIsNORCOrCCC, getModalLabel, primaryPhoneTypes, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, addFormInputFormattingListeners } from './participantDetailsHelpers.js';
+import { attachUpdateLoginMethodListeners, allStates, isAddressInternational, closeModal, getFieldValues, getImportantRows, getIsNORCOrCCC, getModalLabel, primaryPhoneTypes, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, addFormInputFormattingListeners } from './participantDetailsHelpers.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantHeader } from './participantHeader.js';
 import { getDataAttributes, urls, escapeHTML, renderShowMoreDataModal } from './utils.js';
 import { appState, participantState, markUnsaved, clearUnsaved } from './stateManager.js';
 import { navigateBackToSearchResults } from './participantLookup.js';
+import { getCountryCode3List, getCountryNameByCode3 } from './countryMapping.js';
 
 window.addEventListener('beforeunload',  (e) => {
     if (appState.getState().hasUnsavedChanges) { 
@@ -394,9 +395,11 @@ const renderStateSelector = (participantValue, conceptId) => {
 
 const renderCountrySelector = (participantValue, conceptId) => {
     let options = '';
-    let countryCodes = Object.keys(allCountries);
+    let countryCodes = getCountryCode3List();
     for(const index in countryCodes){
-        options += `<option class="option-dark-mode" value="${countryCodes[index]}">${allCountries[countryCodes[index]]}</option>`
+        if (countryCodes[index] !== 'usa') {
+            options += `<option class="option-dark-mode" value="${countryCodes[index]}">${getCountryNameByCode3(countryCodes[index])}</option>`
+        }
     }
     return `
         <select name="newValue${conceptId}" id="newValue${conceptId}" data-currentValue="${escapeHTML((participantValue ?? '').toString())}">
