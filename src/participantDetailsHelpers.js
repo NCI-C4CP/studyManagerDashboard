@@ -1433,7 +1433,10 @@ const forceDataTypesForFirestore = (changedOption) => {
         fieldMapping.voicemailOther,
         fieldMapping.preferredLanguage,
         fieldMapping.isPOBox,
-        fieldMapping.isPOBoxAltAddress
+        fieldMapping.isPOBoxAltAddress,
+        fieldMapping.isIntlAddr,
+        fieldMapping.physicalAddrIntl,
+        fieldMapping.isIntlAltAddress
     ];
     
     const fieldsToString = [
