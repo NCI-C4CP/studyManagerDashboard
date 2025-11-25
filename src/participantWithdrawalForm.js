@@ -773,8 +773,7 @@ const handleResponseSubmission = async (selectedRefusalWithdrawalCheckboxes, sel
         if (!updatedParticipant) {
             return;
         }
-        participantState.setParticipant(updatedParticipant);
-        navigateToParticipantSummary(updatedParticipant);
+        await navigateToParticipantSummary(updatedParticipant);
 
     } catch (error) {
         console.error('Error in handleResponseSubmission():', error);
@@ -1089,7 +1088,7 @@ async function sendRefusalWithdrawalResponses(sendRefusalData) {
     }
 }
 
-const navigateToParticipantSummary = (participant) => {
-    participantState.setParticipant(participant);
+const navigateToParticipantSummary = async (participant) => {
+    await participantState.setParticipant(participant);
     location.replace(window.location.origin + window.location.pathname + '#participantSummary'); // updates url to participantSummary
 }

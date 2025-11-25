@@ -137,7 +137,7 @@ const handleSurveyTypeChange = (participant) => {
                     const response = await findParticipant(query);
                     hideAnimation();
                     const participantData = response.data[0];
-                    participantState.setParticipant(participantData);
+                    await participantState.setParticipant(participantData);
 
                     if (participantData[ssnStatusFlag] === notStarted) { 
                         displayAlreadyResetNote();
@@ -224,7 +224,7 @@ const submitSurveyStatusReset = () => {
                     const response = await resetParticipantSurvey(selectedSurvey);
                     
                     if (response.code === 200 || response.data) {
-                        participantState.setParticipant(response.data);
+                        await participantState.setParticipant(response.data);
                         updateSurveyStatusTextContent(response.data, selectedSurvey, response.code);
                         displayAlreadyResetNote();
                         triggerNotificationBanner("Survey has been successfully reset!", "success", 10000);

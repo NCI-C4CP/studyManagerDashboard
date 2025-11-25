@@ -1,6 +1,6 @@
-import { renderParticipantLookup } from './src/participantLookup.js';
-import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements } from './src/navigationBar.js';
-import { renderTable, renderParticipantSearchResults, activeColumns, renderFilters } from './src/participantCommons.js';
+import { renderParticipantLookup, renderCachedSearchResults } from './src/participantLookup.js';
+import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements, participantLookupNavRequest } from './src/navigationBar.js';
+import { renderTable, renderParticipantSearchResults, setupActiveColumns, renderFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderParticipantSummary } from './src/participantSummary.js';
 import { renderParticipantMessages } from './src/participantMessages.js';
@@ -177,7 +177,7 @@ let previousHash = window.location.hash;
  * window.onhashchange directs the calls to router.
  * @returns {void} 
  */
-const router = async () => {
+export const router = async () => {
     const hash = decodeURIComponent(window.location.hash);
     const route = hash || '#';
 
@@ -256,9 +256,16 @@ const router = async () => {
         const isPredefinedParticipantSearchRoute = route.startsWith('#participants/');
         const isParticipantWorkflowRoute = participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route);
 
+        // Handle specific routing from lookup -> results + restoring results on page refresh + nav bar usage
         if (route === '#participantLookup') {
             clearUnsaved();
             participantState.clearParticipant();
+            updateNavBar('participantLookupBtn');
+            const navRequested = participantLookupNavRequest?.() || false;
+            const metadata = await searchState.getSearchMetadata();
+            if (!navRequested && metadata?.searchType === 'lookup') {
+                return await renderCachedSearchResults();
+            }
             searchState.clearSearchResults();
             return renderParticipantLookup();
         }
@@ -1123,7 +1130,7 @@ const renderParticipants = async (type) => {
             updateActiveElements(type);
             mainContent.innerHTML = renderTable(cachedResults, renderType);
             renderParticipantSearchResults(cachedResults, renderType);
-            activeColumns(cachedResults);
+            setupActiveColumns(cachedResults);
             renderFilters();
             hideAnimation();
             return;
@@ -1175,7 +1182,7 @@ const renderParticipants = async (type) => {
             cursorHistory: []
         };
         const searchMetadata = buildPredefinedSearchMetadata({ ...paginationState });
-        searchState.setSearchResults(searchMetadata, data);
+        await searchState.setSearchResults(searchMetadata, data);
 
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
         updateActiveElements(type);
@@ -1183,7 +1190,7 @@ const renderParticipants = async (type) => {
         mainContent.innerHTML = renderTable(data, renderType);
 
         renderParticipantSearchResults(data, renderType);
-        activeColumns(data);
+        setupActiveColumns(data);
         renderFilters();
 
     } catch (error) {

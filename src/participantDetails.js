@@ -6,8 +6,6 @@ import { getDataAttributes, urls, escapeHTML, renderShowMoreDataModal } from './
 import { appState, participantState, markUnsaved, clearUnsaved } from './stateManager.js';
 import { navigateBackToSearchResults } from './participantLookup.js';
 
-clearUnsaved();
-
 window.addEventListener('beforeunload',  (e) => {
     if (appState.getState().hasUnsavedChanges) { 
     // Cancel the event and show alert that the unsaved changes would be lost 
@@ -18,6 +16,8 @@ window.addEventListener('beforeunload',  (e) => {
 
 // Prevents from scrolling to bottom or middle of the page
 window.addEventListener('load', (e) => {
+    // Clear unsaved flag after modules are fully loaded
+    clearUnsaved();
     requestAnimationFrame(() => {
         document.body.scrollTop = document.documentElement.scrollTop = 0;
     });
@@ -29,9 +29,9 @@ const initLoginMechanism = (participant) => {
     appState.setState({loginMechanism:{phone: true, email: true}});
 }
 
-export const renderParticipantDetails = (participant, changedOption = {}) => {
+export const renderParticipantDetails = async (participant, changedOption = {}) => {
     initLoginMechanism(participant);
-    participantState.setParticipant(participant);
+    await participantState.setParticipant(participant);
     window.scrollTo({ top: 0, behavior: 'auto' });
 
     mainContent.innerHTML = renderParticipantDetailsForm(participant, changedOption);

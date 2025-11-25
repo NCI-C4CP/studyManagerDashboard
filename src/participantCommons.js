@@ -1,24 +1,249 @@
 import { renderParticipantDetails } from './participantDetails.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { getIdToken, showAnimation, hideAnimation, getParticipants, sortByKey, renderSiteDropdown, triggerNotificationBanner } from './utils.js';
-import { searchState, buildPredefinedSearchMetadata, signOutAndClearSession } from './stateManager.js';
-import { nameToKeyObj, keyToNameObj, keyToShortNameObj, participantConceptIDToTextMapping, searchBubbleMap, tableHeaderMap } from './idsToName.js';
+import { searchState, buildPredefinedSearchMetadata, signOutAndClearSession, uiState } from './stateManager.js';
+import { nameToKeyObj, keyToShortNameObj, participantConceptIDToTextMapping } from './idsToName.js';
+import { bubbleCategories, bubbleFieldMap, defaultColumnKeys } from './participantColumnConfig.js';
 
-export const importantColumns = [fieldMapping.fName, fieldMapping.mName, fieldMapping.lName, fieldMapping.birthMonth, fieldMapping.birthDay, fieldMapping.birthYear, fieldMapping.email, 'Connect_ID', fieldMapping.healthcareProvider];
+// Tracks the most recent active-column update so callers/tests can await completion.
+let lastActiveColumnsUpdatePromise = Promise.resolve();
+const formatCategoryCount = (count) => `${count} selected`;
+const applyBadgeState = (badgeEl, count) => {
+    if (count === 0) {
+        badgeEl.textContent = '';
+        badgeEl.classList.add('d-none');
+        return;
+    }
+
+    badgeEl.classList.remove('d-none');
+    badgeEl.textContent = formatCategoryCount(count);
+};
+
+let columnFilterClickHandler = null;
+let resetButtonHandler = null;
+let filterToggleHandler = null;
+
+const buildButtonsByColumn = (container) => {
+    const buttons = Array.from(container.querySelectorAll('button[name="column-filter"]'));
+    const buttonsByColumn = new Map();
+
+    buttons.forEach((button) => {
+        const normalizedValue = normalizeColumnValue(button.dataset.column);
+        if (!buttonsByColumn.has(normalizedValue)) {
+            buttonsByColumn.set(normalizedValue, []);
+        }
+        buttonsByColumn.get(normalizedValue).push(button);
+    });
+
+    return buttonsByColumn;
+};
+
+const setButtonsActiveState = (buttonsByColumn, columnValue, shouldBeActive) => {
+    const normalizedValue = normalizeColumnValue(columnValue);
+    const buttons = buttonsByColumn.get(normalizedValue);
+    if (!buttons) return;
+
+    buttons.forEach((button) => {
+        button.classList.toggle('filter-active', shouldBeActive);
+    });
+};
+
+const syncActiveButtons = (buttonsByColumn, activeColumns) => {
+    buttonsByColumn.forEach((_, columnValue) => {
+        const isActive = activeColumns.includes(columnValue);
+        setButtonsActiveState(buttonsByColumn, columnValue, isActive);
+    });
+};
+
+const resetBubbleCategoryExpansion = () => {
+    document
+        .querySelectorAll('[data-category-key]')
+        .forEach((detailsEl, index) => {
+            detailsEl.open = index === 0;
+        });
+};
+
+const updateTotalFieldsBadge = () => {
+    const totalBadge = document.getElementById('bubbleFiltersTotalBadge');
+    if (!totalBadge) return;
+
+    const totalCount = getActiveColumns()?.length || 0;
+    applyBadgeState(totalBadge, totalCount);
+};
+
+const getFiltersExpandedState = () => {
+    const stored = uiState.isFiltersExpanded?.();
+    return stored === undefined ? true : stored;
+};
+
+const updateBubbleFiltersVisibility = (isExpanded) => {
+    const filtersBody = document.getElementById('bubbleFiltersBody');
+    const toggleButton = document.getElementById('toggleBubbleFilters');
+    const toggleLabel = document.getElementById('bubbleFiltersToggleLabel');
+    const toggleIcon = document.getElementById('bubbleFiltersToggleIcon');
+
+    filtersBody?.classList.toggle('d-none', !isExpanded);
+    if (toggleButton) {
+        toggleButton.setAttribute('aria-expanded', isExpanded);
+    }
+    if (toggleLabel) {
+        toggleLabel.textContent = isExpanded ? 'Hide field selectors' : 'Show field selectors';
+    }
+    if (toggleIcon) {
+        toggleIcon.classList.toggle('fa-caret-up', isExpanded);
+        toggleIcon.classList.toggle('fa-caret-down', !isExpanded);
+    }
+};
+
+const setupBubbleFiltersToggle = () => {
+    const toggleButton = document.getElementById('toggleBubbleFilters');
+    if (!toggleButton) return;
+
+    const initialExpanded = getFiltersExpandedState();
+    updateBubbleFiltersVisibility(initialExpanded);
+
+    if (filterToggleHandler) {
+        toggleButton.removeEventListener('click', filterToggleHandler);
+    }
+
+    filterToggleHandler = async (event) => {
+        event.preventDefault();
+        const nextExpanded = !getFiltersExpandedState();
+        updateBubbleFiltersVisibility(nextExpanded);
+        await uiState.setFiltersExpanded(nextExpanded);
+    };
+
+    toggleButton.addEventListener('click', filterToggleHandler);
+};
+
+const syncPagination = () => {
+    const currentPage = document.getElementById('currentPageNumber');
+    if (currentPage) {
+        currentPage.innerHTML = `&nbsp;Page: 1&nbsp;`;
+    }
+
+    const nextLink = document.getElementById('nextLink');
+    nextLink?.setAttribute('data-nextpage', 1);
+
+    const metadata = searchState.getCachedMetadata();
+    if (!metadata) return;
+
+    if (metadata.startDateFilter) {
+        const startDate = document.getElementById('startDate');
+        if (startDate) startDate.value = metadata.startDateFilter;
+    }
+
+    if (metadata.endDateFilter) {
+        const endDate = document.getElementById('endDate');
+        if (endDate) endDate.value = metadata.endDateFilter;
+    }
+};
+
+const applyColumnUpdates = async (data, updatedColumns, onAfterUpdate) => {
+    await uiState.updateActiveColumns(updatedColumns);
+    renderParticipantSearchResults(data, 'bubbleFilters');
+    syncPagination();
+    onAfterUpdate?.();
+};
+
+const runColumnUpdate = async (data, updatedColumns, onAfterUpdate) => {
+    lastActiveColumnsUpdatePromise = applyColumnUpdates(data, updatedColumns, onAfterUpdate);
+    await lastActiveColumnsUpdatePromise;
+};
+
+/**
+ * Normalize a column value: convert numeric strings to numbers, keep non-numeric strings as strings
+ * Handles concept IDs (numbers) vs string keys (e.g., 'Connect_ID', 'token', 'pin')
+ * @param {string|number} value - Column value to normalize
+ * @returns {string|number} Normalized value (number if numeric, string otherwise)
+ */
+export const normalizeColumnValue = (value) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string' && !isNaN(value) && value.trim() !== '') {
+        return parseInt(value, 10);
+    }
+    return value; // Keep non-numeric strings (e.g. 'Connect_ID', 'token', 'pin') as-is
+};
+
+/**
+ * Normalize an array of column values
+ * @param {Array} columns - Array of column values to normalize
+ * @returns {Array} Array of normalized column values
+ */
+const normalizeColumnArray = (columns) => {
+    if (!Array.isArray(columns)) return columns;
+    return columns.map(normalizeColumnValue);
+};
+
+/**
+ * Get the currently active columns from state, or return defaults if state is not set
+ * @returns {Array} Array of column keys (normalized: numbers for concept IDs, strings for non-numeric keys)
+ */
+export const getActiveColumns = () => {
+    const activeColumns = uiState.getActiveColumns();
+    if (!activeColumns) return defaultColumnKeys;
+
+    const normalized = normalizeColumnArray(activeColumns);
+    // Ensure we always return an array (normalizeColumnArray might return undefined for non-arrays)
+    return Array.isArray(normalized) ? normalized : defaultColumnKeys;
+};
+
+const renderBubbleButton = (buttonKey, buttonLabel) => {    
+    const dataValue = typeof buttonKey === 'number' ? buttonKey : `${buttonKey}`;
+    return `<button name="column-filter" class="filter-btn sub-div-shadow mr-2 mb-2" data-column="${dataValue}">${buttonLabel}</button>`;
+};
+
+const renderBubbleCategory = (category, isFirst = false) => {
+    if (!category?.fields?.length) return '';
+
+    const buttons = category.fields.map((field) => renderBubbleButton(field.key, field.label)).join('');
+    const openAttribute = isFirst ? ' open' : '';
+
+    return `
+        <details class="bubble-category" data-category-key="${category.key}"${openAttribute}>
+            <summary class="bubble-category-summary d-flex justify-content-between align-items-center">
+                <span>${category.label}</span>
+                <span class="badge badge-pill badge-info category-count d-none" data-category-count="${category.key}"></span>
+            </summary>
+            <div class="bubble-category-body d-flex flex-wrap align-items-center" style="margin-top: 1rem;">
+                ${buttons}
+            </div>
+        </details>
+    `;
+};
 
 const renderSearchBubbles = () => {
-    let template = `<div class="row">
-        <div class="col" id="columnFilter">`;
+    const filtersExpanded = getFiltersExpandedState();
+    const toggleLabel = filtersExpanded ? 'Hide field selectors' : 'Show field selectors';
+    const toggleIconDirection = filtersExpanded ? 'up' : 'down';
+    const sections = bubbleCategories.map((category, index) => renderBubbleCategory(category, index === 0));
 
-    template += [...searchBubbleMap].map(([key, label]) =>
-        `<button name="column-filter" class="filter-btn sub-div-shadow" data-column="${key}">` +
-        `${label}` +
-        `</button>`).join('');
-
-    template += `</div>
-    </div>`;
-
-    return template;
+    return `
+        <div class="row">
+            <div class="col">
+                <div class="sub-div-shadow p-3 mb-3 rounded" id="bubbleFiltersContainer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <h5 class="mb-0 mr-2">Fields to Display</h5>
+                            <button class="btn btn-outline-dark btn-sm ml-2" id="resetToDefaultFieldsButton">Reset To Default Fields</button>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span id="bubbleFiltersTotalBadge" class="badge badge-pill badge-info d-none mr-3 ml-3"></span>
+                            <button type="button" class="btn btn-link p-0 text-decoration-none" id="toggleBubbleFilters" aria-expanded="${filtersExpanded}" aria-controls="bubbleFiltersBody">
+                                <span id="bubbleFiltersToggleLabel" class="mr-2">${toggleLabel}</span>
+                                <i id="bubbleFiltersToggleIcon" class="fa fa-caret-${toggleIconDirection}" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="bubbleFiltersBody" class="${filtersExpanded ? '' : 'd-none'} mt-3">
+                        <div id="columnFilterDiv">
+                            ${sections.join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 export const renderTable = (data, source) => {
@@ -52,7 +277,7 @@ export const renderTable = (data, source) => {
                                         <span class="small text-muted mr-1">To:</span>
                                         <input type="date" class="form-control" id="endDate" style="width:160px; height:40px;">
                                     </div>
-                                    <button type="button" class="btn btn-outline-danger" id="resetDate">Reset</button>
+                                    <button type="button" class="btn btn-outline-danger" id="resetDate">Reset date filters</button>
                                 </form>
                             </div>
                         </div>
@@ -114,6 +339,12 @@ export  const renderParticipantSearchResults = (data, source) => {
         addEventSiteFilter();
     }
 }
+
+export const waitForActiveColumnsUpdate = () => lastActiveColumnsUpdatePromise;
+
+export const resetActiveColumnsUpdateTracker = () => {
+    lastActiveColumnsUpdatePromise = Promise.resolve();
+};
 
 export const renderFilters = () => {
     const metadata = searchState.getCachedMetadata();
@@ -304,7 +535,7 @@ export const renderTablePage = (data, type) => {
     mainContent.innerHTML = renderTable(data, type);
     
     renderParticipantSearchResults(data, type);
-    activeColumns(data);
+    setupActiveColumns(data);
     if (type !== 'participantLookup') {
         renderFilters();
     }
@@ -346,7 +577,7 @@ export const reRenderMainTable = async () => {
                 direction: paginationState.direction || '',
                 cursorHistory: paginationState.cursorHistory || []
             });
-            searchState.setSearchResults(searchMetadata, data);
+            await searchState.setSearchResults(searchMetadata, data);
 
             renderTablePage(data, type);
 
@@ -415,19 +646,11 @@ const paginationTemplate = () => {
         </nav>
     </div>`;
 }
- 
-/**
- * Fields from tableHeaderMap are always included in the table.
- * Selected bubbles are added to 'importantColumns' as they're selected.
- * Build the table headers from the importantColumns, checking tableHeaderMap and searchBubbleMap for the column names.
- * @returns {string} - HTML string for the table headers
- */
 
 const buildSearchResultsTableHeader = () => {
-    const headerStringArray = importantColumns.map((columnKey) => {
-        if (!isNaN(columnKey)) columnKey = parseInt(columnKey);
-
-        const columnName = tableHeaderMap.get(columnKey) ?? searchBubbleMap.get(columnKey) ?? columnKey;
+    const activeColumns = getActiveColumns();
+    const headerStringArray = activeColumns.map((columnKey) => {
+        const columnName = bubbleFieldMap.get(columnKey) ?? columnKey;
         return `<th class="sticky-row">${columnName}</th>`;
     });
 
@@ -443,11 +666,12 @@ const buildTableTemplate = (data) => {
     let template = buildSearchResultsTableHeader();
     template += '<tbody>';
 
+    const activeColumns = getActiveColumns();
     data.forEach(participant => {
         let rowHtml = `<tr><td><button class="btn btn-primary select-participant" data-token="${participant.token}">Select</button></td>`;
 
-        // importantColumns are the columns to display
-        importantColumns.forEach(columnKey => {
+        // activeColumns (from state or defaults) are the columns to display
+        activeColumns.forEach(columnKey => {
             const rawValue = participant[columnKey];
             const cellContent = participantConceptIDToTextMapping(rawValue, columnKey, participant);
             // Append the table cell
@@ -515,33 +739,86 @@ export const filterBySiteKey = (data, siteAbbr) => {
     return data.filter(participant => participant[fieldMapping.healthcareProvider] === siteCode);
 }
 
-export const activeColumns = (data) => {
-    let btns = document.getElementsByName('column-filter');
-    Array.from(btns).forEach(btn => {
-        let value = btn.dataset.column;
-        if(importantColumns.indexOf(value) !== -1) {
-            btn.classList.add('filter-active');
+export const setupActiveColumns = (data) => {
+    const columnFilterDiv = document.getElementById('columnFilterDiv');
+    if (!columnFilterDiv) return;
+
+    setupBubbleFiltersToggle();
+
+    const buttonsByColumn = buildButtonsByColumn(columnFilterDiv);
+
+    const syncBubblesAndColumns = async (updatedColumns, onAfterUpdate) => {
+        await runColumnUpdate(data, updatedColumns, () => {
+            syncActiveButtons(buttonsByColumn, getActiveColumns());
+            updateBubbleCategoryCounts();
+            onAfterUpdate?.();
+        });
+    };
+
+    syncActiveButtons(buttonsByColumn, getActiveColumns());
+    updateBubbleCategoryCounts();
+
+    if (columnFilterClickHandler) {
+        columnFilterDiv.removeEventListener('click', columnFilterClickHandler);
+    }
+
+    columnFilterClickHandler = async (event) => {
+        const button = event.target.closest('button[name="column-filter"]');
+        if (!button || !columnFilterDiv.contains(button)) {
+            return;
         }
-        btn.addEventListener('click', async (e) => {
-            e.stopPropagation()
-            if(!btn.classList.contains('filter-active')){
-                btn.classList.add('filter-active');
-                importantColumns.push(value);
-                renderParticipantSearchResults(data, 'bubbleFilters');
-            }
-            else{
-                btn.classList.remove('filter-active');
-                importantColumns.splice(importantColumns.indexOf(value), 1);
-                renderParticipantSearchResults(data, 'bubbleFilters');
-            }
-            document.getElementById('currentPageNumber').innerHTML = `&nbsp;Page: 1&nbsp;`
-            document.getElementById('nextLink').setAttribute('data-nextpage', 1);
-            const metadata = searchState.getCachedMetadata();
-            if (metadata?.startDateFilter) document.getElementById('startDate').value = metadata.startDateFilter;
-            if (metadata?.endDateFilter) document.getElementById('endDate').value = metadata.endDateFilter;
-        })
+
+        event.stopPropagation();
+
+        const columnValue = normalizeColumnValue(button.dataset.column);
+        const activeColumns = getActiveColumns();
+        const isActive = button.classList.contains('filter-active');
+
+        let updatedColumns;
+        if (isActive) {
+            updatedColumns = activeColumns.filter((col) => col !== columnValue);
+        } else if (activeColumns.includes(columnValue)) {
+            updatedColumns = activeColumns;
+        } else {
+            updatedColumns = [...activeColumns, columnValue];
+        }
+
+        await syncBubblesAndColumns(updatedColumns);
+    };
+
+    columnFilterDiv.addEventListener('click', columnFilterClickHandler);
+
+    const resetButton = document.getElementById('resetToDefaultFieldsButton');
+    if (resetButton) {
+        if (resetButtonHandler) {
+            resetButton.removeEventListener('click', resetButtonHandler);
+        }
+
+        resetButtonHandler = async () => {
+            await syncBubblesAndColumns(defaultColumnKeys, () => resetBubbleCategoryExpansion());
+        };
+
+        resetButton.addEventListener('click', resetButtonHandler);
+    }
+};
+
+const updateBubbleCategoryCounts = () => {
+    const container = document.getElementById('columnFilterDiv');
+    if (!container) return;
+
+    const categories = container.querySelectorAll('[data-category-key]');
+    categories.forEach((categoryEl) => {
+        const categoryKey = categoryEl.getAttribute('data-category-key');
+        const badge = categoryEl.querySelector(`[data-category-count="${categoryKey}"]`);
+        const body = categoryEl.querySelector('.bubble-category-body');
+        if (!badge || !body) return;
+
+        const activeButtons = body.querySelectorAll('button.filter-active');
+        applyBadgeState(badge, activeButtons.length);
     });
-}
+
+    updateTotalFieldsBadge();
+};
 
 const alertTrigger = () => {
     let alertList = document.getElementById('alert_placeholder');
