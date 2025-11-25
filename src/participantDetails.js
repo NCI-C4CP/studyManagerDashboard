@@ -1,5 +1,5 @@
 import { updateNavBar } from './navigationBar.js';
-import { attachUpdateLoginMethodListeners, allStates, closeModal, getFieldValues, getImportantRows, getIsNORCOrCCC, getModalLabel, primaryPhoneTypes, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, addFormInputFormattingListeners } from './participantDetailsHelpers.js';
+import { attachUpdateLoginMethodListeners, allStates, allCountries, isAddressInternational, closeModal, getFieldValues, getImportantRows, getIsNORCOrCCC, getModalLabel, primaryPhoneTypes, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, addFormInputFormattingListeners } from './participantDetailsHelpers.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantHeader } from './participantHeader.js';
 import { getDataAttributes, urls, escapeHTML, renderShowMoreDataModal } from './utils.js';
@@ -285,15 +285,30 @@ const renderFormInModal = (participant, changedOption, conceptId, participantKey
         .filter(row => row.editable && (row.validationType == 'permissionSelector'))
         .map(row => row.field);
 
+    //Check to see if the address is international when rendering state or postal codes
+    //because they go from restricted inputs to general text
+    let internationalAddressConceptId;
+    if (conceptId == fieldMapping.state || conceptId == fieldMapping.zip) {
+        internationalAddressConceptId = fieldMapping.isIntlAddr;
+    } else if (conceptId == fieldMapping.physicalState || conceptId == fieldMapping.physicalZip) {
+        internationalAddressConceptId = fieldMapping.physicalAddrIntl;
+    } else if (conceptId == fieldMapping.altState || conceptId == fieldMapping.altZip) {
+        internationalAddressConceptId = fieldMapping.isIntlAltAddress;
+    }
+    const isInternational = isAddressInternational(participant, changedOption, internationalAddressConceptId);
+
     const renderPermissionSelector = permissionSelector.includes(parseInt(conceptId));
     const renderPhone = phoneFieldMappingsArray.includes(parseInt(conceptId));
-    const renderText = textFieldMappingsArray.includes(parseInt(conceptId));
+    const renderText = textFieldMappingsArray.includes(parseInt(conceptId)) || isInternational;
     const renderDay = conceptId == fieldMapping.birthDay;
     const renderMonth = conceptId == fieldMapping.birthMonth;
-    const renderState = [fieldMapping.state, fieldMapping.physicalState, fieldMapping.altState].some(id => id == conceptId);
+    const renderState = !isInternational && [fieldMapping.state, fieldMapping.physicalState, fieldMapping.altState].some(id => id == conceptId);
+    const renderCountry = [fieldMapping.country, fieldMapping.physicalCountry, fieldMapping.altCountry].some(id => id == conceptId);
     const renderSuffix = conceptId == fieldMapping.suffix;
     const renderLanguage = conceptId == fieldMapping.preferredLanguage;
     const elementId = `fieldModified${conceptId}`;
+
+   
 
     return `
         <form id="formResponse" method="post">
@@ -304,8 +319,9 @@ const renderFormInModal = (participant, changedOption, conceptId, participantKey
             ${renderMonth ? renderMonthSelector(participantValue, conceptId) : ''}
             ${renderPermissionSelector ? renderTextVoicemailPermissionSelector(participantValue, conceptId) : ''}
             ${renderState ? renderStateSelector(participantValue, conceptId) : ''}
+            ${renderCountry ? renderCountrySelector(participantValue, conceptId) : ''}
             ${renderSuffix ? renderSuffixSelector(participantValue, conceptId) : ''}
-            ${renderText ? renderTextInputBox(participantValue, conceptId) : ''}
+            ${renderText ? renderTextInputBox(participantValue, conceptId, isInternational) : ''}
             ${renderPhone ? renderPhoneInputBox(participantValue, conceptId) : ''}
             ${renderLanguage ? renderLanguageSelector(participant, participantValue, conceptId) : ''}
             <br/>
@@ -376,9 +392,23 @@ const renderStateSelector = (participantValue, conceptId) => {
     `;
 };
 
-const renderTextInputBox = (participantValue, conceptId) => {
+const renderCountrySelector = (participantValue, conceptId) => {
+    let options = '';
+    let countryCodes = Object.keys(allCountries);
+    for(const index in countryCodes){
+        options += `<option class="option-dark-mode" value="${countryCodes[index]}">${allCountries[countryCodes[index]]}</option>`
+    }
     return `
-        <input type="text" name="newValue${conceptId}" id="newValue${conceptId}" data-currentValue="${escapeHTML((participantValue ?? '').toString())}">
+        <select name="newValue${conceptId}" id="newValue${conceptId}" data-currentValue="${escapeHTML((participantValue ?? '').toString())}">
+            <option class="option-dark-mode" value="">None</option>
+            ${options}
+        </select>
+    `;
+};
+
+const renderTextInputBox = (participantValue, conceptId, forceAllChars) => {
+    return `
+        <input type="text" name="newValue${conceptId}" id="newValue${conceptId}" data-currentValue="${escapeHTML((participantValue ?? '').toString())}" data-force-all-chars=${forceAllChars ? 'true': 'false'}>
     `;
 };
 

@@ -59,6 +59,278 @@ export const allStates = {
     "NA": 52
 }
 
+export const allCountries = {
+    "ala": "ALAND ISLANDS",
+    "afg": "AFGHANISTAN",
+    "alb": "ALBANIA",
+    "dza": "ALGERIA",
+    "asm": "AMERICAN SAMOA",
+    "and": "ANDORRA",
+    "ago": "ANGOLA",
+    "aia": "ANGUILLA",
+    "ata": "ANTARCTICA",
+    "atg": "ANTIGUA AND BARBUDA",
+    "arg": "ARGENTINA",
+    "arm": "ARMENIA",
+    "abw": "ARUBA",
+    "aus": "AUSTRALIA",
+    "aut": "AUSTRIA",
+    "aze": "AZERBAIJAN",
+    "bhs": "BAHAMAS",
+    "bhr": "BAHRAIN",
+    "bgd": "BANGLADESH",
+    "brb": "BARBADOS",
+    "blr": "BELARUS",
+    "bel": "BELGIUM",
+    "blz": "BELIZE",
+    "ben": "BENIN",
+    "bmu": "BERMUDA",
+    "btn": "BHUTAN",
+    "bol": "BOLIVIA (PLURINATIONAL STATE OF)",
+    "bes": "BONAIRE, SINT EUSTATIUS AND SABA",
+    "bih": "BOSNIA AND HERZEGOVINA",
+    "bwa": "BOTSWANA",
+    "bvt": "BOUVET ISLAND",
+    "bra": "BRAZIL",
+    "atb": "BRITISH ANTARCTIC TERRITORY",
+    "iot": "BRITISH INDIAN OCEAN TERRITORY",
+    "brn": "BRUNEI DARUSSALAM",
+    "bgr": "BULGARIA",
+    "bfa": "BURKINA FASO",
+    "bdi": "BURUNDI",
+    "bys": "BYELORUSSIAN SSR",
+    "civ": "COTE D'IVOIRE",
+    "cpv": "CABO VERDE",
+    "khm": "CAMBODIA",
+    "cmr": "CAMEROON",
+    "can": "CANADA",
+    "cte": "CANTON AND ENDERBURY ISLANDS",
+    "cym": "CAYMAN ISLANDS",
+    "caf": "CENTRAL AFRICAN REPUBLIC",
+    "tcd": "CHAD",
+    "chl": "CHILE",
+    "chn": "CHINA",
+    "cxr": "CHRISTMAS ISLAND",
+    "cck": "COCOS (KEELING) ISLANDS",
+    "col": "COLOMBIA",
+    "com": "COMOROS",
+    "cog": "CONGO",
+    "cod": "CONGO, DEMOCRATIC REPUBLIC OF THE",
+    "cok": "COOK ISLANDS",
+    "cri": "COSTA RICA",
+    "hrv": "CROATIA",
+    "cub": "CUBA",
+    "cuw": "CURACAO",
+    "cyp": "CYPRUS",
+    "cze": "CZECHIA",
+    "csk": "CZECHOSLOVAKIA",
+    "dhy": "DAHOMEY",
+    "dnk": "DENMARK",
+    "dji": "DJIBOUTI",
+    "dma": "DOMINICA",
+    "dom": "DOMINICAN REPUBLIC",
+    "atn": "DRONNING MAUD LAND",
+    "ecu": "ECUADOR",
+    "egy": "EGYPT",
+    "slv": "EL SALVADOR",
+    "gnq": "EQUATORIAL GUINEA",
+    "eri": "ERITREA",
+    "est": "ESTONIA",
+    "swz": "ESWATINI",
+    "eth": "ETHIOPIA",
+    "flk": "FALKLAND ISLANDS (MALVINAS)",
+    "fro": "FAROE ISLANDS",
+    "fji": "FIJI",
+    "fin": "FINLAND",
+    "fra": "FRANCE",
+    "afi": "FRENCH AFARS AND ISSAS",
+    "guf": "FRENCH GUIANA",
+    "pyf": "FRENCH POLYNESIA",
+    "atf": "FRENCH SOUTHERN AND ANTARCTIC TERRITORIES",
+    "gab": "GABON",
+    "gmb": "GAMBIA",
+    "geo": "GEORGIA",
+    "ddr": "GERMAN DEMOCRATIC REPUBLIC",
+    "deu": "GERMANY",
+    "gha": "GHANA",
+    "gib": "GIBRALTAR",
+    "gel": "GILBERT AND ELLICE ISLANDS",
+    "grc": "GREECE",
+    "grl": "GREENLAND",
+    "grd": "GRENADA",
+    "glp": "GUADELOUPE",
+    "gum": "GUAM",
+    "gtm": "GUATEMALA",
+    "ggy": "GUERNSEY",
+    "gin": "GUINEA",
+    "gnb": "GUINEA-BISSAU",
+    "guy": "GUYANA",
+    "hti": "HAITI",
+    "hmd": "HEARD ISLAND AND MCDONALD ISLANDS",
+    "vat": "HOLY SEE",
+    "hnd": "HONDURAS",
+    "hkg": "HONG KONG",
+    "hun": "HUNGARY",
+    "isl": "ICELAND",
+    "ind": "INDIA",
+    "idn": "INDONESIA",
+    "irn": "IRAN (ISLAMIC REPUBLIC OF)",
+    "irq": "IRAQ",
+    "irl": "IRELAND",
+    "imn": "ISLE OF MAN",
+    "isr": "ISRAEL",
+    "ita": "ITALY",
+    "jam": "JAMAICA",
+    "jpn": "JAPAN",
+    "jey": "JERSEY",
+    "jtn": "JOHNSTON ISLAND",
+    "jor": "JORDAN",
+    "kaz": "KAZAKHSTAN",
+    "ken": "KENYA",
+    "kir": "KIRIBATI",
+    "prk": "KOREA (DEMOCRATIC PEOPLE'S REPUBLIC OF)",
+    "kor": "KOREA, REPUBLIC OF",
+    "kwt": "KUWAIT",
+    "kgz": "KYRGYZSTAN",
+    "lao": "LAO PEOPLE'S DEMOCRATIC REPUBLIC",
+    "lva": "LATVIA",
+    "lbn": "LEBANON",
+    "lso": "LESOTHO",
+    "lbr": "LIBERIA",
+    "lby": "LIBYA",
+    "lie": "LIECHTENSTEIN",
+    "ltu": "LITHUANIA",
+    "lux": "LUXEMBOURG",
+    "mac": "MACAO",
+    "mdg": "MADAGASCAR",
+    "mwi": "MALAWI",
+    "mys": "MALAYSIA",
+    "mdv": "MALDIVES",
+    "mli": "MALI",
+    "mlt": "MALTA",
+    "mhl": "MARSHALL ISLANDS",
+    "mtq": "MARTINIQUE",
+    "mrt": "MAURITANIA",
+    "mus": "MAURITIUS",
+    "myt": "MAYOTTE",
+    "mex": "MEXICO",
+    "fsm": "MICRONESIA (FEDERATED STATES OF)",
+    "mid": "MIDWAY ISLANDS",
+    "mda": "MOLDOVA, REPUBLIC OF",
+    "mco": "MONACO",
+    "mng": "MONGOLIA",
+    "mne": "MONTENEGRO",
+    "msr": "MONTSERRAT",
+    "mar": "MOROCCO",
+    "moz": "MOZAMBIQUE",
+    "mmr": "MYANMAR",
+    "nam": "NAMIBIA",
+    "nru": "NAURU",
+    "npl": "NEPAL",
+    "nld": "NETHERLANDS",
+    "ncl": "NEW CALEDONIA",
+    "nhb": "NEW HEBRIDES",
+    "nzl": "NEW ZEALAND",
+    "nic": "NICARAGUA",
+    "ner": "NIGER",
+    "nga": "NIGERIA",
+    "niu": "NIUE",
+    "nfk": "NORFOLK ISLAND",
+    "mkd": "NORTH MACEDONIA",
+    "mnp": "NORTHERN MARIANA ISLANDS",
+    "nor": "NORWAY",
+    "omn": "OMAN",
+    "pci": "PACIFIC ISLANDS (TRUST TERRITORY)",
+    "pak": "PAKISTAN",
+    "plw": "PALAU",
+    "pse": "PALESTINE, STATE OF",
+    "pan": "PANAMA",
+    "pcz": "PANAMA CANAL ZONE",
+    "png": "PAPUA NEW GUINEA",
+    "pry": "PARAGUAY",
+    "per": "PERU",
+    "phl": "PHILIPPINES",
+    "pcn": "PITCAIRN",
+    "pol": "POLAND",
+    "prt": "PORTUGAL",
+    "pri": "PUERTO RICO",
+    "qat": "QATAR",
+    "reu": "REUNION",
+    "rou": "ROMANIA",
+    "rus": "RUSSIAN FEDERATION",
+    "rwa": "RWANDA",
+    "blm": "SAINT BARTHELEMY",
+    "shn": "SAINT HELENA, ASCENSION AND TRISTAN DA CUNHA",
+    "kna": "SAINT KITTS AND NEVIS",
+    "lca": "SAINT LUCIA",
+    "maf": "SAINT MARTIN (FRENCH PART)",
+    "spm": "SAINT PIERRE AND MIQUELON",
+    "vct": "SAINT VINCENT AND THE GRENADINES",
+    "wsm": "SAMOA",
+    "smr": "SAN MARINO",
+    "stp": "SAO TOME AND PRINCIPE",
+    "sau": "SAUDI ARABIA",
+    "sen": "SENEGAL",
+    "srb": "SERBIA",
+    "syc": "SEYCHELLES",
+    "sle": "SIERRA LEONE",
+    "skm": "SIKKIM",
+    "sgp": "SINGAPORE",
+    "sxm": "SINT MAARTEN (DUTCH PART)",
+    "svk": "SLOVAKIA",
+    "svn": "SLOVENIA",
+    "slb": "SOLOMON ISLANDS",
+    "som": "SOMALIA",
+    "zaf": "SOUTH AFRICA",
+    "sgs": "SOUTH GEORGIA AND THE SOUTH SANDWICH ISLANDS",
+    "ssd": "SOUTH SUDAN",
+    "rho": "SOUTHERN RHODESIA",
+    "esp": "SPAIN",
+    "lka": "SRI LANKA",
+    "sdn": "SUDAN",
+    "sur": "SURINAME",
+    "sjm": "SVALBARD AND JAN MAYEN",
+    "swe": "SWEDEN",
+    "che": "SWITZERLAND",
+    "syr": "SYRIAN ARAB REPUBLIC",
+    "twn": "TAIWAN, PROVINCE OF CHINA",
+    "tjk": "TAJIKISTAN",
+    "tza": "TANZANIA, UNITED REPUBLIC OF",
+    "tha": "THAILAND",
+    "tls": "TIMOR-LESTE",
+    "tgo": "TOGO",
+    "tkl": "TOKELAU",
+    "ton": "TONGA",
+    "tto": "TRINIDAD AND TOBAGO",
+    "tun": "TUNISIA",
+    "tur": "TURKEY",
+    "tkm": "TURKMENISTAN",
+    "tca": "TURKS AND CAICOS ISLANDS",
+    "tuv": "TUVALU",
+    "uga": "UGANDA",
+    "ukr": "UKRAINE",
+    "are": "UNITED ARAB EMIRATES",
+    "gbr": "UNITED KINGDOM OF GREAT BRITAIN AND NORTHERN IRELAND",
+    "umi": "UNITED STATES MINOR OUTLYING ISLANDS",
+    "pus": "UNITED STATES MISCELLANEOUS PACIFIC ISLANDS",
+    "hvo": "UPPER VOLTA",
+    "ury": "URUGUAY",
+    "uzb": "UZBEKISTAN",
+    "vut": "VANUATU",
+    "ven": "VENEZUELA (BOLIVARIAN REPUBLIC OF)",
+    "vnm": "VIET NAM",
+    "vdr": "VIET-NAM, DEMOCRATIC REPUBLIC OF",
+    "vgb": "VIRGIN ISLANDS (BRITISH)",
+    "vir": "VIRGIN ISLANDS (U.S.)",
+    "wak": "WAKE ISLAND",
+    "wlf": "WALLIS AND FUTUNA",
+    "esh": "WESTERN SAHARA",
+    "yem": "YEMEN",
+    "ymd": "YEMEN, DEMOCRATIC",
+    "zmb": "ZAMBIA",
+    "zwe": "ZIMBABWE"
+};
+
 const textAndVoicemailPermissionIds = [fieldMapping.canWeText, fieldMapping.voicemailMobile, fieldMapping.voicemailHome, fieldMapping.voicemailOther];
 
 export const closeModal = () => {
@@ -91,6 +363,8 @@ const fieldValues = {
 export const getFieldValues = (variableValue, conceptId) => {
     if (!variableValue || (conceptId === "Change Login Email" && variableValue.startsWith("noreply"))) return "";
     if (variableValue in fieldValues) return fieldValues[variableValue];
+
+    if (variableValue in allCountries) return allCountries[variableValue];
 
     const formattedPhoneValue = variableValue ? formatPhoneNumber(variableValue.toString()) : "";
     const phoneFieldValues = {
@@ -208,6 +482,10 @@ const handleFormInputFormatting = (event) => {
     // Name input handling
     if (input.matches('input[type="text"][id^="newValue"]')) {
         const conceptId = parseInt(input.id.replace('newValue', ''), 10);
+        const forceAllChars = input.dataset.forceAllChars === 'true';
+        if (forceAllChars) {
+            return;
+        }
         if (nameFieldConceptIds.includes(conceptId)) {
             const oldValue = input.value;
             const sanitizedValue = formatNameInput(oldValue);
@@ -260,6 +538,10 @@ const handleFormKeydown = (event) => {
     // Handle zip code input keydown
     if (event.target.matches('input[type="text"][id^="newValue"]')) {
         const conceptId = parseInt(event.target.id.replace('newValue', ''), 10);
+        const forceAllChars = event.target.dataset.forceAllChars === 'true';
+        if (forceAllChars) {
+            return;
+        }
         if (zipFieldConceptIds.includes(conceptId)) {
             const controlKeys = ['Backspace', 'Tab', 'Enter', 'Escape', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
             if (controlKeys.includes(event.key)) return;
@@ -305,6 +587,15 @@ const isPhoneNumberInForm = (participant, changedOption, fieldMappingKey) => {
     return !!participant?.[fieldMappingKey] || !!changedOption?.[fieldMappingKey];
 };
 
+export const isAddressInternational = (participant, changedOption, fieldMappingKey) => {
+    if (changedOption[fieldMappingKey]) {
+        return parseInt(changedOption[fieldMappingKey], 10) === fieldMapping.yes ? true : false;
+    } else if (participant[fieldMappingKey]) {
+        return parseInt(participant[fieldMappingKey],10) === fieldMapping.yes ? true : false;
+    }
+    return false;
+};
+
 export const getImportantRows = (participant, changedOption) => {
     const isParticipantVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.verified;
     const isParticipantDataDestroyed = participant[fieldMapping.dataDestroyCategorical] === fieldMapping.requestedDataDestroySigned;
@@ -322,6 +613,11 @@ export const getImportantRows = (participant, changedOption) => {
     const isCellPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.cellPhone);
     const isHomePhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.homePhone);
     const isOtherPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.otherPhone);
+
+    const isMailingInternational = isAddressInternational(participant, changedOption, fieldMapping.isIntlAddr);
+    const isPhysicalInternational = isAddressInternational(participant, changedOption, fieldMapping.physicalAddrIntl);
+    const isAltInternational = isAddressInternational(participant, changedOption, fieldMapping.isIntlAltAddress);
+
     const { coordinatingCenter, helpDesk } = roleState.getRoleFlags();
 
     // Participant Data Rows
@@ -444,6 +740,13 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: false,
             isHeading: true,
         },
+        { field: fieldMapping.isIntlAddr,
+            label: 'Mailing Address is International Address',
+            editable: isEditable,
+            display: true,
+            validationType: 'permissionSelector',
+            isRequired: true
+        },
         { field: fieldMapping.address1,
             label: 'Mailing Address Line 1',
             editable: isEditable,
@@ -458,6 +761,13 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'address',
             isRequired: false
         },
+        { field: fieldMapping.address3,
+            label: 'Mailing Address Line 3',
+            editable: isEditable && isMailingInternational,
+            display: true,
+            validationType: 'address',
+            isRequired: false
+        },
         { field: fieldMapping.city,
             label: 'Mailing Address City',
             editable: isEditable,
@@ -466,18 +776,25 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: true
         },
         { field: fieldMapping.state,
-            label: 'Mailing Address State',
+            label: 'Mailing Address State / Region',
             editable: isEditable,
             display: true,
-            validationType: 'state',
-            isRequired: true
+            validationType: isMailingInternational ? 'none' : 'state',
+            isRequired: isMailingInternational ? false : true
         },
         { field: fieldMapping.zip,
-            label: 'Mailing Address Zip',
+            label: 'Mailing Address Zip / Postal Code',
             editable: isEditable,
             display: true,
-            validationType: 'zip',
+            validationType: isMailingInternational ? 'none' : 'zip',
             isRequired: true
+        },
+        { field: fieldMapping.country,
+            label: 'Mailing Address Country',
+            editable: isEditable && isMailingInternational,
+            display: true,
+            validationType: 'none',
+            isRequired: false
         },
         { field: fieldMapping.isPOBox,
             label: 'Mailing Address is PO Box',
@@ -499,6 +816,13 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: false,
             isHeading: true,
         },
+        { field: fieldMapping.physicalAddrIntl,
+            label: 'Physical Address is International Address',
+            editable: isEditable,
+            display: true,
+            validationType: 'permissionSelector',
+            isRequired: true
+        },
         { field: fieldMapping.physicalAddress1,
             label: 'Physical Address Line 1 (if different from mailing address)',
             editable: isEditable,
@@ -513,6 +837,13 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'address',
             isRequired: false
         },
+        { field: fieldMapping.physicalAddress3,
+            label: 'Physical Address Line 3',
+            editable: isEditable && isPhysicalInternational,
+            display: true,
+            validationType: 'address',
+            isRequired: false
+        },
         { field: fieldMapping.physicalCity,
             label: 'Physical City (if different from mailing address)',
             editable: isEditable,
@@ -521,17 +852,24 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: false
         },
         { field: fieldMapping.physicalState,
-            label: 'Physical State (if different from mailing address)',
+            label: 'Physical State / Region (if different from mailing address)',
             editable: isEditable,
             display: true,
-            validationType: 'state',
+            validationType: isPhysicalInternational ? 'none' : 'state',
             isRequired: false
         },
         { field: fieldMapping.physicalZip,
-            label: 'Physical Zip (if different from mailing address)',
+            label: 'Physical Zip / Postal Code (if different from mailing address)',
             editable: isEditable,
             display: true,
-            validationType: 'zip',
+            validationType: isPhysicalInternational ? 'none' : 'zip',
+            isRequired: false
+        },
+        { field: fieldMapping.physicalCountry,
+            label: 'Physical Address Country',
+            editable: isEditable && isPhysicalInternational,
+            display: true,
+            validationType: 'none',
             isRequired: false
         },
     ];
@@ -546,6 +884,13 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'none',
             isRequired: false,
             isHeading: true,
+        },
+        { field: fieldMapping.isIntlAltAddress,
+            label: 'Alternate Address is International Address',
+            editable: isEditable,
+            display: true,
+            validationType: 'permissionSelector',
+            isRequired: true
         },
         {
             field: fieldMapping.altAddress1,
@@ -563,6 +908,13 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'address',
             isRequired: false,
         },
+        { field: fieldMapping.altAddress3,
+            label: 'Alternate Address Line 3',
+            editable: isEditable && isAltInternational,
+            display: true,
+            validationType: 'address',
+            isRequired: false
+        },
         {
             field: fieldMapping.altCity,
             label: 'Alternate City',
@@ -573,19 +925,26 @@ export const getImportantRows = (participant, changedOption) => {
         },
         {
             field: fieldMapping.altState,
-            label: 'Alternate State',
+            label: 'Alternate State / Region',
             editable: isEditable,
             display: true,
-            validationType: 'state',
+            validationType: isAltInternational ? 'none' : 'state',
             isRequired: false,
         },
         {
             field: fieldMapping.altZip,
-            label: 'Alternate Zip',
+            label: 'Alternate Zip / Postal Code',
             editable: isEditable,
             display: true,
-            validationType: 'zip',
+            validationType: isAltInternational ? 'none' : 'zip',
             isRequired: false,
+        },
+        { field: fieldMapping.altCountry,
+            label: 'Alternate Address Country',
+            editable: isEditable && isAltInternational,
+            display: true,
+            validationType: 'none',
+            isRequired: false
         },
         {
             field: fieldMapping.isPOBoxAltAddress,
