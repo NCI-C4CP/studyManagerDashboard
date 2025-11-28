@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import { setupTestEnvironment, teardownTestEnvironment, installFirebaseStub } from './helpers.js';
-import { urls } from '../src/utils.js';
 
 describe('navigationBar', () => {
     let renderNavBarLinks;
