@@ -208,7 +208,7 @@ export const loadTabContent = async (tabId, participant, reports = null) => {
         contentContainer.innerHTML = content;
 
     } catch (error) {
-        console.error(`Error loading tab content for ${tabId}:`, error);
+        console.error('Error loading tab content for %s:', tabId, error);
         contentContainer.innerHTML = `
             <div class="alert alert-danger">
                 <h4>Error Loading Content</h4>
