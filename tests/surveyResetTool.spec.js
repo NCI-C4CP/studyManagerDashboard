@@ -47,13 +47,6 @@ describe('surveyResetTool', () => {
             await participantState.setParticipant(participant);
             setupSurveyResetToolPage(participant);
             await waitForAsyncTasks();
-
-            // Mock findParticipant used in handleSurveyTypeChange
-            const originalFindParticipant = (await import('../src/participantLookup.js')).findParticipant;
-            const mockFindParticipant = async () => ({
-                code: 200,
-                data: [participant]
-            });
             
             // Note: We can't easily mock the module import here without complex setup or rewire.
             // We can verify UI state change if we simulate the click. Rely on the fact that the click handler calls the logic.

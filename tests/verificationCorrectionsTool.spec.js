@@ -57,11 +57,9 @@ describe('verificationCorrectionsTool', () => {
             await waitForAsyncTasks();
 
             // Simulate dropdown selection for "Verified"
-            const dropdownBtn = document.getElementById('dropdownVerification');
             const verifiedOption = document.getElementById('vrfd');
             
             // Mock dropdown click behavior
-            const menu = document.getElementById('dropdownMenuButtonVerificationOptns');
             verifiedOption.dispatchEvent(new window.Event('click', { bubbles: true }));
             await waitForAsyncTasks();
 
