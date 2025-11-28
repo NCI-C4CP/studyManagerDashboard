@@ -212,7 +212,7 @@ export const loadTabContent = async (tabId, participant, reports = null) => {
         contentContainer.innerHTML = `
             <div class="alert alert-danger">
                 <h4>Error Loading Content</h4>
-                <p>Unable to load ${tabId} content. Please try again.</p>
+                <p>Unable to load ${escapeHTML(tabId)} content. Please try again.</p>
                 <p class="small">${error.message}</p>
             </div>
         `;
