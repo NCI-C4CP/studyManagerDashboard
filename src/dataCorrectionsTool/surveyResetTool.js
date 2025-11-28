@@ -5,6 +5,7 @@ import { baseAPI, getIdToken, hideAnimation, showAnimation } from '../utils.js';
 import { participantState } from '../stateManager.js';
 import { handleBackToToolSelect, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 import { triggerNotificationBanner } from '../utils.js';
+import { refreshParticipantHeaders } from '../participantHeader.js';
 
 let selectedSurvey = null;
 
@@ -216,6 +217,7 @@ const submitSurveyStatusReset = () => {
                     
                     if (response.code === 200 || response.data) {
                         await participantState.setParticipant(response.data);
+                        refreshParticipantHeaders(response.data);
                         updateSurveyStatusTextContent(response.data, selectedSurvey, response.code);
                         displayAlreadyResetNote();
                         triggerNotificationBanner("Survey has been successfully reset!", "success", 10000);

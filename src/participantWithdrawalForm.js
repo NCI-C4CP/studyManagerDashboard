@@ -3,6 +3,7 @@ import { showAnimation, hideAnimation, baseAPI, getIdToken, escapeHTML, triggerN
 import { participantState, uiState } from './stateManager.js';
 import { renderRefusalOptions, renderCauseOptions } from './participantWithdrawalRender.js';
 import { activateTab, loadTabContent, updateHashForTab } from './participantTabs.js';
+import { refreshParticipantHeaders } from './participantHeader.js';
 
 export const renderWithdrawalForm = () => {
     const participant = participantState.getParticipant();
@@ -1092,6 +1093,7 @@ async function sendRefusalWithdrawalResponses(sendRefusalData) {
 
 const navigateToParticipantSummary = async (participant) => {
     await participantState.setParticipant(participant);
+    refreshParticipantHeaders(participant);
     updateHashForTab('summary', false);
     await loadTabContent('summary', participant);
     activateTab('summary');

@@ -10,6 +10,7 @@ import { consentHandler, hipaaHandler, userProfile, verificationStatus,
 import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, renderShowMoreDataModal, urls, triggerNotificationBanner } from './utils.js';
 import { participantState, reportsState } from './stateManager.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
+import { refreshParticipantHeaders } from './participantHeader.js';
 
 const { PDFDocument, StandardFonts, rgb } = PDFLib;
 
@@ -921,8 +922,15 @@ const postResetUserData = async (uid) => {
     }
 }
 
-const refreshParticipantAfterReset = async (participant) => {
+export const refreshParticipantAfterReset = async (participant) => {
     await participantState.setParticipant(participant);
+    refreshParticipantHeaders(participant);
+    if (typeof document !== 'undefined' && document.querySelectorAll('.participant-header').length === 0) {
+        const mainContent = document.getElementById('mainContent');
+        if (mainContent) {
+            mainContent.insertAdjacentHTML('afterbegin', renderParticipantHeader(participant));
+        }
+    }
     reportsState.clearReports();
 
     window.location.hash = '#participantDetails/summary';

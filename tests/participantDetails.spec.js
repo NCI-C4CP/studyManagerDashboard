@@ -81,6 +81,20 @@ describe('participantDetails Integration', () => {
         expect(document.getElementById('details-tab').classList.contains('active')).to.be.true;
     });
 
+    it('Participant Lookup button requests a fresh lookup form instead of cached results', async () => {
+        const participant = createMockParticipant('lookup-uid');
+        await participantDetails(participant);
+        await waitForAsyncTasks();
+
+        const lookupBtn = document.getElementById('backToParticipantLookupBtn');
+        expect(lookupBtn).to.exist;
+
+        lookupBtn.click();
+        const { participantLookupNavRequest } = await import('../src/navigationBar.js');
+        expect(participantLookupNavRequest()).to.equal(true);
+        expect(window.location.hash).to.equal('#participantLookup');
+    });
+
     it('loads details tab content by default', async () => {
         const participant = createMockParticipant();
         await participantDetails(participant);

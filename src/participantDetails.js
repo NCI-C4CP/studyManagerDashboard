@@ -1,4 +1,4 @@
-import { updateNavBar } from './navigationBar.js';
+import { updateNavBar, setParticipantLookupNavRequest } from './navigationBar.js';
 import { attachUpdateLoginMethodListeners, allStates, closeModal, getFieldValues, getImportantRows, getIsNORCOrCCC, getModalLabel, primaryPhoneTypes, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, addFormInputFormattingListeners } from './participantDetailsHelpers.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantHeader } from './participantHeader.js';
@@ -514,6 +514,7 @@ const addSearchNavigationListeners = () => {
 
     if (backToParticipantLookupBtn) {
         backToParticipantLookupBtn.addEventListener('click', () => {
+            setParticipantLookupNavRequest(true);
             location.hash = '#participantLookup';
         });
     }

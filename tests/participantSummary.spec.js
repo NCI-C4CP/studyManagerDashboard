@@ -1,6 +1,9 @@
 import { expect } from 'chai';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { urls } from '../src/utils.js';
+import { renderParticipantHeader } from '../src/participantHeader.js';
+import { participantState } from '../src/stateManager.js';
+import { refreshParticipantAfterReset } from '../src/participantSummary.js';
 import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 
 const createPdfLibStub = () => {
@@ -345,7 +348,8 @@ describe('participantSummary', () => {
     it('shows and hides reset modal via bootstrap and fallback path', async () => {
       const participant = buildSummaryParticipant();
       const html = await renderSummaryTabContent(participant);
-      document.getElementById('mainContent').innerHTML = html;
+      // Simulate the page-level header plus the summary tab content
+      document.getElementById('mainContent').innerHTML = `${renderParticipantHeader(participant)}${html}`;
       await waitForAsyncTasks();
 
       // Force manual fallback path (no bootstrap present)
@@ -374,6 +378,52 @@ describe('participantSummary', () => {
       expect(modalEl.style.display === '' || modalEl.style.display === 'none').to.be.true;
 
       expect(document.querySelector('.modal-backdrop')).to.be.null;
+    });
+
+    it('refreshes the participant header after a successful reset', async () => {
+      const participant = buildSummaryParticipant({
+        Connect_ID: 'OLD-CONNECT',
+        [fieldMapping.verficationDate]: '2024-01-04T00:00:00Z',
+      });
+      const updatedParticipant = {
+        ...participant,
+        Connect_ID: 'NEW-CONNECT',
+        [fieldMapping.verficationDate]: '2025-02-02T00:00:00Z',
+      };
+
+      const originalFetch = global.fetch;
+      global.fetch = async (req) => {
+        const url = typeof req === 'string' ? req : req?.url || '';
+        if (url.includes('resetUser')) {
+          return { ok: true, json: async () => ({ code: 200, data: { data: updatedParticipant } }) };
+        }
+        return { ok: true, json: async () => ({ code: 200, data: {} }) };
+      };
+
+      const html = await renderSummaryTabContent(participant);
+      document.getElementById('mainContent').innerHTML = html;
+      await waitForAsyncTasks();
+
+      const resetBtn = document.getElementById('openResetDialog');
+      expect(resetBtn).to.exist;
+      resetBtn.click();
+      await waitForAsyncTasks();
+
+      const confirmBtn = document.getElementById('resetUserBtn');
+      expect(confirmBtn).to.exist;
+      confirmBtn.click();
+      await waitForAsyncTasks();
+      await new Promise(res => setTimeout(res, 10));
+      await refreshParticipantAfterReset(updatedParticipant);
+
+      const mainContentHtml = document.getElementById('mainContent').innerHTML;
+      const stateParticipant = participantState.getParticipant();
+
+      expect(stateParticipant.Connect_ID).to.equal('NEW-CONNECT');
+      expect(mainContentHtml).to.include('NEW-CONNECT');
+      expect(mainContentHtml).to.include('Connect_ID');
+
+      global.fetch = originalFetch;
     });
   });
 });

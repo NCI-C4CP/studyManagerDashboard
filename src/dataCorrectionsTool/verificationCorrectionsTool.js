@@ -4,6 +4,7 @@ import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, t
 import { verificationStatusMapping, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
 import { appState, participantState } from '../stateManager.js';
 import { findParticipant } from '../participantLookup.js';
+import { refreshParticipantHeaders } from '../participantHeader.js';
 import { handleBackToToolSelect, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 
 
@@ -288,8 +289,9 @@ export const verificationCorrectionsClickHandler = async (selectedOptions) => {
             if (response.status === 200) {
                 const query = `token=${selectedOptions.token}`;
                 const reloadedParticipant = await findParticipant(query);
-                reloadVerificationToolPage(reloadedParticipant.data[0], 'Correction(s) updated.', 'success');
-                await participantState.setParticipant(reloadedParticipant.data[0]);
+                const updatedParticipant = reloadedParticipant.data[0];
+                await participantState.setParticipant(updatedParticipant);
+                reloadVerificationToolPage(updatedParticipant, 'Correction(s) updated.', 'success');
             }
             else { 
                 triggerNotificationBanner('Error: No corrections were made.', 'warning')
@@ -301,10 +303,15 @@ export const verificationCorrectionsClickHandler = async (selectedOptions) => {
         }
 };
 
-const reloadVerificationToolPage = (participant, message, type) => {
+const reloadVerificationToolPage = (participant, message, type, options = {}) => {
     showAnimation();
-    setupVerificationCorrectionsPage(participant);
+    const hasDataCorrectionsContainer = Boolean(document.getElementById('dataCorrectionsToolContainer'));
+    const containerId = options.containerId || (hasDataCorrectionsContainer ? 'dataCorrectionsToolContainer' : 'mainContent');
+    const skipNavBarUpdate = options.skipNavBarUpdate ?? hasDataCorrectionsContainer;
+
+    setupVerificationCorrectionsPage(participant, { containerId, skipNavBarUpdate });
     triggerNotificationBanner(message, type);
+    refreshParticipantHeaders(participant);
     hideAnimation();
 }
 
