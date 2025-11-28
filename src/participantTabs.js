@@ -226,7 +226,6 @@ export const loadTabContent = async (tabId, participant, reports = null) => {
  * @returns {void}
  */
 export const initializeTabListeners = (participant, reports = null) => {
-    const visibleTabs = getVisibleTabs();
 
     // Handle tab clicks and content loading with a delegated event listener
     const navList = document.querySelector('.participant-tabs');
