@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import { renderDataCorrectionsTabContent, renderDataCorrectionsToolInTab, setupDataCorrectionsSelectionToolPage } from '../src/dataCorrectionsTool/dataCorrectionsToolSelection.js';
-import { participantState } from '../src/stateManager.js';
 import { setActiveDataCorrectionsTab } from '../src/dataCorrectionsTool/dataCorrectionsHelpers.js';
 
 describe('dataCorrectionsToolSelection', () => {
