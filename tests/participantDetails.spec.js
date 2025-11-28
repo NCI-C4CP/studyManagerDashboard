@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
-import { baseAPI } from '../src/utils.js';
 import { participantState } from '../src/stateManager.js';
 
 describe('participantDetails Integration', () => {
