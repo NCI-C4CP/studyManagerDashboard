@@ -1,4 +1,5 @@
 import { roleState } from './stateManager.js';
+import { escapeHTML } from './utils.js';
 
 /**
  * Tab configuration with role-based visibility
@@ -202,7 +203,7 @@ export const loadTabContent = async (tabId, participant, reports = null) => {
                 break;
 
             default:
-                content = `<div class="alert alert-warning">Unknown tab: ${tabId}</div>`;
+                content = `<div class="alert alert-warning">Unknown tab: ${escapeHTML(tabId)}</div>`;
         }
         contentContainer.innerHTML = content;
 
