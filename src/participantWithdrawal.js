@@ -5,16 +5,16 @@ import { renderWithdrawalForm, viewOptionsSelected, proceedToNextPage, autoSelec
 import { uiState } from './stateManager.js';
 
 
-export const renderParticipantWithdrawal = async (participant) => {    
+export const renderParticipantWithdrawal = async (participant) => {
     const mainContent = document.getElementById('mainContent');
     updateNavBar('participantWithdrawalBtn');
-    
+
     // Deny access if participant is duplicate. Provide warning message and nav buttons.
     if (participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate) {
         mainContent.innerHTML = buildAccessDeniedTemplate(participant);
-        
+
         document.getElementById('goToParticipantSummaryBtn').addEventListener('click', () => {
-            window.location.hash = '#participantSummary';
+            window.location.hash = '#participantDetails/summary';
         });
         document.getElementById('goToParticipantDetailsBtn').addEventListener('click', () => {
             window.location.hash = '#participantDetails';
@@ -32,6 +32,46 @@ export const renderParticipantWithdrawal = async (participant) => {
     addEventMonthSelection('suspendContactUntilMonth', 'suspendContactUntilDay', 'suspendContactUntilYear');
     await checkPreviousWithdrawalStatus(participant);
 }
+
+/**
+ * Render participant withdrawal content for use in a tab
+ * @param {object} participant - The participant object
+ * @returns {Promise<string>} HTML string for withdrawal tab content
+ */
+export const renderWithdrawalTabContent = async (participant) => {
+    if (!participant) {
+        return '<div class="alert alert-warning">No participant data available</div>';
+    }
+
+    // Check if participant is duplicate - deny access
+    if (participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate) {
+        return `
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <h4 class="alert-heading">Access Denied</h4>
+                <p>Duplicate account. Withdrawal page is not accessible for this participant.</p>
+            </div>
+        `;
+    }
+
+    const content = `
+        ${renderParticipantHeader(participant)}
+        <div id="alert_placeholder"></div>
+        <div id="formMainPage">
+            ${renderWithdrawalForm()}
+        </div>
+    `;
+
+    // Schedule event handlers to run after DOM is updated
+    requestAnimationFrame(async () => {
+        autoSelectOptions();
+        viewOptionsSelected();
+        proceedToNextPage();
+        addEventMonthSelection('suspendContactUntilMonth', 'suspendContactUntilDay', 'suspendContactUntilYear');
+        await checkPreviousWithdrawalStatus(participant);
+    });
+
+    return content;
+};
 
 export const buildAccessDeniedTemplate = (participant) => {
     return `

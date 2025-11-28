@@ -53,34 +53,11 @@ export const dashboardNavBarLinks = () => {
         <li class="nav-item" id="participantLookupBtn">
             <a class="nav-item nav-link ws-nowrap" href="#participantLookup" title="Participant Lookup"><i class="fas fa-search"></i> Participant Lookup</a>
         </li>
-        <li class="nav-item" id="participantDetailsBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#participantDetails" title="Participant Details"><i class="fa fa-info-circle"></i> Participant Details</a>
-        </li>
-        <li class="nav-item" id="participantSummaryBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#participantSummary" title="Participant Summary"><i class="fa fa-id-badge"></i> Participant Summary</a>
-        </li>
-        ${isParent ?
-        (`<li class="nav-item" id="participantWithdrawalBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#participantWithdrawal" title="Participant Withdrawal"><i class="fa fa-list-alt"></i> Participant Withdrawal</a>
-        </li>`) : (``)  }
-        <li class="nav-item" id="participantMessageBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#participantMessages" title="Participant Messages"><i class="fa fa-envelope-open"></i> Participant Messages</a>
-        </li>
-        ${helpDesk ? '' : (`<li class="nav-item" id="pathologyReportUploadBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#pathologyReportUpload" title="Pathology Report Upload"><i class="fa fa-upload"></i> Pathology Report Upload</a>
-        </li>`)}
-        ${(helpDesk || coordinatingCenter) ?
-        (`<li class="nav-item" id="participantVerificationBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#dataCorrectionsToolSelection" title="Data Corrections Tool"><i class="fa fa-check"></i> Data Corrections Tool</a>
-        </li>`) : (``) }
-        ${(helpDesk || coordinatingCenter) ?
-            (`<li class="nav-item" id="replaceHomeCollectionBtn">
-                <a class="nav-item nav-link ws-nowrap" href="#requestHomeCollectionKit" title="Home Collection Kit Request"><i class="fa fa-home"></i> Kit Requests</a>
-            </li>`) : (``) }
         ${coordinatingCenter ?
             (`<li class="nav-item" id="manageRequestAKitConditionsBtn">
                 <a class="nav-item nav-link ws-nowrap" href="#requestAKitConditions" title="Manage Automated Kit Request Eligibility"><i class="fa fa-cogs"></i> CCC use only- Set Kit Eligibility</a>
             </li>`) : (``) }
+        <div class="w-100 d-none d-lg-block"></div>
         ${(!isParent || coordinatingCenter) ?
         (`<li class="nav-item" id="siteMessageBtn">
             <a class="nav-item nav-link ws-nowrap" href="#siteMessages" title="Automated Refusal/Withdrawal Notifications to Sites"><i class="fa fa-comments"></i> Automated Refusal/Withdrawal Notifications to Sites</a>

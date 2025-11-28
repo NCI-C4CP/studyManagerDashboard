@@ -1,7 +1,7 @@
 import { updateNavBar } from './navigationBar.js';
 import { renderParticipantHeader } from './participantHeader.js';
-import { closeModal } from './participantDetailsHelpers.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
+import { retrievePhysicalActivityReport } from './reportsUtils.js';
 import { consentHandler, hipaaHandler, userProfile, verificationStatus,
     baselineBOHSurvey, baselineMRESurvey, baselineSASSurvey, baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineResearchBUMSurvey, baselineClinicalBloodUrineSurvey,
     baselineHomeMouthwashSurvey, baselineMenstrualSurvey, baselinePromisSurvey, dhqSurvey, cancerScreeningHistorySurvey, baselineExperienceSurvey, baselinePreferenceSurvey,
@@ -24,6 +24,172 @@ export const renderParticipantSummary = (participant, reports) => {
         downloadReportHandler(participant, reports);
         resetParticipantConfirm();
     }
+};
+
+/**
+ * Render participant summary content for use in a tab
+ * @param {object} participant - The participant object
+ * @param {object} reports - The reports object
+ * @returns {Promise<string>} HTML string for summary tab content
+ */
+export const renderSummaryTabContent = async (participant, reports) => {
+    if (!participant) {
+        return '<div class="alert alert-warning">No participant data available</div>';
+    }
+
+    // Fetch reports if not provided
+    let summaryReports = reports;
+    if (!summaryReports) {
+        try {
+            // Check state first, then fetch if needed
+            summaryReports = reportsState.getReports();
+
+            if (!summaryReports) {
+                summaryReports = {};
+                const physActReport = await retrievePhysicalActivityReport(participant);
+                if (physActReport) {
+                    summaryReports.physActReport = physActReport;
+                }
+                reportsState.setReports(summaryReports);
+            }
+        } catch (error) {
+            console.error('Error fetching reports:', error);
+            summaryReports = {};
+        }
+    }
+
+    const content = renderSummaryContent(participant, summaryReports);
+
+    requestAnimationFrame(() => {
+        downloadCopyHandler(participant);
+        downloadReportHandler(participant, summaryReports);
+        resetParticipantConfirm();
+    });
+
+    return content;
+};
+
+/**
+ * Render the summary table content
+ * @param {object} participant - The participant object
+ * @param {object} reports - The reports object
+ * @returns {string} HTML string for summary content
+ */
+const renderSummaryContent = (participant, reports) => {
+    return `
+        ${renderResetUserButton(participant?.state?.uid)}
+        <div id="alert_placeholder" style="margin-top: 15px;"></div>
+        <div class="table-responsive">
+            <span> <h4 style="text-align: center;">Participant Summary </h4> </span>
+            <div class="sticky-header">
+                <table class="table table-striped">
+                    <thead class="thead-dark sticky-row">
+                        <tr>
+                            <th class="sticky-row" scope="col">Icon</th>
+                            <th class="sticky-row" scope="col">Timeline</th>
+                            <th class="sticky-row" scope="col">Category</th>
+                            <th class="sticky-row" scope="col">Item</th>
+                            <th class="sticky-row" scope="col">Status</th>
+                            <th class="sticky-row" scope="col">Date</th>
+                            <th class="sticky-row" scope="col">Setting</th>
+                            <th class="sticky-row" scope="col">Refused</th>
+                            <th class="sticky-row" scope="col">Extra</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="row-color-enrollment-dark">
+                            ${consentHandler(participant)}
+                        </tr>
+                        <tr class="row-color-enrollment-light">
+                            ${hipaaHandler(participant)}
+                        </tr>
+                        <tr class="row-color-enrollment-dark">
+                            ${userProfile(participant)}
+                        </tr>
+                        <tr class="row-color-enrollment-light">
+                            ${verificationStatus(participant)}
+                        </tr>
+                        <tr class="row-color-survey-dark">
+                            ${baselineBOHSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-light">
+                            ${baselineMRESurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-dark">
+                            ${baselineSASSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-light">
+                            ${baselineLAWSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-dark">
+                            ${baselineSSN(participant)}
+                        </tr>
+                        <tr class="row-color-survey-light">
+                            ${baselineCOVIDSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-dark">
+                            ${baselineResearchBUMSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-light">
+                            ${baselineClinicalBloodUrineSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-dark">
+                            ${baselineHomeMouthwashSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-light">
+                            ${baselineMenstrualSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-dark">
+                            ${baselinePromisSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-light">
+                            ${dhqSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-dark">
+                            ${cancerScreeningHistorySurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-light">
+                            ${baselineExperienceSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-dark">
+                            ${baselinePreferenceSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-sample-dark">
+                            ${baselineBloodSample(participant)}
+                        </tr>
+                        <tr class="row-color-sample-light">
+                            ${baselineUrineSample(participant)}
+                        </tr>
+                        <tr class="row-color-sample-dark">
+                            ${baselineResearchMouthwashSample(participant)}
+                        </tr>
+                        <tr class="row-color-sample-light">
+                            ${baselineHomeMouthwashSample(participant)}
+                        </tr>
+                        <tr class="row-color-sample-dark">
+                            ${baselineMouthwashR1Sample(participant)}
+                        </tr>
+                        <tr class="row-color-sample-light">
+                            ${baselineMouthwashR2Sample(participant)}
+                        </tr>
+                        <tr class="row-color-payment">
+                            ${baselinePayment(participant)}
+                        </tr>
+                        <tr class="row-color-roi-dark">
+                            ${baselinePhysActReport(participant, reports)}
+                        </tr>
+                        <tr class="row-color-roi-light">
+                            ${dhq3Report(participant, reports)}
+                        </tr>
+                        ${participant[fieldMapping.revokeHIPAA] === fieldMapping.yes ?
+                            (`<tr class="row-color-enrollment-dark"> ${hipaaRevocation(participant)} </tr>`) : (``)}
+                        ${participant[fieldMapping.destroyData] === fieldMapping.yes ?
+                            (`<tr class="row-color-enrollment-dark"> ${dataDestroy(participant)} </tr>`): (``)}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
 };
 
 export const render = (participant, reports) => {
@@ -149,6 +315,7 @@ export const render = (participant, reports) => {
 };
 
 const downloadCopyHandler = (participant) => {
+    if (typeof document === 'undefined') return;
     const defaultVersion = 'V0.02';
     const defaultLang = 'Eng';
 
@@ -213,6 +380,7 @@ const downloadCopyHandler = (participant) => {
 }
 
 const downloadReportHandler = (participant, reports) => {
+    if (typeof document === 'undefined') return;
     
     let lang;
     switch (participant[fieldMapping.preferredLanguage]) {
@@ -562,22 +730,111 @@ const dataDestroy = (participant) => {
 }
 
 const renderResetUserButton = (participantUid) => {
-    if(location.hostname === 'localhost' || location.hostname === '127.0.0.1' || [urls.dev, urls.stage].includes(location.host.toLowerCase())) {
-        return `
-        <a
+    const isNonProdEnv = (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test')
+        || location.hostname === 'localhost'
+        || location.hostname === '127.0.0.1'
+        || [urls.dev, urls.stage].includes(location.host.toLowerCase());
+    if (!isNonProdEnv) return '';
+
+    return `
+        <button
+            type="button"
+            class="btn btn-danger"
             data-toggle="modal" 
-            data-target="#modalShowMoreData"
+            data-target="#resetParticipantModal"
             name="modalResetParticipant"
             id="openResetDialog"
             data-participantuid="${participantUid}"
         >
-            <button type="button" class="btn btn-danger">Reset Participant for Testing</button>
-        </a>
-        `
-    } else {
-        return '';
+            Reset Participant for Testing
+        </button>
+        <div class="modal fade" id="resetParticipantModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header" id="resetModalHeader"></div>
+                    <div class="modal-body" id="resetModalBody"></div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+const getBootstrapModalInstance = (modalEl) => {
+    if (!window.bootstrap?.Modal) return null;
+    if (typeof bootstrap.Modal.getOrCreateInstance === 'function') {
+        return bootstrap.Modal.getOrCreateInstance(modalEl);
     }
-}
+    if (typeof bootstrap.Modal.getInstance === 'function') {
+        return bootstrap.Modal.getInstance(modalEl);
+    }
+    return null;
+};
+
+const showResetModal = () => {
+    const modalEl = document.getElementById('resetParticipantModal');
+    if (!modalEl) return;
+
+    const modalInstance = getBootstrapModalInstance(modalEl);
+    if (modalInstance && typeof modalInstance.show === 'function') {
+        modalInstance.show();
+        return;
+    }
+
+    // Manual fallback
+    modalEl.classList.add('show');
+    modalEl.style.display = 'block';
+    modalEl.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop fade show';
+    backdrop.id = 'resetParticipantModal-backdrop';
+    document.body.appendChild(backdrop);
+    modalEl.dataset.resetBackdropId = backdrop.id;
+};
+
+const hideResetModal = () => {
+    const modalEl = document.getElementById('resetParticipantModal');
+    if (!modalEl) return;
+
+    const modalInstance = getBootstrapModalInstance(modalEl);
+    if (modalInstance && typeof modalInstance.hide === 'function') {
+        modalInstance.hide();
+        return;
+    }
+
+    // Manual fallback
+    modalEl.classList.remove('show');
+    modalEl.setAttribute('aria-hidden', 'true');
+    modalEl.style.display = 'none';
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('padding-right');
+
+    const backdropId = modalEl.dataset.resetBackdropId;
+    if (backdropId) {
+        const existing = document.getElementById(backdropId);
+        existing?.parentNode?.removeChild(existing);
+        delete modalEl.dataset.resetBackdropId;
+    }
+    // Clean up backdrops
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+};
+
+const forceCloseResetModal = () => {
+    hideResetModal();
+
+    const modalEl = document.getElementById('resetParticipantModal');
+    if (modalEl) {
+        modalEl.classList.remove('show');
+        modalEl.setAttribute('aria-hidden', 'true');
+        modalEl.style.display = 'none';
+        delete modalEl.dataset.resetBackdropId;
+    }
+
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('padding-right');
+};
 
 const resetClickHandlers = async (participantUid) => {
     const resetButton = document.getElementById('resetUserBtn');
@@ -585,9 +842,11 @@ const resetClickHandlers = async (participantUid) => {
         return;
     }
     resetButton.addEventListener('click', async () => {
+        // Always hide the modal immediately
+        forceCloseResetModal();
         try {
             const json = await postResetUserData(participantUid);
-            closeModal();
+            forceCloseResetModal();
             if(json.code === 200) {
                 await refreshParticipantAfterReset(json.data.data);
 
@@ -604,30 +863,38 @@ const resetClickHandlers = async (participantUid) => {
 }
 
 const resetParticipantConfirm = () => {
+    if (typeof document === 'undefined') return;
     const openResetDialogBtn = document.getElementById('openResetDialog');
-    if(openResetDialogBtn) {
-        const newButton = openResetDialogBtn.cloneNode(true);
-        openResetDialogBtn.parentNode.replaceChild(newButton, openResetDialogBtn);
+    if(!openResetDialogBtn) return;
+
+    const resetTrigger = openResetDialogBtn.cloneNode(true);
+    openResetDialogBtn.parentNode.replaceChild(resetTrigger, openResetDialogBtn);
         
-        newButton.addEventListener('click', () => {
-            const data = getDataAttributes(newButton);
-            const header = document.getElementById('modalHeader');
-            const body = document.getElementById('modalBody');  
-            const uid = data.participantuid;
-            header.innerHTML = `
-                    <h5>Confirm Participant Reset</h5>
-                    <button type="button" class="modal-close-btn" id="closeModal" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`
-            body.innerHTML = `<div>
-                Are you sure you want to reset this participant to a just-verified state? This cannot be undone.
-                    <div style="display:inline-block;">
-                            <button type="submit" class="btn btn-danger" data-dismiss="modal" target="_blank">Cancel</button>
-                            &nbsp;
-                            <button type="button" class="btn btn-primary" id="resetUserBtn">Confirm</button>
-                        </div>
-            </div>`
-            resetClickHandlers(uid);
-        });
-    }
+    resetTrigger.addEventListener('click', () => {
+        const data = getDataAttributes(resetTrigger);
+        const header = document.getElementById('resetModalHeader');
+        const body = document.getElementById('resetModalBody');  
+        if (!header || !body) return;
+
+        const uid = data.participantuid;
+        header.innerHTML = `
+                <h5>Confirm Participant Reset</h5>
+                <button type="button" class="modal-close-btn" id="closeResetModal" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
+        body.innerHTML = `<div>
+            Are you sure you want to reset this participant to a just-verified state? This cannot be undone.
+                <div style="display:inline-block;">
+                        <button type="submit" class="btn btn-danger" data-dismiss="modal" target="_blank" id="cancelReset">Cancel</button>
+                        &nbsp;
+                        <button type="button" class="btn btn-primary" id="resetUserBtn">Confirm</button>
+                    </div>
+        </div>`;
+
+        showResetModal();
+        const cancelResetBtn = document.getElementById('cancelReset');
+        cancelResetBtn?.addEventListener('click', hideResetModal);
+
+        resetClickHandlers(uid);
+    });
 }
 
 const postResetUserData = async (uid) => {
@@ -658,7 +925,7 @@ const refreshParticipantAfterReset = async (participant) => {
     await participantState.setParticipant(participant);
     reportsState.clearReports();
 
-    window.location.hash = '#participantSummary';
+    window.location.hash = '#participantDetails/summary';
     triggerNotificationBanner('Success! Participant Reset.', 'success');
 }
 

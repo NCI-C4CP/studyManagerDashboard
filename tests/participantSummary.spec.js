@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
+import { urls } from '../src/utils.js';
 import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 
 const createPdfLibStub = () => {
@@ -51,14 +52,16 @@ describe('participantSummary', () => {
   let render;
   let renderParticipantSummary;
   let retrieveDHQHEIReport;
+  let renderSummaryTabContent;
 
   const ensureModuleLoaded = async () => {
-    if (render && renderParticipantSummary && retrieveDHQHEIReport) return;
+    if (render && renderParticipantSummary && retrieveDHQHEIReport && renderSummaryTabContent) return;
     global.PDFLib = global.PDFLib ?? createPdfLibStub();
     const module = await import('../src/participantSummary.js');
     render = module.render;
     renderParticipantSummary = module.renderParticipantSummary;
     retrieveDHQHEIReport = module.retrieveDHQHEIReport;
+    renderSummaryTabContent = module.renderSummaryTabContent;
   };
 
   beforeEach(async () => {
@@ -222,6 +225,155 @@ describe('participantSummary', () => {
     it('validates that submission status is checked first', async () => {
       const result = await retrieveDHQHEIReport(fieldMapping.notYetEligible, 'study_123', 'user456');
       expect(result).to.equal(null);
+    });
+  });
+
+  describe('renderSummaryTabContent', () => {
+    it('renders summary table structure', async () => {
+      const participant = buildSummaryParticipant();
+      const html = await renderSummaryTabContent(participant);
+
+      expect(html).to.include('Participant Summary');
+    });
+
+    it('renders summary content without provided reports', async () => {
+      const participant = buildSummaryParticipant();
+      const html = await renderSummaryTabContent(participant, null);
+
+      expect(html).to.include('Participant Summary');
+      expect(html).to.include('table');
+    });
+
+    it('renders summary content with provided reports', async () => {
+      const participant = buildSummaryParticipant();
+      const reports = {
+        physActReport: {
+          [`d_${fieldMapping.reports.physicalActivity.reportTS}`]: '2024-03-01T00:00:00Z',
+        },
+      };
+      const html = await renderSummaryTabContent(participant, reports);
+
+      expect(html).to.include('Participant Summary');
+      expect(html).to.include('downloadPhysActReport');
+    });
+
+    it('handles missing participant gracefully', async () => {
+      const html = await renderSummaryTabContent(null);
+      expect(html).to.include('No participant data available');
+    });
+
+    it('includes alert placeholder', async () => {
+      const participant = buildSummaryParticipant();
+      const html = await renderSummaryTabContent(participant);
+
+      expect(html).to.include('alert_placeholder');
+    });
+
+    it('renders complete summary table structure', async () => {
+      const participant = buildSummaryParticipant();
+      const html = await renderSummaryTabContent(participant);
+
+      expect(html).to.include('table');
+      expect(html).to.include('thead');
+      expect(html).to.include('tbody');
+      expect(html).to.include('Icon');
+      expect(html).to.include('Status');
+      expect(html).to.include('Date');
+    });
+
+    it('handles participant with revocation and destruction flags', async () => {
+      const participant = buildSummaryParticipant({
+        [fieldMapping.revokeHIPAA]: fieldMapping.yes,
+        [fieldMapping.signedHIPAARevoc]: fieldMapping.yes,
+        [fieldMapping.destroyData]: fieldMapping.yes,
+        [fieldMapping.signedDataDestroy]: fieldMapping.yes,
+      });
+      const html = await renderSummaryTabContent(participant);
+
+      expect(html).to.include('HIPAA Revoc Form');
+      expect(html).to.include('Data Destroy Form');
+    });
+  });
+
+  describe('reset participant modal isolation', () => {
+    beforeEach(() => {
+      process.env.NODE_ENV = 'test';
+      // Ensure environment meets dev-only condition for rendering the reset button
+      window.location.href = `https://${urls.dev}/`;
+      // Minimal edit modal skeleton to verify it is untouched by reset flow
+      document.body.innerHTML = `
+        <div id="navBarLinks"></div>
+        <div id="mainContent"></div>
+        <div id="modalShowMoreData"><div id="modalHeader">edit-modal-header</div><div id="modalBody"></div></div>
+      `;
+      global.bootstrap = {
+        Modal: class {
+          constructor(el) { this.el = el; }
+          show() { this.el.dataset.shown = '1'; }
+          hide() { this.el.dataset.hidden = '1'; }
+          static getInstance() { return null; }
+        }
+      };
+    });
+
+    it('populates only the reset modal and leaves the edit modal intact', async () => {
+      const participant = buildSummaryParticipant();
+      const html = await renderSummaryTabContent(participant);
+      expect(html).to.include('openResetDialog');
+      document.getElementById('mainContent').innerHTML = html;
+
+      await waitForAsyncTasks();
+
+      const resetBtn = document.getElementById('openResetDialog');
+      expect(resetBtn).to.exist;
+
+      // Click reset to trigger modal content
+      resetBtn.click();
+      await waitForAsyncTasks();
+
+      const resetModalHeader = document.getElementById('resetModalHeader');
+      const resetModalBody = document.getElementById('resetModalBody');
+      const editModalHeader = document.getElementById('modalHeader');
+
+      expect(resetModalHeader.textContent).to.include('Confirm Participant Reset');
+      expect(resetModalBody.textContent).to.include('reset this participant');
+      expect(resetModalBody.querySelector('#resetUserBtn')).to.exist;
+      // Ensure the edit modal header is not changed by the reset flow
+      expect(editModalHeader.textContent).to.equal('edit-modal-header');
+    });
+
+    it('shows and hides reset modal via bootstrap and fallback path', async () => {
+      const participant = buildSummaryParticipant();
+      const html = await renderSummaryTabContent(participant);
+      document.getElementById('mainContent').innerHTML = html;
+      await waitForAsyncTasks();
+
+      // Force manual fallback path (no bootstrap present)
+      delete global.bootstrap;
+
+      const resetBtn = document.getElementById('openResetDialog');
+      expect(resetBtn).to.exist;
+
+      resetBtn.click();
+      await waitForAsyncTasks();
+      const modalEl = document.getElementById('resetParticipantModal');
+      expect(modalEl.classList.contains('show') || modalEl.style.display === 'block').to.be.true;
+
+      const confirmBtn = document.getElementById('resetUserBtn');
+      expect(confirmBtn).to.exist;
+      
+      global.fetch = async () => ({
+        ok: true,
+        json: async () => ({ code: 200, data: { data: participant } })
+      });
+
+      confirmBtn.click();
+      await waitForAsyncTasks();
+      await new Promise(res => setTimeout(res, 0));
+      expect(modalEl.classList.contains('show')).to.be.false;
+      expect(modalEl.style.display === '' || modalEl.style.display === 'none').to.be.true;
+
+      expect(document.querySelector('.modal-backdrop')).to.be.null;
     });
   });
 });

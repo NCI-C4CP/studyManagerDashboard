@@ -1,17 +1,20 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
 import { updateNavBar } from '../navigationBar.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner, formatUTCDate, convertToISO8601, escapeHTML } from '../utils.js';
-import { renderParticipantHeader } from '../participantHeader.js';
 import { verificationStatusMapping, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
 import { appState, participantState } from '../stateManager.js';
 import { findParticipant } from '../participantLookup.js';
-import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
+import { handleBackToToolSelect, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 
 
-export const setupVerificationCorrectionsPage = (participant) => {
+export const setupVerificationCorrectionsPage = (participant, { containerId = 'mainContent', skipNavBarUpdate = false } = {}) => {
     if (participant !== undefined) {
-        updateNavBar('participantVerificationBtn');
-        mainContent.innerHTML = renderVerificationCorrections(participant);
+        if (!skipNavBarUpdate) {
+            updateNavBar('participantVerificationBtn');
+        }
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = renderVerificationCorrections(participant);
         let selectedResponse = {};
         dropdownTrigger('dropdownVerification', 'dropdownMenuButtonVerificationOptns', selectedResponse);
         dropdownTrigger('dropdownDuplicateType', 'dropdownMenuButtonDuplicateTypeOptns',selectedResponse);
@@ -28,14 +31,9 @@ export const renderVerificationCorrections = (participant) => {
     template = `        
                 <div id="root root-margin">
                     <div class="col-lg">
-                    ${renderParticipantHeader(participant)}
-                    ${displayDataCorrectionsNavbar()}
                     <div id="alert_placeholder" class="dataCorrectionsAlert"></div>
                         <div class="row form-row m-3">
                             <div>                    
-                                <h4><b>Data Corrections Tool</b></h4>
-                                <span style="position:relative; font-size: 15px; top:2px;"><b>Note: This tool should only be used to make corrections to participant data post-verification. 
-                                All changes need to be approved by the CCC before being applied to the participant record via this tool.</b></span>
                                 <div style="position:relative; left:20px; top:2px;">
                                     <br />
                                     <h6><b>Verification Status</b></h6>
@@ -104,7 +102,6 @@ export const renderVerificationCorrections = (participant) => {
                                 </div>
                                 <div class="d-flex mt-5">
                                     <div>
-                                        <button type="button" class="btn btn-secondary" id="backToToolSelect"><- Back</button>
                                         <button type="button" class="btn btn-danger" id="cancelChanges">Cancel</button>
                                     </div>
                                     <div style="margin-left: 3rem;">
@@ -267,13 +264,13 @@ const finalizeCorrections = (participant, selectedOptions) => {
                 selectedOptions[fieldMapping.recruitmentType] = fieldMapping.passive
             }
             selectedOptions['token'] = participant['token'];
-            await clickHandler(selectedOptions)
+            await verificationCorrectionsClickHandler(selectedOptions)
         })
     }
 }
 
 // async-await function to make HTTP POST request
-const clickHandler = async (selectedOptions) => {
+export const verificationCorrectionsClickHandler = async (selectedOptions) => {
     try {
         showAnimation();
         const idToken = await getIdToken();

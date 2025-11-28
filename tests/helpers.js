@@ -40,6 +40,9 @@ export const setupTestEnvironment = () => {
   if (!window.crypto) {
     window.crypto = webcrypto;
   }
+
+  // Stub scrollTo
+  window.scrollTo = () => {};
 };
 
 /**
@@ -114,10 +117,10 @@ export const getFirebaseAuthStub = () => authStub;
 /**
  * Waits for async tasks to complete
  * Useful for ensuring fire-and-forget async operations have completed
- * @param {number} ms - Milliseconds to wait (default: 10)
+ * @param {number} ms - Milliseconds to wait (default: 50)
  * @returns {Promise<void>}
  */
-export const waitForAsyncTasks = (ms = 10) =>
+export const waitForAsyncTasks = (ms = 50) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 /**

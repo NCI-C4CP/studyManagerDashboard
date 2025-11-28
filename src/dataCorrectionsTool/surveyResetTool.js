@@ -1,10 +1,9 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
 import { updateNavBar } from '../navigationBar.js';
-import { renderParticipantHeader } from '../participantHeader.js';
 import { findParticipant } from '../participantLookup.js';
 import { baseAPI, getIdToken, hideAnimation, showAnimation } from '../utils.js';
 import { participantState } from '../stateManager.js';
-import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
+import { handleBackToToolSelect, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 import { triggerNotificationBanner } from '../utils.js';
 
 let selectedSurvey = null;
@@ -19,10 +18,14 @@ const surveyModalBody = {
     [fieldMapping.ssnStatusFlag]: "Are you sure you want to reset the survey status for the SSN survey?",
 };
 
-export const setupSurveyResetToolPage = (participant) => {
+export const setupSurveyResetToolPage = (participant, { containerId = 'mainContent', skipNavBarUpdate = false } = {}) => {
     if (participant !== undefined) {
-        updateNavBar('participantVerificationBtn');
-        mainContent.innerHTML = renderDataCorrectionsSelectionContent(participant);
+        if (!skipNavBarUpdate) {
+            updateNavBar('participantVerificationBtn');
+        }
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = renderDataCorrectionsSelectionContent(participant);
         handleSurveyTypeChange(participant);
         handleBackToToolSelect();
         clearSurveySelection();
@@ -36,19 +39,8 @@ const renderDataCorrectionsSelectionContent = (participant) => {
     return `
         <div id="root root-margin">
             <div class="container-fluid" style="padding: 0 0.9rem">
-                ${renderParticipantHeader(participant)}
-                ${displayDataCorrectionsNavbar()}
-
                 <!-- Alert Placeholder -->
                 <div id="alert_placeholder" class="dataCorrectionsAlert"></div>
-                <div class="row">
-                    <div class="col">
-                        <h1 class="smallerHeading">Data Corrections Tool</h1>
-                        <p class="norcToolNote">
-                            Note: This tool should only be used to make corrections to participant data post-verification. All changes need to be approved by the CCC before being applied to the participant record via this tool.
-                        </p>
-                    </div>
-                </div>
 
                 <div class="row">
                     <div class="col my-2">
@@ -79,7 +71,6 @@ const renderDataCorrectionsSelectionContent = (participant) => {
                     <div class="col">
                         <div class="d-flex">
                             <div>
-                                <button type="button" class="btn btn-secondary" id="backToToolSelect"><- Back</button>
                                 <button type="button" class="btn btn-danger" id="clearSurveySelect" style="margin-left: 0.5rem;">Clear</button>
                             </div>
                             <div style="margin-left: 3rem;">
@@ -275,7 +266,7 @@ const enableSubmitButton = () => {
  * @returns {Promise<object>} - the updated participant object
  * 
 */
-const resetParticipantSurvey = async (selectedSurvey) => { 
+export const resetParticipantSurvey = async (selectedSurvey) => { 
     const participant = participantState.getParticipant();
     const connectId = participant['Connect_ID'];
 
