@@ -1,4 +1,4 @@
-import { roleState } from './stateManager.js';
+import { roleState, participantState } from './stateManager.js';
 import { escapeHTML } from './utils.js';
 
 /**
@@ -276,6 +276,16 @@ export const initializeTabListeners = (participant, reports = null) => {
             return;
         }
 
+        if (tabId === 'details') {
+            const currentParticipant = participantState.getParticipant();
+            if (currentParticipant) {
+                await import('./participantDetails.js').then(({ renderParticipantDetails }) => {
+                    renderParticipantDetails(currentParticipant, {}, 'details');
+                });
+            }
+            return;
+        }
+
         if (hasSpinner || isEmpty) {
             loadTabContent(tabId, participant, reports);
         }
@@ -322,6 +332,7 @@ export const updateHashForTab = (tabId, updateHistory = true) => {
  * @returns {void}
  */
 export const activateTab = (tabId) => {
+    if (typeof document === 'undefined') return;
     const tabLink = document.querySelector(`#${tabId}-tab`);
     if (!tabLink) return;
 

@@ -54,6 +54,78 @@ describe('surveyResetTool', () => {
             const ssnOption = document.querySelector(`[data-survey="${fieldMapping.ssnStatusFlag}"]`);
             expect(ssnOption).to.exist;
         });
+
+        it('disables submit and shows note when survey is already not started', async () => {
+            const participant = createMockParticipant('test-uid', {
+                [fieldMapping.ssnStatusFlag]: fieldMapping.notStarted,
+                Connect_ID: 'CONN002'
+            });
+            await participantState.setParticipant(participant);
+
+            global.fetch = async (url) => {
+                if (url.includes('getFilteredParticipants')) {
+                    return {
+                        ok: true,
+                        json: async () => ({ code: 200, data: [participant] }),
+                    };
+                }
+                return { ok: true, json: async () => ({}) };
+            };
+
+            setupSurveyResetToolPage(participant);
+            await waitForAsyncTasks();
+
+            document.querySelector(`[data-survey=\"${fieldMapping.ssnStatusFlag}\"]`).click();
+            await waitForAsyncTasks();
+
+            expect(document.getElementById('submitButton').disabled).to.equal(true);
+            expect(document.getElementById('isSurveyAlreadyResetNote').innerHTML).to.contain('no survey data to be reset');
+        });
+
+        it('enables submit and resets status after confirmation', async () => {
+            const participant = createMockParticipant('test-uid', {
+                [fieldMapping.ssnStatusFlag]: fieldMapping.completed,
+                Connect_ID: 'CONN003'
+            });
+            await participantState.setParticipant(participant);
+
+            const fetchCalls = [];
+            global.fetch = async (url, options) => {
+                fetchCalls.push({ url, options });
+                if (url.includes('getFilteredParticipants')) {
+                    return {
+                        ok: true,
+                        json: async () => ({ code: 200, data: [participant] }),
+                    };
+                }
+                if (url.includes('resetParticipantSurvey')) {
+                    return {
+                        ok: true,
+                        json: async () => ({ code: 200, data: { ...participant, [fieldMapping.ssnStatusFlag]: fieldMapping.notStarted } }),
+                    };
+                }
+                return { ok: true, json: async () => ({}) };
+            };
+
+            setupSurveyResetToolPage(participant);
+            await waitForAsyncTasks();
+
+            document.querySelector(`[data-survey=\"${fieldMapping.ssnStatusFlag}\"]`).click();
+            await waitForAsyncTasks();
+
+            expect(document.getElementById('submitButton').disabled).to.equal(false);
+
+            document.getElementById('submitButton').click();
+            await waitForAsyncTasks();
+            document.getElementById('confirmResetButton').click();
+            await waitForAsyncTasks();
+
+            const resetCall = fetchCalls.find(call => call.url.includes('resetParticipantSurvey'));
+            expect(resetCall).to.exist;
+
+            const statusText = document.getElementById('surveyStatusText').textContent;
+            expect(statusText).to.contain('Not Started');
+        });
     });
 
     describe('resetParticipantSurvey', () => {

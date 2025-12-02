@@ -30,14 +30,13 @@ const initLoginMechanism = (participant) => {
     appState.setState({loginMechanism:{phone: true, email: true}});
 }
 
-export const renderParticipantDetails = async (participant, changedOption = {}, tabId = null) => {
+export const renderParticipantDetails = async (participant, changedOption = {}, tabId = null, options = {}) => {
     if (!participant) {
         document.getElementById('mainContent').innerHTML = '<div class="container pt-0"><div class="alert alert-warning">No participant data available</div></div>';
         return;
     }
     initLoginMechanism(participant);
     await participantState.setParticipant(participant);
-    window.scrollTo({ top: 0, behavior: 'auto' });
 
     // Determine which tab to show (from parameter or URL hash)
     const activeTabId = tabId || getTabIdFromHash(window.location.hash);
@@ -52,20 +51,23 @@ export const renderParticipantDetails = async (participant, changedOption = {}, 
     initializeTabListeners(participant);
 
     // Highlight the active tab, setTimeout delay avoids race conditions
-    setTimeout(() => {
-        const activeTabLink = document.getElementById(`${activeTabId}-tab`);
-        if (activeTabLink) {
-            // Remove active class from all tabs, then set the active tab
-            document.querySelectorAll('.participant-tabs .nav-link').forEach(el => el.classList.remove('active'));
-            activeTabLink.classList.add('active');
-        }
-        
-        const activeTabPane = document.getElementById(`${activeTabId}-content`);
-        if (activeTabPane) {
-            document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('show', 'active'));
-            activeTabPane.classList.add('show', 'active');
-        }
-    }, 0);
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+        setTimeout(() => {
+            if (typeof document === 'undefined') return;
+            const activeTabLink = document.getElementById(`${activeTabId}-tab`);
+            if (activeTabLink) {
+                // Remove active class from all tabs, then set the active tab
+                document.querySelectorAll('.participant-tabs .nav-link').forEach(el => el.classList.remove('active'));
+                activeTabLink.classList.add('active');
+            }
+            
+            const activeTabPane = document.getElementById(`${activeTabId}-content`);
+            if (activeTabPane) {
+                document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('show', 'active'));
+                activeTabPane.classList.add('show', 'active');
+            }
+        }, 0);
+    }
 
     // Load the active tab if it's not 'details' and activate it
     if (activeTabId !== 'details') {
@@ -74,6 +76,17 @@ export const renderParticipantDetails = async (participant, changedOption = {}, 
     }
 
     updateNavBar('participantDetailsBtn');
+
+    const { preserveScrollPosition = false } = options;
+    const previousScrollY = preserveScrollPosition ? window.scrollY : 0;
+
+    requestAnimationFrame(() => {
+        if (typeof window === 'undefined') return;
+        preserveScrollPosition
+            ? window.scrollTo({ top: previousScrollY, behavior: 'auto' })
+            : window.scrollTo({ top: 0, behavior: 'auto' });    
+    });
+    
 }
 
 /**

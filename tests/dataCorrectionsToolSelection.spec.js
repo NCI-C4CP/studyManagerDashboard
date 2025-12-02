@@ -70,6 +70,28 @@ describe('dataCorrectionsToolSelection', () => {
             expect(main.textContent).to.include('Data Corrections Tool');
             expect(toolContainer.innerHTML).to.include('Verification Status');
         });
+
+        it('ignores hash for tools that are not linked in DOM', async () => {
+            const participant = createMockParticipant();
+            document.body.innerHTML = `<div id="mainContent"></div>`;
+            const main = document.getElementById('mainContent');
+            main.innerHTML = `
+                <div class="data-corrections-selection-tabs">
+                    <ul id="dataCorrectionsTabsGroup">
+                        <li><a class="dataCorrectionLink" id="verificationCorrectionsTool" href="#participantDetails/dataCorrections/verificationCorrectionsTool">Verification Corrections</a></li>
+                    </ul>
+                </div>
+                <div id="dataCorrectionsToolContainer"></div>
+            `;
+            await waitForAsyncTasks();
+
+            window.location.hash = '#participantDetails/dataCorrections/surveyResetTool';
+            await renderDataCorrectionsToolInTab('surveyResetTool', participant);
+            await waitForAsyncTasks();
+
+            const activeLink = document.querySelector('.dataCorrectionLink.active');
+            expect(activeLink).to.not.exist;
+        });
     });
 
     describe('setActiveDataCorrectionsTab', () => {

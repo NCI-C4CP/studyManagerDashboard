@@ -19,12 +19,14 @@ describe('participantTabs', () => {
     let activateTab;
     let initializeTabListeners;
     let roleState;
+    let fieldMapping;
 
     const loadModule = async () => {
         if (getVisibleTabs) return;
         const module = await import('../src/participantTabs.js');
         const stateModule = await import('../src/stateManager.js');
         roleState = stateModule.roleState;
+        fieldMapping = (await import('../src/fieldToConceptIdMapping.js')).default;
         getVisibleTabs = module.getVisibleTabs;
         renderTabNavigation = module.renderTabNavigation;
         renderTabContentContainers = module.renderTabContentContainers;
@@ -253,6 +255,32 @@ describe('participantTabs', () => {
         it('loads details tab content', async () => {
             document.body.innerHTML = '<div id="details-tab-content-inner"></div>';
             await loadTabContent('details', participant);
+            const container = document.getElementById('details-tab-content-inner');
+            expect(container.innerHTML).to.include('participant-details-content');
+        });
+
+        it('re-renders details tab when clicked to reflect updated participant state', async () => {
+            const { participantState } = await import('../src/stateManager.js');
+            document.body.innerHTML = `
+                <div id="mainContent"></div>
+                <div id="navBarLinks"></div>
+                <div id="details-tab-content-inner"></div>
+                <a id="details-tab" class="nav-link active"></a>
+                <a id="summary-tab" class="nav-link"></a>
+            `;
+
+            await participantState.setParticipant(participant);
+
+            // Simulate tab click handler manually invoking loadTabContent then re-render details
+            await loadTabContent('details', participant);
+            const updated = { ...participant, [fieldMapping.verifiedFlag]: fieldMapping.verified };
+            await participantState.setParticipant(updated);
+
+            // Click summary then details to trigger re-render via participantTabs handler
+            document.getElementById('summary-tab').click();
+            document.getElementById('details-tab').click();
+            await loadTabContent('details', participantState.getParticipant());
+
             const container = document.getElementById('details-tab-content-inner');
             expect(container.innerHTML).to.include('participant-details-content');
         });

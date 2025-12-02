@@ -234,4 +234,42 @@ describe('participantDetails Integration', () => {
         // Check that payload contains the update (flat structure)
         expect(fetchBody[fieldMapping.lName]).to.equal('DoeUpdated');
     });
+
+    it('preserves scroll position after submitting an edit on the Details tab', async () => {
+        const participant = createMockParticipant();
+        const originalScrollTo = window.scrollTo;
+        const scrollCalls = [];
+
+        window.scrollTo = (...args) => {
+            scrollCalls.push(args[0]);
+            const top = typeof args[0] === 'object' && args[0] !== null && 'top' in args[0] ? args[0].top : args[1];
+            if (typeof top === 'number') {
+                window.scrollY = top;
+            }
+        };
+
+        window.scrollY = 0;
+
+        await participantDetails(participant);
+        await waitForAsyncTasks();
+
+        const editButton = document.getElementById(`${fieldMapping.lName}button`);
+        editButton.click();
+        await waitForAsyncTasks();
+
+        const input = document.querySelector('#modalBody input');
+        input.value = 'DoeUpdated';
+
+        window.scrollY = 275;
+        document.getElementById('formResponse').dispatchEvent(new window.Event('submit'));
+
+        // Wait for the re-render and the follow-up scroll restoration
+        await waitForAsyncTasks();
+        await waitForAsyncTasks(100);
+
+        const lastCall = scrollCalls[scrollCalls.length - 1];
+        expect(lastCall).to.deep.equal({ top: 275, behavior: 'auto' });
+
+        window.scrollTo = originalScrollTo;
+    });
 });

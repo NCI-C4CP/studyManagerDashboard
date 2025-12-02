@@ -426,4 +426,23 @@ describe('participantSummary', () => {
       global.fetch = originalFetch;
     });
   });
+
+  it('refreshParticipantAfterReset updates participant state', async () => {
+    const participant = buildSummaryParticipant({
+      [fieldMapping.verifiedFlag]: fieldMapping.duplicate,
+      state: { uid: 'reset-uid', [fieldMapping.duplicateType]: fieldMapping.activeSignedAsPassive }
+    });
+
+    const refreshedParticipant = {
+      ...participant,
+      [fieldMapping.verifiedFlag]: fieldMapping.verified,
+      state: { uid: 'reset-uid', [fieldMapping.duplicateType]: null },
+    };
+
+    await refreshParticipantAfterReset(refreshedParticipant);
+
+    const current = participantState.getParticipant();
+    expect(current[fieldMapping.verifiedFlag]).to.equal(fieldMapping.verified);
+    expect(window.location.hash).to.equal('#participantDetails/summary');
+  });
 });

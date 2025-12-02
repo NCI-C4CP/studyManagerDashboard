@@ -3,6 +3,7 @@ import { renderParticipantHeader } from './participantHeader.js';
 import { findParticipant, navigateBackToSearchResults } from './participantLookup.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
 import { baseAPI, getIdToken, hideAnimation, showAnimation } from './utils.js';
+import { participantState } from './stateManager.js';
 
 const getBootstrapModalInstance = (modalEl) => {
     if (!window.bootstrap?.Modal) return null;
@@ -426,85 +427,97 @@ const render = (participant) => {
 const bindEventOverrideCheckbox = (kitLevel = 'initial') => {
     // Add listener to enable or disable the relevant button based on checked status
     const checkboxInput = document.getElementById(`${kitLevel}OverrideCheckbox`);
-    if(checkboxInput) {
-        checkboxInput.addEventListener('change', event => {
-            const matchingButton = kitLevel === 'initial' ? document.getElementById('requestKitBtn') : document.getElementById('requestReplacementKitBtn');
-            if (matchingButton && checkboxInput.checked) {
-                matchingButton.disabled = false;
-            } else if (matchingButton) {
-                matchingButton.disabled = true;
-            }
-        })
-    }
+    if(!checkboxInput) return;
+
+    // Avoid duplicate listeners
+    const newCheckbox = checkboxInput.cloneNode(true);
+    checkboxInput.parentNode.replaceChild(newCheckbox, checkboxInput);
+
+    newCheckbox.addEventListener('change', () => {
+        const matchingButton = kitLevel === 'initial' ? document.getElementById('requestKitBtn') : document.getElementById('requestReplacementKitBtn');
+        if (!matchingButton) return;
+        matchingButton.disabled = !newCheckbox.checked;
+    });
 }
 
 const bindEventRequestKitButton = (connectId, token) => {
     const requestKitButton = document.getElementById('requestKitBtn');
-    if(requestKitButton) {
-        requestKitButton.addEventListener('click', async () => {
-            try {
-                showAnimation();
+    if(!requestKitButton) return;
+    const newButton = requestKitButton.cloneNode(true);
+    requestKitButton.parentNode.replaceChild(newButton, requestKitButton);
 
-                await requestKit(connectId);
+    newButton.addEventListener('click', async () => {
+        try {
+            showAnimation();
 
-                const header = document.getElementById('modalHeader');
-                const body = document.getElementById('modalBody');  
-                header.innerHTML = `
-                        <h5>Success! Kit requested.</h5>
-                        <button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    `
-                body.innerHTML = `<div>
-                    Please wait while we refresh the participant information and navigate to the participant details page.
-                </div>`
-                document.getElementById('closeModal')?.addEventListener('click', hideSuccessModal);
-                showSuccessModal();
-
-                // Notify user of success and refresh the participant data
-                await refreshParticipantAfterSuccess(token);
-                hideAnimation();
-            } catch(err) {
-                console.error('err', err);
-                alert('Error: There was an error requesting a kit. Please try again.');
-                hideAnimation();
+            const result = await requestKit(connectId);
+            if (!result || result.code !== 200) {
+                throw new Error(result?.message || 'Kit request failed');
             }
-        });
-    }
+
+            const header = document.getElementById('modalHeader');
+            const body = document.getElementById('modalBody');  
+            header.innerHTML = `
+                    <h5>Success! Kit requested.</h5>
+                    <button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                `
+            body.innerHTML = `<div>
+                Please wait while we refresh the participant information and navigate to the participant details page.
+            </div>`
+            document.getElementById('closeModal')?.addEventListener('click', hideSuccessModal);
+            showSuccessModal();
+
+            // Notify user of success and refresh the participant data
+            await refreshParticipantAfterSuccess(token);
+            hideAnimation();
+        } catch(err) {
+            console.error('err', err);
+            alert('Error: There was an error requesting a kit. Please try again.');
+            hideAnimation();
+        }
+    });
 }
 
 const bindEventRequestReplacementButton = (connectId, token) => {
     const requestReplacementButton = document.getElementById('requestReplacementKitBtn');
-    if (requestReplacementButton) {
-        requestReplacementButton.addEventListener('click', async () => {
-            try {
-                showAnimation();
+    if (!requestReplacementButton) return;
 
-                await requestKit(connectId);
+    // Avoid duplicate listeners
+    const newButton = requestReplacementButton.cloneNode(true);
+    requestReplacementButton.parentNode.replaceChild(newButton, requestReplacementButton);
 
-                const header = document.getElementById('modalHeader');
-                const body = document.getElementById('modalBody');  
-                header.innerHTML = `
-                        <h5>Success! Replacement requested.</h5>
-                        <button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    `
-                body.innerHTML = `<div>
-                    Please wait while we refresh the participant information and navigate to the participant details page.
-                </div>`
-                document.getElementById('closeModal')?.addEventListener('click', hideSuccessModal);
-                showSuccessModal();
+    newButton.addEventListener('click', async () => {
+        try {
+            showAnimation();
 
-                // Notify user of success and refresh the participant data
-                await refreshParticipantAfterSuccess(token);
-                hideAnimation();
-            } catch(err) {
-                console.error('err', err);
-                alert('Error: There was an error requesting a replacement. Please try again.');
-                hideAnimation();
+            const result = await requestKit(connectId);
+            if (!result || result.code !== 200) {
+                throw new Error(result?.message || 'Kit request failed');
             }
-            
 
-        });
-    }
+            const header = document.getElementById('modalHeader');
+            const body = document.getElementById('modalBody');  
+            header.innerHTML = `
+                    <h5>Success! Replacement requested.</h5>
+                    <button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                `
+            body.innerHTML = `<div>
+                Please wait while we refresh the participant information and navigate to the participant details page.
+            </div>`
+            document.getElementById('closeModal')?.addEventListener('click', hideSuccessModal);
+            showSuccessModal();
 
+            // Notify user of success and refresh the participant data
+            await refreshParticipantAfterSuccess(token);
+            hideAnimation();
+        } catch(err) {
+            console.error('err', err);
+            alert('Error: There was an error requesting a replacement. Please try again.');
+            hideAnimation();
+        }
+        
+
+    });
 }
 
 const closeModal = () => {
@@ -513,8 +526,10 @@ const closeModal = () => {
 
 const refreshParticipantAfterSuccess = async (token) => {
     try {
-        await reloadParticipantData(token);
-        // Navigate to the participant details page after 3 seconds
+        const participant = await reloadParticipantData(token);
+        const { participantState } = await import('./stateManager.js');
+        await participantState.setParticipant(participant);
+        // Navigate to the participant details page after a brief pause
         setTimeout(() => {
             closeModal();
             window.location.href = '#participantDetails';

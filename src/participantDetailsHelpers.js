@@ -1312,7 +1312,7 @@ export const saveResponses = (participant, changedOption, editedElement, concept
 
                     // Reattach event listeners after each edit and mark unsaved participant data changes
                     requestAnimationFrame(async () => {
-                        await renderParticipantDetails(participant, changedOption);
+                        await renderParticipantDetails(participant, changedOption, null, { preserveScrollPosition: true });
                         submitClickHandler(participant, changedOption);
 
                         addFormInputFormattingListeners();
@@ -1334,7 +1334,7 @@ export const saveResponses = (participant, changedOption, editedElement, concept
 
                     // Re-render to remove dirty indicators from the field.
                     requestAnimationFrame(async () => {
-                        await renderParticipantDetails(participant, changedOption);
+                        await renderParticipantDetails(participant, changedOption, null, { preserveScrollPosition: true });
                         submitClickHandler(participant, changedOption);
                     });
                 }
@@ -1823,7 +1823,7 @@ export const submitClickHandler = async (participant, changedOption) => {
                 triggerNotificationBanner('Success! Changes Saved.', 'success');
 
                 const updatedParticipant = updateParticipantAfterFormSave(participant, changedUserDataForProfile);
-                await renderParticipantDetails(updatedParticipant);
+                await renderParticipantDetails(updatedParticipant, changedOption, 'details', { preserveScrollPosition: true });
 
             } catch (error) {
                 console.error('Error:', error);

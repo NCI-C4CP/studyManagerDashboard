@@ -6,6 +6,7 @@ import { participantState } from '../stateManager.js';
 import { handleBackToToolSelect, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 import { triggerNotificationBanner } from '../utils.js';
 import { refreshParticipantHeaders } from '../participantHeader.js';
+import { renderParticipantDetails } from '../participantDetails.js';
 
 let selectedSurvey = null;
 
@@ -219,6 +220,9 @@ const submitSurveyStatusReset = () => {
                         await participantState.setParticipant(response.data);
                         refreshParticipantHeaders(response.data);
                         updateSurveyStatusTextContent(response.data, selectedSurvey, response.code);
+                        if (window.location.hash.includes('#participantDetails')) {
+                            await renderParticipantDetails(response.data, {}, 'details');
+                        }
                         displayAlreadyResetNote();
                         triggerNotificationBanner("Survey has been successfully reset!", "success", 10000);
                         disableSubmitButton();

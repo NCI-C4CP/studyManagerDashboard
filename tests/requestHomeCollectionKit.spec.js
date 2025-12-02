@@ -3,6 +3,7 @@ import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './help
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { renderKitRequest, renderKitRequestTabContent, requestKit } from '../src/requestHomeCollectionKit.js';
 import { baseAPI } from '../src/utils.js';
+import { participantState } from '../src/stateManager.js';
 
 describe('requestHomeCollectionKit', () => {
     let cleanup;
@@ -143,6 +144,84 @@ describe('requestHomeCollectionKit', () => {
             const modal = document.getElementById('modalSuccess');
             expect(modal.classList.contains('show') || modal.style.display === 'block').to.be.true;
             expect(document.getElementById('modalHeader').textContent).to.include('Success');
+        });
+
+        it('updates participant state after successful kit request', async () => {
+            const participant = createMockParticipant('test-uid', {
+                [fieldMapping.address1]: '123 Main St',
+                [fieldMapping.city]: 'Anytown',
+                [fieldMapping.state]: 'NY',
+                [fieldMapping.zip]: '12345',
+                [fieldMapping.physicalAddress1]: '123 Main St'
+            });
+
+            const updatedParticipant = { 
+                ...participant, 
+                token: participant.token, // token is persistent
+            };
+
+            // Stub navbar update to avoid DOM dependency
+            const navBarModule = await import('../src/navigationBar.js');
+            navBarModule.updateNavBar = () => {};
+
+            document.body.innerHTML = '<div id="mainContent"></div><div id="navBarLinks"></div>';
+
+            let requestCount = 0;
+            global.fetch = async (url) => {
+                if (url.includes('requestHomeKit')) {
+                    requestCount += 1;
+                    return { ok: true, json: async () => ({ code: 200 }) };
+                }
+                if (url.includes('getFilteredParticipants')) {
+                    return { ok: true, json: async () => ({ code: 200, data: [updatedParticipant] }) };
+                }
+                return { ok: false, json: async () => ({ message: 'unexpected' }) };
+            };
+
+            renderKitRequest(participant);
+            await waitForAsyncTasks();
+
+            document.getElementById('requestKitBtn').click();
+            await waitForAsyncTasks(500);
+
+            const currentParticipant = participantState.getParticipant();
+            expect(requestCount).to.equal(1);
+            expect(currentParticipant.token).to.equal(participant.token);
+        });
+
+        it('enables request button when address override is checked', async () => {
+            const participant = createMockParticipant('test-uid', {
+                [fieldMapping.address1]: '123 Main St',
+                [fieldMapping.city]: 'Anytown',
+                [fieldMapping.state]: 'NY',
+                [fieldMapping.zip]: '12345',
+                [fieldMapping.physicalAddress1]: '123 Main St',
+                [fieldMapping.collectionDetails]: {
+                    [fieldMapping.baseline]: {
+                        [fieldMapping.bioKitMouthwash]: {
+                            [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.addressUndeliverable,
+                        }
+                    }
+                }
+            });
+
+            // Stub navbar update
+            const navBarModule = await import('../src/navigationBar.js');
+            navBarModule.updateNavBar = () => {};
+
+            document.body.innerHTML = '<div id="mainContent"></div><div id="navBarLinks"></div>';
+
+            renderKitRequest(participant);
+            await waitForAsyncTasks();
+
+            const checkbox = document.getElementById('initialOverrideCheckbox');
+            const button = document.getElementById('requestKitBtn');
+            expect(checkbox).to.exist;
+            expect(button.disabled).to.equal(true);
+
+            checkbox.click();
+            await waitForAsyncTasks();
+            expect(button.disabled).to.equal(false);
         });
     });
 });

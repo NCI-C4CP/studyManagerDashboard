@@ -1,9 +1,9 @@
 import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
-import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { setupVerificationCorrectionsPage, verificationCorrectionsClickHandler } from '../src/dataCorrectionsTool/verificationCorrectionsTool.js';
 import { appState, participantState } from '../src/stateManager.js';
 import { baseAPI } from '../src/utils.js';
+import fieldMapping from '../src/fieldToConceptIdMapping.js';
 
 describe('verificationCorrectionsTool', () => {
     let cleanup;
@@ -31,6 +31,32 @@ describe('verificationCorrectionsTool', () => {
 
     afterEach(() => {
         cleanup();
+    });
+
+    it('blocks submitting duplicate type when it matches current participant.state value', async () => {
+        const participant = createMockParticipant();
+        participant.state[fieldMapping.duplicateType] = fieldMapping.activeSignedAsPassive;
+
+        setupVerificationCorrectionsPage(participant);
+        await waitForAsyncTasks();
+
+        // Simulate selecting the same duplicate type as current state
+        appState.setState({
+            correctedOptions: {
+                [`state.${fieldMapping.duplicateType}`]: fieldMapping.activeSignedAsPassive,
+            }
+        });
+
+        const submitBtn = document.getElementById('submitCorrection');
+        expect(submitBtn).to.exist;
+        submitBtn.click();
+        await waitForAsyncTasks();
+
+        const modalBody = document.getElementById('modalBody');
+        expect(modalBody.innerHTML).to.include('Duplicate Type already set');
+        // Confirm button should be absent for invalid selection
+        const confirmBtn = modalBody.querySelector('#confirmCorrection');
+        expect(confirmBtn).to.not.exist;
     });
 
     describe('setupVerificationCorrectionsPage', () => {
@@ -69,6 +95,44 @@ describe('verificationCorrectionsTool', () => {
             // Verify date input appeared
             const dateContainer = document.getElementById('verificationDateContainer');
             expect(dateContainer.style.display).to.equal('block');
+        });
+
+        it('selecting a verification status fills verification date and stores corrected options', async () => {
+            const participant = createMockParticipant();
+            setupVerificationCorrectionsPage(participant);
+            await waitForAsyncTasks();
+
+            const verifiedOption = document.getElementById('vrfd');
+            verifiedOption.dispatchEvent(new window.Event('click', { bubbles: true }));
+            await waitForAsyncTasks();
+
+            const dateContainer = document.getElementById('verificationDateContainer');
+            expect(dateContainer.style.display).to.equal('block');
+
+            const corrected = appState.getState().correctedOptions;
+            expect(corrected[fieldMapping.verficationDate]).to.exist;
+        });
+
+        it('cleans placeholder selections before rendering modal', async () => {
+            const participant = createMockParticipant();
+            setupVerificationCorrectionsPage(participant);
+            await waitForAsyncTasks();
+
+            appState.setState({
+                correctedOptions: {
+                    [`state.${fieldMapping.duplicateType}`]: 'select',
+                    [`state.${fieldMapping.updateRecruitType}`]: 'select',
+                }
+            });
+
+            const submitBtn = document.getElementById('submitCorrection');
+            submitBtn.click();
+            await waitForAsyncTasks();
+
+            const modalBody = document.getElementById('modalBody');
+            expect(modalBody.innerHTML).to.include('No corrections selected');
+            const confirmBtn = modalBody.querySelector('#confirmCorrection');
+            expect(confirmBtn).to.not.exist;
         });
     });
 

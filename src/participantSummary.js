@@ -11,6 +11,7 @@ import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping
 import { participantState, reportsState } from './stateManager.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
 import { refreshParticipantHeaders } from './participantHeader.js';
+import { renderParticipantDetails } from './participantDetails.js';
 
 const { PDFDocument, StandardFonts, rgb } = PDFLib;
 
@@ -934,6 +935,7 @@ export const refreshParticipantAfterReset = async (participant) => {
     reportsState.clearReports();
 
     window.location.hash = '#participantDetails/summary';
+    await renderParticipantDetails(participant, {}, 'summary');
     triggerNotificationBanner('Success! Participant Reset.', 'success');
 }
 
