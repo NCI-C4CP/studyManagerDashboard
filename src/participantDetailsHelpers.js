@@ -3,6 +3,7 @@ import { renderParticipantDetails } from './participantDetails.js';
 import { findParticipant } from './participantLookup.js';
 import { appState, participantState, roleState, userSession, markUnsaved, clearUnsaved } from './stateManager.js';
 import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, escapeHTML } from './utils.js';
+import { getCountryCode3List, getCountryNameByCode3 } from './countryMapping.js';
 
 export const allStates = {
     "Alabama":1,
@@ -88,9 +89,12 @@ const fieldValues = {
     [fieldMapping.language.es]: 'Spanish',
 }
 
+const countryCodes = getCountryCode3List();
+
 export const getFieldValues = (variableValue, conceptId) => {
     if (!variableValue || (conceptId === "Change Login Email" && variableValue.startsWith("noreply"))) return "";
     if (variableValue in fieldValues) return fieldValues[variableValue];
+    if (countryCodes.includes(variableValue)) return getCountryNameByCode3(variableValue);
 
     const formattedPhoneValue = variableValue ? formatPhoneNumber(variableValue.toString()) : "";
     const phoneFieldValues = {
@@ -208,6 +212,10 @@ const handleFormInputFormatting = (event) => {
     // Name input handling
     if (input.matches('input[type="text"][id^="newValue"]')) {
         const conceptId = parseInt(input.id.replace('newValue', ''), 10);
+        const forceAllChars = input.dataset.forceAllChars === 'true';
+        if (forceAllChars) {
+            return;
+        }
         if (nameFieldConceptIds.includes(conceptId)) {
             const oldValue = input.value;
             const sanitizedValue = formatNameInput(oldValue);
@@ -260,6 +268,10 @@ const handleFormKeydown = (event) => {
     // Handle zip code input keydown
     if (event.target.matches('input[type="text"][id^="newValue"]')) {
         const conceptId = parseInt(event.target.id.replace('newValue', ''), 10);
+        const forceAllChars = event.target.dataset.forceAllChars === 'true';
+        if (forceAllChars) {
+            return;
+        }
         if (zipFieldConceptIds.includes(conceptId)) {
             const controlKeys = ['Backspace', 'Tab', 'Enter', 'Escape', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
             if (controlKeys.includes(event.key)) return;
@@ -305,6 +317,15 @@ const isPhoneNumberInForm = (participant, changedOption, fieldMappingKey) => {
     return !!participant?.[fieldMappingKey] || !!changedOption?.[fieldMappingKey];
 };
 
+export const isAddressInternational = (participant, changedOption, fieldMappingKey) => {
+    if (changedOption[fieldMappingKey]) {
+        return parseInt(changedOption[fieldMappingKey], 10) === fieldMapping.yes ? true : false;
+    } else if (participant[fieldMappingKey]) {
+        return parseInt(participant[fieldMappingKey],10) === fieldMapping.yes ? true : false;
+    }
+    return false;
+};
+
 export const getImportantRows = (participant, changedOption) => {
     const isParticipantVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.verified;
     const isParticipantDataDestroyed = participant[fieldMapping.dataDestroyCategorical] === fieldMapping.requestedDataDestroySigned;
@@ -322,6 +343,11 @@ export const getImportantRows = (participant, changedOption) => {
     const isCellPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.cellPhone);
     const isHomePhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.homePhone);
     const isOtherPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.otherPhone);
+
+    const isMailingInternational = isAddressInternational(participant, changedOption, fieldMapping.isIntlAddr);
+    const isPhysicalInternational = isAddressInternational(participant, changedOption, fieldMapping.physicalAddrIntl);
+    const isAltInternational = isAddressInternational(participant, changedOption, fieldMapping.isIntlAltAddress);
+
     const { coordinatingCenter, helpDesk } = roleState.getRoleFlags();
 
     // Participant Data Rows
@@ -444,6 +470,13 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: false,
             isHeading: true,
         },
+        { field: fieldMapping.isIntlAddr,
+            label: 'Mailing Address is International Address',
+            editable: isEditable,
+            display: true,
+            validationType: 'permissionSelector',
+            isRequired: true
+        },
         { field: fieldMapping.address1,
             label: 'Mailing Address Line 1',
             editable: isEditable,
@@ -458,6 +491,13 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'address',
             isRequired: false
         },
+        { field: fieldMapping.address3,
+            label: 'Mailing Address Line 3',
+            editable: isEditable && isMailingInternational,
+            display: true,
+            validationType: 'address',
+            isRequired: false
+        },
         { field: fieldMapping.city,
             label: 'Mailing Address City',
             editable: isEditable,
@@ -466,18 +506,25 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: true
         },
         { field: fieldMapping.state,
-            label: 'Mailing Address State',
+            label: 'Mailing Address State / Region',
             editable: isEditable,
             display: true,
-            validationType: 'state',
-            isRequired: true
+            validationType: isMailingInternational ? 'none' : 'state',
+            isRequired: isMailingInternational ? false : true
         },
         { field: fieldMapping.zip,
-            label: 'Mailing Address Zip',
+            label: 'Mailing Address Zip / Postal Code',
             editable: isEditable,
             display: true,
-            validationType: 'zip',
+            validationType: isMailingInternational ? 'none' : 'zip',
             isRequired: true
+        },
+        { field: fieldMapping.country,
+            label: 'Mailing Address Country',
+            editable: isEditable && isMailingInternational,
+            display: true,
+            validationType: 'none',
+            isRequired: false
         },
         { field: fieldMapping.isPOBox,
             label: 'Mailing Address is PO Box',
@@ -499,6 +546,13 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: false,
             isHeading: true,
         },
+        { field: fieldMapping.physicalAddrIntl,
+            label: 'Physical Address is International Address',
+            editable: isEditable,
+            display: true,
+            validationType: 'permissionSelector',
+            isRequired: true
+        },
         { field: fieldMapping.physicalAddress1,
             label: 'Physical Address Line 1 (if different from mailing address)',
             editable: isEditable,
@@ -513,6 +567,13 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'address',
             isRequired: false
         },
+        { field: fieldMapping.physicalAddress3,
+            label: 'Physical Address Line 3',
+            editable: isEditable && isPhysicalInternational,
+            display: true,
+            validationType: 'address',
+            isRequired: false
+        },
         { field: fieldMapping.physicalCity,
             label: 'Physical City (if different from mailing address)',
             editable: isEditable,
@@ -521,17 +582,24 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: false
         },
         { field: fieldMapping.physicalState,
-            label: 'Physical State (if different from mailing address)',
+            label: 'Physical State / Region (if different from mailing address)',
             editable: isEditable,
             display: true,
-            validationType: 'state',
+            validationType: isPhysicalInternational ? 'none' : 'state',
             isRequired: false
         },
         { field: fieldMapping.physicalZip,
-            label: 'Physical Zip (if different from mailing address)',
+            label: 'Physical Zip / Postal Code (if different from mailing address)',
             editable: isEditable,
             display: true,
-            validationType: 'zip',
+            validationType: isPhysicalInternational ? 'none' : 'zip',
+            isRequired: false
+        },
+        { field: fieldMapping.physicalCountry,
+            label: 'Physical Address Country',
+            editable: isEditable && isPhysicalInternational,
+            display: true,
+            validationType: 'none',
             isRequired: false
         },
     ];
@@ -546,6 +614,13 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'none',
             isRequired: false,
             isHeading: true,
+        },
+        { field: fieldMapping.isIntlAltAddress,
+            label: 'Alternate Address is International Address',
+            editable: isEditable,
+            display: true,
+            validationType: 'permissionSelector',
+            isRequired: true
         },
         {
             field: fieldMapping.altAddress1,
@@ -563,6 +638,13 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'address',
             isRequired: false,
         },
+        { field: fieldMapping.altAddress3,
+            label: 'Alternate Address Line 3',
+            editable: isEditable && isAltInternational,
+            display: true,
+            validationType: 'address',
+            isRequired: false
+        },
         {
             field: fieldMapping.altCity,
             label: 'Alternate City',
@@ -573,19 +655,26 @@ export const getImportantRows = (participant, changedOption) => {
         },
         {
             field: fieldMapping.altState,
-            label: 'Alternate State',
+            label: 'Alternate State / Region',
             editable: isEditable,
             display: true,
-            validationType: 'state',
+            validationType: isAltInternational ? 'none' : 'state',
             isRequired: false,
         },
         {
             field: fieldMapping.altZip,
-            label: 'Alternate Zip',
+            label: 'Alternate Zip / Postal Code',
             editable: isEditable,
             display: true,
-            validationType: 'zip',
+            validationType: isAltInternational ? 'none' : 'zip',
             isRequired: false,
+        },
+        { field: fieldMapping.altCountry,
+            label: 'Alternate Address Country',
+            editable: isEditable && isAltInternational,
+            display: true,
+            validationType: 'none',
+            isRequired: false
         },
         {
             field: fieldMapping.isPOBoxAltAddress,
@@ -1344,7 +1433,10 @@ const forceDataTypesForFirestore = (changedOption) => {
         fieldMapping.voicemailOther,
         fieldMapping.preferredLanguage,
         fieldMapping.isPOBox,
-        fieldMapping.isPOBoxAltAddress
+        fieldMapping.isPOBoxAltAddress,
+        fieldMapping.isIntlAddr,
+        fieldMapping.physicalAddrIntl,
+        fieldMapping.isIntlAltAddress
     ];
     
     const fieldsToString = [
