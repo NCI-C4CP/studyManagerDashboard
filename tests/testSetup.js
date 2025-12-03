@@ -13,6 +13,7 @@ global.window = initialDom.window;
 global.document = initialDom.window.document;
 global.navigator = initialDom.window.navigator;
 global.location = initialDom.window.location;
+global.history = initialDom.window.history;
 global.sessionStorage = initialDom.window.sessionStorage;
 global.localStorage = initialDom.window.localStorage;
 
@@ -22,8 +23,15 @@ if (typeof globalThis !== 'undefined') {
   globalThis.document = initialDom.window.document;
   globalThis.navigator = initialDom.window.navigator;
   globalThis.location = initialDom.window.location;
+  globalThis.history = initialDom.window.history;
   globalThis.sessionStorage = initialDom.window.sessionStorage;
   globalThis.localStorage = initialDom.window.localStorage;
+}
+
+// Stub window.scrollTo for JSDOM
+global.window.scrollTo = () => {};
+if (typeof globalThis !== 'undefined' && globalThis.window) {
+  globalThis.window.scrollTo = () => {};
 }
 
 // Polyfill requestAnimationFrame - must be set before window.load event listeners fire

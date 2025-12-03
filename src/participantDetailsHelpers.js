@@ -933,12 +933,12 @@ export const reloadParticipantData = async (token) => {
     }
 }
 
-export const resetChanges = (participant) => {
+export const resetChanges = async (participant) => {
     const cancelButtons = [document.getElementById("cancelChangesUpper"), document.getElementById("cancelChangesLower")];
 
-    const handleCancelChanges = () => {
+    const handleCancelChanges = async () => {
         if (appState.getState().hasUnsavedChanges) {
-            renderParticipantDetails(participant);
+            await renderParticipantDetails(participant);
             clearUnsaved();
             triggerNotificationBanner('Changes cancelled.', 'warning');
         }
@@ -948,7 +948,9 @@ export const resetChanges = (participant) => {
         if (button) {
             const newButton = button.cloneNode(true);
             button.parentNode.replaceChild(newButton, button);
-            newButton.addEventListener("click", handleCancelChanges);
+            newButton.addEventListener("click", async () => {
+                await handleCancelChanges();
+            });
         }
     });
 }
@@ -962,8 +964,13 @@ export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail,
     const createListener = (loginType) => {
         const typeName = capitalizeFirstLetter(loginType);
         return () => {
-            const header = document.getElementById('modalHeader');
-            const body = document.getElementById('modalBody');
+            const modal = document.getElementById('modalShowMoreData');
+            const header = modal?.querySelector('#modalHeader');
+            const body = modal?.querySelector('#modalBody');
+            if (!header || !body) {
+                triggerNotificationBanner('Error opening edit modal. Please refresh and try again.', 'danger');
+                return;
+            }
             header.innerHTML = `
                 <h5>${typeName} Login</h5>
                 <button type="button" class="modal-close-btn" data-dismiss="modal" id="closeModal" aria-label="Close">
@@ -1301,7 +1308,9 @@ const showAuthUpdateAPIAlert = (type, message) => {
 }
 
 const showAuthUpdateAPIError = (bodyId, message) => {
-    const body = document.getElementById(bodyId);
+    const modal = document.getElementById('modalShowMoreData');
+    const body = modal?.querySelector(`#${bodyId}`) || document.getElementById(bodyId);
+    if (!body) return false;
     body.innerHTML = `<div>${message}</div>`;
     return false;
 }
@@ -1391,8 +1400,8 @@ export const saveResponses = (participant, changedOption, editedElement, concept
                     closeModal();
 
                     // Reattach event listeners after each edit and mark unsaved participant data changes
-                    requestAnimationFrame(() => {
-                        renderParticipantDetails(participant, changedOption);
+                    requestAnimationFrame(async () => {
+                        await renderParticipantDetails(participant, changedOption, null, { preserveScrollPosition: true });
                         submitClickHandler(participant, changedOption);
 
                         addFormInputFormattingListeners();
@@ -1413,8 +1422,8 @@ export const saveResponses = (participant, changedOption, editedElement, concept
                     }
 
                     // Re-render to remove dirty indicators from the field.
-                    requestAnimationFrame(() => {
-                        renderParticipantDetails(participant, changedOption);
+                    requestAnimationFrame(async () => {
+                        await renderParticipantDetails(participant, changedOption, null, { preserveScrollPosition: true });
                         submitClickHandler(participant, changedOption);
                     });
                 }
@@ -1797,8 +1806,8 @@ export const viewParticipantSummary = (participant) => {
     const viewSummaryBtn = document.getElementById('viewSummary');
     if (viewSummaryBtn) {
         viewSummaryBtn.addEventListener('click',  () => {
-            // Router handles fetching reports and rendering
-            window.location.hash = '#participantSummary';
+            // Router handles fetching reports and rendering - navigate to summary tab
+            window.location.hash = '#participantDetails/summary';
         })
     }
 }
@@ -1906,7 +1915,7 @@ export const submitClickHandler = async (participant, changedOption) => {
                 triggerNotificationBanner('Success! Changes Saved.', 'success');
 
                 const updatedParticipant = updateParticipantAfterFormSave(participant, changedUserDataForProfile);
-                renderParticipantDetails(updatedParticipant);
+                await renderParticipantDetails(updatedParticipant, changedOption, 'details', { preserveScrollPosition: true });
 
             } catch (error) {
                 console.error('Error:', error);

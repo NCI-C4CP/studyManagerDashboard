@@ -1,58 +1,53 @@
 import { updateNavBar } from '../navigationBar.js';
 import { renderParticipantHeader } from '../participantHeader.js';
+import { dataCorrectionsHeaderNote, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 
-export const setupDataCorrectionsSelectionToolPage = (participant) => {
+export const setupDataCorrectionsSelectionToolPage = (participant, { containerId = 'dataCorrectionsToolContainer', withChrome = false } = {}) => {
     if (participant !== undefined) {
         updateNavBar('participantVerificationBtn');
-        mainContent.innerHTML = renderDataCorrectionsSelectionContent(participant);
-        setupContinueNavigationHandler();
-        setupDropdownSelectionHandler();
+        let container = document.getElementById(containerId);
+        if (!container) {
+            container = document.getElementById('mainContent');
+        }
+        if (!container) return;
+        container.innerHTML = renderDataCorrectionsTabContent(participant);
+        setupSelectionTabLinks();
+        setActiveDataCorrectionsTab();
     }
 }
 
-const renderDataCorrectionsSelectionContent = (participant) => {
-    return `
-        <div id="root root-margin">
-            <div class="container-fluid">
-                    ${renderParticipantHeader(participant)}
+/**
+ * Render data corrections tool content for use in a tab
+ * @param {object} participant - The participant object
+ * @returns {string} HTML string for data corrections tab content
+ */
+export const renderDataCorrectionsTabContent = (participant) => {
+    if (!participant) {
+        return '<div class="alert alert-warning">No participant data available</div>';
+    }
 
-                    <div class="row">
-                        <div class="col">                    
-                            <h4><b>Data Corrections Tool</b></h4>
-                            <span style="position:relative; font-size: 15px; top:2px;">
-                                <b>Note: This tool should only be used to make corrections to participant data post-verification. All changes need to be approved by the CCC before being applied to the participant record via this tool.</b>
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col">
-                            <p class="font-weight-bold" style="font-size:1.2rem;"> Please select the tool you would like to use: </p>
-                            <div class="btn-group dropright">
-                            <!-- Todo: Add dropdown color later -->
-                                <button type="button" class="btn btn-info dropdown-toggle selectButton" data-toggle="dropdown" aria-expanded="false">
-                                    Select
-                                </button>
-                                <div id="dropdownToolsMenu" class="dropdown-menu">
-                                    <a class="dropdown-item">Select</a>
-                                    <a class="dropdown-item" data-tool="verificationCorrections">Verification Corrections</a>
-                                    <a class="dropdown-item" data-tool="surveyReset">Survey Reset</a>
-                                    <a class="dropdown-item" data-tool="incentiveEligibility">Incentive Eligibility</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-5">
-                        <div class="col">
-                            <button type="button" class="btn btn-primary continueButton disabled">Continue</button>
-                        </div>
-                    </div>
+    const content = `
+        <div>
+            ${renderParticipantHeader(participant)}
+            ${dataCorrectionsHeaderNote()}
+            <div class="row mt-3">
+                <div class="col">
+                    <p class="font-weight-bold" style="font-size:1.2rem;"> Please select the tool you would like to use: </p>
+                    ${displayDataCorrectionsNavbar()}
                 </div>
             </div>
+            <div id="dataCorrectionsToolContainer"></div>
         </div>
     `;
-}
+
+    // Schedule event handlers to run after DOM is updated
+    requestAnimationFrame(() => {
+        setupSelectionTabLinks();
+        setActiveDataCorrectionsTab();
+    });
+
+    return content;
+};
 
 const setupContinueNavigationHandler = () => {
     const continueBtn = document.querySelector('.continueButton');
@@ -64,38 +59,53 @@ const setupContinueNavigationHandler = () => {
         if (!selectedButtonType) return;
 
         if (selectedButtonType === 'verificationCorrections') {
-            window.location.hash = '#verificationCorrectionsTool';
+            window.location.hash = '#participantDetails/dataCorrections/verificationCorrectionsTool';
         } else if (selectedButtonType === 'surveyReset') {
-            window.location.hash = '#surveyResetTool';
+            window.location.hash = '#participantDetails/dataCorrections/surveyResetTool';
         } else if (selectedButtonType === 'incentiveEligibility') {
-            window.location.hash = '#incentiveEligibilityTool';
+            window.location.hash = '#participantDetails/dataCorrections/incentiveEligibilityTool';
         }
     });
 }
 
-const setupDropdownSelectionHandler = () => { 
-    // get dropdown menu options element
-    const dropdownMenu = document.getElementById('dropdownToolsMenu');
-    const dropdownOptions = dropdownMenu.querySelectorAll('.dropdown-item');
-    const selectButton = document.querySelector('.selectButton');
-    const continueButton = document.querySelector('.continueButton');
-
-    if (!dropdownMenu || !dropdownOptions || !selectButton || !continueButton) return;
-
-    for (let option of dropdownOptions) {
-        option.addEventListener('click', (e) => {
-            const selectedText = e.target.textContent.trim();
-            const selectedToolType = e.target.getAttribute('data-tool');
-
-            if (selectedToolType) {
-                selectButton.textContent = selectedText;
-                continueButton.classList.remove('disabled');
-                selectButton.setAttribute('data-tool', selectedToolType);
-            } else {
-                selectButton.textContent = 'Select';
-                continueButton.classList.add('disabled');
-                selectButton.setAttribute('data-tool', '');
+const setupSelectionTabLinks = () => {
+    const links = document.querySelectorAll('.data-corrections-selection-tabs a');
+    if (!links || links.length === 0) return;
+    links.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetHash = link.getAttribute('href');
+            if (targetHash) {
+                window.location.hash = targetHash;
             }
         });
+    });
+};
+
+/**
+ * Render a specific data corrections tool inside the tabbed experience.
+ * @param {string} toolId - Tool identifier (e.g., 'verificationCorrectionsTool')
+ * @param {object} participant - The participant object
+ * @param {string} containerId - Target container ID
+ */
+export const renderDataCorrectionsToolInTab = async (toolId, participant, containerId = 'dataCorrectionsToolContainer') => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const commonOptions = { containerId, skipNavBarUpdate: true };
+
+    if (toolId === 'verificationCorrectionsTool') {
+        const { setupVerificationCorrectionsPage } = await import('./verificationCorrectionsTool.js');
+        return setupVerificationCorrectionsPage(participant, commonOptions);
     }
+    if (toolId === 'surveyResetTool') {
+        const { setupSurveyResetToolPage } = await import('./surveyResetTool.js');
+        return setupSurveyResetToolPage(participant, commonOptions);
+    }
+    if (toolId === 'incentiveEligibilityTool') {
+        const { setupIncentiveEligibilityToolPage } = await import('./incentiveEligibilityTool.js');
+        return setupIncentiveEligibilityToolPage(participant, commonOptions);
+    }
+
+    container.innerHTML = `<div class="alert alert-warning">Unknown data corrections tool.</div>`;
 };

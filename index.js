@@ -2,16 +2,9 @@ import { renderParticipantLookup, renderCachedSearchResults } from './src/partic
 import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements, participantLookupNavRequest } from './src/navigationBar.js';
 import { renderTable, renderParticipantSearchResults, setupActiveColumns, renderFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
-import { renderParticipantSummary } from './src/participantSummary.js';
-import { renderParticipantMessages } from './src/participantMessages.js';
 import { renderKitRequest } from './src/requestHomeCollectionKit.js';
 import { renderRequestAKitConditions } from './src/requestAKitConditions.js';
-import { renderPathologyReportUploadPage } from './src/pathologyReportUpload.js';
 import { renderEhrUploadPage } from "./src/ehrUpload.js";
-import { setupDataCorrectionsSelectionToolPage } from './src/dataCorrectionsTool/dataCorrectionsToolSelection.js';
-import { setupVerificationCorrectionsPage } from './src/dataCorrectionsTool/verificationCorrectionsTool.js';
-import { setupSurveyResetToolPage } from './src/dataCorrectionsTool/surveyResetTool.js';
-import { setupIncentiveEligibilityToolPage } from './src/dataCorrectionsTool/incentiveEligibilityTool.js';
 import { renderSiteMessages } from './src/siteMessages.js';
 import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
@@ -148,20 +141,7 @@ window.onhashchange = () => {
 // Participant-dependent routes that require an active participant
 const participantRoutes = [
         '#participantDetails',
-        '#participantSummary', 
-        '#participantMessages',
-        '#requestHomeCollectionKit',
-        '#pathologyReportUpload',
-        '#participantWithdrawal'
     ];
-
-// Data corrections tool routes also require an active participant
-const dataCorrectionsToolRoutes = [
-    '#dataCorrectionsToolSelection',
-    '#incentiveEligibilityTool',
-    '#surveyResetTool',
-    '#verificationCorrectionsTool',
-];
 
 // Track previous hash for 'no participant selected' and 'unsaved changes' guards.
 let previousHash = window.location.hash;
@@ -180,6 +160,18 @@ let previousHash = window.location.hash;
 export const router = async () => {
     const hash = decodeURIComponent(window.location.hash);
     const route = hash || '#';
+
+    const legacyDataCorrectionsRoutes = {
+        '#dataCorrectionsToolSelection': '#participantDetails/dataCorrections',
+        '#verificationCorrectionsTool': '#participantDetails/dataCorrections/verificationCorrectionsTool',
+        '#surveyResetTool': '#participantDetails/dataCorrections/surveyResetTool',
+        '#incentiveEligibilityTool': '#participantDetails/dataCorrections/incentiveEligibilityTool',
+    };
+
+    if (legacyDataCorrectionsRoutes[route]) {
+        window.location.hash = legacyDataCorrectionsRoutes[route];
+        return;
+    }
 
     // Guard: Unsaved changes in participant details form
     const stateSnapshot = appState.getState() || {};
@@ -212,7 +204,9 @@ export const router = async () => {
         }
 
         // Handle participant-dependent routes
-        if (participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route)) {
+        const isParticipantDetailsRoute = route.startsWith('#participantDetails');
+
+        if (isParticipantDetailsRoute) {
             // Show loading while attempting to get/recover participant
             showAnimation();
 
@@ -232,29 +226,17 @@ export const router = async () => {
 
             markNavigationSucceeded();
 
-            // Phys Act report data needs to be fetched from BQ. DHQ Report data is found in the participant object.
-            if (route === '#participantSummary') {
-                showAnimation();
-                const reports = await reportsState.getReportsFromState(participant, retrievePhysicalActivityReport);
-                hideAnimation();
-                return renderParticipantSummary(participant, reports);
-            }
-            else if (route === '#participantDetails') return renderParticipantDetails(participant)
-            else if (route === '#participantMessages') return renderParticipantMessages(participant)
-            else if (route === '#requestHomeCollectionKit') return renderKitRequest(participant)
-            else if (route === '#pathologyReportUpload') return renderPathologyReportUploadPage(participant)
-            else if (route === '#participantWithdrawal') return await renderParticipantWithdrawal(participant)
-            else if (route === '#dataCorrectionsToolSelection') return setupDataCorrectionsSelectionToolPage(participant)
-            else if (route === '#verificationCorrectionsTool') return setupVerificationCorrectionsPage(participant)
-            else if (route === '#surveyResetTool') return setupSurveyResetToolPage(participant)
-            else if (route === '#incentiveEligibilityTool') return setupIncentiveEligibilityToolPage(participant)
+            // Participant route with tab UI. "Participant Details" is the defaultlanding page.
+            // Extract tab from hash (e.g., #participantDetails/summary)
+            const tabId = route.split('/')[1] || 'details';
+            return await renderParticipantDetails(participant, {}, tabId);
         }
 
         // Handle all other routes
         markNavigationSucceeded();
 
         const isPredefinedParticipantSearchRoute = route.startsWith('#participants/');
-        const isParticipantWorkflowRoute = participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route);
+        const isParticipantWorkflowRoute = participantRoutes.includes(route);
 
         // Handle specific routing from lookup -> results + restoring results on page refresh + nav bar usage
         if (route === '#participantLookup') {
@@ -532,37 +514,6 @@ const handleSiteSelection = (siteTextContent = 'All Sites', siteKey = 'allResult
         reRenderDashboard(escapeHTML(e.target.textContent), e.target.dataset.sitekey);
     });
 };
-
-const retrievePhysicalActivityReport = async (participant) => {
-    if (!participant || !participant.state || !participant.state.uid || !participant.Connect_ID) {
-        return null;
-    }
-    
-    try {
-        const idToken = await getIdToken();
-        const response = await fetch(`${baseAPI}/dashboard?api=retrievePhysicalActivityReport&uid=${participant.state.uid}`, {
-            method: "GET",
-            headers:{
-                Authorization: "Bearer " + idToken,
-                "Content-Type": "application/json"
-            }
-        });
-
-        if (!response.ok) { 
-            const error = (response.status + ": " + (await response.json()).message);
-            throw new Error(error);
-        }
-        
-        let data = await response.json();
-        if (data.code === 200) {
-            return data.data ? data.data[0] : null;
-        }
-    } catch (error) {
-        console.error('Error in retrievePhysicalActivityReport:', error);
-        throw error;
-    }
-
-}
 
 /**
  * Get all stats data for dashboard metrics rendering

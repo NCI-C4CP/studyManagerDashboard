@@ -1,7 +1,9 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, escapeHTML } from './utils.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, escapeHTML, triggerNotificationBanner } from './utils.js';
 import { participantState, uiState } from './stateManager.js';
 import { renderRefusalOptions, renderCauseOptions } from './participantWithdrawalRender.js';
+import { activateTab, loadTabContent, updateHashForTab } from './participantTabs.js';
+import { refreshParticipantHeaders } from './participantHeader.js';
 
 export const renderWithdrawalForm = () => {
     const participant = participantState.getParticipant();
@@ -236,8 +238,8 @@ export const renderWithdrawalForm = () => {
         <div class="modal fade" id="modalShowSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                 <div class="modal-content sub-div-shadow">
-                    <div class="modal-header" id="modalHeader"></div>
-                    <div class="modal-body" id="modalBody"></div>
+                    <div class="modal-header" id="withdrawalModalHeader"></div>
+                    <div class="modal-body" id="withdrawalModalBody"></div>
                 </div>
             </div>
         </div>`
@@ -432,7 +434,7 @@ const disableEnableWhoRequested = (id) => {
  * @param {boolean} isRequired - whether the date is required (default: false for suspend, true for causeOfDeath)
  * @returns {object} - { isValid: boolean, error: string }
  */
-const validateDate = (month, day, year, validationType = 'suspend', isRequired = false) => {
+export const validateDate = (month, day, year, validationType = 'suspend', isRequired = false) => {
     // Determine if this date is required based on validation type and explicit requirement
     const dateIsRequired = isRequired || validationType === 'causeOfDeath';
     
@@ -515,8 +517,8 @@ const handleNextButtonClick = () => {
 
 const optionsHandler = (suspendDate) => {
     
-    const modalHeader = document.getElementById('modalHeader');
-    const modalBody = document.getElementById('modalBody');
+    const modalHeader = document.getElementById('withdrawalModalHeader');
+    const modalBody = document.getElementById('withdrawalModalBody');
     const refusalWithdrawalCheckboxes = document.getElementsByName('options');
     const whoRequestedRadioButtons = document.getElementsByName('whoRequested');
 
@@ -688,8 +690,8 @@ export const reasonForRefusalPage = (selectedRefusalWithdrawalCheckboxes, select
             <div class="modal fade" id="modalShowFinalSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
                     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                         <div class="modal-content sub-div-shadow">
-                            <div class="modal-header" id="modalHeader"></div>
-                            <div class="modal-body" id="modalBody"></div>
+                            <div class="modal-header" id="withdrawalFinalModalHeader"></div>
+                            <div class="modal-body" id="withdrawalFinalModalBody"></div>
                         </div>
                     </div>
             </div>`;
@@ -719,8 +721,8 @@ export const causeOfDeathPage = (selectedRefusalWithdrawalCheckboxes) => {
     let template = ` <div class="modal fade" id="modalShowFinalSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
                     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                         <div class="modal-content sub-div-shadow">
-                            <div class="modal-header" id="modalHeader"></div>
-                            <div class="modal-body" id="modalBody"></div>
+                            <div class="modal-header" id="withdrawalFinalModalHeader"></div>
+                            <div class="modal-body" id="withdrawalFinalModalBody"></div>
                         </div>
                     </div>
             </div>`
@@ -773,6 +775,7 @@ const handleResponseSubmission = async (selectedRefusalWithdrawalCheckboxes, sel
         if (!updatedParticipant) {
             return;
         }
+        triggerNotificationBanner('Withdrawal processed successfully.', 'success');
         await navigateToParticipantSummary(updatedParticipant);
 
     } catch (error) {
@@ -781,7 +784,7 @@ const handleResponseSubmission = async (selectedRefusalWithdrawalCheckboxes, sel
     }
 }
 
-const processRefusalWithdrawalResponses = async (selectedReasonsForWithdrawal, selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate) => {
+export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdrawal, selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate) => {
     let sendRefusalData = {};
     let highestStatus = [];
     sendRefusalData[fieldMapping.refusalOptions] = {};
@@ -1090,5 +1093,8 @@ async function sendRefusalWithdrawalResponses(sendRefusalData) {
 
 const navigateToParticipantSummary = async (participant) => {
     await participantState.setParticipant(participant);
-    location.replace(window.location.origin + window.location.pathname + '#participantSummary'); // updates url to participantSummary
+    refreshParticipantHeaders(participant);
+    updateHashForTab('summary', false);
+    await loadTabContent('summary', participant);
+    activateTab('summary');
 }

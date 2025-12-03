@@ -1,10 +1,11 @@
-import { updateNavBar } from './navigationBar.js';
+import { updateNavBar, setParticipantLookupNavRequest } from './navigationBar.js';
 import { attachUpdateLoginMethodListeners, allStates, isAddressInternational, closeModal, getFieldValues, getImportantRows, getIsNORCOrCCC, getModalLabel, primaryPhoneTypes, resetChanges, saveResponses, showSaveNoteInModal, submitClickHandler, suffixList, languageList, viewParticipantSummary, addFormInputFormattingListeners } from './participantDetailsHelpers.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantHeader } from './participantHeader.js';
 import { getDataAttributes, urls, escapeHTML, renderShowMoreDataModal } from './utils.js';
 import { appState, participantState, markUnsaved, clearUnsaved } from './stateManager.js';
 import { navigateBackToSearchResults } from './participantLookup.js';
+import { renderParticipantTabs, initializeTabListeners, loadTabContent, getTabIdFromHash, activateTab } from './participantTabs.js';
 import { getCountryCode3List, getCountryNameByCode3 } from './countryMapping.js';
 
 window.addEventListener('beforeunload',  (e) => {
@@ -30,35 +31,82 @@ const initLoginMechanism = (participant) => {
     appState.setState({loginMechanism:{phone: true, email: true}});
 }
 
-export const renderParticipantDetails = async (participant, changedOption = {}) => {
+export const renderParticipantDetails = async (participant, changedOption = {}, tabId = null, options = {}) => {
+    if (!participant) {
+        document.getElementById('mainContent').innerHTML = '<div class="container pt-0"><div class="alert alert-warning">No participant data available</div></div>';
+        return;
+    }
     initLoginMechanism(participant);
     await participantState.setParticipant(participant);
-    window.scrollTo({ top: 0, behavior: 'auto' });
 
-    mainContent.innerHTML = renderParticipantDetailsForm(participant, changedOption);
-    changeParticipantDetail(participant, changedOption);
-    resetChanges(participant);
-    
-    viewParticipantSummary(participant);
-    attachUpdateLoginMethodListeners(participant[fieldMapping.accountEmail], participant[fieldMapping.accountPhone]);
-    submitClickHandler(participant, changedOption);
+    // Determine which tab to show (from parameter or URL hash)
+    const activeTabId = tabId || getTabIdFromHash(window.location.hash);
+
+    // Render the page with tabs
+    document.getElementById('mainContent').innerHTML = renderParticipantDetailsPage(participant, changedOption, activeTabId);
+
+    // Init search nav listeners, wait for DOM, then init tab content and event listeners
     addSearchNavigationListeners();
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    await loadDetailsTabContent(participant, changedOption);
+    initializeTabListeners(participant);
+
+    // Highlight the active tab, setTimeout delay avoids race conditions
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+        setTimeout(() => {
+            if (typeof document === 'undefined') return;
+            const activeTabLink = document.getElementById(`${activeTabId}-tab`);
+            if (activeTabLink) {
+                // Remove active class from all tabs, then set the active tab
+                document.querySelectorAll('.participant-tabs .nav-link').forEach(el => el.classList.remove('active'));
+                activeTabLink.classList.add('active');
+            }
+            
+            const activeTabPane = document.getElementById(`${activeTabId}-content`);
+            if (activeTabPane) {
+                document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('show', 'active'));
+                activeTabPane.classList.add('show', 'active');
+            }
+        }, 0);
+    }
+
+    // Load the active tab if it's not 'details' and activate it
+    if (activeTabId !== 'details') {
+        await loadTabContent(activeTabId, participant);
+        activateTab(activeTabId);
+    }
 
     updateNavBar('participantDetailsBtn');
+
+    const { preserveScrollPosition = false } = options;
+    const previousScrollY = preserveScrollPosition ? window.scrollY : 0;
+
+    requestAnimationFrame(() => {
+        if (typeof window === 'undefined') return;
+        preserveScrollPosition
+            ? window.scrollTo({ top: previousScrollY, behavior: 'auto' })
+            : window.scrollTo({ top: 0, behavior: 'auto' });    
+    });
+    
 }
 
-export const renderParticipantDetailsForm = (participant, changedOption) => {
-    let template = `<div class="container">`
-
+/**
+ * Render the complete participant details page with tabs
+ * @param {object} participant - The participant object
+ * @param {object} changedOption - Any changed field values
+ * @param {string} activeTabId - The currently active tab ID
+ * @returns {string} HTML string for the complete page
+ */
+const renderParticipantDetailsPage = (participant, changedOption, activeTabId = 'details') => {
     // Check participant status
     const isParticipantDuplicate = participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate;
     const isParticipantCannotBeVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.cannotBeVerified;
     const isParticipantDataDestroyed = participant[fieldMapping.dataDestroyCategorical] === fieldMapping.requestedDataDestroySigned;
-    
+
     let statusWarning = '';
     let warningTitle = '';
     let warningMessage = '';
-    
+
     if (isParticipantDuplicate) {
         const isNORCOrCCC = getIsNORCOrCCC();
         warningTitle = 'Duplicate Account';
@@ -73,7 +121,7 @@ export const renderParticipantDetailsForm = (participant, changedOption) => {
         warningTitle = 'Data Destroyed';
         warningMessage = 'This participant\'s data has been destroyed. Editing is disabled for this participant.';
     }
-    
+
     if (warningTitle && warningMessage) {
         statusWarning = `
             <div class="alert alert-warning alert-dismissible fade show" role="alert">
@@ -82,13 +130,60 @@ export const renderParticipantDetailsForm = (participant, changedOption) => {
             </div>
         `;
     }
-    
-    template += `
-        <div id="root" > 
-        <div id="alert_placeholder"></div>
-        ${renderParticipantHeader(participant)}     
-        ${statusWarning}
-        ${renderBackToSearchDivAndButton()}
+
+    return `
+        <div class="container pt-0">
+            <div id="root">
+                <div id="alert_placeholder"></div>
+                ${renderParticipantHeader(participant)}
+                ${statusWarning}
+                <div class="row mb-3">
+                    <div class="col-12">
+                        ${renderBackToSearchDivAndButton()}
+                    </div>
+                </div>
+                ${renderParticipantTabs(participant, activeTabId)}
+                ${renderShowMoreDataModal()}
+            </div>
+        </div>
+    `;
+};
+
+/**
+ * Load the content for the details tab
+ * @param {object} participant - The participant object
+ * @param {object} changedOption - Any changed field values
+ * @returns {Promise<void>}
+ */
+const loadDetailsTabContent = async (participant, changedOption = {}) => {
+    const contentContainer = document.getElementById('details-tab-content-inner');
+    if (!contentContainer) {
+        console.error('Details tab content container not found');
+        return;
+    }
+
+    contentContainer.innerHTML = renderDetailsTabContentOnly(participant, changedOption);
+
+    // Initialize event listeners for the details form
+    changeParticipantDetail(participant, changedOption);
+    resetChanges(participant);
+    viewParticipantSummary(participant);
+    attachUpdateLoginMethodListeners(participant[fieldMapping.accountEmail], participant[fieldMapping.accountPhone]);
+    submitClickHandler(participant, changedOption);
+};
+
+/**
+ * Render just the details form content (for use within the tab)
+ * @param {object} participant - The participant object
+ * @param {object} changedOption - Any changed field values
+ * @returns {string} HTML string for details form
+ */
+export const renderDetailsTabContentOnly = (participant, changedOption = {}) => {
+    const isParticipantDuplicate = participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate;
+    const isParticipantCannotBeVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.cannotBeVerified;
+    const isParticipantDataDestroyed = participant[fieldMapping.dataDestroyCategorical] === fieldMapping.requestedDataDestroySigned;
+
+    let template = `
         ${renderCancelChangesAndSaveChangesButtons('Upper')}
         ${renderDetailsTableHeader()}
     `;
@@ -138,12 +233,9 @@ export const renderParticipantDetailsForm = (participant, changedOption) => {
                 </tbody>
             </table>
             ${renderCancelChangesAndSaveChangesButtons('Lower')}
-        </div>
-    </div>
     `;
-    template += `${renderShowMoreDataModal()}`
     return template;
-}
+};
 
 const changeParticipantDetail = (participant, changedOption) => {
     const detailedRow = Array.from(document.getElementsByClassName('detailedRow'));
@@ -156,22 +248,23 @@ const changeParticipantDetail = (participant, changedOption) => {
         // New listeners for buttons
         detailedRow.forEach(element => {
             const editButton = element.querySelector('.showMore');
-            if (editButton) {
-                // Skip login buttons as they have their own handlers
-                if (editButton.id === 'updateUserLoginEmail' || editButton.id === 'updateUserLoginPhone') {
-                    return;
-                }
+                if (editButton) {
+                    // Skip login buttons, they have their own handlers
+                    if (editButton.id === 'updateUserLoginEmail' || editButton.id === 'updateUserLoginPhone') {
+                        return;
+                    }
 
-                editButton.addEventListener('click', function (e) {
-                    const data = getDataAttributes(this);
-                    // Wait for Bootstrap modal to open
-                    requestAnimationFrame(() => {
-                        const editModalHeader = document.getElementById('modalHeader');
-                        const editModalBody = document.getElementById('modalBody');
-                        const conceptId = data.participantconceptid;
-                        const participantKey = data.participantkey;
-                        const editModalLabel = getModalLabel(participantKey);
-                        const participantValue = data.participantvalue;
+                    editButton.addEventListener('click', function (e) {
+                        const data = getDataAttributes(this);
+                        // Wait for Bootstrap modal to open
+                        requestAnimationFrame(() => {
+                            const editModal = document.getElementById('modalShowMoreData');
+                            const editModalHeader = editModal?.querySelector('#modalHeader');
+                            const editModalBody = editModal?.querySelector('#modalBody');
+                            const conceptId = data.participantconceptid;
+                            const participantKey = data.participantkey;
+                            const editModalLabel = getModalLabel(participantKey);
+                            const participantValue = data.participantvalue;
 
                         if (editModalHeader && editModalBody) {
                             editModalHeader.innerHTML = `
@@ -467,6 +560,7 @@ const addSearchNavigationListeners = () => {
 
     if (backToParticipantLookupBtn) {
         backToParticipantLookupBtn.addEventListener('click', () => {
+            setParticipantLookupNavRequest(true);
             location.hash = '#participantLookup';
         });
     }

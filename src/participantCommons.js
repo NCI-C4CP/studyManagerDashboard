@@ -721,8 +721,7 @@ const addEventShowMoreInfo = (data) => {
             let changedOption = {};
             const loadDetailsPage = '#participantDetails'
             location.replace(window.location.origin + window.location.pathname + loadDetailsPage); // updates url to participantDetails upon screen update
-            const idToken = await getIdToken();
-            renderParticipantDetails(filteredData[0], changedOption, idToken);
+            await renderParticipantDetails(filteredData[0], changedOption, 'details');
         });
     });
 

@@ -1,17 +1,22 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
 import { updateNavBar } from '../navigationBar.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner, formatUTCDate, convertToISO8601, escapeHTML } from '../utils.js';
-import { renderParticipantHeader } from '../participantHeader.js';
 import { verificationStatusMapping, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
 import { appState, participantState } from '../stateManager.js';
 import { findParticipant } from '../participantLookup.js';
-import { handleBackToToolSelect, displayDataCorrectionsNavbar, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
+import { refreshParticipantHeaders } from '../participantHeader.js';
+import { handleBackToToolSelect, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
+import { renderParticipantDetails } from '../participantDetails.js';
 
 
-export const setupVerificationCorrectionsPage = (participant) => {
+export const setupVerificationCorrectionsPage = (participant, { containerId = 'mainContent', skipNavBarUpdate = false } = {}) => {
     if (participant !== undefined) {
-        updateNavBar('participantVerificationBtn');
-        mainContent.innerHTML = renderVerificationCorrections(participant);
+        if (!skipNavBarUpdate) {
+            updateNavBar('participantVerificationBtn');
+        }
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = renderVerificationCorrections(participant);
         let selectedResponse = {};
         dropdownTrigger('dropdownVerification', 'dropdownMenuButtonVerificationOptns', selectedResponse);
         dropdownTrigger('dropdownDuplicateType', 'dropdownMenuButtonDuplicateTypeOptns',selectedResponse);
@@ -28,14 +33,9 @@ export const renderVerificationCorrections = (participant) => {
     template = `        
                 <div id="root root-margin">
                     <div class="col-lg">
-                    ${renderParticipantHeader(participant)}
-                    ${displayDataCorrectionsNavbar()}
                     <div id="alert_placeholder" class="dataCorrectionsAlert"></div>
                         <div class="row form-row m-3">
                             <div>                    
-                                <h4><b>Data Corrections Tool</b></h4>
-                                <span style="position:relative; font-size: 15px; top:2px;"><b>Note: This tool should only be used to make corrections to participant data post-verification. 
-                                All changes need to be approved by the CCC before being applied to the participant record via this tool.</b></span>
                                 <div style="position:relative; left:20px; top:2px;">
                                     <br />
                                     <h6><b>Verification Status</b></h6>
@@ -104,7 +104,6 @@ export const renderVerificationCorrections = (participant) => {
                                 </div>
                                 <div class="d-flex mt-5">
                                     <div>
-                                        <button type="button" class="btn btn-secondary" id="backToToolSelect"><- Back</button>
                                         <button type="button" class="btn btn-danger" id="cancelChanges">Cancel</button>
                                     </div>
                                     <div style="margin-left: 3rem;">
@@ -199,21 +198,29 @@ const optionsHandler = (participant) => {
     header.innerHTML = `<h5>Options Selected</h5><button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`
     const selectedOptions = appState.getState().correctedOptions;
     cleanUpSelectedOptions(selectedOptions);
+    const hasSelections = Boolean(selectedOptions && Object.keys(selectedOptions).length > 0);
+    const validationResult = hasSelections ? checkIncorrectSelections(participant, selectedOptions) : { isValid: true };
+
+    let modalContent = `
+            <span><b>Error: No corrections selected</b></span> <br />`;
+    let footerButtons = `
+            <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank">OK</button>`;
+
+    if (hasSelections && !validationResult.isValid) {
+        modalContent = `
+            <span>${validationResult.message}</span> <br />`;
+    } else if (hasSelections) {
+        modalContent = `
+            ${renderSelectedOptions(selectedOptions)}`;
+        footerButtons = `
+            <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="confirmCorrection">Confirm</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal" target="_blank">Cancel</button>`;
+    }
+
     body.innerHTML = `
         <div style="display:inline-block;">
-        ${
-            ((selectedOptions === undefined || selectedOptions === null || Object.keys(selectedOptions).length === 0)) ? 
-            `<span><b>No corrections selected</b></span> <br />
-            <button type="button" class="btn btn-primary" disabled>Confirm</button>`
-            :
-            ((!checkIncorrectSelections(participant, selectedOptions))) ?
-                `<span><b>Invalid operation</b></span> <br />
-                <button type="button" class="btn btn-primary" disabled>Confirm</button>`
-            :
-            `${renderSelectedOptions(selectedOptions)}
-                <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="confirmCorrection">Confirm</button>`
-        }
-            <button type="button" class="btn btn-danger" data-dismiss="modal" target="_blank">Cancel</button>
+        ${modalContent}
+        ${footerButtons}
         </div>
     </div>`
     finalizeCorrections(participant, selectedOptions);
@@ -221,18 +228,24 @@ const optionsHandler = (participant) => {
 
 const checkIncorrectSelections = (participant, selectedOptions) => {
     if (selectedOptions[fieldMapping.verifiedFlag] && selectedOptions[fieldMapping.verifiedFlag] === participant[fieldMapping.verifiedFlag]) {
-        triggerNotificationBanner(`Verficiation status already set to <b>${verificationStatusMapping[selectedOptions[fieldMapping.verifiedFlag]]}</b>`, 'warning')
-        return false;
+        return {
+            isValid: false,
+            message: `Verficiation status already set to <b>${verificationStatusMapping[selectedOptions[fieldMapping.verifiedFlag]]}</b>`
+        };
     }
-    if (selectedOptions[`state.${fieldMapping.duplicateType}`] && selectedOptions[`state.${fieldMapping.duplicateType}`] === participant[`state.${fieldMapping.duplicateType}`]) {
-        triggerNotificationBanner(`Duplicate Type already set to <b>${keyToDuplicateType[selectedOptions[`state.${fieldMapping.duplicateType}`]]}</b>`, 'warning')
-        return false;
+    if (selectedOptions[`state.${fieldMapping.duplicateType}`] && selectedOptions[`state.${fieldMapping.duplicateType}`] === participant.state[fieldMapping.duplicateType]) {
+        return {
+            isValid: false,
+            message: `Duplicate Type already set to <b>${keyToDuplicateType[selectedOptions[`state.${fieldMapping.duplicateType}`]]}</b>`
+        };
     }
-    if (selectedOptions[`state.${fieldMapping.updateRecruitType}`] && selectedOptions[`state.${fieldMapping.updateRecruitType}`] === participant[`state.${fieldMapping.updateRecruitType}`]) {
-        triggerNotificationBanner(`Update Recruit Type already set to <b>${updateRecruitmentType[selectedOptions[`state.${fieldMapping.updateRecruitType}`]]}</b>`, 'warning')
-        return false;
+    if (selectedOptions[`state.${fieldMapping.updateRecruitType}`] && selectedOptions[`state.${fieldMapping.updateRecruitType}`] === participant.state[fieldMapping.updateRecruitType]) {
+        return {
+            isValid: false,
+            message: `Update Recruit Type already set to <b>${updateRecruitmentType[selectedOptions[`state.${fieldMapping.updateRecruitType}`]]}</b>`
+        };
     }
-    else return true
+    return { isValid: true };
 }
 
 const renderSelectedOptions = (selectedOptions) => {
@@ -267,13 +280,13 @@ const finalizeCorrections = (participant, selectedOptions) => {
                 selectedOptions[fieldMapping.recruitmentType] = fieldMapping.passive
             }
             selectedOptions['token'] = participant['token'];
-            await clickHandler(selectedOptions)
+            await verificationCorrectionsClickHandler(selectedOptions)
         })
     }
 }
 
 // async-await function to make HTTP POST request
-const clickHandler = async (selectedOptions) => {
+export const verificationCorrectionsClickHandler = async (selectedOptions) => {
     try {
         showAnimation();
         const idToken = await getIdToken();
@@ -291,8 +304,12 @@ const clickHandler = async (selectedOptions) => {
             if (response.status === 200) {
                 const query = `token=${selectedOptions.token}`;
                 const reloadedParticipant = await findParticipant(query);
-                reloadVerificationToolPage(reloadedParticipant.data[0], 'Correction(s) updated.', 'success');
-                await participantState.setParticipant(reloadedParticipant.data[0]);
+                const updatedParticipant = reloadedParticipant.data[0];
+                await participantState.setParticipant(updatedParticipant);
+                reloadVerificationToolPage(updatedParticipant, 'Correction(s) updated.', 'success');
+                if (window.location.hash.includes('#participantDetails')) {
+                    await renderParticipantDetails(updatedParticipant, {}, 'details');
+                }
             }
             else { 
                 triggerNotificationBanner('Error: No corrections were made.', 'warning')
@@ -304,15 +321,19 @@ const clickHandler = async (selectedOptions) => {
         }
 };
 
-const reloadVerificationToolPage = (participant, message, type) => {
+const reloadVerificationToolPage = (participant, message, type, options = {}) => {
     showAnimation();
-    setupVerificationCorrectionsPage(participant);
+    const hasDataCorrectionsContainer = Boolean(document.getElementById('dataCorrectionsToolContainer'));
+    const containerId = options.containerId || (hasDataCorrectionsContainer ? 'dataCorrectionsToolContainer' : 'mainContent');
+    const skipNavBarUpdate = options.skipNavBarUpdate ?? hasDataCorrectionsContainer;
+
+    setupVerificationCorrectionsPage(participant, { containerId, skipNavBarUpdate });
     triggerNotificationBanner(message, type);
+    refreshParticipantHeaders(participant);
     hideAnimation();
 }
 
-
- const cleanUpSelectedOptions = (selectedOptions) => {
+const cleanUpSelectedOptions = (selectedOptions) => {
     selectedOptions && Object.keys(selectedOptions).some( (key) => {
         if (selectedOptions[key] === "select") {
             delete selectedOptions[key]

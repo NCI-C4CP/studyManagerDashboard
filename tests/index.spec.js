@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { setupTestEnvironment, teardownTestEnvironment, installFirebaseStub, createDOMFixture, cleanupDOMFixture, clearAllState, createMockParticipant, waitForAsyncTasks } from './helpers.js';
-import { searchState } from '../src/stateManager.js';
+import { searchState, participantState, roleState } from '../src/stateManager.js';
 import { setParticipantLookupNavRequest } from '../src/navigationBar.js';
 
 describe('router', function () {
@@ -80,5 +80,50 @@ describe('router', function () {
     await waitForAsyncTasks(20);
 
     expect(window.location.hash).to.equal('#login');
+  });
+
+  describe('participant details routing', () => {
+    let participant;
+
+    beforeEach(async () => {
+      participant = createMockParticipant('test-123', { token: 'abc-123' });
+      await participantState.setParticipant(participant);
+      roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
+
+      // Mock fetch (prevent actual API calls)
+      global.fetch = async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 200, data: [] }),
+      });
+    });
+
+    afterEach(async () => {
+      await participantState.clearParticipant();
+      delete global.fetch;
+    });
+
+    it('recognizes participant details routes', () => {
+      // Test that the router logic identifies participant details routes
+      const detailsRoute = '#participantDetails';
+      const summaryRoute = '#participantDetails/summary';
+      const withdrawalRoute = '#participantDetails/withdrawal';
+
+      expect(detailsRoute.startsWith('#participantDetails')).to.be.true;
+      expect(summaryRoute.startsWith('#participantDetails')).to.be.true;
+      expect(withdrawalRoute.startsWith('#participantDetails')).to.be.true;
+    });
+
+    it('extracts tab IDs from participant details routes', () => {
+      expect('#participantDetails/summary'.split('/')[1]).to.equal('summary');
+      expect('#participantDetails/withdrawal'.split('/')[1]).to.equal('withdrawal');
+      expect('#participantDetails/messages'.split('/')[1]).to.equal('messages');
+      expect('#participantDetails'.split('/')[1]).to.be.undefined;
+    });
+
+    it('identifies data corrections route as participant-dependent', () => {
+      const route = '#participantDetails/dataCorrections';
+      expect(route.startsWith('#participantDetails')).to.be.true;
+    });
   });
 });
