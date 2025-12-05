@@ -3,7 +3,7 @@ import { renderParticipantHeader } from './participantHeader.js';
 import { findParticipant, navigateBackToSearchResults } from './participantLookup.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
 import { baseAPI, getIdToken, hideAnimation, showAnimation } from './utils.js';
-import { participantState, invalidateSearchResultsCache } from './stateManager.js';
+import { invalidateSearchResultsCache } from './stateManager.js';
 
 const getBootstrapModalInstance = (modalEl) => {
     if (!window.bootstrap?.Modal) return null;

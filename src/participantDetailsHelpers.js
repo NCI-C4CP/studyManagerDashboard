@@ -1913,12 +1913,12 @@ export const submitClickHandler = async (participant, changedOption) => {
                 }
 
                 invalidateSearchResultsCache();
-                clearUnsaved()
+                clearUnsaved();
                 triggerNotificationBanner('Success! Changes Saved.', 'success');
 
                 const updatedParticipant = await updateParticipantAfterFormSave(participant, changedUserDataForProfile);
-                changedOption = {};
-                await renderParticipantDetails(updatedParticipant, changedOption, 'details', { preserveScrollPosition: true });
+                const resetChanges = {};
+                await renderParticipantDetails(updatedParticipant, resetChanges, 'details', { preserveScrollPosition: true });
 
             } catch (error) {
                 console.error('Error:', error);

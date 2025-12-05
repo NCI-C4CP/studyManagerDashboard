@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import { setupVerificationCorrectionsPage, verificationCorrectionsClickHandler } from '../src/dataCorrectionsTool/verificationCorrectionsTool.js';
-import { appState, participantState } from '../src/stateManager.js';
+import { appState, participantState, searchState } from '../src/stateManager.js';
 import { baseAPI } from '../src/utils.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 
@@ -184,6 +184,12 @@ describe('verificationCorrectionsTool', () => {
             const participant = createMockParticipant();
             await participantState.setParticipant(participant);
 
+            await searchState.setSearchResults(
+                { searchType: 'lookup', token: participant.token },
+                [participant]
+            );
+            expect(searchState.getSearchResults()).to.not.equal(null);
+
             global.fetch = async (url) => {
                 if (url.includes('participantDataCorrection')) {
                     return { status: 200, ok: true, json: async () => ({ code: 200 }) };
@@ -198,6 +204,8 @@ describe('verificationCorrectionsTool', () => {
                 [fieldMapping.verifiedFlag]: fieldMapping.verified,
                 token: participant.token
             });
+
+            expect(searchState.getSearchResults()).to.equal(null);
         });
     });
 });

@@ -301,8 +301,6 @@ describe('participantSummary', () => {
   describe('reset participant modal isolation', () => {
     beforeEach(() => {
       process.env.NODE_ENV = 'test';
-      // Ensure environment meets dev-only condition for rendering the reset button
-      window.location.href = `https://${urls.dev}/`;
       // Minimal edit modal skeleton to verify it is untouched by reset flow
       document.body.innerHTML = `
         <div id="navBarLinks"></div>

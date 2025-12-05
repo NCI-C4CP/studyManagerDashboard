@@ -270,6 +270,7 @@ export const clearAllState = async (options = {}) => {
   } = options;
 
   // Import state managers dynamically to avoid circular dependencies
+  const stateManagerModule = await import('../src/stateManager.js');
   const {
     statsState,
     roleState,
@@ -281,12 +282,12 @@ export const clearAllState = async (options = {}) => {
     appState,
     resetAppStateUID,
     setParticipantLookupLoader,
-  } = await import('../src/stateManager.js');
+  } = stateManagerModule?.default ?? stateManagerModule;
 
   // Reset app state UID first (needed for encrypted stores to recognize new session)
   // This prevents stores from trying to reload data for the wrong user
   if (shouldResetUID) {
-    resetAppStateUID();
+    resetAppStateUID?.();
   }
 
   // Clear sessionStorage to prevent any data reloads
@@ -297,53 +298,53 @@ export const clearAllState = async (options = {}) => {
 
   // Clear search state cache (module-level variables)
   // This clears searchMetadataCache and searchResultsCache which persist across tests
-  searchState.clearSearchResults();
+  searchState?.clearSearchResults?.();
 
   // Clear all encrypted stores (this writes defaults to appState)
   // After sessionStorage is cleared, these .clear() calls write fresh defaults to appState
-  statsState.clear();
-  roleState.clear();
-  uiState.clear();
-  participantState.clearParticipant();
-  userSession.clearUser();
-  reportsState.clearReports();
+  statsState?.clear?.();
+  roleState?.clear?.();
+  uiState?.clear?.();
+  participantState?.clearParticipant?.();
+  userSession?.clearUser?.();
+  reportsState?.clearReports?.();
   
   // Reconstruct appState to ensure clean state
   // Get the encrypted store defaults that were just set
-  const currentAppState = appState.getState();
+  const currentAppState = appState?.getState();
   
   // Reconstruct appState from scratch with fresh object references (no stale references persist from previous tests)
-  appState.setState({
+  appState?.setState({
     hasUnsavedChanges: false,
     participant: null,
     reports: null,
-    stats: currentAppState.stats ? JSON.parse(JSON.stringify(currentAppState.stats)) : currentAppState.stats,
-    roleFlags: currentAppState.roleFlags ? JSON.parse(JSON.stringify(currentAppState.roleFlags)) : currentAppState.roleFlags,
-    uiFlags: currentAppState.uiFlags ? JSON.parse(JSON.stringify(currentAppState.uiFlags)) : currentAppState.uiFlags,
+    stats: currentAppState?.stats ? JSON.parse(JSON.stringify(currentAppState.stats)) : currentAppState?.stats,
+    roleFlags: currentAppState?.roleFlags ? JSON.parse(JSON.stringify(currentAppState.roleFlags)) : currentAppState?.roleFlags,
+    uiFlags: currentAppState?.uiFlags ? JSON.parse(JSON.stringify(currentAppState.uiFlags)) : currentAppState?.uiFlags,
   });
   
   // Verify reports and participant are null
-  const verifiedState = appState.getState();
-  if (verifiedState.reports !== null || verifiedState.participant !== null) {
+  const verifiedState = appState?.getState ? appState.getState() : {};
+  if (verifiedState?.reports !== null || verifiedState?.participant !== null) {
     // If verification fails, force clear
-    appState.setState((state) => {
+    appState?.setState?.((state) => {
       return {
         hasUnsavedChanges: false,
         participant: null,
         reports: null,
-        stats: state.stats,
-        roleFlags: state.roleFlags,
-        uiFlags: state.uiFlags,
+        stats: state?.stats,
+        roleFlags: state?.roleFlags,
+        uiFlags: state?.uiFlags,
       };
     });
   }
   
   // Double-check search state cache is cleared
-  searchState.clearSearchResults();
+  searchState?.clearSearchResults?.();
 
   // Reset participant lookup loader
   if (clearParticipantLookupLoader) {
-    setParticipantLookupLoader();
+    setParticipantLookupLoader?.();
   }
   
   // Small delay to ensure all async operations complete
