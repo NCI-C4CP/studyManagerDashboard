@@ -40,10 +40,13 @@ export const renderDataCorrectionsTabContent = (participant) => {
     `;
 
     // Schedule event handlers to run after DOM is updated
-    requestAnimationFrame(() => {
-        setupSelectionTabLinks();
-        setActiveDataCorrectionsTab();
-    });
+    if (typeof window !== 'undefined' && typeof document !== 'undefined' && typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => {
+            if (typeof document === 'undefined') return;
+            setupSelectionTabLinks();
+            setActiveDataCorrectionsTab();
+        });
+    }
 
     return content;
 };
@@ -68,6 +71,7 @@ const setupContinueNavigationHandler = () => {
 }
 
 const setupSelectionTabLinks = () => {
+    if (typeof document === 'undefined') return;
     const links = document.querySelectorAll('.data-corrections-selection-tabs a');
     if (!links || links.length === 0) return;
     links.forEach(link => {
