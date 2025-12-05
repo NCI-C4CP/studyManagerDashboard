@@ -1,4 +1,4 @@
-import { roleState, participantState } from './stateManager.js';
+import { roleState, participantState, appState } from './stateManager.js';
 import { escapeHTML } from './utils.js';
 
 /**
@@ -244,6 +244,8 @@ export const initializeTabListeners = (participant, reports = null) => {
 
         e.preventDefault();
 
+        const currentParticipant = participantState.getParticipant() || participant;
+
         // Get the tab ID from the ID attribute, update tab state, and update hash
         const tabId = tabLink.id.replace('-tab', '');
         const allTabs = newNavList.querySelectorAll('.nav-link');
@@ -277,17 +279,27 @@ export const initializeTabListeners = (participant, reports = null) => {
         }
 
         if (tabId === 'details') {
-            const currentParticipant = participantState.getParticipant();
             if (currentParticipant) {
-                await import('./participantDetails.js').then(({ renderParticipantDetails }) => {
-                    renderParticipantDetails(currentParticipant, {}, 'details');
+                // dynamic import hook for testing
+                const importer = typeof __dynamicImportForParticipantTabs === 'function'
+                    ? __dynamicImportForParticipantTabs
+                    : (path) => import(path);
+                await importer('./participantDetails.js').then(async ({ renderParticipantDetails }) => {
+                    const pendingChanges = appState.getState().changedOption || {};
+                    await renderParticipantDetails(currentParticipant, pendingChanges, 'details', { preserveScrollPosition: true });
                 });
             }
             return;
         }
 
+        if (tabId === 'withdrawal') {
+            contentContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+            await loadTabContent(tabId, currentParticipant, reports);
+            return;
+        }
+
         if (hasSpinner || isEmpty) {
-            loadTabContent(tabId, participant, reports);
+            loadTabContent(tabId, currentParticipant, reports);
         }
     });
 };

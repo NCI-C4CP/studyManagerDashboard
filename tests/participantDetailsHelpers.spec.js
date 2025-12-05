@@ -127,4 +127,37 @@ describe('participantDetailsHelpers', () => {
             expect(module.getModalLabel('UnknownKey')).to.equal('UnknownKey');
         });
     });
+
+    describe('updateParticipantAfterFormSave', () => {
+        it('merges nested updates and pushes participant to participantState', async () => {
+            const participant = createMockParticipant('test-uid', {
+                query: { allPhoneNo: ['1111111111'] },
+            });
+            const changedUserDataForProfile = {
+                [fieldMapping.prefName]: 'New Pref',
+                'query.allPhoneNo': ['2222222222'],
+            };
+
+            const stateManager = await import('../src/stateManager.js');
+            const originalSetParticipant = stateManager.participantState.setParticipant;
+            const calls = [];
+            stateManager.participantState.setParticipant = async (p) => {
+                calls.push(p);
+            };
+
+            try {
+                const updated = await module.updateParticipantAfterFormSave(
+                    participant,
+                    changedUserDataForProfile,
+                );
+
+                expect(updated[fieldMapping.prefName]).to.equal('New Pref');
+                expect(updated.query.allPhoneNo).to.deep.equal(['2222222222']);
+                expect(calls).to.have.lengthOf(1);
+                expect(calls[0]).to.deep.equal(updated);
+            } finally {
+                stateManager.participantState.setParticipant = originalSetParticipant;
+            }
+        });
+    });
 });

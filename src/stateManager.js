@@ -739,6 +739,13 @@ export const searchState = {
     },
 
     /**
+     * Clear cached search results (keep metadata so queries can be re-run)
+     */
+    clearResultsCache: () => {
+        searchResultsCache = null;
+    },
+
+    /**
      * Get cached metadata synchronously
      * @return {Object|null}
      */
@@ -802,6 +809,18 @@ export const searchState = {
 };
 
 /**
+ * Clear cached participant search data, preserve search metadata. To re-trigger search.
+ * This protects against stale (cached) results when navigating back to the search results page after making changes to the participant profile.
+ */
+export const invalidateSearchResultsCache = () => {
+    if (typeof searchState.clearResultsCache === 'function') {
+        searchState.clearResultsCache();
+    } else {
+        searchState.clearSearchResults();
+    }
+};
+
+/**
  * Compose normalized metadata for predefined participant searches.
  * Accepts a base object and applies defaults.
  * @param {Object} baseObj - Partial metadata (from cache or route context)
@@ -821,7 +840,7 @@ export const markUnsaved = () => {
  * Clear the unsaved changes indicator
  */
 export const clearUnsaved = () => {
-    appState.setState({ hasUnsavedChanges: false });
+    appState.setState({ hasUnsavedChanges: false, changedOption: {} });
 };
 
 /**

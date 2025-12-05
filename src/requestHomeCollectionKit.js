@@ -3,7 +3,7 @@ import { renderParticipantHeader } from './participantHeader.js';
 import { findParticipant, navigateBackToSearchResults } from './participantLookup.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
 import { baseAPI, getIdToken, hideAnimation, showAnimation } from './utils.js';
-import { participantState } from './stateManager.js';
+import { participantState, invalidateSearchResultsCache } from './stateManager.js';
 
 const getBootstrapModalInstance = (modalEl) => {
     if (!window.bootstrap?.Modal) return null;
@@ -40,6 +40,7 @@ const showSuccessModal = () => {
 };
 
 const hideSuccessModal = () => {
+    if (typeof document === 'undefined') return;
     const modalEl = document.getElementById('modalSuccess');
     if (!modalEl) return;
 
@@ -529,6 +530,7 @@ const refreshParticipantAfterSuccess = async (token) => {
         const participant = await reloadParticipantData(token);
         const { participantState } = await import('./stateManager.js');
         await participantState.setParticipant(participant);
+        invalidateSearchResultsCache();
         // Navigate to the participant details page after a brief pause
         setTimeout(() => {
             closeModal();

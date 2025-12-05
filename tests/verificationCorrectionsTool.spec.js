@@ -179,5 +179,25 @@ describe('verificationCorrectionsTool', () => {
             expect(capturedBody.data[0][fieldMapping.verifiedFlag]).to.equal(fieldMapping.verified);
             expect(capturedBody.data[0].token).to.equal(participant.token);
         });
+
+        it('invalidates search cache after successful correction', async () => {
+            const participant = createMockParticipant();
+            await participantState.setParticipant(participant);
+
+            global.fetch = async (url) => {
+                if (url.includes('participantDataCorrection')) {
+                    return { status: 200, ok: true, json: async () => ({ code: 200 }) };
+                }
+                if (url.includes('getFilteredParticipants')) {
+                    return { status: 200, ok: true, json: async () => ({ code: 200, data: [participant] }) };
+                }
+                return { status: 200, ok: true, json: async () => ({}) };
+            };
+
+            await verificationCorrectionsClickHandler({
+                [fieldMapping.verifiedFlag]: fieldMapping.verified,
+                token: participant.token
+            });
+        });
     });
 });

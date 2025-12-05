@@ -1,7 +1,7 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantDetails } from './participantDetails.js';
 import { findParticipant } from './participantLookup.js';
-import { appState, participantState, roleState, userSession, markUnsaved, clearUnsaved } from './stateManager.js';
+import { appState, participantState, roleState, userSession, markUnsaved, clearUnsaved, invalidateSearchResultsCache } from './stateManager.js';
 import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, escapeHTML } from './utils.js';
 import { getCountryCode3List, getCountryNameByCode3 } from './countryMapping.js';
 
@@ -911,6 +911,7 @@ export const getModalLabel = (participantKey) => {
 export const reloadParticipantData = async (token) => {
     try {
         showAnimation();
+        invalidateSearchResultsCache();
         const query = `token=${token}`;
         const response = await findParticipant(query);
 
@@ -1315,7 +1316,7 @@ const showAuthUpdateAPIError = (bodyId, message) => {
     return false;
 }
 
-export const updateParticipantAfterFormSave = (participant, changedUserDataForProfile) => {
+export const updateParticipantAfterFormSave = async (participant, changedUserDataForProfile) => {
     const updatedParticipant = { ...participant };
 
     // Handles nested keys instead of shallow merge with ...changedUserDataForProfile
@@ -1338,7 +1339,7 @@ export const updateParticipantAfterFormSave = (participant, changedUserDataForPr
         }
     });
 
-    appState.setState({ participant: updatedParticipant });
+    await participantState.setParticipant(updatedParticipant);
     return updatedParticipant;
 }
 
@@ -1911,10 +1912,12 @@ export const submitClickHandler = async (participant, changedOption) => {
                     throw new Error('Error: There was an error processing your changes. Please try again.');
                 }
 
+                invalidateSearchResultsCache();
                 clearUnsaved()
                 triggerNotificationBanner('Success! Changes Saved.', 'success');
 
-                const updatedParticipant = updateParticipantAfterFormSave(participant, changedUserDataForProfile);
+                const updatedParticipant = await updateParticipantAfterFormSave(participant, changedUserDataForProfile);
+                changedOption = {};
                 await renderParticipantDetails(updatedParticipant, changedOption, 'details', { preserveScrollPosition: true });
 
             } catch (error) {

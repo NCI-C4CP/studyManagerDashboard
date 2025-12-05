@@ -8,7 +8,7 @@ import { consentHandler, hipaaHandler, userProfile, verificationStatus,
     baselineBloodSample, baselineUrineSample, baselineResearchMouthwashSample, baselineHomeMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, 
     baselinePayment, baselinePhysActReport, dhq3Report } from './participantSummaryRow.js';
 import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, renderShowMoreDataModal, urls, triggerNotificationBanner } from './utils.js';
-import { participantState, reportsState } from './stateManager.js';
+import { participantState, reportsState, invalidateSearchResultsCache } from './stateManager.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
 import { refreshParticipantHeaders } from './participantHeader.js';
 import { renderParticipantDetails } from './participantDetails.js';
@@ -933,6 +933,7 @@ export const refreshParticipantAfterReset = async (participant) => {
         }
     }
     reportsState.clearReports();
+    invalidateSearchResultsCache();
 
     window.location.hash = '#participantDetails/summary';
     await renderParticipantDetails(participant, {}, 'summary');

@@ -488,6 +488,37 @@ describe('participantTabs', () => {
 
             console.warn = originalWarn;
         });
+
+        it('restores pending changes when navigating back to details tab', async () => {
+            const { participantState, appState } = await import('../src/stateManager.js');
+            participantState.setParticipant(participant);
+            appState.setState({ changedOption: { prefName: 'PendingPref' } });
+
+            let calledWithPending = false;
+            // stub dynamic import hook on window for this test
+            const originalHook = global.__dynamicImportForParticipantTabs;
+            global.__dynamicImportForParticipantTabs = async (path) => {
+                if (path === './participantDetails.js') {
+                    return {
+                        renderParticipantDetails: (_p, pendingChanges) => {
+                            calledWithPending = pendingChanges?.prefName === 'PendingPref';
+                        }
+                    };
+                }
+                return import(path);
+            };
+
+            initializeTabListeners(participant);
+
+            const detailsTab = document.getElementById('details-tab');
+            detailsTab.click();
+
+            await new Promise((resolve) => setTimeout(resolve, 0));
+
+            expect(calledWithPending).to.be.true;
+
+            global.__dynamicImportForParticipantTabs = originalHook;
+        });
     });
 
     describe('Tab Edge Cases', () => {

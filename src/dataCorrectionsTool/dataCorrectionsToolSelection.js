@@ -11,7 +11,6 @@ export const setupDataCorrectionsSelectionToolPage = (participant, { containerId
         }
         if (!container) return;
         container.innerHTML = renderDataCorrectionsTabContent(participant);
-        setupSelectionTabLinks();
         setActiveDataCorrectionsTab();
     }
 }

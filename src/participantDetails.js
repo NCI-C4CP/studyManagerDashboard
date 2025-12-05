@@ -36,6 +36,7 @@ export const renderParticipantDetails = async (participant, changedOption = {}, 
         document.getElementById('mainContent').innerHTML = '<div class="container pt-0"><div class="alert alert-warning">No participant data available</div></div>';
         return;
     }
+    appState.setState({ changedOption });
     initLoginMechanism(participant);
     await participantState.setParticipant(participant);
 
@@ -571,6 +572,8 @@ const addSearchNavigationListeners = () => {
  */
 const handleBackToSearchResults = async () => {
     try {
+        clearUnsaved();
+        participantState.clearParticipant();
         await navigateBackToSearchResults();
     } catch (error) {
         console.error('Error navigating back to search results:', error);

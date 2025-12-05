@@ -15,6 +15,7 @@ import {
   uiState,
   userSession,
   setParticipantLookupLoader,
+  invalidateSearchResultsCache,
 } from '../src/stateManager.js';
 import {
   installFirebaseStub,
@@ -744,6 +745,22 @@ describe('stateManager', () => {
       expect(window.sessionStorage.getItem('searchMetadataEnc')).to.equal(null);
     });
 
+    it('clears only results cache while preserving metadata', async () => {
+      const metadata = { searchType: 'lookup', firstName: 'alex' };
+      const results = [{ id: 1 }];
+
+      await searchState.setSearchResults(metadata, results);
+      expect(searchState.getSearchResults()).to.deep.equal(results);
+      const encryptedBefore = window.sessionStorage.getItem('searchMetadataEnc');
+      expect(encryptedBefore).to.be.a('string');
+
+      searchState.clearResultsCache();
+
+      expect(searchState.getSearchResults()).to.equal(null);
+      expect(searchState.getCachedMetadata()).to.include({ searchType: 'lookup', firstName: 'alex' });
+      expect(window.sessionStorage.getItem('searchMetadataEnc')).to.equal(encryptedBefore);
+    });
+
     it('builds predefined search metadata', () => {
       const metadata = buildPredefinedSearchMetadata({ routeKey: 'all' });
       expect(metadata).to.deep.include({ searchType: 'predefined', routeKey: 'all' });
@@ -756,6 +773,45 @@ describe('stateManager', () => {
       expect(updated.routeKey).to.equal('verified');
       expect(updated.pageNumber).to.equal(2);
       expect(updated.siteCode).to.equal('SITE001');
+    });
+  });
+
+  describe('invalidateSearchResultsCache', () => {
+    let originalClearResultsCache;
+    let originalClearSearchResults;
+
+    beforeEach(() => {
+      originalClearResultsCache = searchState.clearResultsCache;
+      originalClearSearchResults = searchState.clearSearchResults;
+    });
+
+    afterEach(() => {
+      searchState.clearResultsCache = originalClearResultsCache;
+      searchState.clearSearchResults = originalClearSearchResults;
+    });
+
+    it('uses clearResultsCache when available', () => {
+      let clearResultsCalled = false;
+      let clearAllCalled = false;
+
+      searchState.clearResultsCache = () => { clearResultsCalled = true; };
+      searchState.clearSearchResults = () => { clearAllCalled = true; };
+
+      invalidateSearchResultsCache();
+
+      expect(clearResultsCalled).to.equal(true);
+      expect(clearAllCalled).to.equal(false);
+    });
+
+    it('falls back to clearSearchResults when partial cache clear is unavailable', () => {
+      let clearAllCalled = false;
+
+      searchState.clearResultsCache = undefined;
+      searchState.clearSearchResults = () => { clearAllCalled = true; };
+
+      invalidateSearchResultsCache();
+
+      expect(clearAllCalled).to.equal(true);
     });
   });
 

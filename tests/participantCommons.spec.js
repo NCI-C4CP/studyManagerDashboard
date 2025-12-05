@@ -84,7 +84,7 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       const defaultColumnsWithButtons = getDefaultColumnsWithBubbles();
       expect(defaultButtons.length).to.equal(defaultColumnsWithButtons.length);
       expect(defaultCategory.querySelector('summary span').textContent).to.include('Default Columns');
-      expect(defaultCategory.hasAttribute('open')).to.be.false;
+      expect(defaultCategory.hasAttribute('open')).to.be.true;
       const defaultBody = defaultCategory.querySelector('.bubble-category-body');
       expect(defaultBody).to.not.be.null;
       expect(defaultBody.getAttribute('style')).to.include('margin-top');
@@ -99,9 +99,10 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       expect(allCategories.length).to.equal(bubbleCategories.length);
       const firstCategory = allCategories[0];
       expect(firstCategory).to.not.be.null;
+      expect(firstCategory.getAttribute('data-category-key')).to.equal('default-columns');
       expect(firstCategory.hasAttribute('open')).to.be.true;
       const lastCategory = allCategories[allCategories.length - 1];
-      expect(lastCategory.getAttribute('data-category-key')).to.equal('default-columns');
+      expect(lastCategory.getAttribute('data-category-key')).to.equal('refusalsWithdrawals');
       expect(lastCategory.hasAttribute('open')).to.be.false;
 
       bubbleCategories.forEach((category) => {

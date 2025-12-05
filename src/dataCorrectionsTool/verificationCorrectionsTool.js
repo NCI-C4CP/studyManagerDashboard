@@ -2,10 +2,10 @@ import fieldMapping from '../fieldToConceptIdMapping.js';
 import { updateNavBar } from '../navigationBar.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner, formatUTCDate, convertToISO8601, escapeHTML } from '../utils.js';
 import { verificationStatusMapping, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
-import { appState, participantState } from '../stateManager.js';
+import { appState, participantState, invalidateSearchResultsCache } from '../stateManager.js';
 import { findParticipant } from '../participantLookup.js';
 import { refreshParticipantHeaders } from '../participantHeader.js';
-import { handleBackToToolSelect, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
+import { setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 import { renderParticipantDetails } from '../participantDetails.js';
 
 
@@ -23,7 +23,6 @@ export const setupVerificationCorrectionsPage = (participant, { containerId = 'm
         dropdownTrigger('dropdownUpdateRecruitType', 'dropdownMenuButtonUpdateRecruitTypeOptns', selectedResponse);
         viewOptionsSelected(participant);
         resetChanges(participant);
-        handleBackToToolSelect();
         setActiveDataCorrectionsTab();
     }
 }
@@ -306,6 +305,7 @@ export const verificationCorrectionsClickHandler = async (selectedOptions) => {
                 const reloadedParticipant = await findParticipant(query);
                 const updatedParticipant = reloadedParticipant.data[0];
                 await participantState.setParticipant(updatedParticipant);
+                invalidateSearchResultsCache();
                 reloadVerificationToolPage(updatedParticipant, 'Correction(s) updated.', 'success');
                 if (window.location.hash.includes('#participantDetails')) {
                     await renderParticipantDetails(updatedParticipant, {}, 'details');
