@@ -58,9 +58,10 @@ describe('participantCommons - Bubble Filter Functionality', () => {
 
   afterEach(async () => {
     // Clean up any state that tests might have set
-    const { searchState, uiState } = await import('../src/stateManager.js');
-    searchState.clearSearchResults();
-    uiState.clear();
+    const stateModule = await import('../src/stateManager.js');
+    const { searchState, uiState } = stateModule?.default ?? stateModule;
+    searchState?.clearSearchResults?.();
+    uiState?.clear?.();
     cleanupDOMFixture(mainContent);
     teardownTestEnvironment();
   });

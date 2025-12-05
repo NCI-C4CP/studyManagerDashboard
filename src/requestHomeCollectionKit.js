@@ -532,10 +532,16 @@ const refreshParticipantAfterSuccess = async (token) => {
         await participantState.setParticipant(participant);
         invalidateSearchResultsCache();
         // Navigate to the participant details page after a brief pause
-        setTimeout(() => {
+        if (typeof window !== 'undefined') {
+            setTimeout(() => {
+                closeModal();
+                if (typeof window !== 'undefined') {
+                    window.location.href = '#participantDetails';
+                }
+            }, 3000);
+        } else {
             closeModal();
-            window.location.href = '#participantDetails';
-        }, 3000);
+        }
     } catch (err) {
         console.error('err', err);
         alert('The kit was successfully requested, but refreshing the participant information failed. Participant data displayed may be stale.');

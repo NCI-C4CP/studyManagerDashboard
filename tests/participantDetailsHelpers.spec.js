@@ -141,7 +141,8 @@ describe('participantDetailsHelpers', () => {
                 'query.allPhoneNo': ['2222222222'],
             };
 
-            const stateManager = await import('../src/stateManager.js');
+            const stateManagerModule = await import('../src/stateManager.js');
+            const stateManager = stateManagerModule?.default ?? stateManagerModule;
             const originalSetParticipant = stateManager.participantState.setParticipant;
             const calls = [];
             stateManager.participantState.setParticipant = async (p) => {

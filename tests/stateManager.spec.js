@@ -1,22 +1,5 @@
 import { expect } from 'chai';
-import {
-  appState,
-  buildPredefinedSearchMetadata,
-  signOutAndClearSession,
-  clearUnsaved,
-  initializeAppState,
-  markUnsaved,
-  participantState,
-  reportsState,
-  resetAppStateUID,
-  roleState,
-  searchState,
-  statsState,
-  uiState,
-  userSession,
-  setParticipantLookupLoader,
-  invalidateSearchResultsCache,
-} from '../src/stateManager.js';
+import * as stateManagerModule from '../src/stateManager.js';
 import {
   installFirebaseStub,
   setupTestEnvironment,
@@ -30,6 +13,25 @@ import {
 describe('stateManager', () => {
   let firebaseStub;
   let signOutCalled = false;
+  const stateManager = stateManagerModule?.default ?? stateManagerModule;
+  const {
+    appState,
+    buildPredefinedSearchMetadata,
+    signOutAndClearSession,
+    clearUnsaved,
+    initializeAppState,
+    markUnsaved,
+    participantState,
+    reportsState,
+    resetAppStateUID,
+    roleState,
+    searchState,
+    statsState,
+    uiState,
+    userSession,
+    setParticipantLookupLoader,
+    invalidateSearchResultsCache,
+  } = stateManager;
 
   beforeEach(async () => {
     setupTestEnvironment();
@@ -46,12 +48,13 @@ describe('stateManager', () => {
 
   afterEach(async () => {
     // Clean up any state set during tests
-    const { searchState, reportsState, appState } = await import('../src/stateManager.js');
-    searchState.clearSearchResults();
-    reportsState.clearReports();
-    const currentState = appState.getState();
+    const stateModule = await import('../src/stateManager.js');
+    const { searchState, reportsState, appState } = stateModule?.default ?? stateModule;
+    searchState?.clearSearchResults?.();
+    reportsState?.clearReports?.();
+    const currentState = appState?.getState?.() || {};
     if (currentState.reports !== null || currentState.participant !== null) {
-      appState.setState({
+      appState?.setState({
         ...currentState,
         reports: null,
         participant: null,

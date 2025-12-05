@@ -4,7 +4,7 @@ import { urls } from '../src/utils.js';
 import { renderParticipantHeader } from '../src/participantHeader.js';
 import { participantState } from '../src/stateManager.js';
 import { refreshParticipantAfterReset } from '../src/participantSummary.js';
-import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, waitForAsyncTasks } from './helpers.js';
+import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, waitForAsyncTasks, installFirebaseStub } from './helpers.js';
 
 const createPdfLibStub = () => {
   const stubPage = {
@@ -70,6 +70,7 @@ describe('participantSummary', () => {
 
   beforeEach(async () => {
     setupTestEnvironment();
+    installFirebaseStub({ uid: 'test-user' });
     document.body.innerHTML = '<div id="navBarLinks"></div><div id="mainContent"></div>';
     await ensureModuleLoaded();
   });

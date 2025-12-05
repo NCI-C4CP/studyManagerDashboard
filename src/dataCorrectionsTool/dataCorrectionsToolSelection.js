@@ -94,16 +94,19 @@ export const renderDataCorrectionsToolInTab = async (toolId, participant, contai
     const commonOptions = { containerId, skipNavBarUpdate: true };
 
     if (toolId === 'verificationCorrectionsTool') {
-        const { setupVerificationCorrectionsPage } = await import('./verificationCorrectionsTool.js');
-        return setupVerificationCorrectionsPage(participant, commonOptions);
+        const module = await import('./verificationCorrectionsTool.js');
+        const setupVerificationCorrectionsPage = module?.setupVerificationCorrectionsPage || module?.default?.setupVerificationCorrectionsPage;
+        return setupVerificationCorrectionsPage?.(participant, commonOptions);
     }
     if (toolId === 'surveyResetTool') {
-        const { setupSurveyResetToolPage } = await import('./surveyResetTool.js');
-        return setupSurveyResetToolPage(participant, commonOptions);
+        const module = await import('./surveyResetTool.js');
+        const setupSurveyResetToolPage = module?.setupSurveyResetToolPage || module?.default?.setupSurveyResetToolPage;
+        return setupSurveyResetToolPage?.(participant, commonOptions);
     }
     if (toolId === 'incentiveEligibilityTool') {
-        const { setupIncentiveEligibilityToolPage } = await import('./incentiveEligibilityTool.js');
-        return setupIncentiveEligibilityToolPage(participant, commonOptions);
+        const module = await import('./incentiveEligibilityTool.js');
+        const setupIncentiveEligibilityToolPage = module?.setupIncentiveEligibilityToolPage || module?.default?.setupIncentiveEligibilityToolPage;
+        return setupIncentiveEligibilityToolPage?.(participant, commonOptions);
     }
 
     container.innerHTML = `<div class="alert alert-warning">Unknown data corrections tool.</div>`;

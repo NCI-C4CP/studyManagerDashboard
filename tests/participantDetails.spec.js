@@ -18,10 +18,13 @@ describe('participantDetails Integration', () => {
         module = await import('../src/participantDetails.js');
         helpersModule = await import('../src/participantDetailsHelpers.js');
         const stateManager = await import('../src/stateManager.js');
-        roleState = stateManager.roleState;
-        appState = stateManager.appState;
-        participantState = stateManager.participantState;
-        participantDetails = module.renderParticipantDetails;
+        const state = stateManager?.default ?? stateManager;
+        const detailsModule = module?.default ?? module;
+        helpersModule = helpersModule?.default ?? helpersModule;
+        roleState = state.roleState;
+        appState = state.appState;
+        participantState = state.participantState;
+        participantDetails = detailsModule.renderParticipantDetails;
     };
 
     beforeEach(async () => {

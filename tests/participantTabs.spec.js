@@ -25,16 +25,18 @@ describe('participantTabs', () => {
         if (getVisibleTabs) return;
         const module = await import('../src/participantTabs.js');
         const stateModule = await import('../src/stateManager.js');
-        roleState = stateModule.roleState;
+        const tabs = module?.default ?? module;
+        const state = stateModule?.default ?? stateModule;
+        roleState = state.roleState;
         fieldMapping = (await import('../src/fieldToConceptIdMapping.js')).default;
-        getVisibleTabs = module.getVisibleTabs;
-        renderTabNavigation = module.renderTabNavigation;
-        renderTabContentContainers = module.renderTabContentContainers;
-        loadTabContent = module.loadTabContent;
-        getTabIdFromHash = module.getTabIdFromHash;
-        updateHashForTab = module.updateHashForTab;
-        activateTab = module.activateTab;
-        initializeTabListeners = module.initializeTabListeners;
+        getVisibleTabs = tabs.getVisibleTabs;
+        renderTabNavigation = tabs.renderTabNavigation;
+        renderTabContentContainers = tabs.renderTabContentContainers;
+        loadTabContent = tabs.loadTabContent;
+        getTabIdFromHash = tabs.getTabIdFromHash;
+        updateHashForTab = tabs.updateHashForTab;
+        activateTab = tabs.activateTab;
+        initializeTabListeners = tabs.initializeTabListeners;
     };
 
     beforeEach(async () => {

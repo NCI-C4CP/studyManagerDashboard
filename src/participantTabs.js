@@ -161,28 +161,34 @@ export const loadTabContent = async (tabId, participant, reports = null) => {
                 break;
 
             case 'summary':
-                const { renderSummaryTabContent } = await import('./participantSummary.js');
+                const summaryModule = await import('./participantSummary.js');
+                const renderSummaryTabContent = summaryModule.renderSummaryTabContent || summaryModule.default?.renderSummaryTabContent;
                 // Reports will be fetched inside renderSummaryTabContent
                 content = await renderSummaryTabContent(participant, reports);
                 break;
 
             case 'withdrawal':
-                const { renderWithdrawalTabContent } = await import('./participantWithdrawal.js');
+                const withdrawalModule = await import('./participantWithdrawal.js');
+                const renderWithdrawalTabContent = withdrawalModule.renderWithdrawalTabContent || withdrawalModule.default?.renderWithdrawalTabContent;
                 content = await renderWithdrawalTabContent(participant);
                 break;
 
             case 'messages':
-                const { renderMessagesTabContent } = await import('./participantMessages.js');
+                const messagesModule = await import('./participantMessages.js');
+                const renderMessagesTabContent = messagesModule.renderMessagesTabContent || messagesModule.default?.renderMessagesTabContent;
                 content = await renderMessagesTabContent(participant);
                 break;
 
             case 'pathology':
-                const { renderPathologyTabContent } = await import('./pathologyReportUpload.js');
+                const pathologyModule = await import('./pathologyReportUpload.js');
+                const renderPathologyTabContent = pathologyModule.renderPathologyTabContent || pathologyModule.default?.renderPathologyTabContent;
                 content = await renderPathologyTabContent(participant);
                 break;
 
             case 'dataCorrections': {
-                const { renderDataCorrectionsTabContent, renderDataCorrectionsToolInTab } = await import('./dataCorrectionsTool/dataCorrectionsToolSelection.js');
+                const selectionModule = await import('./dataCorrectionsTool/dataCorrectionsToolSelection.js');
+                const renderDataCorrectionsTabContent = selectionModule.renderDataCorrectionsTabContent || selectionModule.default?.renderDataCorrectionsTabContent;
+                const renderDataCorrectionsToolInTab = selectionModule.renderDataCorrectionsToolInTab || selectionModule.default?.renderDataCorrectionsToolInTab;
                 const hashParts = window.location.hash.split('/');
                 const toolId = hashParts.length > 2 ? hashParts[2] : '';
 
@@ -198,7 +204,8 @@ export const loadTabContent = async (tabId, participant, reports = null) => {
             }
 
             case 'kitRequests':
-                const { renderKitRequestTabContent } = await import('./requestHomeCollectionKit.js');
+                const kitModule = await import('./requestHomeCollectionKit.js');
+                const renderKitRequestTabContent = kitModule.renderKitRequestTabContent || kitModule.default?.renderKitRequestTabContent;
                 content = await renderKitRequestTabContent(participant);
                 break;
 

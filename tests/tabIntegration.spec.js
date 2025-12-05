@@ -7,7 +7,6 @@ import {
     waitForAsyncTasks,
     clearAllState
 } from './helpers.js';
-import { participantState, roleState } from '../src/stateManager.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 
 describe('Tab Integration Tests', function () {
@@ -17,18 +16,21 @@ describe('Tab Integration Tests', function () {
     let renderParticipantDetails;
     let activateTab;
     let getTabIdFromHash;
-
     let roleState;
+    let participantState;
 
     const loadModules = async () => {
         if (renderParticipantDetails && activateTab && getTabIdFromHash) return;
         const detailsModule = await import('../src/participantDetails.js');
         const tabsModule = await import('../src/participantTabs.js');
         const stateModule = await import('../src/stateManager.js');
-        renderParticipantDetails = detailsModule.renderParticipantDetails;
-        activateTab = tabsModule.activateTab;
-        getTabIdFromHash = tabsModule.getTabIdFromHash;
-        roleState = stateModule.roleState;
+        const tabs = tabsModule?.default ?? tabsModule;
+        const state = stateModule?.default ?? stateModule;
+        renderParticipantDetails = (detailsModule?.default ?? detailsModule).renderParticipantDetails;
+        activateTab = tabs.activateTab;
+        getTabIdFromHash = tabs.getTabIdFromHash;
+        roleState = state.roleState;
+        participantState = state.participantState;
     };
 
     beforeEach(async () => {
