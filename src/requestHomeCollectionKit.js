@@ -528,7 +528,8 @@ const closeModal = () => {
 const refreshParticipantAfterSuccess = async (token) => {
     try {
         const participant = await reloadParticipantData(token);
-        const { participantState } = await import('./stateManager.js');
+        const stateManagerModule = await import('./stateManager.js');
+        const participantState = stateManagerModule.participantState || stateManagerModule.default?.participantState;
         await participantState.setParticipant(participant);
         invalidateSearchResultsCache();
         // Navigate to the participant details page after a brief pause

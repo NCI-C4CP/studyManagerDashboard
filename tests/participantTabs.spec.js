@@ -493,7 +493,8 @@ describe('participantTabs', () => {
         });
 
         it('restores pending changes when navigating back to details tab', async () => {
-            const { participantState, appState } = await import('../src/stateManager.js');
+            const stateManagerModule = await import('../src/stateManager.js');
+            const { participantState, appState } = stateManagerModule?.default ?? stateManagerModule;
             await participantState.setParticipant(participant);
             appState.setState({ changedOption: { prefName: 'PendingPref' } });
 
