@@ -19,6 +19,7 @@ describe('participantTabs', () => {
     let activateTab;
     let initializeTabListeners;
     let roleState;
+    let participantState;
     let fieldMapping;
 
     const loadModule = async () => {
@@ -28,6 +29,7 @@ describe('participantTabs', () => {
         const tabs = module?.default ?? module;
         const state = stateModule?.default ?? stateModule;
         roleState = state.roleState;
+        participantState = state.participantState;
         fieldMapping = (await import('../src/fieldToConceptIdMapping.js')).default;
         getVisibleTabs = tabs.getVisibleTabs;
         renderTabNavigation = tabs.renderTabNavigation;
@@ -262,7 +264,6 @@ describe('participantTabs', () => {
         });
 
         it('re-renders details tab when clicked to reflect updated participant state', async () => {
-            const { participantState } = await import('../src/stateManager.js');
             document.body.innerHTML = `
                 <div id="mainContent"></div>
                 <div id="navBarLinks"></div>
@@ -493,7 +494,7 @@ describe('participantTabs', () => {
 
         it('restores pending changes when navigating back to details tab', async () => {
             const { participantState, appState } = await import('../src/stateManager.js');
-            participantState.setParticipant(participant);
+            await participantState.setParticipant(participant);
             appState.setState({ changedOption: { prefName: 'PendingPref' } });
 
             let calledWithPending = false;

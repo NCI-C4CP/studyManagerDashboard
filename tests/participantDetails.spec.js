@@ -93,7 +93,8 @@ describe('participantDetails Integration', () => {
         expect(lookupBtn).to.exist;
 
         lookupBtn.click();
-        const { participantLookupNavRequest } = await import('../src/navigationBar.js');
+        const navModule = await import('../src/navigationBar.js');
+        const { participantLookupNavRequest } = navModule?.default ?? navModule;
         expect(participantLookupNavRequest()).to.equal(true);
         expect(window.location.hash).to.equal('#participantLookup');
     });
