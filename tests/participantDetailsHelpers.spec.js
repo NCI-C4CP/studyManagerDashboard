@@ -11,8 +11,11 @@ describe('participantDetailsHelpers', () => {
         if (module && roleState && appState) return;
         module = await import('../src/participantDetailsHelpers.js');
         const stateManager = await import('../src/stateManager.js');
-        roleState = stateManager.roleState;
-        appState = stateManager.appState;
+        const state = stateManager?.default ?? stateManager;
+        const helpersModule = module?.default ?? module;
+        module = helpersModule;
+        roleState = state.roleState;
+        appState = state.appState;
     };
 
     beforeEach(async () => {

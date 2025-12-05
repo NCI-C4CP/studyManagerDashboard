@@ -128,17 +128,23 @@ export const waitForAsyncTasks = (ms = 50) =>
  * Resets internal trackers afterwards so subsequent tests start clean.
  */
 export const flushActiveColumnsUpdates = async () => {
-  const { waitForActiveColumnsUpdate } = await import('../src/participantCommons.js');
-  await waitForActiveColumnsUpdate();
-  await Promise.resolve();
+  const module = await import('../src/participantCommons.js');
+  const waitForActiveColumnsUpdate = module?.waitForActiveColumnsUpdate || module?.default?.waitForActiveColumnsUpdate;
+  if (typeof waitForActiveColumnsUpdate === 'function') {
+    await waitForActiveColumnsUpdate();
+    await Promise.resolve();
+  }
 };
 
 /**
  * Resets column-update tracking so subsequent tests start with a resolved promise.
  */
 export const resetActiveColumnsUpdateTracking = async () => {
-  const { resetActiveColumnsUpdateTracker } = await import('../src/participantCommons.js');
-  resetActiveColumnsUpdateTracker();
+  const module = await import('../src/participantCommons.js');
+  const resetActiveColumnsUpdateTracker = module?.resetActiveColumnsUpdateTracker || module?.default?.resetActiveColumnsUpdateTracker;
+  if (typeof resetActiveColumnsUpdateTracker === 'function') {
+    resetActiveColumnsUpdateTracker();
+  }
 };
 
 /**

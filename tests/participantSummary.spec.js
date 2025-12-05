@@ -61,10 +61,11 @@ describe('participantSummary', () => {
     if (render && renderParticipantSummary && retrieveDHQHEIReport && renderSummaryTabContent) return;
     global.PDFLib = global.PDFLib ?? createPdfLibStub();
     const module = await import('../src/participantSummary.js');
-    render = module.render;
-    renderParticipantSummary = module.renderParticipantSummary;
-    retrieveDHQHEIReport = module.retrieveDHQHEIReport;
-    renderSummaryTabContent = module.renderSummaryTabContent;
+    const resolved = module?.default ?? module;
+    render = resolved.render;
+    renderParticipantSummary = resolved.renderParticipantSummary;
+    retrieveDHQHEIReport = resolved.retrieveDHQHEIReport;
+    renderSummaryTabContent = resolved.renderSummaryTabContent;
   };
 
   beforeEach(async () => {
