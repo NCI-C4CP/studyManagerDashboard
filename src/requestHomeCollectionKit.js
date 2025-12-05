@@ -533,13 +533,11 @@ const refreshParticipantAfterSuccess = async (token) => {
         await participantState.setParticipant(participant);
         invalidateSearchResultsCache();
         // Navigate to the participant details page after a brief pause
-        const isTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+        const isTest = processRefusalWithdrawalResponses.env?.NODE_ENV === 'test';
         if (!isTest && typeof window !== 'undefined') {
             setTimeout(() => {
                 closeModal();
-                if (typeof window !== 'undefined') {
-                    window.location.href = '#participantDetails';
-                }
+                window.location.href = '#participantDetails';
             }, 3000);
         }
     } catch (err) {
