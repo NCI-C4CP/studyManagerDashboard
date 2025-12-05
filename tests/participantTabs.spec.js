@@ -19,22 +19,26 @@ describe('participantTabs', () => {
     let activateTab;
     let initializeTabListeners;
     let roleState;
+    let participantState;
     let fieldMapping;
 
     const loadModule = async () => {
         if (getVisibleTabs) return;
         const module = await import('../src/participantTabs.js');
         const stateModule = await import('../src/stateManager.js');
-        roleState = stateModule.roleState;
+        const tabs = module?.default ?? module;
+        const state = stateModule?.default ?? stateModule;
+        roleState = state.roleState;
+        participantState = state.participantState;
         fieldMapping = (await import('../src/fieldToConceptIdMapping.js')).default;
-        getVisibleTabs = module.getVisibleTabs;
-        renderTabNavigation = module.renderTabNavigation;
-        renderTabContentContainers = module.renderTabContentContainers;
-        loadTabContent = module.loadTabContent;
-        getTabIdFromHash = module.getTabIdFromHash;
-        updateHashForTab = module.updateHashForTab;
-        activateTab = module.activateTab;
-        initializeTabListeners = module.initializeTabListeners;
+        getVisibleTabs = tabs.getVisibleTabs;
+        renderTabNavigation = tabs.renderTabNavigation;
+        renderTabContentContainers = tabs.renderTabContentContainers;
+        loadTabContent = tabs.loadTabContent;
+        getTabIdFromHash = tabs.getTabIdFromHash;
+        updateHashForTab = tabs.updateHashForTab;
+        activateTab = tabs.activateTab;
+        initializeTabListeners = tabs.initializeTabListeners;
     };
 
     beforeEach(async () => {
@@ -260,7 +264,6 @@ describe('participantTabs', () => {
         });
 
         it('re-renders details tab when clicked to reflect updated participant state', async () => {
-            const { participantState } = await import('../src/stateManager.js');
             document.body.innerHTML = `
                 <div id="mainContent"></div>
                 <div id="navBarLinks"></div>
@@ -487,6 +490,38 @@ describe('participantTabs', () => {
             expect(() => initializeTabListeners(participant)).to.not.throw();
 
             console.warn = originalWarn;
+        });
+
+        it('restores pending changes when navigating back to details tab', async () => {
+            const stateManagerModule = await import('../src/stateManager.js');
+            const { participantState, appState } = stateManagerModule?.default ?? stateManagerModule;
+            await participantState.setParticipant(participant);
+            appState.setState({ changedOption: { prefName: 'PendingPref' } });
+
+            let calledWithPending = false;
+            // stub dynamic import hook on window for this test
+            const originalHook = global.__dynamicImportForParticipantTabs;
+            global.__dynamicImportForParticipantTabs = async (path) => {
+                if (path === './participantDetails.js') {
+                    return {
+                        renderParticipantDetails: (_p, pendingChanges) => {
+                            calledWithPending = pendingChanges?.prefName === 'PendingPref';
+                        }
+                    };
+                }
+                return import(path);
+            };
+
+            initializeTabListeners(participant);
+
+            const detailsTab = document.getElementById('details-tab');
+            detailsTab.click();
+
+            await new Promise((resolve) => setTimeout(resolve, 0));
+
+            expect(calledWithPending).to.be.true;
+
+            global.__dynamicImportForParticipantTabs = originalHook;
         });
     });
 

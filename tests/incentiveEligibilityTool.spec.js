@@ -36,16 +36,18 @@ describe('incentiveEligibilityTool', () => {
             if (url.includes('getFilteredParticipants')) {
                 return {
                     ok: true,
+                    status: 200,
                     json: async () => ({ code: 200, data: [participantData] }),
                 };
             }
             if (url.includes('updateParticipantIncentiveEligibility')) {
                 return {
                     ok: true,
+                    status: 200,
                     json: async () => ({ code: 200, data: participantData }),
                 };
             }
-            return { ok: true, json: async () => ({}) };
+            return { ok: true, status: 200, json: async () => ({}) };
         };
 
         setupIncentiveEligibilityToolPage(participant, { containerId: 'mainContent', skipNavBarUpdate: true });

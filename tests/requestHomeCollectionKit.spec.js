@@ -3,7 +3,9 @@ import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './help
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { renderKitRequest, renderKitRequestTabContent, requestKit } from '../src/requestHomeCollectionKit.js';
 import { baseAPI } from '../src/utils.js';
-import { participantState } from '../src/stateManager.js';
+import * as stateManagerModule from '../src/stateManager.js';
+const stateManager = stateManagerModule?.default ?? stateManagerModule;
+const participantState = stateManager.participantState;
 
 describe('requestHomeCollectionKit', () => {
     let cleanup;

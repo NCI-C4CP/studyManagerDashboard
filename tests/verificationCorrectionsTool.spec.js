@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import { setupVerificationCorrectionsPage, verificationCorrectionsClickHandler } from '../src/dataCorrectionsTool/verificationCorrectionsTool.js';
-import { appState, participantState } from '../src/stateManager.js';
+import { appState, participantState, searchState } from '../src/stateManager.js';
 import { baseAPI } from '../src/utils.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 
@@ -178,6 +178,34 @@ describe('verificationCorrectionsTool', () => {
             expect(capturedUrl).to.include(`${baseAPI}/dashboard?api=participantDataCorrection`);
             expect(capturedBody.data[0][fieldMapping.verifiedFlag]).to.equal(fieldMapping.verified);
             expect(capturedBody.data[0].token).to.equal(participant.token);
+        });
+
+        it('invalidates search cache after successful correction', async () => {
+            const participant = createMockParticipant();
+            await participantState.setParticipant(participant);
+
+            await searchState.setSearchResults(
+                { searchType: 'lookup', token: participant.token },
+                [participant]
+            );
+            expect(searchState.getSearchResults()).to.not.equal(null);
+
+            global.fetch = async (url) => {
+                if (url.includes('participantDataCorrection')) {
+                    return { status: 200, ok: true, json: async () => ({ code: 200 }) };
+                }
+                if (url.includes('getFilteredParticipants')) {
+                    return { status: 200, ok: true, json: async () => ({ code: 200, data: [participant] }) };
+                }
+                return { status: 200, ok: true, json: async () => ({}) };
+            };
+
+            await verificationCorrectionsClickHandler({
+                [fieldMapping.verifiedFlag]: fieldMapping.verified,
+                token: participant.token
+            });
+
+            expect(searchState.getSearchResults()).to.equal(null);
         });
     });
 });

@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
-import { participantState } from '../src/stateManager.js';
 
 describe('participantDetails Integration', () => {
     let module;
@@ -9,6 +8,7 @@ describe('participantDetails Integration', () => {
     let participantDetails;
     let roleState;
     let appState;
+    let participantState;
     let firebaseStub;
     let cleanup;
     let domFixtures;
@@ -18,9 +18,13 @@ describe('participantDetails Integration', () => {
         module = await import('../src/participantDetails.js');
         helpersModule = await import('../src/participantDetailsHelpers.js');
         const stateManager = await import('../src/stateManager.js');
-        roleState = stateManager.roleState;
-        appState = stateManager.appState;
-        participantDetails = module.renderParticipantDetails;
+        const state = stateManager?.default ?? stateManager;
+        const detailsModule = module?.default ?? module;
+        helpersModule = helpersModule?.default ?? helpersModule;
+        roleState = state.roleState;
+        appState = state.appState;
+        participantState = state.participantState;
+        participantDetails = detailsModule.renderParticipantDetails;
     };
 
     beforeEach(async () => {
@@ -89,7 +93,8 @@ describe('participantDetails Integration', () => {
         expect(lookupBtn).to.exist;
 
         lookupBtn.click();
-        const { participantLookupNavRequest } = await import('../src/navigationBar.js');
+        const navModule = await import('../src/navigationBar.js');
+        const { participantLookupNavRequest } = navModule?.default ?? navModule;
         expect(participantLookupNavRequest()).to.equal(true);
         expect(window.location.hash).to.equal('#participantLookup');
     });
@@ -124,6 +129,27 @@ describe('participantDetails Integration', () => {
         
         const modalBody = document.getElementById('modalBody');
         expect(modalBody.querySelector('input')).to.exist;
+    });
+
+    it('clears pending edits and participant state when navigating back to search results', async () => {
+        const participant = createMockParticipant('pending-edits');
+        const pendingChanges = { [fieldMapping.prefName]: 'Staged Name' };
+
+        await participantState.setParticipant(participant);
+        appState.setState({ changedOption: pendingChanges, hasUnsavedChanges: true });
+
+        await participantDetails(participant, pendingChanges);
+        await waitForAsyncTasks();
+
+        const backBtn = document.getElementById('backToSearchResultsBtn');
+        expect(backBtn).to.exist;
+
+        backBtn.click();
+        await waitForAsyncTasks(100);
+
+        expect(appState.getState().changedOption).to.deep.equal({});
+        expect(appState.getState().hasUnsavedChanges).to.equal(false);
+        expect(participantState.getParticipant()).to.be.null;
     });
 
     it('keeps edit modal populated when withdrawal modal markup is present', async () => {
@@ -233,6 +259,56 @@ describe('participantDetails Integration', () => {
         expect(fetchUrl).to.include('api=updateParticipantDataNotSite');
         // Check that payload contains the update (flat structure)
         expect(fetchBody[fieldMapping.lName]).to.equal('DoeUpdated');
+    });
+
+    it('persists changes to participant state and clears dirty markers after save', async () => {
+        const participant = createMockParticipant();
+        await participantDetails(participant);
+        await waitForAsyncTasks();
+
+        // Stage a Preferred Name change
+        const editButton = document.getElementById(`${fieldMapping.prefName}button`);
+        editButton.click();
+        await waitForAsyncTasks();
+
+        const input = document.querySelector('#modalBody input');
+        input.value = 'UpdatedPref';
+        document.getElementById('formResponse').dispatchEvent(new window.Event('submit'));
+        await waitForAsyncTasks();
+
+        // Stub fetch for save operation
+        const originalFetch = global.fetch;
+        global.fetch = async (url, options) => {
+            if (url.includes('updateParticipantDataNotSite')) {
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => ({ code: 200, message: 'Success' })
+                };
+            }
+            return { ok: true, status: 200, json: async () => ({}) };
+        };
+
+        // Save changes
+        document.getElementById('updateMemberData').click();
+        await waitForAsyncTasks();
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        // Value should reflect updated preference
+        try {
+            const prefValueCell = document.getElementById(`${fieldMapping.prefName}value`);
+            expect(prefValueCell.innerHTML).to.include('UpdatedPref');
+
+            // No dirty state note after successful save
+            const row = document.getElementById(`${fieldMapping.prefName}row`);
+            const actionCell = row?.querySelector('td:last-child');
+            expect(actionCell?.textContent || '').to.not.include('Please save changes');
+
+            // Participant state updated for subsequent renders/tabs
+        } finally {
+            global.fetch = originalFetch;
+        }
     });
 
     it('preserves scroll position after submitting an edit on the Details tab', async () => {

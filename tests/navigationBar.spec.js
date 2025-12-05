@@ -10,9 +10,11 @@ describe('navigationBar', () => {
         if (renderNavBarLinks && dashboardNavBarLinks && roleState) return;
         const module = await import('../src/navigationBar.js');
         const stateModule = await import('../src/stateManager.js');
-        renderNavBarLinks = module.renderNavBarLinks;
-        dashboardNavBarLinks = module.dashboardNavBarLinks;
-        roleState = stateModule.roleState;
+        const nav = module?.default ?? module;
+        const state = stateModule?.default ?? stateModule;
+        renderNavBarLinks = nav.renderNavBarLinks;
+        dashboardNavBarLinks = nav.dashboardNavBarLinks;
+        roleState = state.roleState;
     };
 
     beforeEach(async () => {

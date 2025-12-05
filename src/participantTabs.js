@@ -1,4 +1,4 @@
-import { roleState, participantState } from './stateManager.js';
+import { roleState, participantState, appState } from './stateManager.js';
 import { escapeHTML } from './utils.js';
 
 /**
@@ -161,28 +161,34 @@ export const loadTabContent = async (tabId, participant, reports = null) => {
                 break;
 
             case 'summary':
-                const { renderSummaryTabContent } = await import('./participantSummary.js');
+                const summaryModule = await import('./participantSummary.js');
+                const renderSummaryTabContent = summaryModule.renderSummaryTabContent || summaryModule.default?.renderSummaryTabContent;
                 // Reports will be fetched inside renderSummaryTabContent
                 content = await renderSummaryTabContent(participant, reports);
                 break;
 
             case 'withdrawal':
-                const { renderWithdrawalTabContent } = await import('./participantWithdrawal.js');
+                const withdrawalModule = await import('./participantWithdrawal.js');
+                const renderWithdrawalTabContent = withdrawalModule.renderWithdrawalTabContent || withdrawalModule.default?.renderWithdrawalTabContent;
                 content = await renderWithdrawalTabContent(participant);
                 break;
 
             case 'messages':
-                const { renderMessagesTabContent } = await import('./participantMessages.js');
+                const messagesModule = await import('./participantMessages.js');
+                const renderMessagesTabContent = messagesModule.renderMessagesTabContent || messagesModule.default?.renderMessagesTabContent;
                 content = await renderMessagesTabContent(participant);
                 break;
 
             case 'pathology':
-                const { renderPathologyTabContent } = await import('./pathologyReportUpload.js');
+                const pathologyModule = await import('./pathologyReportUpload.js');
+                const renderPathologyTabContent = pathologyModule.renderPathologyTabContent || pathologyModule.default?.renderPathologyTabContent;
                 content = await renderPathologyTabContent(participant);
                 break;
 
             case 'dataCorrections': {
-                const { renderDataCorrectionsTabContent, renderDataCorrectionsToolInTab } = await import('./dataCorrectionsTool/dataCorrectionsToolSelection.js');
+                const selectionModule = await import('./dataCorrectionsTool/dataCorrectionsToolSelection.js');
+                const renderDataCorrectionsTabContent = selectionModule.renderDataCorrectionsTabContent || selectionModule.default?.renderDataCorrectionsTabContent;
+                const renderDataCorrectionsToolInTab = selectionModule.renderDataCorrectionsToolInTab || selectionModule.default?.renderDataCorrectionsToolInTab;
                 const hashParts = window.location.hash.split('/');
                 const toolId = hashParts.length > 2 ? hashParts[2] : '';
 
@@ -198,7 +204,8 @@ export const loadTabContent = async (tabId, participant, reports = null) => {
             }
 
             case 'kitRequests':
-                const { renderKitRequestTabContent } = await import('./requestHomeCollectionKit.js');
+                const kitModule = await import('./requestHomeCollectionKit.js');
+                const renderKitRequestTabContent = kitModule.renderKitRequestTabContent || kitModule.default?.renderKitRequestTabContent;
                 content = await renderKitRequestTabContent(participant);
                 break;
 
@@ -244,6 +251,8 @@ export const initializeTabListeners = (participant, reports = null) => {
 
         e.preventDefault();
 
+        const currentParticipant = participantState.getParticipant() || participant;
+
         // Get the tab ID from the ID attribute, update tab state, and update hash
         const tabId = tabLink.id.replace('-tab', '');
         const allTabs = newNavList.querySelectorAll('.nav-link');
@@ -277,17 +286,27 @@ export const initializeTabListeners = (participant, reports = null) => {
         }
 
         if (tabId === 'details') {
-            const currentParticipant = participantState.getParticipant();
             if (currentParticipant) {
-                await import('./participantDetails.js').then(({ renderParticipantDetails }) => {
-                    renderParticipantDetails(currentParticipant, {}, 'details');
+                // dynamic import hook for testing
+                const importer = typeof __dynamicImportForParticipantTabs === 'function'
+                    ? __dynamicImportForParticipantTabs
+                    : (path) => import(path);
+                await importer('./participantDetails.js').then(async ({ renderParticipantDetails }) => {
+                    const pendingChanges = appState.getState().changedOption || {};
+                    await renderParticipantDetails(currentParticipant, pendingChanges, 'details', { preserveScrollPosition: true });
                 });
             }
             return;
         }
 
+        if (tabId === 'withdrawal') {
+            contentContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+            await loadTabContent(tabId, currentParticipant, reports);
+            return;
+        }
+
         if (hasSpinner || isEmpty) {
-            loadTabContent(tabId, participant, reports);
+            loadTabContent(tabId, currentParticipant, reports);
         }
     });
 };

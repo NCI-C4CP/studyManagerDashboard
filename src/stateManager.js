@@ -67,6 +67,23 @@ const asBoolean = (value) => {
     return !!value;
 };
 
+// Access the Firebase auth instance
+const getAuth = () => {
+    try {
+        if (typeof firebase === 'undefined' || typeof firebase?.auth !== 'function') return null;
+        return firebase.auth();
+    } catch (error) {
+        console.warn('getAuth: unable to access firebase auth', error);
+        return null;
+    }
+};
+
+// Get the current Firebase UID (or null)
+const getCurrentUID = () => {
+    const auth = getAuth();
+    return auth?.currentUser?.uid ?? null;
+};
+
 /**
  * Create a store for the application state and initialize it with the default values
  * @param {object} initialState - The initial state of the store
@@ -173,7 +190,7 @@ const createEncryptedStore = ({ stateKey, defaults, validationFn, sessionStorage
             const updatedValue = typeof update === 'function' ? update(deepClone(currentState)) : update;
             const validatedState = writeStoreState(updatedValue);
 
-            const uid = firebase?.auth?.().currentUser?.uid ?? null;
+            const uid = getCurrentUID();
             if (uid) {
                 await persistEncryptedStore(sessionStorageKey, validatedState, uid);
             }
@@ -189,7 +206,7 @@ const createEncryptedStore = ({ stateKey, defaults, validationFn, sessionStorage
 
 // Initialize appState just after user authenticates
 export const initializeAppState = async () => {
-    const uid = firebase?.auth?.().currentUser?.uid ?? null;
+    const uid = getCurrentUID();
 
     if (activeUID === uid) {
         return appState.getState();
@@ -385,7 +402,7 @@ export const participantState = {
 
         // Encrypt and persist token for recovery
         try {
-            const uid = firebase?.auth?.().currentUser?.uid;
+            const uid = getCurrentUID();
             if (!uid) return; // cannot derive key without uid
             const enc = await encryptString(participant.token, uid);
             if (typeof sessionStorage !== 'undefined') {
@@ -427,7 +444,7 @@ export const participantState = {
      */
     getParticipantToken: async () => {
         try {
-            const uid = firebase?.auth?.().currentUser?.uid;
+            const uid = getCurrentUID();
             if (typeof sessionStorage === 'undefined' || !uid) return null;
             const payload = sessionStorage.getItem('participantTokenEnc');
             if (!payload) return null;
@@ -669,7 +686,7 @@ const sanitizeMetadata = (metadata, overrides = {}) => {
 const persistSearchMetadata = async (metadata) => {
     if (!metadata) return;
     try {
-        const uid = firebase?.auth?.().currentUser?.uid;
+        const uid = getCurrentUID();
         if (!uid) return; // cannot derive key without uid
         const enc = await encryptString(JSON.stringify(metadata), uid);
         if (typeof sessionStorage !== 'undefined') {
@@ -739,6 +756,13 @@ export const searchState = {
     },
 
     /**
+     * Clear cached search results (keep metadata so queries can be re-run)
+     */
+    clearResultsCache: () => {
+        searchResultsCache = null;
+    },
+
+    /**
      * Get cached metadata synchronously
      * @return {Object|null}
      */
@@ -757,7 +781,7 @@ export const searchState = {
         }
 
         try {
-            const uid = firebase?.auth?.().currentUser?.uid;
+            const uid = getCurrentUID();
             if (typeof sessionStorage === 'undefined' || !uid) return null;
             const payload = sessionStorage.getItem('searchMetadataEnc');
             if (!payload) return null;
@@ -802,6 +826,18 @@ export const searchState = {
 };
 
 /**
+ * Clear cached participant search data, preserve search metadata. To re-trigger search.
+ * This protects against stale (cached) results when navigating back to the search results page after making changes to the participant profile.
+ */
+export const invalidateSearchResultsCache = () => {
+    if (typeof searchState.clearResultsCache === 'function') {
+        searchState.clearResultsCache();
+    } else {
+        searchState.clearSearchResults();
+    }
+};
+
+/**
  * Compose normalized metadata for predefined participant searches.
  * Accepts a base object and applies defaults.
  * @param {Object} baseObj - Partial metadata (from cache or route context)
@@ -821,14 +857,15 @@ export const markUnsaved = () => {
  * Clear the unsaved changes indicator
  */
 export const clearUnsaved = () => {
-    appState.setState({ hasUnsavedChanges: false });
+    appState.setState({ hasUnsavedChanges: false, changedOption: {} });
 };
 
 /**
  * Clear the user session and reset the application state
  */
 export const signOutAndClearSession = () => {
-    firebase?.auth?.().signOut();
+    const auth = getAuth();
+    auth?.signOut?.();
     hideAnimation();
     userSession.clearUser();
     participantState.clearParticipant();

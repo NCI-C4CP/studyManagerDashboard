@@ -1,21 +1,5 @@
 import { expect } from 'chai';
-import {
-  appState,
-  buildPredefinedSearchMetadata,
-  signOutAndClearSession,
-  clearUnsaved,
-  initializeAppState,
-  markUnsaved,
-  participantState,
-  reportsState,
-  resetAppStateUID,
-  roleState,
-  searchState,
-  statsState,
-  uiState,
-  userSession,
-  setParticipantLookupLoader,
-} from '../src/stateManager.js';
+import * as stateManagerModule from '../src/stateManager.js';
 import {
   installFirebaseStub,
   setupTestEnvironment,
@@ -29,6 +13,25 @@ import {
 describe('stateManager', () => {
   let firebaseStub;
   let signOutCalled = false;
+  const stateManager = stateManagerModule?.default ?? stateManagerModule;
+  const {
+    appState,
+    buildPredefinedSearchMetadata,
+    signOutAndClearSession,
+    clearUnsaved,
+    initializeAppState,
+    markUnsaved,
+    participantState,
+    reportsState,
+    resetAppStateUID,
+    roleState,
+    searchState,
+    statsState,
+    uiState,
+    userSession,
+    setParticipantLookupLoader,
+    invalidateSearchResultsCache,
+  } = stateManager;
 
   beforeEach(async () => {
     setupTestEnvironment();
@@ -45,12 +48,13 @@ describe('stateManager', () => {
 
   afterEach(async () => {
     // Clean up any state set during tests
-    const { searchState, reportsState, appState } = await import('../src/stateManager.js');
-    searchState.clearSearchResults();
-    reportsState.clearReports();
-    const currentState = appState.getState();
+    const stateModule = await import('../src/stateManager.js');
+    const { searchState, reportsState, appState } = stateModule?.default ?? stateModule;
+    searchState?.clearSearchResults?.();
+    reportsState?.clearReports?.();
+    const currentState = appState?.getState?.() || {};
     if (currentState.reports !== null || currentState.participant !== null) {
-      appState.setState({
+      appState?.setState({
         ...currentState,
         reports: null,
         participant: null,
@@ -744,6 +748,22 @@ describe('stateManager', () => {
       expect(window.sessionStorage.getItem('searchMetadataEnc')).to.equal(null);
     });
 
+    it('clears only results cache while preserving metadata', async () => {
+      const metadata = { searchType: 'lookup', firstName: 'alex' };
+      const results = [{ id: 1 }];
+
+      await searchState.setSearchResults(metadata, results);
+      expect(searchState.getSearchResults()).to.deep.equal(results);
+      const encryptedBefore = window.sessionStorage.getItem('searchMetadataEnc');
+      expect(encryptedBefore).to.be.a('string');
+
+      searchState.clearResultsCache();
+
+      expect(searchState.getSearchResults()).to.equal(null);
+      expect(searchState.getCachedMetadata()).to.include({ searchType: 'lookup', firstName: 'alex' });
+      expect(window.sessionStorage.getItem('searchMetadataEnc')).to.equal(encryptedBefore);
+    });
+
     it('builds predefined search metadata', () => {
       const metadata = buildPredefinedSearchMetadata({ routeKey: 'all' });
       expect(metadata).to.deep.include({ searchType: 'predefined', routeKey: 'all' });
@@ -756,6 +776,45 @@ describe('stateManager', () => {
       expect(updated.routeKey).to.equal('verified');
       expect(updated.pageNumber).to.equal(2);
       expect(updated.siteCode).to.equal('SITE001');
+    });
+  });
+
+  describe('invalidateSearchResultsCache', () => {
+    let originalClearResultsCache;
+    let originalClearSearchResults;
+
+    beforeEach(() => {
+      originalClearResultsCache = searchState.clearResultsCache;
+      originalClearSearchResults = searchState.clearSearchResults;
+    });
+
+    afterEach(() => {
+      searchState.clearResultsCache = originalClearResultsCache;
+      searchState.clearSearchResults = originalClearSearchResults;
+    });
+
+    it('uses clearResultsCache when available', () => {
+      let clearResultsCalled = false;
+      let clearAllCalled = false;
+
+      searchState.clearResultsCache = () => { clearResultsCalled = true; };
+      searchState.clearSearchResults = () => { clearAllCalled = true; };
+
+      invalidateSearchResultsCache();
+
+      expect(clearResultsCalled).to.equal(true);
+      expect(clearAllCalled).to.equal(false);
+    });
+
+    it('falls back to clearSearchResults when partial cache clear is unavailable', () => {
+      let clearAllCalled = false;
+
+      searchState.clearResultsCache = undefined;
+      searchState.clearSearchResults = () => { clearAllCalled = true; };
+
+      invalidateSearchResultsCache();
+
+      expect(clearAllCalled).to.equal(true);
     });
   });
 

@@ -83,6 +83,7 @@ describe('participantColumnConfig', () => {
 
   describe('category structure validation', () => {
     const expectedCategoryKeys = [
+      'default-columns',
       'identifiers',
       'enrollmentDetails',
       'deIdentifiedData',
@@ -91,7 +92,6 @@ describe('participantColumnConfig', () => {
       'userProfileDetails',
       'studyActivityCompletion',
       'refusalsWithdrawals',
-      'default-columns',
     ];
 
     it('should contain all expected category keys', () => {

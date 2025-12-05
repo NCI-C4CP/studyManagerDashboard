@@ -2,8 +2,8 @@ import fieldMapping from '../fieldToConceptIdMapping.js';
 import { updateNavBar } from '../navigationBar.js';
 import { findParticipant } from '../participantLookup.js';
 import { baseAPI, getIdToken, hideAnimation, showAnimation } from '../utils.js';
-import { participantState } from '../stateManager.js';
-import { handleBackToToolSelect, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
+import { participantState, invalidateSearchResultsCache } from '../stateManager.js';
+import { setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 import { triggerNotificationBanner } from '../utils.js';
 import { refreshParticipantHeaders } from '../participantHeader.js';
 import { renderParticipantDetails } from '../participantDetails.js';
@@ -29,7 +29,6 @@ export const setupSurveyResetToolPage = (participant, { containerId = 'mainConte
         if (!container) return;
         container.innerHTML = renderDataCorrectionsSelectionContent(participant);
         handleSurveyTypeChange(participant);
-        handleBackToToolSelect();
         clearSurveySelection();
         submitSurveyStatusReset();
         disableSubmitButton();
@@ -218,6 +217,7 @@ const submitSurveyStatusReset = () => {
                     
                     if (response.code === 200 || response.data) {
                         await participantState.setParticipant(response.data);
+                        invalidateSearchResultsCache();
                         refreshParticipantHeaders(response.data);
                         updateSurveyStatusTextContent(response.data, selectedSurvey, response.code);
                         if (window.location.hash.includes('#participantDetails')) {

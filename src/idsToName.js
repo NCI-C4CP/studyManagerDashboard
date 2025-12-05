@@ -1,7 +1,7 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { timestampValidation } from './utils.js';
 import { biospecimenStatus, getSurveyStatus } from './participantSummaryRow.js';
-import { formatPhoneNumber } from './participantDetailsHelpers.js';
+import { formatPhoneNumber, suffixToTextMap } from './participantDetailsHelpers.js';
 import { getCountryNameByConceptId, getCountryNameByCode3 } from './countryMapping.js';
 
 export const keyToNameObj = 
@@ -369,6 +369,15 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
             const { itemStatus } = getSurveyStatus(participant, conceptID);
 
             return itemStatus;
+        }
+
+        // Suffix
+        case fieldMapping.suffix: {
+            const value = rawValue ?? stateValue;
+            if (!value) return '';
+
+            const suffixText = suffixToTextMap.get(parseInt(value, 10));
+            return suffixText ?? `ERROR: Unknown Suffix (${conceptID}: ${value})`;
         }
 
         // Baseline Collection items (nested in 173836415.266600170)

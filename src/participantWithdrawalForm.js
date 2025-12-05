@@ -1,6 +1,6 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, escapeHTML, triggerNotificationBanner } from './utils.js';
-import { participantState, uiState } from './stateManager.js';
+import { participantState, uiState, invalidateSearchResultsCache } from './stateManager.js';
 import { renderRefusalOptions, renderCauseOptions } from './participantWithdrawalRender.js';
 import { activateTab, loadTabContent, updateHashForTab } from './participantTabs.js';
 import { refreshParticipantHeaders } from './participantHeader.js';
@@ -591,23 +591,16 @@ const optionsHandler = (suspendDate) => {
 } 
 
 
-// Event handler ref to prevent duplicates
-let currentProceedHandler = null;
-
 export const proceedToNextPage = (selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, suspendDate) => {
     const proceedFormPageEle = document.getElementById('proceedFormPage');
     if (proceedFormPageEle) {
 
-        if (currentProceedHandler) {
-            proceedFormPageEle.removeEventListener('click', currentProceedHandler);
-        }
-        
-        currentProceedHandler = () => {
+        const currentProceedHandler = () => {
             const checkedValue = document.getElementById('participantDeceasedCheck').checked;
             checkedValue ? causeOfDeathPage(selectedRefusalWithdrawalCheckboxes) : reasonForRefusalPage(selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, suspendDate);
         };
         
-        proceedFormPageEle.addEventListener('click', currentProceedHandler);
+        proceedFormPageEle.addEventListener('click', currentProceedHandler, { once: true });
     }
 }
 
@@ -1080,7 +1073,10 @@ async function sendRefusalWithdrawalResponses(sendRefusalData) {
             throw new Error(`Found ${participantJSON.data.length} participants. Expected one.`);
         }
 
-        return participantJSON.data[0];
+        const refreshedParticipant = participantJSON.data[0];
+        // Invalidate cached search rows but keep metadata so a fresh fetch runs on return to results
+        invalidateSearchResultsCache();
+        return refreshedParticipant;
 
     } catch (error) {
         console.error('Error in sendRefusalWithdrawalResponses:', error);

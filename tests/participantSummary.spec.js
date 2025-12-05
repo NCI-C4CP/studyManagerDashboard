@@ -4,7 +4,7 @@ import { urls } from '../src/utils.js';
 import { renderParticipantHeader } from '../src/participantHeader.js';
 import { participantState } from '../src/stateManager.js';
 import { refreshParticipantAfterReset } from '../src/participantSummary.js';
-import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, waitForAsyncTasks } from './helpers.js';
+import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, waitForAsyncTasks, installFirebaseStub } from './helpers.js';
 
 const createPdfLibStub = () => {
   const stubPage = {
@@ -61,14 +61,16 @@ describe('participantSummary', () => {
     if (render && renderParticipantSummary && retrieveDHQHEIReport && renderSummaryTabContent) return;
     global.PDFLib = global.PDFLib ?? createPdfLibStub();
     const module = await import('../src/participantSummary.js');
-    render = module.render;
-    renderParticipantSummary = module.renderParticipantSummary;
-    retrieveDHQHEIReport = module.retrieveDHQHEIReport;
-    renderSummaryTabContent = module.renderSummaryTabContent;
+    const resolved = module?.default ?? module;
+    render = resolved.render;
+    renderParticipantSummary = resolved.renderParticipantSummary;
+    retrieveDHQHEIReport = resolved.retrieveDHQHEIReport;
+    renderSummaryTabContent = resolved.renderSummaryTabContent;
   };
 
   beforeEach(async () => {
     setupTestEnvironment();
+    installFirebaseStub({ uid: 'test-user' });
     document.body.innerHTML = '<div id="navBarLinks"></div><div id="mainContent"></div>';
     await ensureModuleLoaded();
   });
@@ -301,8 +303,6 @@ describe('participantSummary', () => {
   describe('reset participant modal isolation', () => {
     beforeEach(() => {
       process.env.NODE_ENV = 'test';
-      // Ensure environment meets dev-only condition for rendering the reset button
-      window.location.href = `https://${urls.dev}/`;
       // Minimal edit modal skeleton to verify it is untouched by reset flow
       document.body.innerHTML = `
         <div id="navBarLinks"></div>

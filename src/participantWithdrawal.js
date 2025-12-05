@@ -43,6 +43,12 @@ export const renderWithdrawalTabContent = async (participant) => {
         return '<div class="alert alert-warning">No participant data available</div>';
     }
 
+    // Reset backdrops from prior visits
+    if (typeof document !== 'undefined') {
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach((el) => el.remove());
+    }
+
     // Check if participant is duplicate - deny access
     if (participant[fieldMapping.verifiedFlag] === fieldMapping.duplicate) {
         return `

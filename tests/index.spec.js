@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { setupTestEnvironment, teardownTestEnvironment, installFirebaseStub, createDOMFixture, cleanupDOMFixture, clearAllState, createMockParticipant, waitForAsyncTasks } from './helpers.js';
-import { searchState, participantState, roleState } from '../src/stateManager.js';
+import * as stateManagerModule from '../src/stateManager.js';
 import { setParticipantLookupNavRequest } from '../src/navigationBar.js';
 
 describe('router', function () {
@@ -8,10 +8,13 @@ describe('router', function () {
   let firebaseStub;
   let mainContent;
   let navBarLinks;
+  const stateManager = stateManagerModule?.default ?? stateManagerModule;
+  const { searchState, participantState, roleState } = stateManager;
 
   const loadRouter = async () => {
     const module = await import('../index.js');
-    return module.router;
+    const resolved = module?.default ?? module;
+    return resolved.router;
   };
 
   beforeEach(async () => {

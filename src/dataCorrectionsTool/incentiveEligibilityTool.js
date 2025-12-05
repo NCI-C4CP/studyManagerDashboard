@@ -1,8 +1,8 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
 import { updateNavBar } from '../navigationBar.js';
-import { handleBackToToolSelect, setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
+import { setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner, formatUTCDate, convertToISO8601 } from '../utils.js';
-import { participantState } from '../stateManager.js';
+import { participantState, invalidateSearchResultsCache } from '../stateManager.js';
 import { findParticipant } from '../participantLookup.js';
 import { refreshParticipantHeaders } from '../participantHeader.js';
 
@@ -24,7 +24,6 @@ export const setupIncentiveEligibilityToolPage = (participant, { containerId = '
 
         container.innerHTML = renderIncentiveEligibilityToolContent(participant);
         handlePaymentRoundSelect(participant);
-        handleBackToToolSelect();
         clearPaymentRoundSelect();
         toggleSubmitButton();
         setupModalContent();
@@ -309,6 +308,7 @@ const handleConfirmClick = async (participant) => {
             if (updateResponse.code === 200) { 
                 triggerNotificationBanner("Participant incentive eligibility status updated successfully!", "success" ,14000);
                 await participantState.setParticipant(currentParticipantData);
+                invalidateSearchResultsCache();
                 refreshParticipantHeaders(currentParticipantData);
                 document.getElementById('incentiveStatusText').textContent = 'Incentive Eligibility Status: Eligible';
                 document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;

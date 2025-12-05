@@ -8,6 +8,21 @@ const field = (key, label) => ({ key, label });
  */
 const baseBubbleCategories = [
   {
+    key: 'default-columns',
+    label: 'Default Columns',
+    fields: [
+      field(fieldMapping.fName, 'First Name (UP)'),
+      field(fieldMapping.mName, 'Middle Name (UP)'),
+      field(fieldMapping.lName, 'Last Name (UP)'),
+      field(fieldMapping.birthMonth, 'DOB Month'),
+      field(fieldMapping.birthDay, 'DOB Day'),
+      field(fieldMapping.birthYear, 'DOB Yr'),
+      field(fieldMapping.email, 'Pref Email'),
+      field('Connect_ID', 'Connect ID'),
+      field(fieldMapping.healthcareProvider, 'Site'),
+    ],
+  },
+  {
     key: 'identifiers',
     label: 'Identifiers',
     fields: [
@@ -21,6 +36,7 @@ const baseBubbleCategories = [
     key: 'enrollmentDetails',
     label: 'Enrollment Details',
     fields: [
+      field(fieldMapping.healthcareProvider, 'Site'),
       field(fieldMapping.timeStudyIdSubmitted, 'D/T Study ID Sub'),
       field(fieldMapping.recruitmentType, 'Recruit Type'),
       field(fieldMapping.recruitmentDate, 'D/T Recruit Type Assigned'),
@@ -99,7 +115,13 @@ const baseBubbleCategories = [
     label: 'User Profile Details',
     fields: [
       field(fieldMapping.prefName, 'Pref Name'),
-      field(fieldMapping.fName, 'First Name'),
+      field(fieldMapping.fName, 'First Name (UP)'),
+      field(fieldMapping.mName, 'Middle Name (UP)'),
+      field(fieldMapping.lName, 'Last Name (UP)'),
+      field(fieldMapping.suffix, 'Suffix (UP)'),
+      field(fieldMapping.birthMonth, 'DOB Month'),
+      field(fieldMapping.birthDay, 'DOB Day'),
+      field(fieldMapping.birthYear, 'DOB Yr'),
       field(fieldMapping.address1, 'Mailing Address Line 1'),
       field(fieldMapping.address2, 'Mailing Address Line 2'),
       field(fieldMapping.address3, 'Mailing Address Line 3'),
@@ -195,21 +217,6 @@ const baseBubbleCategories = [
       field(fieldMapping.dateHIPAARevoc, 'D/T HIPAA Rev Signed'),
       field(fieldMapping.dateDataDestroy, 'D/T Data Dest Signed'),
       field(fieldMapping.suspendContact, 'Suspend Contact Until D/T'),
-    ],
-  },
-  {
-    key: 'default-columns',
-    label: 'Default Columns',
-    fields: [
-      field(fieldMapping.fName, 'First Name (UP)'),
-      field(fieldMapping.mName, 'Middle Name (UP)'),
-      field(fieldMapping.lName, 'Last Name (UP)'),
-      field(fieldMapping.birthMonth, 'DOB Month'),
-      field(fieldMapping.birthDay, 'DOB Day'),
-      field(fieldMapping.birthYear, 'DOB Yr'),
-      field(fieldMapping.email, 'Pref Email'),
-      field('Connect_ID', 'Connect ID'),
-      field(fieldMapping.healthcareProvider, 'Site'),
     ],
   },
 ];
