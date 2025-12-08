@@ -21,7 +21,7 @@ export const renderRequestAKitConditions = async () => {
     try {
       const response = await getRequestAKitConditions();
 
-      mainContent.innerHTML = renderRequestAKitConditionsHTML(response.data);
+      document.getElementById('mainContent').innerHTML = renderRequestAKitConditionsHTML(response.data);
       
       handleDeleteExistingConditions();
       handleAddCondition();
@@ -33,7 +33,7 @@ export const renderRequestAKitConditions = async () => {
       hideAnimation();
     } catch(err) {
       console.error('Error retrieving data', err);
-      mainContent.innerHTML = `<div class="text=-danger">Unrecoverable error in retrieving request a kit conditions. Please check console for more information.</div>`;
+      document.getElementById('mainContent').innerHTML = `<div class="text=-danger">Unrecoverable error in retrieving request a kit conditions. Please check console for more information.</div>`;
     }
 }
 
@@ -452,7 +452,7 @@ const handleRunButtons = () => {
   
 }
 
-const processRequestAKitConditions = async (updateDb = false) => { 
+export const processRequestAKitConditions = async (updateDb = false) => { 
   // Error handling in wrapping functions
   const idToken = await getIdToken();
 
@@ -466,7 +466,7 @@ const processRequestAKitConditions = async (updateDb = false) => {
   return await res.json();
 }
 
-const storeRequestAKitConditions = async (schema) => {
+export const storeRequestAKitConditions = async (schema) => {
   showAnimation();
   const idToken = await getIdToken();
 

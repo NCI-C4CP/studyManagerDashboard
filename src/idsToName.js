@@ -1,5 +1,8 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
-import { timestampValidation} from './utils.js';
+import { timestampValidation } from './utils.js';
+import { biospecimenStatus, getSurveyStatus } from './participantSummaryRow.js';
+import { formatPhoneNumber, suffixToTextMap } from './participantDetailsHelpers.js';
+import { getCountryNameByConceptId, getCountryNameByCode3 } from './countryMapping.js';
 
 export const keyToNameObj = 
 {
@@ -48,15 +51,6 @@ export const nameToKeyObj =
     "allResults": 1000
 }
 
-export const keyToVerificationStatus = {
-    875007964 : 'Not yet verified',
-    160161595 : 'Outreach timed out',
-    197316935 : 'Verified',
-    219863910 : 'Cannot be verified',
-    922622075 : 'Duplicate',
-    290379732 : 'No longer enrolling'
-}
-
 export const keyToDuplicateType = {
     638335430 : 'Active recruit signed in as Passive recruit',
     283434980 : 'Not Active recruit signed in as Passive recruit',
@@ -79,148 +73,12 @@ export const recruitmentType = {
     180583933 : 'Inactive'
 }
 
-// Ordered headers that always appear in the participant results table
-export const tableHeaderMap = new Map([
-    [fieldMapping.fName, 'First Name (UP)'],
-    [fieldMapping.mName, 'Middle Name (UP)'],
-    [fieldMapping.lName, 'Last Name (UP)'],
-    [fieldMapping.birthMonth, 'DOB Month'],
-    [fieldMapping.birthDay, 'DOB Day'],
-    [fieldMapping.birthYear, 'DOB Yr'],
-    [fieldMapping.email, 'Pref Email'],
-    ['Connect_ID', 'Connect ID'],
-    [fieldMapping.healthcareProvider, 'Site'],
-]);
-
-// Bubbles that can be selected and added to the table.
-// When selected, the CID is added to the importantColumns array and the heading name is fetched from the searchBubbleMap.
-export const searchBubbleMap = new Map([
-    ['Connect_ID', 'Connect ID'],
-    ['pin', 'Pin'],
-    ['token', 'Token'],
-    ['studyId', 'Study ID'],
-    [fieldMapping.timeStudyIdSubmitted, 'D/T Study ID Sub'],
-    [fieldMapping.recruitmentType, 'Recruit Type'],
-    [fieldMapping.recruitmentDate, 'D/T Recruit Type Assigned'],
-    [fieldMapping.siteReportedAge, 'Site Reported Age'],
-    [fieldMapping.siteReportedRace, 'Site Reported Race/Eth'],
-    [fieldMapping.siteReportedSex, 'Site Reported Sex'],
-    [fieldMapping.sanfordReportedSex, 'HFH Reported Sex'],
-    [fieldMapping.sanfordReportedRace, 'SF Reported Race'],
-    [fieldMapping.sanfordReportedEthnicity, 'SF Reported Eth'],
-    [fieldMapping.henryFReportedRace, 'HFH Reported Race'],
-    [fieldMapping.bswhReportedRaceEthnicity, 'BSWH Reported R/E'],
-    [fieldMapping.campaignType, 'Campaign'],
-    [fieldMapping.reinvitationCampaignType, 'Reinvitation Type'],
-    [fieldMapping.reinvitationDate, 'D/T Reinvitation'],
-    [fieldMapping.signedInFlag, 'Signed-in'],
-    [fieldMapping.signinDate, 'D/T First Sign-in'],
-    [fieldMapping.pinEntered, 'PIN Entered'],
-    [fieldMapping.noPin, 'No PIN'],
-    [fieldMapping.consentFlag, 'Consent Sub'],
-    [fieldMapping.consentDate, 'D/T Consent Sub'],
-    [fieldMapping.consentVersion, 'Consent Vers'],
-    [fieldMapping.hipaaFlag, 'HIPAA Auth'],
-    [fieldMapping.hipaaDate, 'D/T HIPAA Auth'],
-    [fieldMapping.hipaaVersion, 'HIPAA Vers'],
-    [fieldMapping.userProfileFlag, 'UP Sub'],
-    [fieldMapping.userProfileDateTime, 'D/T UP Sub'],
-    [fieldMapping.verifiedFlag, 'Verif Status'],
-    [fieldMapping.verficationDate, 'D/T Verif'],
-    [fieldMapping.automatedVerification, 'Auto Verif'],
-    [fieldMapping.outreachRequiredForVerification, 'Outreach Required'],
-    [fieldMapping.manualVerification, 'Manual Verif'],
-    [fieldMapping.duplicateType, 'Dup Type'],
-    [fieldMapping.firstNameMatch, 'First Name Match'],
-    [fieldMapping.lastNameMatch, 'Last Name Match'],
-    [fieldMapping.dobMatch, 'DOB Match'],
-    [fieldMapping.pinMatch, 'PIN Match'],
-    [fieldMapping.tokenMatch, 'Token Match'],
-    [fieldMapping.zipCodeMatch, 'Zip Match'],
-    [fieldMapping.siteMatch, 'Site Match'],
-    [fieldMapping.ageMatch, 'Age Match'],
-    [fieldMapping.cancerStatusMatch, 'Cx Status Match'],
-    [fieldMapping.updateRecruitType, 'Update Recruit Type'],
-    [fieldMapping.preConsentOptOut, 'Pre-consent Opt-out'],
-    [fieldMapping.datePreConsentOptOut, 'D/T Pre-consent Opt-out'],
-    [fieldMapping.maxNumContactsReached, 'Reached Max Contact N'],
-    [fieldMapping.signInMechanism, 'Sign-In Mech'],
-    [fieldMapping.consentFirstName, 'First Name (Consent)'],
-    [fieldMapping.consentMiddleName, 'Middle Name (Consent)'],
-    [fieldMapping.consentLastName, 'Last Name (Consent)'],
-    [fieldMapping.accountName, 'Acct Name'],
-    [fieldMapping.accountPhone, 'Phone Login'],
-    [fieldMapping.accountEmail, 'Email Login'],
-    [fieldMapping.prefName, 'Pref Name'],
-    [fieldMapping.address1, 'Mailing Address Address Line 1'],
-    [fieldMapping.address2, 'Mailing Address Address Line 2'],
-    [fieldMapping.city, 'Mailing Address City'],
-    [fieldMapping.state, 'Mailing Address State'],
-    [fieldMapping.zip, 'Mailing Address Zip'],
-    [fieldMapping.physicalAddress1, 'Phys Address Address Line 1'],
-    [fieldMapping.physicalAddress2, 'Phys Address Address Line 2'],
-    [fieldMapping.physicalCity, 'Phys Address City'],
-    [fieldMapping.physicalState, 'Phys Address State'],
-    [fieldMapping.physicalZip, 'Phys Address Zip'],
-    [fieldMapping.email, 'Pref Email'],
-    [fieldMapping.email1, 'Addtl Email 1'],
-    [fieldMapping.email2, 'Addtl Email 2'],
-    [fieldMapping.cellPhone, 'Mobile Phone'],
-    [fieldMapping.homePhone, 'Home Phone'],
-    [fieldMapping.otherPhone, 'Oth Phone'],
-    [fieldMapping.altAddress1, 'Alt Add Line 1'],
-    [fieldMapping.altAddress2, 'Alt Add Line 2'],
-    [fieldMapping.altCity, 'Alt City'],
-    [fieldMapping.altState, 'Alt State'],
-    [fieldMapping.altZip, 'Alt Zip'],
-    [fieldMapping.altContactFirstName, 'Alt Contact First Name'],
-    [fieldMapping.altContactLastName, 'Alt Contact Last Name'],
-    [fieldMapping.altContactMobilePhone, 'Alt Contact Cell Phone'],
-    [fieldMapping.altContactHomePhone, 'Alt Contact Home Phone'],
-    [fieldMapping.altContactEmail, 'Alt Contact Email'],
-    [fieldMapping.previousCancer, 'Prev Cx'],
-    [fieldMapping.allBaselineSurveysCompleted, 'All Base Surv Complete'],
-    [fieldMapping.preferredLanguage, 'Preferred Language'],
-    [fieldMapping.participationStatus, 'Participation Status'],
-    [fieldMapping.bohStatusFlag1, 'Flag Base Mod BOH'],
-    [fieldMapping.mreStatusFlag1, 'Flag Base Mod MRE'],
-    [fieldMapping.sasStatusFlag1, 'Flag Base Mod SAS'],
-    [fieldMapping.lawStatusFlag1, 'Flag Base Mod LAW'],
-    [fieldMapping.ssnFullflag, 'Full SSN'],
-    [fieldMapping.ssnPartialFlag, 'Part SSN'],
-    [fieldMapping.preferenceSurveyStatus, 'Flag 2025 ROI Preference Survey'],
-    [fieldMapping.refusedSurvey, 'Ref Base Survs'],
-    [fieldMapping.refusedBlood, 'Ref Base Blood'],
-    [fieldMapping.refusedUrine, 'Ref Base Ur'],
-    [fieldMapping.refusedMouthwash, 'Ref Base MW'],
-    [fieldMapping.refusedSpecimenSurveys, 'Ref Base Spec Surv'],
-    [fieldMapping.refusedFutureSamples, 'Ref All Fut Samp'],
-    [fieldMapping.refusedQualityOfLifeSurvey, 'Ref 3-mo QOL Surv'],
-    [fieldMapping.refusedAllFutureQualityOfLifeSurveys, 'Ref All QOL Surv'],
-    [fieldMapping.refusedCancerScreeningHistorySurvey, 'Ref Canc Scrn Hist Srv'],
-    [fieldMapping.refusedExperienceSurvey, 'Ref 2024 Connect Exp Srv'],
-    [fieldMapping.refusedAllFutureExperienceSurveys, 'Ref All Fut Connect Exp Srvs'],
-    [fieldMapping.refusedFutureSurveys, 'Ref All Fut Surv'],
-    [fieldMapping.refusedAllFutureActivities, 'Ref All Fut Activities'],
-    [fieldMapping.revokeHIPAA, 'Revoke HIPAA'],
-    [fieldMapping.dateHipaaRevokeRequested, 'D/T HIPAA Rev Req'],
-    [fieldMapping.dateHIPAARevoc, 'D/T HIPAA Rev Signed'],
-    [fieldMapping.withdrawConsent, 'Withdraw consent'],
-    [fieldMapping.dateWithdrewConsentRequested, 'D/T Withdrew Consent'],
-    [fieldMapping.participantDeceased, 'Participant Deceased'],
-    [fieldMapping.dateOfDeath, 'Date Part Deceased'],
-    [fieldMapping.destroyData, 'Data Dest'],
-    [fieldMapping.dateDataDestroyRequested, 'D/T Data Dest Req'],
-    [fieldMapping.dateDataDestroy, 'D/T Data Dest Signed'],
-    [fieldMapping.suspendContact, 'Suspend Contact Until D/T'],
-]);
-
-const verificationStatusMapping = {
-    [fieldMapping.notYetVerified]: 'Not Yet Verified',
-    [fieldMapping.outreachTimedout]: 'Out Reach Timed Out',
-    [fieldMapping.noLongerEnrolling]: 'No Longer Enrolling',
+export const verificationStatusMapping = {
+    [fieldMapping.notYetVerified]: 'Not yet verified',
+    [fieldMapping.outreachTimedout]: 'Outreach timed out',
+    [fieldMapping.noLongerEnrolling]: 'No longer enrolling',
     [fieldMapping.verified]: 'Verified',
-    [fieldMapping.cannotBeVerified]: 'Can Not Be Verified',
+    [fieldMapping.cannotBeVerified]: 'Cannot be verified',
     [fieldMapping.duplicate]: 'Duplicate'
 };
 
@@ -235,9 +93,67 @@ const participationStatusMapping = {
     [fieldMapping.dataDestroyed]: 'Data Destroyed'
 };
 
-const surveyStatusMapping = {
-    [fieldMapping.submitted1]: 'Submitted',
-    [fieldMapping.started1]: 'Started'
+export const surveyFlagToDateMapping = {
+    [fieldMapping.bohStatusFlag]: {
+        startDate: fieldMapping.bohStartDate1,
+        completeDate: fieldMapping.bohCompletedDate1,
+    },
+    [fieldMapping.mreStatusFlag]: {
+        startDate: fieldMapping.mreStartDate1,
+        completeDate: fieldMapping.mreCompletedDate1,
+    },
+    [fieldMapping.sasStatusFlag]: {
+        startDate: fieldMapping.sasStartDate1,
+        completeDate: fieldMapping.sasCompletedDate1,
+    },
+    [fieldMapping.lawStatusFlag]: {
+        startDate: fieldMapping.lawStartDate1,
+        completeDate: fieldMapping.lawCompletedDate1,
+    },
+    [fieldMapping.ssnStatusFlag]: {
+        startDate: fieldMapping.ssnSurveyStartedDate,
+        completeDate: fieldMapping.ssnSurveyCompletedDate,
+    },
+    [fieldMapping.combinedBoodUrineMouthwashSurvey]: {
+        startDate: fieldMapping.combinedBoodUrineMouthwashSurveyStartDate,
+        completeDate: fieldMapping.combinedBoodUrineMouthwashSurveyCompleteDate,
+    },
+    [fieldMapping.bloodUrineSurveyFlag]: {
+        startDate: fieldMapping.bloodUrineSurveyStartedDate,
+        completeDate: fieldMapping.bloodUrineSurveyCompletedDate,
+    },
+    [fieldMapping.mouthwashSurveyFlag]: {
+        startDate: fieldMapping.mouthwashSurveyStartedDate,
+        completeDate: fieldMapping.mouthwashSurveyCompletedDate,
+    },
+    [fieldMapping.menstrualFlag]: {
+        startDate: fieldMapping.menstrualDateTimeStart,
+        completeDate: fieldMapping.menstrualDateTimeCompleted,
+    },
+    [fieldMapping.covidFlag]: {
+        startDate: fieldMapping.covidStartDate,
+        completeDate: fieldMapping.covidCompletedDate,
+    },
+    [fieldMapping.promisSurveyFlag]: {
+        startDate: fieldMapping.promisSurveyStartedDate,
+        completeDate: fieldMapping.promisSurveyCompletedDate,
+    },
+    [fieldMapping.dhqSurveyStatus]: {
+        startDate: fieldMapping.dhqSurveyStartDate,
+        completeDate: fieldMapping.dhqSurveyCompletedDate,
+    },
+    [fieldMapping.cancerScreeningHistorySurveyStatus]: {
+        startDate: fieldMapping.cancerScreeningHistorySurveyStartDate,
+        completeDate: fieldMapping.cancerScreeningHistorySurveyCompletedDate,
+    },
+    [fieldMapping.experienceSurvey]: {
+        startDate: fieldMapping.experienceSurveyStartDate,
+        completeDate: fieldMapping.experienceCompleteDate,
+    },
+    [fieldMapping.preferenceSurveyStatus]: {
+        startDate: fieldMapping.preferenceSurveyStartDate,
+        completeDate: fieldMapping.preferenceSurveyCompletedDate,
+    },
 };
 
 const ageRangeMapping = {
@@ -344,6 +260,12 @@ const updateRecruitTypeMapping = {
     [fieldMapping.noChangeNeeded]: 'No Change Needed'
 };
 
+const ihcsMemberStatusMapping = {
+    [fieldMapping.ihcsMemberStatusValues.memberHealthPlan]: 'Member Health Plan',
+    [fieldMapping.ihcsMemberStatusValues.nonMemberPatient]: 'Non Member Patient',
+    [fieldMapping.ihcsMemberStatusValues.memberAndPatient]: 'Member and Patient',
+}
+
 /**
  * Maps participant data to human-readable text based on concept ID.
  * Primary use: participant results table.
@@ -380,13 +302,14 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         case fieldMapping.healthcareProvider:
             return keyToNameObj[rawValue] ?? '';
 
-        // Account Phone
+        // Account Phone - returns empty string if not consented or no phone number.
         case fieldMapping.accountPhone:
-            return participant?.[fieldMapping.consentFlag] === fieldMapping.yes && fieldMapping.accountPhone in participant ? participant?.[fieldMapping.accountPhone] : 'N/A';
+            const firebaseAuthPhoneNumber = participant?.[fieldMapping.consentFlag] === fieldMapping.yes && participant?.[fieldMapping.accountPhone];
+            return firebaseAuthPhoneNumber ? formatPhoneNumber(firebaseAuthPhoneNumber) : '';
 
-        // Account Email
+        // Account Email - returns empty string if not consented or no email address.
         case fieldMapping.accountEmail:
-            return participant?.[fieldMapping.consentFlag] === fieldMapping.yes && fieldMapping.accountEmail in participant && !rawValue?.toString().startsWith('noreply') ? participant?.[fieldMapping.accountEmail] : 'N/A';
+            return participant?.[fieldMapping.consentFlag] === fieldMapping.yes && !rawValue?.toString().startsWith('noreply') && participant?.[fieldMapping.accountEmail] || '';
 
         // Date Formatting
         case fieldMapping.signinDate:
@@ -417,31 +340,52 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
 
         // Verification Status
         case fieldMapping.verifiedFlag: {
-            return verificationStatusMapping[rawValue] ?? (rawValue ? 'Unknown Status' : '');
+            if (!rawValue) return '';
+            return verificationStatusMapping[rawValue] ?? `ERROR: Unknown Verification Status (${conceptID}: ${rawValue})`;
         }
 
         // Participation Status
         case fieldMapping.participationStatus: {
             if (rawValue === '') return 'No Refusal';
-            return participationStatusMapping[rawValue] ?? 'ERROR';
+            return participationStatusMapping[rawValue] ?? `ERROR: Unknown Participation Status (${conceptID}: ${rawValue})`;
         }
 
         // Survey Status
-        case fieldMapping.bohStatusFlag1:
-        case fieldMapping.mreStatusFlag1:
-        case fieldMapping.lawStatusFlag1:
-        case fieldMapping.sasStatusFlag1: {
-            return surveyStatusMapping[rawValue] ?? 'Not Started';
+        case fieldMapping.bohStatusFlag:
+        case fieldMapping.mreStatusFlag:
+        case fieldMapping.sasStatusFlag:
+        case fieldMapping.lawStatusFlag:
+        case fieldMapping.ssnStatusFlag:
+        case fieldMapping.combinedBoodUrineMouthwashSurvey:
+        case fieldMapping.bloodUrineSurveyFlag:
+        case fieldMapping.mouthwashSurveyFlag:
+        case fieldMapping.menstrualFlag:
+        case fieldMapping.covidFlag:
+        case fieldMapping.promisSurveyFlag:
+        case fieldMapping.dhqSurveyStatus:
+        case fieldMapping.cancerScreeningHistorySurveyStatus:
+        case fieldMapping.experienceSurvey:
+        case fieldMapping.preferenceSurveyStatus: {
+            const { itemStatus } = getSurveyStatus(participant, conceptID);
+
+            return itemStatus;
         }
 
-        // Cross-Sectional Survey Status
-        case fieldMapping.preferenceSurveyStatus: {
-            // If no data exists for this survey, participant is not eligible
-            if (!rawValue) {
-                return 'Not Eligible';
-            }
-            // Otherwise use the standard survey status mapping
-            return surveyStatusMapping[rawValue] ?? 'Not Started';
+        // Suffix
+        case fieldMapping.suffix: {
+            const value = rawValue ?? stateValue;
+            if (!value) return '';
+
+            const suffixText = suffixToTextMap.get(parseInt(value, 10));
+            return suffixText ?? `ERROR: Unknown Suffix (${conceptID}: ${value})`;
+        }
+
+        // Baseline Collection items (nested in 173836415.266600170)
+        case fieldMapping.biospecimenBloodCollection:
+        case fieldMapping.biospecimenUrineCollection:
+        case fieldMapping.biospecimenMouthwashCollection: {
+            const baselineCollection = participant?.[fieldMapping.biospecimenCollectionDetail]?.[fieldMapping.biospecimenBaselineCollection];
+            return biospecimenStatus(baselineCollection, conceptID, fieldMapping.biospecimenBaselineCollection);
         }
 
         // Refusal Flags (nested)
@@ -472,13 +416,15 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
 
         // Site reported age
         case fieldMapping.siteReportedAge: {
-            return ageRangeMapping[stateValue] ?? (stateValue ? 'ERROR' : '');
+            if (!stateValue) return '';
+            return ageRangeMapping[stateValue] ?? `ERROR: Unknown Age Range (${stateValue})`;
         }
 
         // Site reported sex
         case fieldMapping.siteReportedSex:
         case fieldMapping.sanfordReportedSex: {
-            return sexMapping[stateValue] ?? (stateValue ? 'Unavailable/Unknown' : '');
+            if (!stateValue) return '';
+            return sexMapping[stateValue] ?? `ERROR: Unknown Sex (${stateValue})`;
         }
 
         // Site reported race
@@ -486,12 +432,14 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         case fieldMapping.sanfordReportedRace:
         case fieldMapping.henryFReportedRace:
         case fieldMapping.bswhReportedRaceEthnicity: {
-            return raceMapping[stateValue] ?? (stateValue ? 'Unavailable/Unknown' : '');
+            if (!stateValue) return '';
+            return raceMapping[stateValue] ?? `ERROR: Unknown Race (${stateValue})`;
         }
 
         // Site reported ethnicity
         case fieldMapping.sanfordReportedEthnicity: {
-            return ethnicityMapping[stateValue] ?? (stateValue ? 'Unavailable/Unknown' : '');
+            if (!stateValue) return '';
+            return ethnicityMapping[stateValue] ?? `ERROR: Unknown Ethnicity (${stateValue})`;
         }
 
         // Pre-consent
@@ -504,9 +452,9 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         case fieldMapping.campaignType:
         case fieldMapping.reinvitationCampaignType: {
             if (rawValue) {
-                return campaignTypeMapping[rawValue] ?? 'Unavailable/Unknown';
+                return campaignTypeMapping[rawValue] ?? `ERROR: Unknown Campaign Type (${conceptID}: ${rawValue})`;
             } else if (stateValue) {
-                return campaignTypeMapping[stateValue] ?? 'Unavailable/Unknown';
+                return campaignTypeMapping[stateValue] ?? `ERROR: Unknown Campaign Type (${conceptID}: ${stateValue})`;
             } else {
                 return '';
             }
@@ -514,27 +462,60 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
 
         // @deprecated. Enrollment status. Data exists in prod.
         case fieldMapping.enrollmentStatus: {
-            return enrollmentStatusMapping[rawValue] ?? '';
+            if (!rawValue) return '';
+            return enrollmentStatusMapping[rawValue] ?? `ERROR: Unknown Enrollment Status (${conceptID}: ${rawValue})`;
         }
 
         // Preferred Language
         case fieldMapping.preferredLanguage: {
-            return preferredLanguageMapping[rawValue] ?? '';
+            if (!rawValue) return '';
+            return preferredLanguageMapping[rawValue] ?? `ERROR: Unknown Preferred Language (${conceptID}: ${rawValue})`;
         }
 
         // Verification Method
         case fieldMapping.automatedVerification:
         case fieldMapping.manualVerification:
-            return stateValue === fieldMapping.methodUsed ? 'Method Used' : 'Method Not Used';
+            if (!stateValue) return '';
+            if (stateValue === fieldMapping.methodUsed) return 'Method Used';
+            if (stateValue === fieldMapping.methodNotUsed) return 'Method Not Used';
+            return `ERROR: Unknown Method Status (${conceptID}: ${stateValue})`;
 
         // Duplicate Types
         case fieldMapping.duplicateType: {
-            return duplicateTypeMapping[stateValue] ?? '';
+            if (!stateValue) return '';
+            return duplicateTypeMapping[stateValue] ?? `ERROR: Unknown Duplicate Type (${conceptID}: ${stateValue})`;
         }
 
         // Recruitment type updates
         case fieldMapping.updateRecruitType: {
-            return updateRecruitTypeMapping[stateValue] ?? (stateValue === undefined || stateValue === null ? '' : 'No Change Needed');
+            if (!stateValue) return '';
+            return updateRecruitTypeMapping[stateValue] ?? `ERROR: Unknown Update Recruit Type (${conceptID}: ${stateValue})`;
+        }
+
+        // De-identified eligibility algorithm version
+        case fieldMapping.eligAlgorithmVersion: {
+            return stateValue ?? '';
+        }
+
+        // IHCS member status
+        case fieldMapping.ihcsMemberStatus: {
+            if (!stateValue) return '';
+            return ihcsMemberStatusMapping[stateValue] ?? `ERROR: Unknown IHCS Member Status (${conceptID}: ${stateValue})`;
+        }
+
+        // Country fields (3-char code or concept ID -> country name)
+        case fieldMapping.country:
+        case fieldMapping.physicalCountry:
+        case fieldMapping.altCountry: {
+            if (!rawValue) return '';
+
+            // Countries are stored as 3-character codes. Fall back to concept ID if not found for possible future cases.
+            let countryName;
+            isNaN(rawValue)
+                ? countryName = getCountryNameByCode3(rawValue)
+                : countryName = getCountryNameByConceptId(rawValue);
+
+            return countryName ?? `ERROR: Unknown Country (${conceptID}: ${rawValue})`;
         }
 
         // Match Status Flags
@@ -544,13 +525,19 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         case fieldMapping.pinMatch:
         case fieldMapping.tokenMatch:
         case fieldMapping.zipCodeMatch:
-            return stateValue === fieldMapping.matched ? 'Matched' : 'Not Matched';
+            if (!stateValue) return '';
+            if (stateValue === fieldMapping.matched) return 'Matched';
+            if (stateValue === fieldMapping.notMatched) return 'Not Matched';
+            return `ERROR: Unknown Match Status (${conceptID}: ${stateValue})`;
 
         // Criterium Match Flags
         case fieldMapping.siteMatch:
         case fieldMapping.ageMatch:
         case fieldMapping.cancerStatusMatch:
-            return stateValue === fieldMapping.criteriumMet ? 'Criterium Met' : 'Not Criterium Met';
+            if (!stateValue) return '';
+            if (stateValue === fieldMapping.criteriumMet) return 'Criterium Met';
+            if (stateValue === fieldMapping.criteriumNotMet) return 'Criterium Not Met';
+            return `ERROR: Unknown Criterium Status (${conceptID}: ${stateValue})`;
 
         // Default key handling Yes/No, Active/Passive/Inactive, Preferred Contact Method)
         default:

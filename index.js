@@ -1,23 +1,16 @@
-import { renderParticipantLookup } from './src/participantLookup.js';
-import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements } from './src/navigationBar.js';
-import { renderTable, renderParticipantSearchResults, activeColumns, renderFilters } from './src/participantCommons.js';
+import { renderParticipantLookup, renderCachedSearchResults } from './src/participantLookup.js';
+import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements, participantLookupNavRequest } from './src/navigationBar.js';
+import { renderTable, renderParticipantSearchResults, setupActiveColumns, renderFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
-import { renderParticipantSummary } from './src/participantSummary.js';
-import { renderParticipantMessages } from './src/participantMessages.js';
 import { renderKitRequest } from './src/requestHomeCollectionKit.js';
 import { renderRequestAKitConditions } from './src/requestAKitConditions.js';
-import { renderPathologyReportUploadPage } from './src/pathologyReportUpload.js';
 import { renderEhrUploadPage } from "./src/ehrUpload.js";
-import { setupDataCorrectionsSelectionToolPage } from './src/dataCorrectionsTool/dataCorrectionsToolSelection.js';
-import { setupVerificationCorrectionsPage } from './src/dataCorrectionsTool/verificationCorrectionsTool.js';
-import { setupSurveyResetToolPage } from './src/dataCorrectionsTool/surveyResetTool.js';
-import { setupIncentiveEligibilityToolPage } from './src/dataCorrectionsTool/incentiveEligibilityTool.js';
 import { renderSiteMessages } from './src/siteMessages.js';
 import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
 import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, escapeHTML, renderSiteDropdown, triggerNotificationBanner, showConfirmModal, showAlertModal } from './src/utils.js';
-import { appState, clearUnsaved, participantState, reportsState, userSession, searchState, buildPredefinedSearchMetadata } from './src/stateManager.js';
+import { appState, clearUnsaved, initializeAppState, participantState, reportsState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, signOutAndClearSession } from './src/stateManager.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
 import { firebaseConfig as devFirebaseConfig } from "./config/dev/config.js";
@@ -137,19 +130,8 @@ window.onload = async () => {
 
     !isLocalDev && window.DD_RUM && window.DD_RUM.startSessionReplayRecording();
 
-    // TODO: Initialize appState here (Oct 2025).
-    //await initializeAppState();
-    
-    router();
+    await router();
     activityCheckController();
-
-    const statsData = localStorage.getItem("statsData");
-    const statsDataUpdateTime = localStorage.getItem("statsDataUpdateTime");
-    if (statsData && Date.now() - parseInt(statsDataUpdateTime) < statsDataTimeLimit) {
-      appState.setState({statsData: JSON.parse(statsData), statsDataUpdateTime});
-    } else {
-      appState.setState({statsData: {}, statsDataUpdateTime: 0});
-    }
 };
 
 window.onhashchange = () => {
@@ -159,22 +141,8 @@ window.onhashchange = () => {
 // Participant-dependent routes that require an active participant
 const participantRoutes = [
         '#participantDetails',
-        '#participantSummary', 
-        '#participantMessages',
-        '#requestHomeCollectionKit',
-        '#pathologyReportUpload',
-        '#participantWithdrawal'
     ];
 
-// Data corrections tool routes also require an active participant
-const dataCorrectionsToolRoutes = [
-    '#dataCorrectionsToolSelection',
-    '#incentiveEligibilityTool',
-    '#surveyResetTool',
-    '#verificationCorrectionsTool',
-];
-
-// TODO: centralize in appState
 // Track previous hash for 'no participant selected' and 'unsaved changes' guards.
 let previousHash = window.location.hash;
 
@@ -189,14 +157,25 @@ let previousHash = window.location.hash;
  * window.onhashchange directs the calls to router.
  * @returns {void} 
  */
-const router = async () => {
+export const router = async () => {
     const hash = decodeURIComponent(window.location.hash);
     const route = hash || '#';
-    const isParent = localStorage.getItem('isParent')
+
+    const legacyDataCorrectionsRoutes = {
+        '#dataCorrectionsToolSelection': '#participantDetails/dataCorrections',
+        '#verificationCorrectionsTool': '#participantDetails/dataCorrections/verificationCorrectionsTool',
+        '#surveyResetTool': '#participantDetails/dataCorrections/surveyResetTool',
+        '#incentiveEligibilityTool': '#participantDetails/dataCorrections/incentiveEligibilityTool',
+    };
+
+    if (legacyDataCorrectionsRoutes[route]) {
+        window.location.hash = legacyDataCorrectionsRoutes[route];
+        return;
+    }
 
     // Guard: Unsaved changes in participant details form
-    const state = appState.getState() || {};
-    if (state.hasUnsavedChanges) {
+    const stateSnapshot = appState.getState() || {};
+    if (stateSnapshot.hasUnsavedChanges) {
         const proceed = await showConfirmModal({
             title: 'Unsaved Changes',
             message: 'You have unsaved changes. Continue and lose your edits?',
@@ -215,6 +194,7 @@ const router = async () => {
 
     // Authenticated
     if (await userLoggedIn()) {
+        await initializeAppState();
 
         // If authenticated and on login route, send to home
         if (route === '#login') {
@@ -224,7 +204,9 @@ const router = async () => {
         }
 
         // Handle participant-dependent routes
-        if (participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route)) {
+        const isParticipantDetailsRoute = route.startsWith('#participantDetails');
+
+        if (isParticipantDetailsRoute) {
             // Show loading while attempting to get/recover participant
             showAnimation();
 
@@ -244,33 +226,28 @@ const router = async () => {
 
             markNavigationSucceeded();
 
-            // Phys Act report data needs to be fetched from BQ. DHQ Report data is found in the participant object.
-            if (route === '#participantSummary') {
-                showAnimation();
-                const reports = await reportsState.getReportsFromState(participant, retrievePhysicalActivityReport);
-                hideAnimation();
-                return renderParticipantSummary(participant, reports);
-            }
-            else if (route === '#participantDetails') return renderParticipantDetails(participant)
-            else if (route === '#participantMessages') return renderParticipantMessages(participant)
-            else if (route === '#requestHomeCollectionKit') return renderKitRequest(participant)
-            else if (route === '#pathologyReportUpload') return renderPathologyReportUploadPage(participant)
-            else if (route === '#participantWithdrawal') return renderParticipantWithdrawal(participant)
-            else if (route === '#dataCorrectionsToolSelection') return setupDataCorrectionsSelectionToolPage(participant)
-            else if (route === '#verificationCorrectionsTool') return setupVerificationCorrectionsPage(participant)
-            else if (route === '#surveyResetTool') return setupSurveyResetToolPage(participant)
-            else if (route === '#incentiveEligibilityTool') return setupIncentiveEligibilityToolPage(participant)
+            // Participant route with tab UI. "Participant Details" is the defaultlanding page.
+            // Extract tab from hash (e.g., #participantDetails/summary)
+            const tabId = route.split('/')[1] || 'details';
+            return await renderParticipantDetails(participant, {}, tabId);
         }
 
         // Handle all other routes
         markNavigationSucceeded();
 
         const isPredefinedParticipantSearchRoute = route.startsWith('#participants/');
-        const isParticipantWorkflowRoute = participantRoutes.includes(route) || dataCorrectionsToolRoutes.includes(route);
+        const isParticipantWorkflowRoute = participantRoutes.includes(route);
 
+        // Handle specific routing from lookup -> results + restoring results on page refresh + nav bar usage
         if (route === '#participantLookup') {
             clearUnsaved();
             participantState.clearParticipant();
+            updateNavBar('participantLookupBtn');
+            const navRequested = participantLookupNavRequest?.() || false;
+            const metadata = await searchState.getSearchMetadata();
+            if (!navRequested && metadata?.searchType === 'lookup') {
+                return await renderCachedSearchResults();
+            }
             searchState.clearSearchResults();
             return renderParticipantLookup();
         }
@@ -295,12 +272,12 @@ const router = async () => {
         else if (route === '#notifications/showDraftSchemas') return showDraftSchemas();
         else if (route === '#requestAKitConditions') return renderRequestAKitConditions();
         else if (route === '#ehrUpload') return renderEhrUploadPage();
-        else if (route === '#logout') return clearLocalStorage();
+        else if (route === '#logout') return signOutAndClearSession();
         else if (route !== '#home' && route !== '#') {
             console.error('Unhandled route. Going to home page. Route:', route);
             window.location.hash = '#home';
         }
-        return renderDashboard();
+        return await renderDashboard();
     }
 
     // Not authenticated
@@ -382,19 +359,21 @@ const renderDashboard = async () => {
         const isAuthorized = await authorize(idToken);
 
         if (isAuthorized && isAuthorized.code === 200) {
-            localStorage.setItem('isParent', isAuthorized.isParent)
-            localStorage.setItem('coordinatingCenter', isAuthorized.coordinatingCenter)
-            localStorage.setItem('helpDesk', isAuthorized.helpDesk)
+            await roleState.setRoleFlags({
+                isParent: isAuthorized.isParent,
+                coordinatingCenter: isAuthorized.coordinatingCenter,
+                helpDesk: isAuthorized.helpDesk,
+            });
 
             updateNavBar('dashboardBtn');
 
             mainContent.innerHTML = '';
             mainContent.innerHTML = renderActivityCheck();
             location.host !== urls.prod ? mainContent.innerHTML = headsupBanner() : ``
-            renderCharts(idToken);
+            await renderCharts(idToken);
         }
         if (isAuthorized.code === 401) {
-            clearLocalStorage();
+            signOutAndClearSession();
         }
     } else {
         hideAnimation();
@@ -403,28 +382,26 @@ const renderDashboard = async () => {
 }
 
 const renderCharts = async (accessToken) => {
-    let statsData = {};
-    let currentTime = Date.now();
-    const statsDataUpdateTime = appState.getState().statsDataUpdateTime ?? 0;
+    const currentTime = Date.now();
+    const cachedStatsData = statsState.getStats();
+    const statsDataUpdateTime = statsState.getStatsUpdateTime();
+    const hasCachedStats = cachedStatsData && typeof cachedStatsData === 'object' && Object.keys(cachedStatsData).length > 0;
+    const { isParent } = roleState.getRoleFlags();
+    let statsData = cachedStatsData;
 
-    if (currentTime - statsDataUpdateTime < statsDataTimeLimit) {
-      statsData = appState.getState().statsData;
-    } else {
+    if (!hasCachedStats || currentTime - statsDataUpdateTime >= statsDataTimeLimit) {
       const response = await getStatsForDashboard(accessToken);
       if (response.code !== 200) return;
-      
+
       [statsData] = response.data;
       if (!statsData || Object.keys(statsData).length === 0) return;
 
-      appState.setState({statsData, statsDataUpdateTime: currentTime});
-      localStorage.setItem("statsData", JSON.stringify(statsData));
-      localStorage.setItem("statsDataUpdateTime", currentTime);
+      await statsState.setStats(statsData, currentTime);
+      statsData = statsState.getStats();
     }
 
-    localStorage.setItem('dropDownstatusFlag', false);
-    if (localStorage.getItem('isParent') === 'true') {
-        localStorage.setItem('dropDownstatusFlag', true);
-
+    await uiState.setSiteDropdownVisible(isParent);
+    if (isParent) {
         let siteSelectionRow = document.getElementById('siteSelection');
         if (!siteSelectionRow) {
             siteSelectionRow = document.createElement('div');
@@ -537,37 +514,6 @@ const handleSiteSelection = (siteTextContent = 'All Sites', siteKey = 'allResult
         reRenderDashboard(escapeHTML(e.target.textContent), e.target.dataset.sitekey);
     });
 };
-
-const retrievePhysicalActivityReport = async (participant) => {
-    if (!participant || !participant.state || !participant.state.uid || !participant.Connect_ID) {
-        return null;
-    }
-    
-    try {
-        const idToken = await getIdToken();
-        const response = await fetch(`${baseAPI}/dashboard?api=retrievePhysicalActivityReport&uid=${participant.state.uid}`, {
-            method: "GET",
-            headers:{
-                Authorization: "Bearer " + idToken,
-                "Content-Type": "application/json"
-            }
-        });
-
-        if (!response.ok) { 
-            const error = (response.status + ": " + (await response.json()).message);
-            throw new Error(error);
-        }
-        
-        let data = await response.json();
-        if (data.code === 200) {
-            return data.data ? data.data[0] : null;
-        }
-    } catch (error) {
-        console.error('Error in retrievePhysicalActivityReport:', error);
-        throw error;
-    }
-
-}
 
 /**
  * Get all stats data for dashboard metrics rendering
@@ -1080,22 +1026,13 @@ const reRenderDashboard = async (siteTextContent, siteKey) => {
 };
 
 
-export const clearLocalStorage = () => {
-    firebase.auth().signOut();
-    hideAnimation();
-    // Clear user session and participant data
-    userSession.clearUser();
-    participantState.clearParticipant();
-    window.location.hash = '#';
-};
-
 /**
  * Filter and return data matching the site code
  * @param {number} siteCode - site code
  * @returns {object}
  */
 const filterDataBySiteCode = (siteCode) => {
-  const statsData = appState.getState().statsData;
+  const statsData = statsState.getStats();
   if (siteCode === nameToKeyObj.allResults) {
     return statsData;
   }
@@ -1144,7 +1081,7 @@ const renderParticipants = async (type) => {
             updateActiveElements(type);
             mainContent.innerHTML = renderTable(cachedResults, renderType);
             renderParticipantSearchResults(cachedResults, renderType);
-            activeColumns(cachedResults);
+            setupActiveColumns(cachedResults);
             renderFilters();
             hideAnimation();
             return;
@@ -1170,7 +1107,7 @@ const renderParticipants = async (type) => {
         const response = await getParticipants();
 
         if (response.code === 401) {
-            clearLocalStorage();
+            signOutAndClearSession();
             triggerNotificationBanner(
                 'Not authorized. Please log in again.',
                 'danger',
@@ -1196,7 +1133,7 @@ const renderParticipants = async (type) => {
             cursorHistory: []
         };
         const searchMetadata = buildPredefinedSearchMetadata({ ...paginationState });
-        searchState.setSearchResults(searchMetadata, data);
+        await searchState.setSearchResults(searchMetadata, data);
 
         document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
         updateActiveElements(type);
@@ -1204,7 +1141,7 @@ const renderParticipants = async (type) => {
         mainContent.innerHTML = renderTable(data, renderType);
 
         renderParticipantSearchResults(data, renderType);
-        activeColumns(data);
+        setupActiveColumns(data);
         renderFilters();
 
     } catch (error) {
@@ -1227,7 +1164,7 @@ const activityCheckController = () => {
         time = setTimeout(() => {
             const resposeTimeout = setTimeout(() => {
                 // log out user if they don't respond to warning after 5 minutes.
-                clearLocalStorage();
+                signOutAndClearSession();
             }, 300000)
             // Show warning after 20 minutes of no activity.
             const button = document.createElement('button');
@@ -1247,7 +1184,7 @@ const activityCheckController = () => {
             document.body.removeChild(button);
             Array.from(document.getElementsByClassName('log-out-user')).forEach(e => {
                 e.addEventListener('click', () => {
-                    clearLocalStorage();
+                    signOutAndClearSession();
                 })
             })
             Array.from(document.getElementsByClassName('extend-user-session')).forEach(e => {

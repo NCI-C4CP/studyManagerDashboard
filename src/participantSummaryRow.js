@@ -1,4 +1,5 @@
 import { formatUTCDate } from './utils.js';
+import { surveyFlagToDateMapping } from './idsToName.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 
 /**
@@ -116,67 +117,67 @@ export const verificationStatus = (participant) => {
 
 export const baselineBOHSurvey = (participant) => {
     const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey] === fieldMapping.yes ? 'Y' : 'N';
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.bohStatusFlag1, fieldMapping.bohStartDate1, fieldMapping.bohCompletedDate1);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.bohStatusFlag);
 
     return getTemplateRow(icon, color, "Baseline", "Survey", "BOH", itemStatus, date, "N/A", refusal, "N/A");
 }
 
 export const baselineMRESurvey = (participant) => {
     const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey] === fieldMapping.yes ? 'Y' : 'N';
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.mreStatusFlag1, fieldMapping.mreStartDate1, fieldMapping.mreCompletedDate1);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.mreStatusFlag);
     
     return getTemplateRow(icon, color, "Baseline", "Survey", "MRE", itemStatus, date, "N/A", refusal, "N/A");
 }
 
 export const baselineSASSurvey = (participant) => {
     const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey] === fieldMapping.yes ? 'Y' : 'N';
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.sasStatusFlag1, fieldMapping.sasStartDate1, fieldMapping.sasCompletedDate1);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.sasStatusFlag);
     
     return getTemplateRow(icon, color, "Baseline", "Survey", "SAS", itemStatus, date, "N/A", refusal, "N/A");
 }
 
 export const baselineLAWSurvey = (participant) => {
     const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSurvey] === fieldMapping.yes ? 'Y' : 'N';
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.lawStatusFlag1, fieldMapping.lawStartDate1, fieldMapping.lawCompletedDate1);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.lawStatusFlag);
     
     return getTemplateRow(icon, color, "Baseline", "Survey", "LAW", itemStatus, date, "N/A", refusal, "N/A");
 }
 
 export const baselineSSN = (participant) => {
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.ssnStatusFlag, fieldMapping.ssnSurveyStartedDate, fieldMapping.ssnSurveyCompletedDate);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.ssnStatusFlag);
 
     return getTemplateRow(icon, color, "Baseline", "Survey", "SSN", itemStatus, date, "N/A", "N", "N/A");
 }
 
 export const baselineCOVIDSurvey = (participant) => {
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.covidFlag, fieldMapping.covidStartDate, fieldMapping.covidCompletedDate);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.covidFlag);
     
     return getTemplateRow(icon, color, "Baseline", "Survey", "COVID", itemStatus, date, "N/A", "N", "N/A");
 }
 
 export const baselineResearchBUMSurvey = (participant) => {
     const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSpecimenSurveys] === fieldMapping.yes ? 'Y' : 'N';
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.combinedBoodUrineMouthwashSurvey, fieldMapping.combinedBoodUrineMouthwashSurveyStartDate, fieldMapping.combinedBoodUrineMouthwashSurveyCompleteDate);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.combinedBoodUrineMouthwashSurvey);
     
     return getTemplateRow(icon, color, "Baseline", "Survey", "Research B/U/M", itemStatus, date, "N/A", refusal, "N/A");
 }
 
 export const baselineClinicalBloodUrineSurvey = (participant) => {
     const refusal = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedSpecimenSurveys] === fieldMapping.yes ? 'Y' : 'N';
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.bloodUrineSurveyFlag, fieldMapping.bloodUrineSurveyStartedDate, fieldMapping.bloodUrineSurveyCompletedDate);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.bloodUrineSurveyFlag);
     
     return getTemplateRow(icon, color, "Baseline", "Survey", "Clinical Blood/Urine", itemStatus, date, "N/A", refusal, "N/A");
 }
 
 export const baselineHomeMouthwashSurvey = (participantModule) => {
     const refusal = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedSpecimenSurveys] === fieldMapping.yes ? 'Y' : 'N';
-    const { icon, color, itemStatus, date } = getSurveyStatus(participantModule, fieldMapping.mouthwashSurveyFlag, fieldMapping.mouthwashSurveyStartedDate, fieldMapping.mouthwashSurveyCompletedDate);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participantModule, fieldMapping.mouthwashSurveyFlag);
     
     return getTemplateRow(icon, color, "Baseline", "Survey", "Home Mouthwash", itemStatus, date, "N/A", refusal, "N/A");
 };
 
 export const baselineMenstrualSurvey = (participant) => {
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.menstrualFlag, fieldMapping.menstrualDateTimeStart, fieldMapping.menstrualDateTimeCompleted);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.menstrualFlag);
     
     return getTemplateRow(icon, color, "Baseline", "Survey", "Menstrual Cycle", itemStatus, date, "N/A", "N", "N/A");
 }
@@ -186,7 +187,7 @@ export const baselinePromisSurvey = (participant) => {
     const refusedAllFutureActivities = participant[fieldMapping.refusedAllFutureActivities];
     const refusedQualityOfLifeSurvey = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedQualityOfLifeSurvey];
     const refusal = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedQualityOfLifeSurvey === fieldMapping.yes ? "Y" : "N";
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.promisSurveyFlag, fieldMapping.promisSurveyStartedDate, fieldMapping.promisSurveyCompletedDate);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.promisSurveyFlag);
 
     return getTemplateRow(icon, color, "Follow-Up 3-mo", "Survey", "Quality of Life", itemStatus, date, "N/A", refusal, "N/A");
 };
@@ -198,7 +199,7 @@ export const dhqSurvey = (data) => {
     const refusal = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes ? "Y" : "N";
 
     
-    let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.dhqSurveyStatus, fieldMapping.dhqSurveyStartDate, fieldMapping.dhqSurveyCompletedDate);
+    let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.dhqSurveyStatus);
 
     // Custom properties for the DHQ Row's 'Setting' column
     const dhqUsername = data[fieldMapping.dhqUsername];
@@ -213,7 +214,7 @@ export const cancerScreeningHistorySurvey = (data) => {
     const refusedAllFutureActivities = data[fieldMapping.refusedAllFutureActivities];
     const refusedCancerScreeningHistorySurvey = data[fieldMapping.refusalOptions]?.[fieldMapping.refusedCancerScreeningHistorySurvey];
     const refused = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedCancerScreeningHistorySurvey === fieldMapping.yes ? "Y" : "N";
-    let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.cancerScreeningHistorySurveyStatus, fieldMapping.cancerScreeningHistorySurveyStartDate, fieldMapping.cancerScreeningHistorySurveyCompletedDate);
+    let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.cancerScreeningHistorySurveyStatus);
 
     return getTemplateRow(icon, color, "Follow-Up 9-mo", "Survey", "Cancer Screening History", itemStatus, date, "N/A", refused, "N/A");
 };
@@ -223,7 +224,7 @@ export const baselineExperienceSurvey = (participant) => {
     const refusedAllFutureActivities = participant[fieldMapping.refusedAllFutureActivities];
     const refusedExperienceSurvey = participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedExperienceSurvey];
     const refusal = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes || refusedExperienceSurvey === fieldMapping.yes ? "Y" : "N";
-    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.experienceSurvey, fieldMapping.experienceSurveyStartDate, fieldMapping.experienceCompleteDate);
+    const { icon, color, itemStatus, date } = getSurveyStatus(participant, fieldMapping.experienceSurvey);
 
     return getTemplateRow(icon, color, "Cross-Sectional 2024", "Survey", "Connect Experience", itemStatus, date, "N/A", refusal, "N/A");
 };
@@ -232,9 +233,7 @@ export const baselinePreferenceSurvey = (data) => {
     const refusedAllFutureSurveys = data[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
     const refusedAllFutureActivities = data[fieldMapping.refusedAllFutureActivities];
     const refused = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes ? "Y" : "N";
-    let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.preferenceSurveyStatus, fieldMapping.preferenceSurveyStartDate, fieldMapping.preferenceSurveyCompletedDate);
-
-    if (!data[fieldMapping.preferenceSurveyStatus]) itemStatus = "Not Eligible";
+    let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.preferenceSurveyStatus);
 
     const timeline = "Cross-Sectional 2025";
     const category = "Survey";
@@ -265,8 +264,8 @@ export const baselineBloodSample = (participant) => {
         icon = ICONS.CHECKMARK;
         iconColor = COLORS.GREEN;
         status = 'Collected';
-        date = setSampleDateTime(baselineCollection, fieldMapping.biosepcimenBloodCollection, fieldMapping.researchBloodCollectedDateTime, fieldMapping.clinicalBloodCollectedDateTime);
-        setting = biospecimenStatus(baselineCollection, fieldMapping.biosepcimenBloodCollection, fieldMapping.biospecimenBaselineCollection);
+        date = setSampleDateTime(baselineCollection, fieldMapping.biospecimenBloodCollection, fieldMapping.researchBloodCollectedDateTime, fieldMapping.clinicalBloodCollectedDateTime);
+        setting = biospecimenStatus(baselineCollection, fieldMapping.biospecimenBloodCollection, fieldMapping.biospecimenBaselineCollection);
     }
 
     return getTemplateRow(icon, iconColor, "Baseline", "Sample", "Blood", status, date, setting, refusal, "N/A");
@@ -287,8 +286,8 @@ export const baselineUrineSample = (participant) => {
         icon = ICONS.CHECKMARK;
         iconColor = COLORS.GREEN;
         status = 'Collected';
-        date = setSampleDateTime(baselineCollection, fieldMapping.biosepcimenUrineCollection, fieldMapping.urineDateTime, fieldMapping.clinicalUrineDateTime);
-        setting = biospecimenStatus(baselineCollection, fieldMapping.biosepcimenUrineCollection, fieldMapping.biospecimenBaselineCollection);
+        date = setSampleDateTime(baselineCollection, fieldMapping.biospecimenUrineCollection, fieldMapping.urineDateTime, fieldMapping.clinicalUrineDateTime);
+        setting = biospecimenStatus(baselineCollection, fieldMapping.biospecimenUrineCollection, fieldMapping.biospecimenBaselineCollection);
     }
 
     return getTemplateRow(icon, iconColor, "Baseline", "Sample", "Urine", status, date, setting, refusal, "N/A");
@@ -455,30 +454,32 @@ export const dhq3Report = (participantData, reports) => {
  * HELPER FUNCTIONS
  */
 
-const getSurveyStatus = (participant, surveyFlag, startDate, completeDate) => {
+export const getSurveyStatus = (participant, surveyFlag) => {
+    const { startDate, completeDate } = surveyFlagToDateMapping[surveyFlag] ?? {};
+
     switch (participant[surveyFlag]) {
-        case fieldMapping.submitted1:
+        case fieldMapping.submitted:
             return {
                 icon: ICONS.CHECKMARK,
                 color: COLORS.GREEN,
                 itemStatus: "Submitted",
                 date: formatUTCDate(participant[completeDate]),
             };
-        case fieldMapping.started1:
+        case fieldMapping.started:
             return {
                 icon: ICONS.HASHTAG,
                 color: COLORS.ORANGE,
                 itemStatus: "Started",
                 date: formatUTCDate(participant[startDate]),
             };
-        case fieldMapping.notStarted1:
+        case fieldMapping.notStarted:
             return {
                 icon: ICONS.X,
                 color: COLORS.RED,
                 itemStatus: "Not Started",
                 date: "N/A",
             };
-        case fieldMapping.notYetEligible1:
+        case fieldMapping.notYetEligible:
             return {
                 icon: ICONS.X,
                 color: COLORS.RED,
@@ -486,8 +487,8 @@ const getSurveyStatus = (participant, surveyFlag, startDate, completeDate) => {
                 date: "N/A",
             };
         default:
-            // Special case: Experience and Cancer Screening History surveys have the 'Not Eligible' status as a fallback value.
-            if ([fieldMapping.experienceSurvey, fieldMapping.cancerScreeningHistorySurveyStatus].includes(surveyFlag)) {
+            // Special case: Experience, Cancer Screening History, and Preference surveys have the 'Not Eligible' status as a fallback value.
+            if ([fieldMapping.experienceSurvey, fieldMapping.cancerScreeningHistorySurveyStatus, fieldMapping.preferenceSurveyStatus].includes(surveyFlag)) {
                 return {
                     icon: ICONS.X,
                     color: COLORS.RED,
@@ -558,7 +559,15 @@ const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
         const homeMouthwashData = participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[path] || {};
 
         const kitStatusCid = homeMouthwashData[fieldMapping.kitStatus];
-        const kitStatusStr = kitStatusCidToString[kitStatusCid];
+        let kitStatusStr = kitStatusCidToString[kitStatusCid];
+
+        if(homeMouthwashData[fieldMapping.kitRequestEligible] && !kitStatusCid) {
+            kitStatusStr = 'Invited';
+        } else if(kitStatusStr) {
+            kitStatusStr = 'Kit ' + kitStatusStr;
+        } else {
+            kitStatusStr = 'N/A';
+        }
 
         // IF kitType = homeMouthwash AND kitStatus = received, THEN Green check displays. Else, red x displays.
         const isCollected = homeMouthwashData[fieldMapping.kitType] === fieldMapping.kitTypeValues.homeMouthwash
@@ -575,7 +584,7 @@ const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
             date: collectionDate,
             setting: isCollected ? "Home" : "N/A",
             refused: isInitialKit ? refusedMouthwashOption ? "Y" : "N" : "N/A", // Refused = Y/N for initial kit. Always N/A for R1 & R2)
-            extra: kitStatusStr ? "Kit " + kitStatusStr : "N/A",
+            extra: kitStatusStr,
         };
     }
 
@@ -609,7 +618,7 @@ const checkIncentiveIssued = (participantModule) => {
     return "N/A";
 }
 
-const biospecimenStatus = (collection, biospecimenFlag, collectionRound) => {    
+export const biospecimenStatus = (collection, biospecimenFlag, collectionRound) => {    
     if (!collection) return "N/A";
     
     const collectionType = collection[biospecimenFlag];

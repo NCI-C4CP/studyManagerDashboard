@@ -1,6 +1,94 @@
-// // State Management
 import { encryptString, decryptString } from './crypto.js';
+import { hideAnimation } from './utils.js';
+import { normalizeColumnValue } from './participantCommons.js';
 
+/**
+ * Default values for all encrypted stores
+ */
+
+const STATS_DEFAULTS = Object.freeze({
+    statsData: {},
+    statsDataUpdateTime: 0,
+});
+
+const ROLE_DEFAULTS = Object.freeze({
+    isParent: false,
+    coordinatingCenter: false,
+    helpDesk: false,
+});
+
+const WITHDRAWAL_DEFAULTS = Object.freeze({
+    hasPriorParticipationStatus: false,
+    hasPriorSuspendedContact: false,
+});
+
+const UI_DEFAULTS = Object.freeze({
+    siteDropdownVisible: false,
+    withdrawalFlags: WITHDRAWAL_DEFAULTS,
+    activeColumns: undefined,
+    filtersExpanded: true,
+});
+
+const encryptedStoreLoaders = [];
+let activeUID = null;
+let participantLookupLoader = () => import('./participantLookup.js');
+
+/**
+ * State Management and Encryption utilities
+ */
+
+// Protect against mutation and/or shared refs. Return a deep clone of the value.
+const deepClone = (value, fallback = {}) => {
+    const source = value === undefined || value === null ? fallback : value;
+    if (source === undefined || source === null) return {};
+    if (typeof source !== 'object') return source;
+    try {
+        return JSON.parse(JSON.stringify(source));
+    } catch (error) {
+        console.warn('deepClone: failed to clone value', value, error);
+        return JSON.parse(JSON.stringify(fallback));
+    }
+};
+
+// Return a boolean value from a string or number
+const asBoolean = (value) => {
+    if (typeof value === 'string') {
+        const trimmed = value.trim().toLowerCase();
+        if (trimmed === 'true' || trimmed === '1') return true;
+        if (trimmed === 'false' || trimmed === '0') return false;
+    }
+    if (typeof value === 'number') {
+        if (Number.isNaN(value)) return false;
+        return value !== 0;
+    }
+    if (typeof value === 'bigint') {
+        return value !== 0n;
+    }
+    return !!value;
+};
+
+// Access the Firebase auth instance
+const getAuth = () => {
+    try {
+        if (typeof firebase === 'undefined' || typeof firebase?.auth !== 'function') return null;
+        return firebase.auth();
+    } catch (error) {
+        console.warn('getAuth: unable to access firebase auth', error);
+        return null;
+    }
+};
+
+// Get the current Firebase UID (or null)
+const getCurrentUID = () => {
+    const auth = getAuth();
+    return auth?.currentUser?.uid ?? null;
+};
+
+/**
+ * Create a store for the application state and initialize it with the default values
+ * @param {object} initialState - The initial state of the store
+ * @returns {object} The store object
+ */
 const createStore = (startState = {}) => {
     let state = JSON.parse(JSON.stringify(startState));
 
@@ -22,7 +110,273 @@ const createStore = (startState = {}) => {
     };
 }
 
-export const appState = createStore();
+export const appState = createStore({
+    hasUnsavedChanges: false,
+    participant: null,
+    reports: null,
+});
+
+/**
+ * Persist encrypted store state to sessionStorage
+ * @param {string} sessionStorageKey - The key to store the encrypted value under
+ * @param {*} value - The value to encrypt and persist
+ * @param {string} uid - The user ID to derive encryption key from (must be provided by caller)
+ */
+const persistEncryptedStore = async (sessionStorageKey, value, uid) => {
+    try {
+        const serialized = JSON.stringify(value);
+        const encrypted = await encryptString(serialized, uid);
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem(sessionStorageKey, encrypted);
+        }
+    } catch (error) {
+        console.warn(`Failed to persist store "${sessionStorageKey}"`, error);
+    }
+};
+
+/**
+ * Create an encrypted store for the application state
+ * Important so data in appState can survive page reloads.
+ * @param {object} stateKey - The key of the state in the appState object
+ * @param {object} defaults - The default values for the store
+ * @param {function} validationFn - The function to validate the state
+ * @param {string} sessionStorageKey - The key of the state in the sessionStorage
+ * @returns {object} The store object
+ */
+const createEncryptedStore = ({ stateKey, defaults, validationFn, sessionStorageKey }) => {
+    const getDefaultState = () => deepClone(defaults);
+
+    const writeStoreState = (stateValue) => {
+        const validatedState = validationFn(stateValue);
+        appState.setState({ [stateKey]: validatedState });
+        return validatedState;
+    };
+
+    const readStoreState = () => {
+        const currentState = appState.getState()[stateKey];
+        // Only validate defaults - existing state is already validated by writeStoreState
+        return currentState !== undefined ? currentState : validationFn(getDefaultState());
+    };
+
+    const loadFromStorage = async (uid) => {
+        let loadedState = getDefaultState();
+
+        if (uid && typeof sessionStorage !== 'undefined') {
+            const encryptedData = sessionStorage.getItem(sessionStorageKey);
+            if (encryptedData) {
+                try {
+                    const decryptedData = await decryptString(encryptedData, uid);
+                    const parsedState = JSON.parse(decryptedData);
+                    loadedState = parsedState;
+                } catch (error) {
+                    console.warn(`Failed to load store "${stateKey}"`, error);
+                    sessionStorage.removeItem(sessionStorageKey);
+                    loadedState = getDefaultState();
+                }
+            }
+        }
+
+        writeStoreState(loadedState);
+        return loadedState;
+    };
+
+    encryptedStoreLoaders.push(loadFromStorage);
+    writeStoreState(getDefaultState());
+
+    return {
+        get: () => deepClone(readStoreState()),
+        set: async (update) => {
+            const currentState = readStoreState();
+            const updatedValue = typeof update === 'function' ? update(deepClone(currentState)) : update;
+            const validatedState = writeStoreState(updatedValue);
+
+            const uid = getCurrentUID();
+            if (uid) {
+                await persistEncryptedStore(sessionStorageKey, validatedState, uid);
+            }
+        },
+        clear: () => {
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.removeItem(sessionStorageKey);
+            }
+            writeStoreState(getDefaultState());
+        },
+    };
+};
+
+// Initialize appState just after user authenticates
+export const initializeAppState = async () => {
+    const uid = getCurrentUID();
+
+    if (activeUID === uid) {
+        return appState.getState();
+    }
+
+    await Promise.all(encryptedStoreLoaders.map((loadFromStorage) => loadFromStorage(uid)));
+    activeUID = uid;
+    return appState.getState();
+};
+
+export const resetAppStateUID = () => {
+    activeUID = null;
+};
+
+// Override the participant lookup loader for testing
+export const setParticipantLookupLoader = (loader) => {
+    participantLookupLoader = typeof loader === 'function' ? loader : () => import('./participantLookup.js');
+};
+
+/**
+ * Validation helpers
+ */
+
+const validateBooleanFlags = (defaults, candidate = {}) => {
+    const inputData = candidate && typeof candidate === 'object' ? candidate : {};
+    const validatedFlags = {};
+    for (const key in defaults) {
+        validatedFlags[key] = asBoolean(inputData[key]);
+    }
+    return validatedFlags;
+};
+
+const validateStats = (candidate = {}) => {
+    const inputData = candidate && typeof candidate === 'object' ? candidate : {};
+    const statsData = deepClone(inputData.statsData);
+    const timestamp = Number(inputData.statsDataUpdateTime ?? 0);
+    return {
+        statsData,
+        statsDataUpdateTime: Number.isFinite(timestamp) && timestamp >= 0 ? timestamp : 0,
+    };
+};
+
+const validateRoleFlags = (candidate = {}) => {
+    return validateBooleanFlags(ROLE_DEFAULTS, candidate);
+};
+
+const validateWithdrawalFlags = (candidate = {}) => {
+    return validateBooleanFlags(WITHDRAWAL_DEFAULTS, candidate);
+};
+
+const validateUi = (candidate = {}) => {
+    const inputData = candidate && typeof candidate === 'object' ? candidate : {};
+    return {
+        siteDropdownVisible: asBoolean(inputData.siteDropdownVisible),
+        withdrawalFlags: validateWithdrawalFlags(inputData.withdrawalFlags),
+        activeColumns: Array.isArray(inputData.activeColumns) ? inputData.activeColumns : undefined,
+        filtersExpanded: inputData.filtersExpanded === undefined ? true : asBoolean(inputData.filtersExpanded),
+    };
+};
+
+/**
+ * Encrypted stores for the state objects. Note: encryption is required for sessionStorage usage (security scanner).
+ */
+
+const statsStore = createEncryptedStore({
+    stateKey: 'stats',
+    defaults: STATS_DEFAULTS,
+    validationFn: validateStats,
+    sessionStorageKey: 'statsStateEnc',
+});
+
+const roleStore = createEncryptedStore({
+    stateKey: 'roleFlags',
+    defaults: ROLE_DEFAULTS,
+    validationFn: validateRoleFlags,
+    sessionStorageKey: 'roleFlagsEnc',
+});
+
+const uiStore = createEncryptedStore({
+    stateKey: 'uiFlags',
+    defaults: UI_DEFAULTS,
+    validationFn: validateUi,
+    sessionStorageKey: 'uiFlagsEnc',
+});
+
+/**
+ * State exports
+ */
+
+export const statsState = {
+    setStats: async (statsData = {}, statsDataUpdateTime = 0) => {
+        await statsStore.set({ statsData, statsDataUpdateTime });
+    },
+    getStats: () => deepClone(statsStore.get().statsData),
+    getStatsUpdateTime: () => statsStore.get().statsDataUpdateTime,
+    clear: () => statsStore.clear(),
+};
+
+export const roleState = {
+    setRoleFlags: async (roleFlags = {}) => {
+        await roleStore.set((prev) => ({
+            isParent: asBoolean(roleFlags.isParent ?? prev.isParent),
+            coordinatingCenter: asBoolean(roleFlags.coordinatingCenter ?? prev.coordinatingCenter),
+            helpDesk: asBoolean(roleFlags.helpDesk ?? prev.helpDesk),
+        }));
+    },
+    getRoleFlags: () => ({ ...roleStore.get() }),
+    clear: () => roleStore.clear(),
+};
+
+
+export const uiState = {
+    setSiteDropdownVisible: async (isVisible = false) => {
+        await uiStore.set((prev) => ({
+            ...prev,
+            siteDropdownVisible: asBoolean(isVisible),
+        }));
+    },
+    isSiteDropdownVisible: () => uiStore.get().siteDropdownVisible,
+    setWithdrawalStatusFlags: async (flags = {}) => {
+        await uiStore.set((prev) => ({
+            ...prev,
+            withdrawalFlags: {
+                hasPriorParticipationStatus: asBoolean(flags.hasPriorParticipationStatus ?? prev.withdrawalFlags.hasPriorParticipationStatus),
+                hasPriorSuspendedContact: asBoolean(flags.hasPriorSuspendedContact ?? prev.withdrawalFlags.hasPriorSuspendedContact),
+            },
+        }));
+    },
+    getWithdrawalStatusFlags: () => ({ ...uiStore.get().withdrawalFlags }),
+    clearWithdrawalStatusFlags: async () => {
+        await uiStore.set((prev) => ({
+            ...prev,
+            withdrawalFlags: validateWithdrawalFlags(WITHDRAWAL_DEFAULTS),
+        }));
+    },
+    /**
+     * Get active columns from uiState (synchronous)
+     * @return {Array|undefined} Array of active column keys (normalized: numbers for concept IDs, strings for non-numeric keys) or undefined if not set
+     */
+    getActiveColumns: () => {
+        return uiStore.get().activeColumns;
+    },
+    /**
+     * Update active columns in uiState
+     * Normalizes column values: numeric strings become numbers, non-numeric strings remain strings
+     * @param {Array} columns - Array of column keys (strings or numbers)
+     */
+    updateActiveColumns: async (columns) => {
+        if (!Array.isArray(columns)) {
+            console.warn('uiState.updateActiveColumns: columns must be an array');
+            return;
+        }
+
+        // Normalize all column values for consistent storage
+        const normalizedColumns = columns.map(col => normalizeColumnValue(col));
+
+        await uiStore.set((prev) => ({
+            ...prev,
+            activeColumns: normalizedColumns,
+        }));
+    },
+    setFiltersExpanded: async (isExpanded = true) => {
+        await uiStore.set((prev) => ({
+            ...prev,
+            filtersExpanded: asBoolean(isExpanded),
+        }));
+    },
+    isFiltersExpanded: () => uiStore.get().filtersExpanded,
+    clear: () => uiStore.clear(),
+};
 
 // Participant State Management
 // Cache for in-flight recovery promise to prevent concurrent recovery attempts.
@@ -34,28 +388,29 @@ export const participantState = {
      * Set participant data in memory and store `token` in sessionStorage for recovery on page refresh
      * @param {Object} participant - The participant object with token property
      */
-    setParticipant: (participant) => {
+    setParticipant: async (participant) => {
         if (!participant) {
             console.warn('participantState.setParticipant: participant is null or undefined');
             return;
         }
 
-      appState.setState({ participant });
-      if (participant.token) {
-          // Encrypt and persist token for recovery
-          (async () => {
-              try {
-                  const uid = firebase?.auth?.().currentUser?.uid;
-                  if (!uid) return; // cannot derive key without uid
-                  const enc = await encryptString(participant.token, uid);
-                  sessionStorage.setItem('participantTokenEnc', enc);
-              } catch (e) {
-                  console.warn('participantState.setParticipant encryption failed');
-              }
-          })();
-      } else {
-          console.warn('participantState.setParticipant: participant missing token property');
-      }
+        appState.setState({ participant });
+        if (!participant.token) {
+            console.warn('participantState.setParticipant: participant missing token property');
+            return;
+        }
+
+        // Encrypt and persist token for recovery
+        try {
+            const uid = getCurrentUID();
+            if (!uid) return; // cannot derive key without uid
+            const enc = await encryptString(participant.token, uid);
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.setItem('participantTokenEnc', enc);
+            }
+        } catch (e) {
+            console.warn('participantState.setParticipant encryption failed', e);
+        }
     },
 
     /**
@@ -72,7 +427,9 @@ export const participantState = {
      */
     clearParticipant: () => {
         appState.setState({ participant: null });
-        sessionStorage.removeItem('participantTokenEnc');
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('participantTokenEnc');
+        }
         // Clear the recovery promise cache and associated reports
         participantRecoveryPromise = null;
 
@@ -87,9 +444,10 @@ export const participantState = {
      */
     getParticipantToken: async () => {
         try {
-            const uid = firebase?.auth?.().currentUser?.uid;
+            const uid = getCurrentUID();
+            if (typeof sessionStorage === 'undefined' || !uid) return null;
             const payload = sessionStorage.getItem('participantTokenEnc');
-            if (!payload || !uid) return null;
+            if (!payload) return null;
             try {
                 return await decryptString(payload, uid);
             } catch (e) {
@@ -98,6 +456,7 @@ export const participantState = {
                 return null;
             }
         } catch (error) {
+            console.warn('participantState.getParticipantToken error', error);
             return null;
         }
     },
@@ -121,17 +480,16 @@ export const participantState = {
             return participantRecoveryPromise;
         }
 
-        const sessionToken = await participantState.getParticipantToken();
-
-        if (!sessionToken) {
-            return null;
-        }
-
-        // Create and cache the recovery promise
         participantRecoveryPromise = (async () => {
             try {
+                const sessionToken = await participantState.getParticipantToken();
+
+                if (!sessionToken) {
+                    return null;
+                }
+
                 // Dynamic import to avoid circular dependency
-                const { findParticipant } = await import('./participantLookup.js');
+                const { findParticipant } = await participantLookupLoader();
                 const response = await findParticipant(`token=${sessionToken}`);
 
                 if (response.code === 200 && response.data && response.data[0]) {
@@ -143,6 +501,9 @@ export const participantState = {
                     // Token is invalid or participant not found
                     console.warn('Participant recovery failed: invalid token or participant not found');
                     appState.setState({ participant: null });
+                    if (typeof sessionStorage !== 'undefined') {
+                        sessionStorage.removeItem('participantTokenEnc');
+                    }
                     return null;
                 }
 
@@ -184,7 +545,9 @@ export const userSession = {
      */
     setUser: (userData) => {
         if (userData && userData.email) {
-            sessionStorage.setItem('userSession', JSON.stringify(userData));
+            if (typeof sessionStorage !== 'undefined') {
+                sessionStorage.setItem('userSession', JSON.stringify(userData));
+            }
         } else {
             console.warn('userSession.setUser: userData missing or invalid');
         }
@@ -196,6 +559,7 @@ export const userSession = {
      */
     getUser: () => {
         try {
+            if (typeof sessionStorage === 'undefined') return null;
             const userSession = sessionStorage.getItem('userSession');
             return userSession ? JSON.parse(userSession) : null;
         } catch (error) {
@@ -217,7 +581,9 @@ export const userSession = {
      * Clear user session data
      */
     clearUser: () => {
-        sessionStorage.removeItem('userSession');
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('userSession');
+        }
     },
 
     /**
@@ -236,11 +602,11 @@ export const reportsState = {
      * @param {Object} reports - The reports object (e.g., { physActReport: {...} })
      */
     setReports: (reports) => {
-      if (!reports) {
-          console.warn('reportsState.setReports: reports is null or undefined');
-          return;
-      }
-      appState.setState({ reports });
+        if (!reports) {
+            console.warn('reportsState.setReports: reports is null or undefined');
+            return;
+        }
+        appState.setState({ reports });
     },
 
     /**
@@ -313,21 +679,22 @@ const sanitizeMetadata = (metadata, overrides = {}) => {
         };
     }
 
+    // For lookup searches
     return { ...merged };
 };
 
-const persistMetadataAsync = (metadata) => {
+const persistSearchMetadata = async (metadata) => {
     if (!metadata) return;
-    (async () => {
-        try {
-            const uid = firebase?.auth?.().currentUser?.uid;
-            if (!uid) return; // cannot derive key without uid
-            const enc = await encryptString(JSON.stringify(metadata), uid);
+    try {
+        const uid = getCurrentUID();
+        if (!uid) return; // cannot derive key without uid
+        const enc = await encryptString(JSON.stringify(metadata), uid);
+        if (typeof sessionStorage !== 'undefined') {
             sessionStorage.setItem('searchMetadataEnc', enc);
-        } catch (e) {
-            console.warn('searchState.persistMetadataAsync encryption failed', e);
         }
-    })();
+    } catch (e) {
+        console.warn('searchState.persistSearchMetadata encryption failed', e);
+    }
 };
 
 export const searchState = {
@@ -339,7 +706,7 @@ export const searchState = {
      * @param {Object} searchMetadata - Search parameters and pagination state
      * @param {Array} resultsArray - Array of participant objects for current page
      */
-    setSearchResults: (searchMetadata, resultsArray) => {
+    setSearchResults: async (searchMetadata, resultsArray) => {
         if (!searchMetadata) {
             console.warn('searchState.setSearchResults: metadata is null or undefined');
             return;
@@ -349,7 +716,7 @@ export const searchState = {
         searchResultsCache = Array.isArray(resultsArray) ? resultsArray : null;
 
         searchMetadataCache = normalizedMetadata;
-        persistMetadataAsync(normalizedMetadata);
+        await persistSearchMetadata(normalizedMetadata);
     },
 
     /**
@@ -360,7 +727,7 @@ export const searchState = {
         if (!metadata) return null;
         const normalized = sanitizeMetadata({ searchType: 'predefined' }, metadata);
         searchMetadataCache = normalized;
-        persistMetadataAsync(normalized);
+        await persistSearchMetadata(normalized);
         return { ...normalized };
     },
 
@@ -373,10 +740,10 @@ export const searchState = {
             ? searchMetadataCache
             : { searchType: 'predefined' };
 
-        const next = sanitizeMetadata(base, updates);
-        searchMetadataCache = next;
-        persistMetadataAsync(next);
-        return { ...next };
+        const mergedMetadata = sanitizeMetadata(base, updates);
+        searchMetadataCache = mergedMetadata;
+        await persistSearchMetadata(mergedMetadata);
+        return { ...mergedMetadata };
     },
 
     /**
@@ -386,6 +753,13 @@ export const searchState = {
     getSearchResults: () => {
         if (searchResultsCache) return searchResultsCache;
         return null;
+    },
+
+    /**
+     * Clear cached search results (keep metadata so queries can be re-run)
+     */
+    clearResultsCache: () => {
+        searchResultsCache = null;
     },
 
     /**
@@ -407,9 +781,10 @@ export const searchState = {
         }
 
         try {
-            const uid = firebase?.auth?.().currentUser?.uid;
+            const uid = getCurrentUID();
+            if (typeof sessionStorage === 'undefined' || !uid) return null;
             const payload = sessionStorage.getItem('searchMetadataEnc');
-            if (!payload || !uid) return null;
+            if (!payload) return null;
             try {
                 const decrypted = await decryptString(payload, uid);
                 const parsed = JSON.parse(decrypted);
@@ -434,6 +809,7 @@ export const searchState = {
      */
     hasSearchResults: () => {
         if (searchMetadataCache) return true;
+        if (typeof sessionStorage === 'undefined') return false;
         return !!sessionStorage.getItem('searchMetadataEnc');
     },
 
@@ -443,8 +819,22 @@ export const searchState = {
     clearSearchResults: () => {
         searchResultsCache = null;
         searchMetadataCache = null;
-        sessionStorage.removeItem('searchMetadataEnc');
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('searchMetadataEnc');
+        }
     },
+};
+
+/**
+ * Clear cached participant search data, preserve search metadata. To re-trigger search.
+ * This protects against stale (cached) results when navigating back to the search results page after making changes to the participant profile.
+ */
+export const invalidateSearchResultsCache = () => {
+    if (typeof searchState.clearResultsCache === 'function') {
+        searchState.clearResultsCache();
+    } else {
+        searchState.clearSearchResults();
+    }
 };
 
 /**
@@ -467,5 +857,23 @@ export const markUnsaved = () => {
  * Clear the unsaved changes indicator
  */
 export const clearUnsaved = () => {
+    appState.setState({ hasUnsavedChanges: false, changedOption: {} });
+};
+
+/**
+ * Clear the user session and reset the application state
+ */
+export const signOutAndClearSession = () => {
+    const auth = getAuth();
+    auth?.signOut?.();
+    hideAnimation();
+    userSession.clearUser();
+    participantState.clearParticipant();
+    roleState.clear();
+    uiState.clear();
+    statsState.clear();
+    reportsState.clearReports();
     appState.setState({ hasUnsavedChanges: false });
+    resetAppStateUID();
+    window.location.hash = '#';
 };

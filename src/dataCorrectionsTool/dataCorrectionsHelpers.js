@@ -1,34 +1,34 @@
 /**
-* When back button clicked, navigates user back to the data corrections tool selection page.
-* @returns {void}
-*/
-export const handleBackToToolSelect = () => {
-    const backToToolSelectButton = document.getElementById('backToToolSelect');
-    if (!backToToolSelectButton) return;
-
-    backToToolSelectButton.addEventListener('click', () => {
-       location.hash = '#dataCorrectionsToolSelection';
-    });
-};
-
+ * Render the tabbed navigation used within the data corrections tool.
+ * @returns {string}
+ */
 export const displayDataCorrectionsNavbar =  () => {
-    return `<div class="mt-4">
+    return `<div class="mt-4 data-corrections-selection-tabs">
                 <div class="navTabsDataCorrectionsContainer">
                     <ul class="btn-group" id="dataCorrectionsTabsGroup">
                         <li>
-                            <a class="dataCorrectionLink" id="verificationCorrectionsTool" href="#verificationCorrectionsTool">Verification Corrections</a>
+                            <a class="dataCorrectionLink" id="verificationCorrectionsTool" href="#participantDetails/dataCorrections/verificationCorrectionsTool">Verification Corrections</a>
                         </li>
 
                         <li>
-                            <a class="dataCorrectionLink" id="surveyResetTool" href="#surveyResetTool">Survey Status Reset</a>
+                            <a class="dataCorrectionLink" id="surveyResetTool" href="#participantDetails/dataCorrections/surveyResetTool">Survey Status Reset</a>
                         </li>
                         <li>
-                            <a class="dataCorrectionLink" id="incentiveEligibilityTool" href="#incentiveEligibilityTool">Incentive Eligibility</a>
+                            <a class="dataCorrectionLink" id="incentiveEligibilityTool" href="#participantDetails/dataCorrections/incentiveEligibilityTool">Incentive Eligibility</a>
                         </li>
                     </ul>
                 </div>
             </div>`;
 };
+
+export const dataCorrectionsHeaderNote = () => `
+    <div class="mb-2">
+        <h4><b>Data Corrections Tool</b></h4>
+        <span style="position:relative; font-size: 15px; top:2px;">
+            <b>Note: This tool should only be used to make corrections to participant data post-verification. All changes need to be approved by the CCC before being applied to the participant record via this tool.</b>
+        </span>
+    </div>
+`;
 
 export const setActiveDataCorrectionsTab = () => {
     const dataCorrectionsTabs = document.getElementById('dataCorrectionsTabsGroup');
