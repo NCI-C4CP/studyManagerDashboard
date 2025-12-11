@@ -1,7 +1,9 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, escapeHTML } from './utils.js';
-import { participantState } from './stateManager.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, escapeHTML, triggerNotificationBanner } from './utils.js';
+import { participantState, uiState, invalidateSearchResultsCache } from './stateManager.js';
 import { renderRefusalOptions, renderCauseOptions } from './participantWithdrawalRender.js';
+import { activateTab, loadTabContent, updateHashForTab } from './participantTabs.js';
+import { refreshParticipantHeaders } from './participantHeader.js';
 
 export const renderWithdrawalForm = () => {
     const participant = participantState.getParticipant();
@@ -236,8 +238,8 @@ export const renderWithdrawalForm = () => {
         <div class="modal fade" id="modalShowSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                 <div class="modal-content sub-div-shadow">
-                    <div class="modal-header" id="modalHeader"></div>
-                    <div class="modal-body" id="modalBody"></div>
+                    <div class="modal-header" id="withdrawalModalHeader"></div>
+                    <div class="modal-body" id="withdrawalModalBody"></div>
                 </div>
             </div>
         </div>`
@@ -432,7 +434,7 @@ const disableEnableWhoRequested = (id) => {
  * @param {boolean} isRequired - whether the date is required (default: false for suspend, true for causeOfDeath)
  * @returns {object} - { isValid: boolean, error: string }
  */
-const validateDate = (month, day, year, validationType = 'suspend', isRequired = false) => {
+export const validateDate = (month, day, year, validationType = 'suspend', isRequired = false) => {
     // Determine if this date is required based on validation type and explicit requirement
     const dateIsRequired = isRequired || validationType === 'causeOfDeath';
     
@@ -515,8 +517,8 @@ const handleNextButtonClick = () => {
 
 const optionsHandler = (suspendDate) => {
     
-    const modalHeader = document.getElementById('modalHeader');
-    const modalBody = document.getElementById('modalBody');
+    const modalHeader = document.getElementById('withdrawalModalHeader');
+    const modalBody = document.getElementById('withdrawalModalBody');
     const refusalWithdrawalCheckboxes = document.getElementsByName('options');
     const whoRequestedRadioButtons = document.getElementsByName('whoRequested');
 
@@ -589,23 +591,16 @@ const optionsHandler = (suspendDate) => {
 } 
 
 
-// Event handler ref to prevent duplicates
-let currentProceedHandler = null;
-
 export const proceedToNextPage = (selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, suspendDate) => {
     const proceedFormPageEle = document.getElementById('proceedFormPage');
     if (proceedFormPageEle) {
 
-        if (currentProceedHandler) {
-            proceedFormPageEle.removeEventListener('click', currentProceedHandler);
-        }
-        
-        currentProceedHandler = () => {
+        const currentProceedHandler = () => {
             const checkedValue = document.getElementById('participantDeceasedCheck').checked;
             checkedValue ? causeOfDeathPage(selectedRefusalWithdrawalCheckboxes) : reasonForRefusalPage(selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, suspendDate);
         };
         
-        proceedFormPageEle.addEventListener('click', currentProceedHandler);
+        proceedFormPageEle.addEventListener('click', currentProceedHandler, { once: true });
     }
 }
 
@@ -688,8 +683,8 @@ export const reasonForRefusalPage = (selectedRefusalWithdrawalCheckboxes, select
             <div class="modal fade" id="modalShowFinalSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
                     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                         <div class="modal-content sub-div-shadow">
-                            <div class="modal-header" id="modalHeader"></div>
-                            <div class="modal-body" id="modalBody"></div>
+                            <div class="modal-header" id="withdrawalFinalModalHeader"></div>
+                            <div class="modal-body" id="withdrawalFinalModalBody"></div>
                         </div>
                     </div>
             </div>`;
@@ -719,8 +714,8 @@ export const causeOfDeathPage = (selectedRefusalWithdrawalCheckboxes) => {
     let template = ` <div class="modal fade" id="modalShowFinalSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
                     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                         <div class="modal-content sub-div-shadow">
-                            <div class="modal-header" id="modalHeader"></div>
-                            <div class="modal-body" id="modalBody"></div>
+                            <div class="modal-header" id="withdrawalFinalModalHeader"></div>
+                            <div class="modal-body" id="withdrawalFinalModalBody"></div>
                         </div>
                     </div>
             </div>`
@@ -773,8 +768,8 @@ const handleResponseSubmission = async (selectedRefusalWithdrawalCheckboxes, sel
         if (!updatedParticipant) {
             return;
         }
-        participantState.setParticipant(updatedParticipant);
-        navigateToParticipantSummary(updatedParticipant);
+        triggerNotificationBanner('Withdrawal processed successfully.', 'success');
+        await navigateToParticipantSummary(updatedParticipant);
 
     } catch (error) {
         console.error('Error in handleResponseSubmission():', error);
@@ -782,7 +777,7 @@ const handleResponseSubmission = async (selectedRefusalWithdrawalCheckboxes, sel
     }
 }
 
-const processRefusalWithdrawalResponses = async (selectedReasonsForWithdrawal, selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate) => {
+export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdrawal, selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate) => {
     let sendRefusalData = {};
     let highestStatus = [];
     sendRefusalData[fieldMapping.refusalOptions] = {};
@@ -854,12 +849,13 @@ const processRefusalWithdrawalResponses = async (selectedReasonsForWithdrawal, s
         updateWhoRequested(sendRefusalData, fieldMapping.whoRequestedSuspendedContact, fieldMapping.whoRequestedSuspendedContactOther)
     }
 
-    const previousSuspendedStatus = localStorage.getItem('suspendContact');
-    if (previousSuspendedStatus === 'true' && suspendDate === '//') sendRefusalData[fieldMapping.suspendContact] = ``
-    localStorage.removeItem('suspendContact');
+    const { hasPriorSuspendedContact, hasPriorParticipationStatus } = uiState.getWithdrawalStatusFlags();
+    if (hasPriorSuspendedContact) {
+        if (suspendDate === '//') sendRefusalData[fieldMapping.suspendContact] = '';
+        await uiState.setWithdrawalStatusFlags({ hasPriorSuspendedContact: false });
+    }
 
-    const previousRefusalStatus = localStorage.getItem('participationStatus');
-    if (previousRefusalStatus === 'true') {
+    if (hasPriorParticipationStatus) {
         const prevParticipantStatusScore =   { "No Refusal": 0,
                                             "Refused some activities": 1,  
                                             "Refused all future activities": 2,
@@ -871,9 +867,10 @@ const processRefusalWithdrawalResponses = async (selectedReasonsForWithdrawal, s
         let prevParticipantStatusSelection = fieldMapping[participant[fieldMapping.participationStatus]]
         prevParticipantStatusSelection = prevParticipantStatusScore[prevParticipantStatusSelection]
         highestStatus.push(parseInt(prevParticipantStatusSelection))
-    }
 
-    if (previousRefusalStatus === 'true' && suspendDate !== '//') sendRefusalData[fieldMapping.participationStatus] = fieldMapping.noRefusal
+        if (suspendDate !== '//') sendRefusalData[fieldMapping.participationStatus] = fieldMapping.noRefusal
+        await uiState.setWithdrawalStatusFlags({ hasPriorParticipationStatus: false });
+    }
     
     source === 'causeOfDeath'
         ? combineResponses(selectedReasonsForWithdrawal, sendRefusalData, suspendDate)
@@ -1076,7 +1073,10 @@ async function sendRefusalWithdrawalResponses(sendRefusalData) {
             throw new Error(`Found ${participantJSON.data.length} participants. Expected one.`);
         }
 
-        return participantJSON.data[0];
+        const refreshedParticipant = participantJSON.data[0];
+        // Invalidate cached search rows but keep metadata so a fresh fetch runs on return to results
+        invalidateSearchResultsCache();
+        return refreshedParticipant;
 
     } catch (error) {
         console.error('Error in sendRefusalWithdrawalResponses:', error);
@@ -1087,7 +1087,10 @@ async function sendRefusalWithdrawalResponses(sendRefusalData) {
     }
 }
 
-const navigateToParticipantSummary = (participant) => {
-    participantState.setParticipant(participant);
-    location.replace(window.location.origin + window.location.pathname + '#participantSummary'); // updates url to participantSummary
+const navigateToParticipantSummary = async (participant) => {
+    await participantState.setParticipant(participant);
+    refreshParticipantHeaders(participant);
+    updateHashForTab('summary', false);
+    await loadTabContent('summary', participant);
+    activateTab('summary');
 }

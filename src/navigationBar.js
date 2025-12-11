@@ -1,4 +1,20 @@
 import { urls } from './utils.js';
+import { roleState } from './stateManager.js';
+
+/**
+ * Handle participant lookup nav when already on the participantLookup hash
+ * @returns {boolean} - True if a participant lookup nav request was made, false otherwise
+ */
+let participantLookupNavRequested = false;
+export const participantLookupNavRequest = () => {
+    const requested = participantLookupNavRequested;
+    participantLookupNavRequested = false;
+    return requested;
+};
+
+export const setParticipantLookupNavRequest = (value = false) => {
+    participantLookupNavRequested = !!value;
+};
 
 export const renderNavBarLinks = () => {
     return `
@@ -9,9 +25,7 @@ export const renderNavBarLinks = () => {
 }
 
 export const dashboardNavBarLinks = () => {
-    const isParent = localStorage.getItem('isParent');
-    const coordinatingCenter = localStorage.getItem('coordinatingCenter');
-    const helpDesk = localStorage.getItem('helpDesk');
+    const { isParent, coordinatingCenter, helpDesk } = roleState.getRoleFlags();
     
     // Set up navbar collapse after DOM is updated
     requestAnimationFrame(() => {
@@ -39,42 +53,19 @@ export const dashboardNavBarLinks = () => {
         <li class="nav-item" id="participantLookupBtn">
             <a class="nav-item nav-link ws-nowrap" href="#participantLookup" title="Participant Lookup"><i class="fas fa-search"></i> Participant Lookup</a>
         </li>
-        <li class="nav-item" id="participantDetailsBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#participantDetails" title="Participant Details"><i class="fa fa-info-circle"></i> Participant Details</a>
-        </li>
-        <li class="nav-item" id="participantSummaryBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#participantSummary" title="Participant Summary"><i class="fa fa-id-badge"></i> Participant Summary</a>
-        </li>
-        ${isParent === 'true' ?
-        (`<li class="nav-item" id="participantWithdrawalBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#participantWithdrawal" title="Participant Withdrawal"><i class="fa fa-list-alt"></i> Participant Withdrawal</a>
-        </li>`) : (``)  }
-        <li class="nav-item" id="participantMessageBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#participantMessages" title="Participant Messages"><i class="fa fa-envelope-open"></i> Participant Messages</a>
-        </li>
-        ${(helpDesk === 'true') ? '' : (`<li class="nav-item" id="pathologyReportUploadBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#pathologyReportUpload" title="Pathology Report Upload"><i class="fa fa-upload"></i> Pathology Report Upload</a>
-        </li>`)}
-        ${(helpDesk === 'true' || coordinatingCenter === 'true') ?
-        (`<li class="nav-item" id="participantVerificationBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#dataCorrectionsToolSelection" title="Data Corrections Tool"><i class="fa fa-check"></i> Data Corrections Tool</a>
-        </li>`) : (``) }
-        ${(helpDesk === 'true' || coordinatingCenter === 'true') ?
-            (`<li class="nav-item" id="replaceHomeCollectionBtn">
-                <a class="nav-item nav-link ws-nowrap" href="#requestHomeCollectionKit" title="Home Collection Kit Request"><i class="fa fa-home"></i> Kit Requests</a>
-            </li>`) : (``) }
-        ${coordinatingCenter === 'true' ?
+        ${coordinatingCenter ?
             (`<li class="nav-item" id="manageRequestAKitConditionsBtn">
                 <a class="nav-item nav-link ws-nowrap" href="#requestAKitConditions" title="Manage Automated Kit Request Eligibility"><i class="fa fa-cogs"></i> CCC use only- Set Kit Eligibility</a>
             </li>`) : (``) }
-        ${(isParent !== 'true' || coordinatingCenter === 'true') ?
+        <div class="w-100 d-none d-lg-block"></div>
+        ${(!isParent || coordinatingCenter) ?
         (`<li class="nav-item" id="siteMessageBtn">
             <a class="nav-item nav-link ws-nowrap" href="#siteMessages" title="Automated Refusal/Withdrawal Notifications to Sites"><i class="fa fa-comments"></i> Automated Refusal/Withdrawal Notifications to Sites</a>
         </li>`) : (``) }
-        ${(helpDesk === 'true' || (coordinatingCenter === 'true' && location.host === urls.prod)) ? '' : (`<li class="nav-item" id="ehrUploadBtn">
+        ${(helpDesk || (coordinatingCenter && location.host === urls.prod)) ? '' : (`<li class="nav-item" id="ehrUploadBtn">
             <a class="nav-item nav-link ws-nowrap" href="#ehrUpload" title="EHR Upload"><i class="fa fa-upload"></i> EHR Upload</a>
         </li>`)}
-        ${coordinatingCenter === 'true' ?
+        ${coordinatingCenter ?
         (`<li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle ws-nowrap" id="notifications" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <i class="fa fa-bell"></i> Notifications 
@@ -113,6 +104,7 @@ export const  renderLogin = () => {
 }
 
 export const removeActiveClass = (className, activeClass) => {
+    if (typeof document === 'undefined') return;
     let fileIconElement = document.getElementsByClassName(className);
     Array.from(fileIconElement).forEach(elm => {
         elm.classList.remove(activeClass);
@@ -123,32 +115,51 @@ export const removeActiveClass = (className, activeClass) => {
 let navbarCollapseSetup = false;
 
 const setupNavbarCollapse = () => {
+    if (typeof document === 'undefined') return;
     // Only set up once to prevent duplicate listeners
     if (navbarCollapseSetup) {
         return;
     }
     
-    // Use event delegation on the navbar container for better performance
+    // Use event delegation on the navbar container
     const navbarContainer = document.getElementById('navBarLinks');
-    if (navbarContainer) {
-        navbarContainer.addEventListener('click', (event) => {
-            // Check if the clicked element is a navigation link
-            const link = event.target.closest('a[href^="#"]');
-            if (link) {
-                // Close the navbar after navigation completes using requestAnimationFrame
-                requestAnimationFrame(() => {
-                    const navbarToggler = document.getElementById('hamburger_menu_button');
-                    const navbarCollapse = document.getElementById('navbarNavAltMarkup');
-                    
-                    if (navbarToggler && navbarCollapse && navbarCollapse.classList.contains('show')) {
-                        navbarToggler.click();
+    if (!navbarContainer) {
+        return;
+    }
+
+    navbarContainer.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href^="#"]');
+        if (!link) return;
+
+        const href = link.getAttribute('href');
+
+        // force the hash change event when already on the participantLookup hash
+        if (href === '#participantLookup' && href === window.location.hash) {
+            event.preventDefault();
+            participantLookupNavRequested = true;
+            requestAnimationFrame(() => {
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new HashChangeEvent('hashchange'));
+                    if (typeof window.onhashchange === 'function') {
+                        window.onhashchange();
                     }
-                });
+                }
+            });
+        } else if (href === '#participantLookup') {
+            participantLookupNavRequested = true;
+        }
+
+        requestAnimationFrame(() => {
+            const navbarToggler = document.getElementById('hamburger_menu_button');
+            const navbarCollapse = document.getElementById('navbarNavAltMarkup');
+            
+            if (navbarToggler && navbarCollapse && navbarCollapse.classList.contains('show')) {
+                navbarToggler.click();
             }
         });
-        
-        navbarCollapseSetup = true;
-    }
+    });
+    
+    navbarCollapseSetup = true;
 }
 
 /**
@@ -189,8 +200,13 @@ export const updateActiveElements = (type) => {
 
 export const updateNavBar = (activeElementId) => {
     if (!activeElementId) return;
-    
-    document.getElementById('navBarLinks').innerHTML = dashboardNavBarLinks();
+    if (typeof document === 'undefined') return;
+
+    const navBarLinks = document.getElementById('navBarLinks');
+    if (!navBarLinks) return;
+
+    navBarLinks.innerHTML = dashboardNavBarLinks();
     removeActiveClass('nav-link', 'active');
-    document.getElementById(activeElementId).classList.add('active');
+    const activeElement = document.getElementById(activeElementId);
+    activeElement?.classList.add('active');
 }

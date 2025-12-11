@@ -1,0 +1,22 @@
+{
+  "name": "studymanager-dashboard",
+  "description": "Study Manager Dashboard front-end",
+  "private": true,
+  "scripts": {
+    "lint": "eslint \"src/**/*.js\" \"tests/**/*.js\" index.js serviceWorker.js",
+    "test": "mocha --require ./tests/testSetup.js --require esbuild-register \"tests/**/*.spec.js\"",
+    "test:watch": "npm run test -- --watch"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "devDependencies": {
+    "chai": "^5.2.0",
+    "esbuild": "^0.25.11",
+    "esbuild-register": "^3.5.0",
+    "eslint": "^8.57.0",
+    "eslint-config-google": "^0.14.0",
+    "jsdom": "^24.0.0",
+    "mocha": "^11.0.0"
+  }
+}

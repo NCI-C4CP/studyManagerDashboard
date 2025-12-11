@@ -20,7 +20,7 @@ export const renderParticipantHeader = (participant) => {
   }
 
   return `
-    <div class="alert alert-light" role="alert">
+    <div class="alert alert-light participant-header" role="alert">
         <span><b>Connect_ID</b></span>: ${participant["Connect_ID"] || ""} &nbsp;
         <span><b>First Name</b></span>: ${participant[fieldMapping.fName] || ""} &nbsp;
         <span><b>Last Name</b></span>: ${participant[fieldMapping.lName] || ""} &nbsp;
@@ -76,5 +76,18 @@ export const getParticipantSuspendedDate = (participant) => {
         return `<span><b>Suspended Contact </b></span>: From:  ${suspendContactRequestedFrom}  To:  ${suspendedDate}`;
     }
 
-    return "";
+  return "";
+};
+
+/**
+ * Re-render participant header with updated participant data.
+ * Safely no-ops if document is unavailable (e.g., in tests without DOM).
+ */
+export const refreshParticipantHeaders = (participant) => {
+  if (typeof document === 'undefined' || !participant) return;
+
+  const headers = Array.from(document.querySelectorAll('.participant-header'));
+  headers.forEach((header) => {
+    header.outerHTML = renderParticipantHeader(participant);
+  });
 };

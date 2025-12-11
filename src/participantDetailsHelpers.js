@@ -1,8 +1,9 @@
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { renderParticipantDetails } from './participantDetails.js';
 import { findParticipant } from './participantLookup.js';
-import { appState, participantState, userSession, markUnsaved, clearUnsaved } from './stateManager.js';
+import { appState, participantState, roleState, userSession, markUnsaved, clearUnsaved, invalidateSearchResultsCache } from './stateManager.js';
 import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, escapeHTML } from './utils.js';
+import { getCountryCode3List, getCountryNameByCode3 } from './countryMapping.js';
 
 export const allStates = {
     "Alabama":1,
@@ -88,9 +89,12 @@ const fieldValues = {
     [fieldMapping.language.es]: 'Spanish',
 }
 
+const countryCodes = getCountryCode3List();
+
 export const getFieldValues = (variableValue, conceptId) => {
     if (!variableValue || (conceptId === "Change Login Email" && variableValue.startsWith("noreply"))) return "";
     if (variableValue in fieldValues) return fieldValues[variableValue];
+    if (countryCodes.includes(variableValue)) return getCountryNameByCode3(variableValue);
 
     const formattedPhoneValue = variableValue ? formatPhoneNumber(variableValue.toString()) : "";
     const phoneFieldValues = {
@@ -208,6 +212,10 @@ const handleFormInputFormatting = (event) => {
     // Name input handling
     if (input.matches('input[type="text"][id^="newValue"]')) {
         const conceptId = parseInt(input.id.replace('newValue', ''), 10);
+        const forceAllChars = input.dataset.forceAllChars === 'true';
+        if (forceAllChars) {
+            return;
+        }
         if (nameFieldConceptIds.includes(conceptId)) {
             const oldValue = input.value;
             const sanitizedValue = formatNameInput(oldValue);
@@ -260,6 +268,10 @@ const handleFormKeydown = (event) => {
     // Handle zip code input keydown
     if (event.target.matches('input[type="text"][id^="newValue"]')) {
         const conceptId = parseInt(event.target.id.replace('newValue', ''), 10);
+        const forceAllChars = event.target.dataset.forceAllChars === 'true';
+        if (forceAllChars) {
+            return;
+        }
         if (zipFieldConceptIds.includes(conceptId)) {
             const controlKeys = ['Backspace', 'Tab', 'Enter', 'Escape', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
             if (controlKeys.includes(event.key)) return;
@@ -305,6 +317,15 @@ const isPhoneNumberInForm = (participant, changedOption, fieldMappingKey) => {
     return !!participant?.[fieldMappingKey] || !!changedOption?.[fieldMappingKey];
 };
 
+export const isAddressInternational = (participant, changedOption, fieldMappingKey) => {
+    if (changedOption[fieldMappingKey]) {
+        return parseInt(changedOption[fieldMappingKey], 10) === fieldMapping.yes ? true : false;
+    } else if (participant[fieldMappingKey]) {
+        return parseInt(participant[fieldMappingKey],10) === fieldMapping.yes ? true : false;
+    }
+    return false;
+};
+
 export const getImportantRows = (participant, changedOption) => {
     const isParticipantVerified = participant[fieldMapping.verifiedFlag] === fieldMapping.verified;
     const isParticipantDataDestroyed = participant[fieldMapping.dataDestroyCategorical] === fieldMapping.requestedDataDestroySigned;
@@ -322,8 +343,12 @@ export const getImportantRows = (participant, changedOption) => {
     const isCellPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.cellPhone);
     const isHomePhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.homePhone);
     const isOtherPhonePresent = isPhoneNumberInForm(participant, changedOption, fieldMapping.otherPhone);
-    const coordinatingCenter = localStorage.getItem('coordinatingCenter');
-    const helpDesk = localStorage.getItem('helpDesk');
+
+    const isMailingInternational = isAddressInternational(participant, changedOption, fieldMapping.isIntlAddr);
+    const isPhysicalInternational = isAddressInternational(participant, changedOption, fieldMapping.physicalAddrIntl);
+    const isAltInternational = isAddressInternational(participant, changedOption, fieldMapping.isIntlAltAddress);
+
+    const { coordinatingCenter, helpDesk } = roleState.getRoleFlags();
 
     // Participant Data Rows
     const participantDataRows = [ 
@@ -445,6 +470,13 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: false,
             isHeading: true,
         },
+        { field: fieldMapping.isIntlAddr,
+            label: 'Mailing Address is International Address',
+            editable: isEditable,
+            display: true,
+            validationType: 'permissionSelector',
+            isRequired: true
+        },
         { field: fieldMapping.address1,
             label: 'Mailing Address Line 1',
             editable: isEditable,
@@ -459,6 +491,13 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'address',
             isRequired: false
         },
+        { field: fieldMapping.address3,
+            label: 'Mailing Address Line 3',
+            editable: isEditable && isMailingInternational,
+            display: true,
+            validationType: 'address',
+            isRequired: false
+        },
         { field: fieldMapping.city,
             label: 'Mailing Address City',
             editable: isEditable,
@@ -467,18 +506,25 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: true
         },
         { field: fieldMapping.state,
-            label: 'Mailing Address State',
+            label: 'Mailing Address State / Region',
             editable: isEditable,
             display: true,
-            validationType: 'state',
-            isRequired: true
+            validationType: isMailingInternational ? 'none' : 'state',
+            isRequired: isMailingInternational ? false : true
         },
         { field: fieldMapping.zip,
-            label: 'Mailing Address Zip',
+            label: 'Mailing Address Zip / Postal Code',
             editable: isEditable,
             display: true,
-            validationType: 'zip',
+            validationType: isMailingInternational ? 'none' : 'zip',
             isRequired: true
+        },
+        { field: fieldMapping.country,
+            label: 'Mailing Address Country',
+            editable: isEditable && isMailingInternational,
+            display: true,
+            validationType: 'none',
+            isRequired: false
         },
         { field: fieldMapping.isPOBox,
             label: 'Mailing Address is PO Box',
@@ -500,6 +546,13 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: false,
             isHeading: true,
         },
+        { field: fieldMapping.physicalAddrIntl,
+            label: 'Physical Address is International Address',
+            editable: isEditable,
+            display: true,
+            validationType: 'permissionSelector',
+            isRequired: true
+        },
         { field: fieldMapping.physicalAddress1,
             label: 'Physical Address Line 1 (if different from mailing address)',
             editable: isEditable,
@@ -514,6 +567,13 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'address',
             isRequired: false
         },
+        { field: fieldMapping.physicalAddress3,
+            label: 'Physical Address Line 3',
+            editable: isEditable && isPhysicalInternational,
+            display: true,
+            validationType: 'address',
+            isRequired: false
+        },
         { field: fieldMapping.physicalCity,
             label: 'Physical City (if different from mailing address)',
             editable: isEditable,
@@ -522,17 +582,24 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: false
         },
         { field: fieldMapping.physicalState,
-            label: 'Physical State (if different from mailing address)',
+            label: 'Physical State / Region (if different from mailing address)',
             editable: isEditable,
             display: true,
-            validationType: 'state',
+            validationType: isPhysicalInternational ? 'none' : 'state',
             isRequired: false
         },
         { field: fieldMapping.physicalZip,
-            label: 'Physical Zip (if different from mailing address)',
+            label: 'Physical Zip / Postal Code (if different from mailing address)',
             editable: isEditable,
             display: true,
-            validationType: 'zip',
+            validationType: isPhysicalInternational ? 'none' : 'zip',
+            isRequired: false
+        },
+        { field: fieldMapping.physicalCountry,
+            label: 'Physical Address Country',
+            editable: isEditable && isPhysicalInternational,
+            display: true,
+            validationType: 'none',
             isRequired: false
         },
     ];
@@ -547,6 +614,13 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'none',
             isRequired: false,
             isHeading: true,
+        },
+        { field: fieldMapping.isIntlAltAddress,
+            label: 'Alternate Address is International Address',
+            editable: isEditable,
+            display: true,
+            validationType: 'permissionSelector',
+            isRequired: true
         },
         {
             field: fieldMapping.altAddress1,
@@ -564,6 +638,13 @@ export const getImportantRows = (participant, changedOption) => {
             validationType: 'address',
             isRequired: false,
         },
+        { field: fieldMapping.altAddress3,
+            label: 'Alternate Address Line 3',
+            editable: isEditable && isAltInternational,
+            display: true,
+            validationType: 'address',
+            isRequired: false
+        },
         {
             field: fieldMapping.altCity,
             label: 'Alternate City',
@@ -574,19 +655,26 @@ export const getImportantRows = (participant, changedOption) => {
         },
         {
             field: fieldMapping.altState,
-            label: 'Alternate State',
+            label: 'Alternate State / Region',
             editable: isEditable,
             display: true,
-            validationType: 'state',
+            validationType: isAltInternational ? 'none' : 'state',
             isRequired: false,
         },
         {
             field: fieldMapping.altZip,
-            label: 'Alternate Zip',
+            label: 'Alternate Zip / Postal Code',
             editable: isEditable,
             display: true,
-            validationType: 'zip',
+            validationType: isAltInternational ? 'none' : 'zip',
             isRequired: false,
+        },
+        { field: fieldMapping.altCountry,
+            label: 'Alternate Address Country',
+            editable: isEditable && isAltInternational,
+            display: true,
+            validationType: 'none',
+            isRequired: false
         },
         {
             field: fieldMapping.isPOBoxAltAddress,
@@ -705,7 +793,7 @@ export const getImportantRows = (participant, changedOption) => {
         },
         { field: fieldMapping.preferredLanguage,
             label: 'Preferred Language',
-            editable: (helpDesk === 'true' || coordinatingCenter === 'true') && isEditable,
+            editable: (helpDesk || coordinatingCenter) && isEditable,
             display: true,
             validationType: 'none',
             isRequired: false
@@ -823,14 +911,14 @@ export const getModalLabel = (participantKey) => {
 export const reloadParticipantData = async (token) => {
     try {
         showAnimation();
+        invalidateSearchResultsCache();
         const query = `token=${token}`;
         const response = await findParticipant(query);
 
         if (response.code === 200 && response.data && response.data[0]) {
             const participant = response.data[0];
             
-            participantState.setParticipant(participant);
-            renderParticipantDetails(participant);
+            await renderParticipantDetails(participant);
             
         } else {
             console.error('Failed to reload participant data:', response);
@@ -846,12 +934,12 @@ export const reloadParticipantData = async (token) => {
     }
 }
 
-export const resetChanges = (participant) => {
+export const resetChanges = async (participant) => {
     const cancelButtons = [document.getElementById("cancelChangesUpper"), document.getElementById("cancelChangesLower")];
 
-    const handleCancelChanges = () => {
+    const handleCancelChanges = async () => {
         if (appState.getState().hasUnsavedChanges) {
-            renderParticipantDetails(participant);
+            await renderParticipantDetails(participant);
             clearUnsaved();
             triggerNotificationBanner('Changes cancelled.', 'warning');
         }
@@ -861,22 +949,29 @@ export const resetChanges = (participant) => {
         if (button) {
             const newButton = button.cloneNode(true);
             button.parentNode.replaceChild(newButton, button);
-            newButton.addEventListener("click", handleCancelChanges);
+            newButton.addEventListener("click", async () => {
+                await handleCancelChanges();
+            });
         }
     });
 }
 
 /**
  * Handle the listeners for the login update forms
- * for login updates (email or phone), switch package and changedOption are generated from the form
- * for login removal, switch package and changedOption are generated from the participant object
+ * for login updates (email or phone), authUpdateObj and changedOption are generated from the form
+ * for login removal, authUpdateObj and changedOption are generated from the participant object
  */
-export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail, participantAuthenticationPhone, participantToken, participantUid) => {
+export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail, participantAuthenticationPhone) => {
     const createListener = (loginType) => {
         const typeName = capitalizeFirstLetter(loginType);
         return () => {
-            const header = document.getElementById('modalHeader');
-            const body = document.getElementById('modalBody');
+            const modal = document.getElementById('modalShowMoreData');
+            const header = modal?.querySelector('#modalHeader');
+            const body = modal?.querySelector('#modalBody');
+            if (!header || !body) {
+                triggerNotificationBanner('Error opening edit modal. Please refresh and try again.', 'danger');
+                return;
+            }
             header.innerHTML = `
                 <h5>${typeName} Login</h5>
                 <button type="button" class="modal-close-btn" data-dismiss="modal" id="closeModal" aria-label="Close">
@@ -899,9 +994,9 @@ export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail,
             if (formResponse) {
                 formResponse.addEventListener('submit', async (e) => {
                     e.preventDefault();
-                    const { switchPackage, changedOption } = getUpdatedAuthenticationFormValues(participantAuthenticationEmail, participantAuthenticationPhone);
-                    if (switchPackage && changedOption) {
-                        await processParticipantLoginMethod(participantAuthenticationEmail, participantToken, participantUid, switchPackage, changedOption, 'update');
+                    const { authUpdateObj, changedOption } = getUpdatedAuthenticationFormValues(participantAuthenticationEmail, participantAuthenticationPhone);
+                    if (authUpdateObj && changedOption) {
+                        await processParticipantLoginMethod(participantAuthenticationEmail, authUpdateObj, changedOption, 'update');
                     }
                 });
             }
@@ -910,7 +1005,7 @@ export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail,
                 const removeEmailLoginBtn = document.getElementById('removeUserLoginEmail');
                 if (removeEmailLoginBtn) {
                     removeEmailLoginBtn.addEventListener('click', async () => {
-                        await processParticipantLoginMethod(participantAuthenticationEmail, participantToken, participantUid, {}, {}, 'removeEmail');
+                        await processParticipantLoginMethod(participantAuthenticationEmail, {}, {}, 'removeEmail');
                     });
                 }
             }
@@ -919,7 +1014,7 @@ export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail,
                 const removePhoneLoginBtn = document.getElementById('removeUserLoginPhone');
                 if (removePhoneLoginBtn) {
                     removePhoneLoginBtn.addEventListener('click', async () => {
-                        await processParticipantLoginMethod(participantAuthenticationEmail, participantToken, participantUid, {}, {}, 'removePhone');
+                        await processParticipantLoginMethod(participantAuthenticationEmail, {}, {}, 'removePhone');
                     });
                 }
 
@@ -989,7 +1084,7 @@ const capitalizeFirstLetter = (string) => {
 };
 
 const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, participantAuthenticationPhone) => {
-    const switchPackage = {};
+    const authUpdateObj = {};
     const changedOption = {};
     const phoneField = document.getElementById('newPhone');
     const emailField = document.getElementById('newEmail');
@@ -1001,8 +1096,8 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
         let cleanedPhoneNumber = phoneField.value.toString();
         if (cleanedPhoneNumber.startsWith('+1')) cleanedPhoneNumber = cleanedPhoneNumber.substring(2);
         cleanedPhoneNumber = cleanedPhoneNumber.replace(/\D/g, '').trim();
-        switchPackage['phone'] = cleanedPhoneNumber;
-        switchPackage['flag'] = 'updatePhone';
+        authUpdateObj['phone'] = cleanedPhoneNumber;
+        authUpdateObj['flag'] = 'updatePhone';
         changedOption[fieldMapping.signInMechanism] = 'phone';
         changedOption[fieldMapping.accountPhone] = `+1`+ cleanedPhoneNumber;
     } else if (emailField &&  emailField.value === document.getElementById('confirmEmail').value) {
@@ -1010,8 +1105,8 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
             alert('Invalid email format. Please enter a valid email address in the format: abc@example.com');
             return {}, {};
         }
-        switchPackage['email'] = emailField.value;
-        switchPackage['flag'] = 'updateEmail';
+        authUpdateObj['email'] = emailField.value;
+        authUpdateObj['flag'] = 'updateEmail';
         changedOption[fieldMapping.signInMechanism] = 'password';
         changedOption[fieldMapping.accountEmail] = emailField.value;
     } else {
@@ -1023,54 +1118,98 @@ const getUpdatedAuthenticationFormValues = (participantAuthenticationEmail, part
         changedOption[fieldMapping.signInMechanism] = 'passwordAndPhone';
     }
 
-    return { switchPackage, changedOption };
+    return { authUpdateObj, changedOption };
 }
 
-const getLoginRemovalSwitchPackage = (processType, participantAuthenticationEmail, participantUid) => {
-    const switchPackage = {};
-    const changedOption = {};
+const getLoginRemovalAuthData = (processType, participantAuthenticationEmail, participantUid) => {
+    const removalAuthData = {};
+    const removalChangedData = {};
     if (processType === 'removeEmail') {
         const placeholderForEmailRemoval = `noreply${participantUid}@NCI-C4CP.github.io`;
-        switchPackage['email'] = placeholderForEmailRemoval;
-        switchPackage['flag'] = 'updateEmail';
-        changedOption[fieldMapping.accountEmail] = placeholderForEmailRemoval;
-        changedOption[fieldMapping.signInMechanism] = 'phone';
+        removalAuthData['email'] = placeholderForEmailRemoval;
+        removalAuthData['flag'] = 'updateEmail';
+        removalChangedData[fieldMapping.accountEmail] = placeholderForEmailRemoval;
+        removalChangedData[fieldMapping.signInMechanism] = 'phone';
     } else if (processType === 'removePhone') {
-        switchPackage['email'] = participantAuthenticationEmail;
-        switchPackage['flag'] = 'replaceSignin';
-        changedOption[fieldMapping.accountPhone] = '';
-        changedOption[fieldMapping.signInMechanism] = 'password';
+        removalAuthData['email'] = participantAuthenticationEmail;
+        removalAuthData['flag'] = 'replaceSignin';
+        removalChangedData[fieldMapping.accountPhone] = '';
+        removalChangedData[fieldMapping.signInMechanism] = 'password';
     }
-    return { switchPackage, changedOption };
+    return { removalAuthData, removalChangedData };
 };
 
 /**
  * Process the participant's login method
  * Possibilities include: update email, update phone, remove email, remove phone
  * Removal of one auth method is only possible if the participant has both an email and phone login
- * For update operations: Switch package is populated from the form and passed in
- * For removal operations: Switch package is populated inside this function based on current login information
+ * For update operations: authUpdateObj is populated from the form and passed in
+ * For removal operations: authUpdateObj is populated inside this function based on current login information
  * Post updated login data to Firebase Auth. On success, also post updated login data to Firestore
  * @param {string} participantAuthenticationEmail - the participant's current email login 
- * @param {string} participantToken - the participant's current token
- * @param {string} participantUid - the participant's current uid
- * @param {object} switchPackage - the data object sent to firebaseAuth to update the participant's login method
+ * @param {object} authUpdateObj - the data object sent to firebaseAuth to update the participant's login method
  * @param {object} changedOption - the data object sent to firestore to update the participant's login data
  * @param {string} processType - the type of process to be performed -> update, removeEmail, removePhone
  */
-const processParticipantLoginMethod = async (participantAuthenticationEmail, participantToken, participantUid, switchPackage, changedOption, processType) => {        
+const processParticipantLoginMethod = async (participantAuthenticationEmail, authUpdateObj, changedOption, processType) => {
+    const participant = participantState.getParticipant();
+    const participantUid = participant['state']['uid'];
+    const participantToken = participant['token'];
+    authUpdateObj['uid'] = participantUid;
+    changedOption['token'] = participantToken;
+
     if (processType === 'removeEmail' || processType === 'removePhone') {
-        ({switchPackage, changedOption} = getLoginRemovalSwitchPackage(processType, participantAuthenticationEmail, participantUid));
+        
+        // Validate that we have the required email for removal operations
+        if (processType === 'removePhone' && !participantAuthenticationEmail) {
+            throw new Error('Cannot remove phone login: participant authentication email is required');
+        }
+        
+        // Get the removal-specific data and merge it with existing objects
+        const { removalAuthData, removalChangedData } = getLoginRemovalAuthData(processType, participantAuthenticationEmail, participantUid);
+        
+        // Merge removal data with existing objects instead of overwriting
+        Object.assign(authUpdateObj, removalAuthData);
+        Object.assign(changedOption, removalChangedData);
     }
 
-    const confirmation = confirm('Are you sure want to continue with this update?');
+    const confirmation = confirm('Are you sure you want to continue with this update?');
     if (confirmation) {
-        showAnimation();
         try {
-            switchPackage['uid'] = participantUid;
-            changedOption['token'] = participantToken;
+            showAnimation();
+            const isParticipantConsented = participant[fieldMapping.consentFlag] === fieldMapping.yes;
+            if (isParticipantConsented) {
+                if (primaryPhoneTypes.some(phoneKey => phoneKey in changedOption)) {
+                    changedOption = handleQueryArrayField(
+                        primaryPhoneTypes,
+                        'query.allPhoneNo',
+                        normalizePhoneForQuery,
+                        changedOption,
+                        participant
+                    );
+                }
+                if (primaryEmailTypes.some(emailKey => emailKey in changedOption)) {
+                    changedOption = handleQueryArrayField(
+                        primaryEmailTypes,
+                        'query.allEmails',
+                        normalizeEmailForQuery,
+                        changedOption,
+                        participant,
+                        (val) => !val.startsWith('noreply')
+                    );
+                }
+            }
+
+            // Validate required fields
+            if (!authUpdateObj.uid) {
+                throw new Error('Missing uid in auth update payload');
+            }
+            if (!authUpdateObj.flag) {
+                throw new Error('Missing flag in auth update payload');
+            }
+
             const url = `${baseAPI}/dashboard?api=updateUserAuthentication`;
-            const signinMechanismPayload = { "data": switchPackage };
+            const signinMechanismPayload = { "data": authUpdateObj };
             
             const idToken = await getIdToken();
             const response = await postLoginData(url, signinMechanismPayload, idToken);
@@ -1078,24 +1217,28 @@ const processParticipantLoginMethod = async (participantAuthenticationEmail, par
 
             if (response.status === 200) {
                 const updateResult = await updateParticipantFirestoreProfile(changedOption, idToken);
-                hideAnimation();
                 if (!updateResult) {
                     showAuthUpdateAPIError('modalBody', "IMPORTANT: There was an error updating the participant's profile.\n\nPLEASE PROCESS THE OPERATION AGAIN.");
                     console.error('Failed to update participant Firestore profile');
+
                 } else {
-                    await updateUIOnAuthResponse(switchPackage, changedOption, responseJSON, response.status);
-                }   
+                    await updateUIOnAuthResponse(changedOption, responseJSON, response.status);
+                }
+
             } else {
-                hideAnimation();
                 showAuthUpdateAPIError('modalBody', responseJSON.message);
             }
+
         } catch (error) {
-            hideAnimation();
             console.error(error);
             showAuthUpdateAPIError('modalBody', 'Operation Unsuccessful!');
+
+        } finally {
+            hideAnimation();
         }
     }
 }
+
 
 /**
  * Package the updated participant login data to firestore
@@ -1118,7 +1261,7 @@ const updateParticipantFirestoreProfile = async (updatedOptions, bearerToken) =>
         return true;
     } else { 
         hideAnimation();
-        console.error(`Error in updating participant data (updateParticipantFirestoreProfile()): ${responseJSON.error}`);
+        console.error(`Error in updating participant data (updateParticipantFirestoreProfile()): ${responseJSON.error || responseJSON.message || 'Unknown error'}`);
         return false;
     }
 }
@@ -1139,7 +1282,7 @@ const postLoginData = async (url = '', data = {}, bearerToken) => {
     }
 }
 
-const updateUIOnAuthResponse = async (switchPackage, changedOption, responseData, status) => {
+const updateUIOnAuthResponse = async (changedOption, responseData, status) => {
     hideAnimation();
 
     if (status === 200) {
@@ -1166,14 +1309,37 @@ const showAuthUpdateAPIAlert = (type, message) => {
 }
 
 const showAuthUpdateAPIError = (bodyId, message) => {
-    const body = document.getElementById(bodyId);
+    const modal = document.getElementById('modalShowMoreData');
+    const body = modal?.querySelector(`#${bodyId}`) || document.getElementById(bodyId);
+    if (!body) return false;
     body.innerHTML = `<div>${message}</div>`;
     return false;
 }
 
-export const updateParticipantAfterFormSave = (participant, changedUserDataForProfile) => {
-    const updatedParticipant = { ...participant, ...changedUserDataForProfile };
-    appState.setState({ participant: updatedParticipant });
+export const updateParticipantAfterFormSave = async (participant, changedUserDataForProfile) => {
+    const updatedParticipant = { ...participant };
+
+    // Handles nested keys instead of shallow merge with ...changedUserDataForProfile
+    Object.entries(changedUserDataForProfile).forEach(([key, value]) => {
+        if (typeof key === 'string' && key.includes('.')) {
+            const pathSegments = key.split('.');
+            const finalKey = pathSegments[pathSegments.length - 1];
+            let target = updatedParticipant;
+            for (let i = 0; i < pathSegments.length - 1; i++) {
+                const segment = pathSegments[i];
+                const currentValue = target[segment];
+                if (typeof currentValue !== 'object' || currentValue === null) {
+                    target[segment] = {};
+                }
+                target = target[segment];
+            }
+            target[finalKey] = value;
+        } else {
+            updatedParticipant[key] = value;
+        }
+    });
+
+    await participantState.setParticipant(updatedParticipant);
     return updatedParticipant;
 }
 
@@ -1235,8 +1401,8 @@ export const saveResponses = (participant, changedOption, editedElement, concept
                     closeModal();
 
                     // Reattach event listeners after each edit and mark unsaved participant data changes
-                    requestAnimationFrame(() => {
-                        renderParticipantDetails(participant, changedOption);
+                    requestAnimationFrame(async () => {
+                        await renderParticipantDetails(participant, changedOption, null, { preserveScrollPosition: true });
                         submitClickHandler(participant, changedOption);
 
                         addFormInputFormattingListeners();
@@ -1257,8 +1423,8 @@ export const saveResponses = (participant, changedOption, editedElement, concept
                     }
 
                     // Re-render to remove dirty indicators from the field.
-                    requestAnimationFrame(() => {
-                        renderParticipantDetails(participant, changedOption);
+                    requestAnimationFrame(async () => {
+                        await renderParticipantDetails(participant, changedOption, null, { preserveScrollPosition: true });
                         submitClickHandler(participant, changedOption);
                     });
                 }
@@ -1277,7 +1443,10 @@ const forceDataTypesForFirestore = (changedOption) => {
         fieldMapping.voicemailOther,
         fieldMapping.preferredLanguage,
         fieldMapping.isPOBox,
-        fieldMapping.isPOBoxAltAddress
+        fieldMapping.isPOBoxAltAddress,
+        fieldMapping.isIntlAddr,
+        fieldMapping.physicalAddrIntl,
+        fieldMapping.isIntlAltAddress
     ];
     
     const fieldsToString = [
@@ -1638,8 +1807,8 @@ export const viewParticipantSummary = (participant) => {
     const viewSummaryBtn = document.getElementById('viewSummary');
     if (viewSummaryBtn) {
         viewSummaryBtn.addEventListener('click',  () => {
-            // Router handles fetching reports and rendering
-            window.location.hash = '#participantSummary';
+            // Router handles fetching reports and rendering - navigate to summary tab
+            window.location.hash = '#participantDetails/summary';
         })
     }
 }
@@ -1656,12 +1825,11 @@ const cleanPhoneNumber = (changedOption) => {
 const firstNameTypes = [fieldMapping.consentFirstName, fieldMapping.fName, fieldMapping.prefName];
 const lastNameTypes = [fieldMapping.consentLastName, fieldMapping.lName];
 
-// Only primary phone types go to User Profile history.
-export const primaryPhoneTypes = [fieldMapping.cellPhone, fieldMapping.homePhone, fieldMapping.otherPhone];
-// All phone types get cleaned for Firestore.
+// Only primary phone types go to the query.allPhoneNo array (used for participant search). All phone types get cleaned for Firestore.
+// Edge case: Account phone number (Firebase Auth login) retains the +1 prefix in the participant profile, but not in the query.allPhoneNo array.
+export const primaryPhoneTypes = [fieldMapping.cellPhone, fieldMapping.homePhone, fieldMapping.otherPhone, fieldMapping.accountPhone];
 const allPhoneTypes = [...primaryPhoneTypes, fieldMapping.altContactMobilePhone, fieldMapping.altContactHomePhone];
-
-const emailTypes = [fieldMapping.prefEmail, fieldMapping.email1, fieldMapping.email2];
+const primaryEmailTypes = [fieldMapping.accountEmail, fieldMapping.prefEmail, fieldMapping.email1, fieldMapping.email2];
 
 /**
  * Process the user's update and submit the new user data to Firestore.
@@ -1695,21 +1863,62 @@ export const submitClickHandler = async (participant, changedOption) => {
                 showAnimation();
 
                 let { changedUserDataForProfile, changedUserDataForHistory } = findChangedUserDataValues(changedOption, participant);
-                if (firstNameTypes.some(firstNameKey => firstNameKey in changedUserDataForProfile)) changedUserDataForProfile = handleNameField(firstNameTypes, 'firstName', changedUserDataForProfile, participant);
-                if (lastNameTypes.some(lastNameKey => lastNameKey in changedUserDataForProfile)) changedUserDataForProfile = handleNameField(lastNameTypes, 'lastName', changedUserDataForProfile, participant);
-                if (primaryPhoneTypes.some(phoneKey => phoneKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllPhoneNoField(changedUserDataForProfile, participant);
-                if (emailTypes.some(emailKey => emailKey in changedUserDataForProfile)) changedUserDataForProfile = handleAllEmailField(changedUserDataForProfile, participant);
+                if (firstNameTypes.some(firstNameKey => firstNameKey in changedUserDataForProfile)) {
+                    changedUserDataForProfile = handleQueryArrayField(
+                        firstNameTypes,
+                        'query.firstName',
+                        normalizeNameForQuery,
+                        changedUserDataForProfile,
+                        participant
+                    );
+                }
+                if (lastNameTypes.some(lastNameKey => lastNameKey in changedUserDataForProfile)) {
+                    changedUserDataForProfile = handleQueryArrayField(
+                        lastNameTypes,
+                        'query.lastName',
+                        normalizeNameForQuery,
+                        changedUserDataForProfile,
+                        participant
+                    );
+                }
+
+                // There isn't currently a likely case where a participant has not consented and other profile data is being updated.
+                // However, these two arrays will not exist or be created/updated pre-consent, so this check is a safeguard.
+                const isParticipantConsented = participant[fieldMapping.consentFlag] === fieldMapping.yes;
+                if (isParticipantConsented) {
+                    if (primaryPhoneTypes.some(phoneKey => phoneKey in changedUserDataForProfile)) {
+                        changedUserDataForProfile = handleQueryArrayField(
+                            primaryPhoneTypes,
+                            'query.allPhoneNo',
+                            normalizePhoneForQuery,
+                            changedUserDataForProfile,
+                            participant
+                        );
+                    }
+                    if (primaryEmailTypes.some(emailKey => emailKey in changedUserDataForProfile)) {
+                        changedUserDataForProfile = handleQueryArrayField(
+                            primaryEmailTypes,
+                            'query.allEmails',
+                            normalizeEmailForQuery,
+                            changedUserDataForProfile,
+                            participant,
+                            (val) => !val.startsWith('noreply')
+                        );
+                    }
+                }
                 
                 const isSuccess = await processUserDataUpdate(changedUserDataForProfile, changedUserDataForHistory, participant[fieldMapping.userProfileHistory], participant.state.uid, adminUserEmail, isParticipantVerified);
                 if (!isSuccess) {
                     throw new Error('Error: There was an error processing your changes. Please try again.');
                 }
 
-                clearUnsaved()
+                invalidateSearchResultsCache();
+                clearUnsaved();
                 triggerNotificationBanner('Success! Changes Saved.', 'success');
 
-                const updatedParticipant = updateParticipantAfterFormSave(participant, changedUserDataForProfile);
-                renderParticipantDetails(updatedParticipant);
+                const updatedParticipant = await updateParticipantAfterFormSave(participant, changedUserDataForProfile);
+                const resetChanges = {};
+                await renderParticipantDetails(updatedParticipant, resetChanges, 'details', { preserveScrollPosition: true });
 
             } catch (error) {
                 console.error('Error:', error);
@@ -1722,88 +1931,73 @@ export const submitClickHandler = async (participant, changedOption) => {
     }
 };
 
+const compareArraysIgnoreOrder = (a = [], b = []) => {
+    if (a.length !== b.length) return false;
+    const setA = new Set(a);
+    for (const val of b) {
+        if (!setA.has(val)) return false;
+    }
+    return true;
+};
+
 /**
- * Handle the query.frstName and query.lastName fields.
- * Check changedUserDataForProfile the participant profile for all name types. If a name is in changedUserDataForProfile, Add it to the queryNameArray.
- * Else, check the existing participant profile and add that to the queryNameArray.
- * If a nameType is an empty string in changedUserData, don't add it to the queryNameArray even if it exists in the participant profile. The empty string means the participant wants the name removed.
- * Lastly, remove duplicates. This happens when consent name matches the first or last name.
- * @param {array} nameTypes - array of name types to check.
- * @param {string} fieldName - the name of the field to update.
- * @param {object} changedUserDataForProfile - the changed user data.
- * @param {object} participant - the existing participant object.
+ * Remove +1 prefix, keep only 10 digits for consistent search experience
+ * @param {string} phoneNumber - phone number with or without +1 prefix
+ * @returns {string} - 10-digit phone number for search
  */
-const handleNameField = (nameTypes, fieldName, changedUserDataForProfile, participant) => {
-    const queryNameArray = [];
-    nameTypes.forEach(nameType => {
-        if (changedUserDataForProfile[nameType]) {
-            queryNameArray.push(changedUserDataForProfile[nameType].toLowerCase());
-        } else if (participant[nameType] && changedUserDataForProfile[nameType] !== '') {
-            queryNameArray.push(participant[nameType].toLowerCase());
+const normalizePhoneForQuery = (phoneNumber) => {
+    if (!phoneNumber) return '';
+    // Remove +1 prefix and any non-digit characters, then take last 10 digits
+    const digits = phoneNumber.replace(/\D/g, '');
+    return digits.length >= 10 ? digits.slice(-10) : digits;
+};
+
+const normalizeEmailForQuery = (email) => {
+    return (email || '').trim().toLowerCase();
+};
+
+const normalizeNameForQuery = (name) => {
+    return (name || '').trim().toLowerCase();
+};
+
+/**
+ * Build a query array from: `changed` (if provided) otherwise from `participant`
+ * Empty strings and falsy values are skipped; uniqueness enforced via Set
+ */
+const buildQueryArray = (participant, changed, types, normalizeFn, filterFn) => {
+    const values = new Set();
+    types.forEach((fieldType) => {
+        if (Object.prototype.hasOwnProperty.call(changed, fieldType)) {
+            const raw = changed[fieldType];
+            if (raw) {
+                const normalized = normalizeFn(raw);
+                if (normalized && (!filterFn || filterFn(normalized))) values.add(normalized);
+            }
+        } else if (participant && participant[fieldType]) {
+            const normalized = normalizeFn(participant[fieldType]);
+            if (normalized && (!filterFn || filterFn(normalized))) values.add(normalized);
         }
     });
+    return Array.from(values);
+};
 
-    const uniqueNameArray = Array.from(new Set(queryNameArray));
+// Handler to keep query.* arrays in sync with profile changes
+const handleQueryArrayField = (types, queryKey, normalizeFn, changedUserDataForProfile, participant, filterFn = null) => {
+    const [rootKey, arrayKey] = queryKey.split('.');
+    const existingArray = rootKey && arrayKey && Array.isArray(participant?.[rootKey]?.[arrayKey])
+        ? participant[rootKey][arrayKey]
+        : [];
 
-    changedUserDataForProfile[`query.${fieldName}`] = uniqueNameArray;
+    const nextArray = buildQueryArray(participant, changedUserDataForProfile, types, normalizeFn, filterFn);
+
+    if (!compareArraysIgnoreOrder(nextArray, existingArray)) {
+        changedUserDataForProfile[queryKey] = nextArray;
+    }
 
     return changedUserDataForProfile;
 };
 
 /**
- * Handle the allPhoneNo field in the user profile
- * If a number is in the changedUserDataForProfile, the participant has added this phone number. Add it to the allPhoneNo field.
- * Then check the userData profile for an existing value at the field being updated. The participant is updating this phone number. Remove it from the allPhoneNo field.
- * If an empty string is in the changedUserDataForProfile, the participant has removed this phone number. Remove it from the allPhoneNo field.
- */
-const handleAllPhoneNoField = (changedUserDataForProfile, participant) => {
-    const allPhoneNo = participant.query.allPhoneNo ?? [];
-    
-    primaryPhoneTypes.forEach(phoneType => {
-      if (changedUserDataForProfile[phoneType] && !allPhoneNo.includes(changedUserDataForProfile[phoneType])) {
-        allPhoneNo.push(changedUserDataForProfile[phoneType]);
-      }
-  
-      if (changedUserDataForProfile[phoneType] || changedUserDataForProfile[phoneType] === '') {
-        const indexToRemove = allPhoneNo.indexOf(participant[phoneType]);  
-        if (indexToRemove !== -1) {
-          allPhoneNo.splice(indexToRemove, 1);
-        }  
-      }
-    });
-  
-    changedUserDataForProfile['query.allPhoneNo'] = allPhoneNo;
-    
-    return changedUserDataForProfile;
-  };
-  
-  /**
-   * Handle the allEmails field in the user profile
-   * If an email is in the changedUserDataForProfile, the participant has added this email. Add it to the allEmails field.
-   * If an email is in the changedUserDataForHistory, the participant has removed this email. Remove it from the allEmails field.
-   */
-  const handleAllEmailField = (changedUserDataForProfile, participant) => {
-    const allEmails = participant.query.allEmails ?? [];
-  
-    emailTypes.forEach(emailType => {
-      if (changedUserDataForProfile[emailType] && !allEmails.includes(changedUserDataForProfile[emailType])) {
-        allEmails.push(changedUserDataForProfile[emailType].trim()?.toLowerCase());
-      }
-  
-      if (changedUserDataForProfile[emailType] || changedUserDataForProfile[emailType] === '') {
-        const indexToRemove = allEmails.indexOf(participant[emailType]);  
-        if (indexToRemove !== -1) {
-          allEmails.splice(indexToRemove, 1);
-        }  
-      }
-    });
-  
-    changedUserDataForProfile['query.allEmails'] = allEmails;
-    
-    return changedUserDataForProfile;
-  };
-
-  /**
  * Iterate the new values, compare them to existing values, and return the changed values.
  * write an empty string to firestore if the history value is null/undefined/empty
  * write an empty string to firestore if the profile value is null/undefined/empty 

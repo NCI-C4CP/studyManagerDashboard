@@ -1,4 +1,3 @@
-import { updateNavBar } from "./navigationBar.js";
 import {
   getIdToken,
   hideAnimation,
@@ -8,96 +7,168 @@ import {
   baseAPI,
 } from "./utils.js";
 import { renderParticipantHeader } from "./participantHeader.js";
-import { navigateBackToSearchResults } from "./participantLookup.js";
 import conceptIds from "./fieldToConceptIdMapping.js";
+
+/**
+ * Render pathology report upload content for use in a tab
+ * @param {object} participant - The participant object
+ * @returns {Promise<string>} HTML string for pathology tab content
+ */
+export const renderPathologyTabContent = async (participant) => {
+    if (!participant) {
+        return '<div class="alert alert-warning">No participant data available</div>';
+    }
+
+    // Check if participant is allowed to upload
+    const isAllowedToUpload =
+        participant[conceptIds.verifiedFlag] === conceptIds.verified &&
+        participant[conceptIds.consentFlag] === conceptIds.yes &&
+        participant[conceptIds.hipaaFlag] === conceptIds.yes &&
+        participant[conceptIds.withdrawConsent] === conceptIds.no &&
+        participant[conceptIds.revokeHIPAA] === conceptIds.no &&
+        participant[conceptIds.destroyData] === conceptIds.no;
+
+    if (!isAllowedToUpload) {
+        let displayedMsg = "Participant does not meet the criteria for uploading pathology reports.";
+        if (participant[conceptIds.destroyData] === conceptIds.yes) {
+            displayedMsg = "This participant has requested data destruction. Pathology reports cannot be uploaded and any previously uploaded reports have been deleted.";
+        }
+        return `<div class="alert alert-warning"><h4>${displayedMsg}</h4></div>`;
+    }
+
+    Connect_ID = participant?.Connect_ID;
+    siteAcronym = conceptToSiteMapping[participant?.[conceptIds.healthcareProvider]];
+
+    if (!siteAcronym) {
+        return `<div class="alert alert-warning">Invalid healthcare provider for this participant.</div>`;
+    }
+
+    // Initialize file state
+    fileState = {
+        tobeSelectedDuplicate: [],
+        selected: [],
+        tobeUploadedDuplicate: [],
+        tobeUploaded: [],
+        filenamesUploaded: [],
+        stage: "select",
+    };
+
+    const content = `
+        ${renderParticipantHeader(participant)}
+        <div id="alert_placeholder"></div>
+        <h3 style="text-align: center;">Select Pathology Reports</h3>
+        <form id="uploadForm" enctype="multipart/form-data" style="margin-bottom: 18px;">
+            <input type="file" id="fileInput" name="files" style="display: none;" multiple>
+            <div style="display: flex; align-items: stretch; gap: 18px;">
+                <div style="flex: 1 1 auto;">
+                    <div id="dropBox">
+                        <div style="color:#888; font-size:1.1rem; margin-bottom:8px;" id="dropHint">
+                            Drop files here for uploading
+                            <br>
+                            Or <a href="#" id="selectFilesLink" style="color:#1976d2; text-decoration:none;">choose your files</a>
+                        </div>
+                        <div id="selectedFileNames"></div>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+                    <button type="submit" class="btn btn-primary" id="uploadBtn" disabled style="margin-top:0;">
+                        Upload
+                    </button>
+                </div>
+            </div>
+        </form>
+        <div id="uploadedFilesWrapper" style="margin-top: 24px; display: none;">
+            <h3 style="text-align: center;">All Uploaded Reports</h3>
+            <div id="uploadedFilesBox" style="border: 2px solid #0078d7; padding: 15px; border-radius: 0.5rem; background: #f8faff">
+                <div id="uploadedFilesNames"></div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="warningModal" tabindex="-1" role="dialog" aria-labelledby="warningModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content" style="border-radius:8px;">
+                    <div class="modal-header" style="border-bottom:none; background-color:#fff3cd">
+                        <h5 class="modal-title" id="warningModalLabel" style="color:black; border-radius:4px; padding:6px 12px;">Duplicate Selection</h5>
+                    </div>
+                    <div class="modal-body" style="text-align:left;">
+                        <div id="duplicateFilesWarning"></div>
+                    </div>
+                    <div class="modal-footer" style="border-top:none; justify-content:center;">
+                        <button id="replaceBtn" class="btn btn-warning" style="margin-right:12px;">Replace</button>
+                        <button id="cancelBtn" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Schedule event handlers and data loading to run after DOM is updated
+    requestAnimationFrame(async () => {
+        await getUploadedPathologyReportNames();
+        setupPathologyEventListeners();
+    });
+
+    return content;
+};
 
 let fileState = {};
 let Connect_ID, siteAcronym;
 
-const setupPathologyReportUploadPage = (participantData) => {
-  return `
-    <div class="container" id="pathologyReportUploadPage">
-      <div id="alert_placeholder"></div>
-        ${renderParticipantHeader(participantData)}
-            <div class="row">
-                <div class="col-md-12">
-                    <h3 style="text-align: center;">Select Pathology Reports</h3>
-                    <form id="uploadForm" enctype="multipart/form-data" style="margin-bottom: 18px;">
-                        <input type="file" id="fileInput" name="files" style="display: none;" multiple>
-                        <div style="display: flex; align-items: stretch; gap: 18px;">
-                            <div style="flex: 1 1 auto;">
-                                <div id="dropBox">
-                                    <div style="color:#888; font-size:1.1rem; margin-bottom:8px;" id="dropHint">
-                                    Drop files here for uploading
-                                    <br>
-                                Or <a href="#" id="selectFilesLink" style="color:#1976d2; text-decoration:none;">choose your files</a>
-                                </div>
-                                <div id="selectedFileNames"></div>
-                            </div>
-                        </div>
-                        <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-                            <button type="submit" class="btn btn-primary" id="uploadBtn" disabled style="margin-top:0;">
-                                Upload
-                            </button>
-                            <button type="button" class="btn btn-info" id="backToSearchBtn" style="margin-top:1rem;">
-                                Back to Search
-                            </button>
-                        </div>
-                    </div>
-                </form>
-                <div id="uploadedFilesWrapper" style="margin-top: 24px; display: none;">
-                  <h3 style="text-align: center;">All Uploaded Reports</h3>
-                  <div id="uploadedFilesBox" style="border: 2px solid #0078d7; padding: 15px; border-radius: 0.5rem; background: #f8faff">
-                      <div id="uploadedFilesNames"></div>
-                  </div>
-                </div>
-
-                <div class="modal fade" id="warningModal" tabindex="-1" role="dialog" aria-labelledby="warningModalLabel" aria-hidden="true">
-                  <div class="modal-dialog modal-dialog-centered" role="document">
-                    <div class="modal-content" style="border-radius:8px;">
-                      <div class="modal-header" style="border-bottom:none; background-color:#fff3cd">
-                        <h5 class="modal-title" id="warningModalLabel" style="color:black; border-radius:4px; padding:6px 12px;">Duplicate Selection</h5>
-                      </div>
-                      <div class="modal-body" style="text-align:left;">
-                        <div id="duplicateFilesWarning"></div>
-                      </div>
-                      <div class="modal-footer" style="border-top:none; justify-content:center;">
-                        <button id="replaceBtn" class="btn btn-warning" style="margin-right:12px;">Replace</button>
-                        <button id="cancelBtn" class="btn btn-secondary">Cancel</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    `;
+const getBootstrapModalInstance = (modalEl) => {
+  if (!window.bootstrap?.Modal) return null;
+  if (typeof bootstrap.Modal.getOrCreateInstance === "function") {
+    return bootstrap.Modal.getOrCreateInstance(modalEl);
+  }
+  if (typeof bootstrap.Modal.getInstance === "function") {
+    return bootstrap.Modal.getInstance(modalEl);
+  }
+  return null;
 };
 
-const showNotAllowedToUpload = (participantData) => {
-  let displayedMsg = "Participant does not meet the criteria for uploading pathology reports.";
-  if (participantData[conceptIds.destroyData] === conceptIds.yes) {
-    displayedMsg = "This participant has requested data destruction. Pathology reports cannot be uploaded and any previously uploaded reports have been deleted.";
+const showWarningModal = () => {
+  const modalEl = document.getElementById("warningModal");
+  if (!modalEl) return;
+
+  const modalInstance = getBootstrapModalInstance(modalEl);
+  if (modalInstance?.show) {
+    modalInstance.show();
+    return;
   }
 
-  const mainContent = document.getElementById("mainContent");
-  mainContent.innerHTML = `
-    <div class="container">
-      ${renderParticipantHeader(participantData)}
-      <div class="text-center">
-        <h4>${displayedMsg}</h4>
-      </div>
-      <div class="text-center">
-        <button type="button" class="btn btn-info mt-1" id="backToSearchBtn">Back to Search</button>
-      </div>
-    </div>
-  `;
+  modalEl.classList.add("show");
+  modalEl.style.display = "block";
+  modalEl.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
 
-  document.querySelector("#backToSearchBtn").addEventListener("click", () => {
-    navigateBackToSearchResults().catch((error) => {
-      console.error('Error navigating back to search results:', error);
-    });
-  });
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop fade show";
+  backdrop.id = "warningModalBackdrop";
+  document.body.appendChild(backdrop);
+  modalEl.dataset.warningBackdropId = backdrop.id;
+};
+
+const hideWarningModal = () => {
+  const modalEl = document.getElementById("warningModal");
+  if (!modalEl) return;
+
+  const modalInstance = getBootstrapModalInstance(modalEl);
+  if (modalInstance?.hide) {
+    modalInstance.hide();
+    return;
+  }
+
+  modalEl.classList.remove("show");
+  modalEl.style.display = "none";
+  modalEl.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+  document.body.style.removeProperty("padding-right");
+
+  const backdropId = modalEl.dataset.warningBackdropId;
+  if (backdropId) {
+    document.getElementById(backdropId)?.remove();
+    delete modalEl.dataset.warningBackdropId;
+  }
+  document.querySelectorAll(".modal-backdrop").forEach((el) => el.remove());
 };
 
 const refreshSelectedFiles = () => {
@@ -187,10 +258,10 @@ const addNewFiles = (newFiles) => {
   }
 
   if (invalidFileArray.length > 0) {
-    alert(
-      `The following file names should start with Connect ID (${Connect_ID}):\n` +
-        invalidFileArray.map((f) => f.name).join("\n")
-    );
+    const wrongName = invalidFileArray.filter((f) => !f.name.startsWith(Connect_ID));
+    if (wrongName.length) {
+      alert(`File names must start with Connect ID (${Connect_ID}). Invalid: ${wrongName.map((f) => f.name).join(", ")}`);
+    }
   }
 
   if (fileState.tobeSelectedDuplicate.length > 0) {
@@ -211,10 +282,7 @@ const addNewFiles = (newFiles) => {
     });
     warningDiv.appendChild(listEle);
 
-    // Todo: Remove JQuery after migration to Bootstrap 5
-    // const modal = new bootstrap.Modal("#warningModal", { backdrop: "static", keyboard: false });
-    // modal.show();
-    $("#warningModal").modal({ backdrop: "static", keyboard: false });
+    showWarningModal();
   }
 
   if (fileState.selected.length > selecteFileCount) {
@@ -303,151 +371,126 @@ const getUploadedPathologyReportNames = async () => {
   hideAnimation();
 };
 
-export const renderPathologyReportUploadPage = async (participantData) => {
-  updateNavBar('pathologyReportUploadBtn');
-
-  const isAllowedToUpload =
-    participantData[conceptIds.verifiedFlag] === conceptIds.verified &&
-    participantData[conceptIds.consentFlag] === conceptIds.yes &&
-    participantData[conceptIds.hipaaFlag] === conceptIds.yes &&
-    participantData[conceptIds.withdrawConsent] === conceptIds.no &&
-    participantData[conceptIds.revokeHIPAA] === conceptIds.no &&
-    participantData[conceptIds.destroyData] === conceptIds.no;
-
-  if (!isAllowedToUpload) {
-    showNotAllowedToUpload(participantData);
-    return;
-  }
-
-  Connect_ID = participantData.Connect_ID;
-  siteAcronym = conceptToSiteMapping[participantData[conceptIds.healthcareProvider]];
-  if (!siteAcronym) {
-    triggerNotificationBanner("Invalid healthcare provider: " + participantData.healthcareProvider, "warning");
-    return;
-  }
-
-  fileState = {
-    tobeSelectedDuplicate: [],
-    selected: [],
-    tobeUploadedDuplicate: [],
-    tobeUploaded: [],
-    filenamesUploaded: [],
-    stage: "select", // "select" or "upload"
-  };
-
-  const mainContent = document.getElementById("mainContent");
-  mainContent.innerHTML = setupPathologyReportUploadPage(participantData);
-  await getUploadedPathologyReportNames();
-
+/**
+ * Setup event listeners for pathology upload page (for tabbed structure)
+ */
+const setupPathologyEventListeners = () => {
   const fileInput = document.querySelector("#fileInput");
-  fileInput.addEventListener("change", (e) => {
-    const newFiles = e.target.files;
-    addNewFiles(newFiles);
+  if (fileInput) {
+    fileInput.addEventListener("change", (e) => {
+      const newFiles = e.target.files;
+      addNewFiles(newFiles);
+    });
+  }
+
+  // Prevent browser navigating away when files are dropped outside the drop zone
+  ["dragover", "drop"].forEach((evt) => {
+    window.addEventListener(
+      evt,
+      (e) => {
+        if (!document.getElementById("dropBox")) return;
+        e.preventDefault();
+        e.stopPropagation();
+      },
+      false
+    );
   });
 
   const dropBoxDiv = document.querySelector("#dropBox");
-  dropBoxDiv.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropBoxDiv.classList.add("dragover");
-  });
+  if (dropBoxDiv) {
+    dropBoxDiv.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropBoxDiv.classList.add("dragover");
+    });
 
-  dropBoxDiv.addEventListener("dragleave", () => {
-    dropBoxDiv.classList.remove("dragover");
-  });
+    dropBoxDiv.addEventListener("dragleave", () => {
+      dropBoxDiv.classList.remove("dragover");
+    });
 
-  dropBoxDiv.addEventListener("drop", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropBoxDiv.classList.remove("dragover");
-    addNewFiles(e.dataTransfer.files);
-  });
+    dropBoxDiv.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropBoxDiv.classList.remove("dragover");
+      addNewFiles(e.dataTransfer.files);
+    });
+  }
 
-  document.querySelector("#selectFilesLink").addEventListener("click", (e) => {
-    e.preventDefault();
-    fileInput.click();
-  });
+  const selectFilesLink = document.querySelector("#selectFilesLink");
+  if (selectFilesLink) {
+    selectFilesLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      fileInput.click();
+    });
+  }
 
-  document.getElementById("replaceBtn").addEventListener("click", async () => {
-    // Todo: Remove JQuery after migration to Bootstrap 5
-    // const modal = new bootstrap.Modal("#warningModal", { backdrop: "static", keyboard: false });
-    // modal.hide();
-    $("#warningModal").modal("hide");
+  const replaceBtn = document.getElementById("replaceBtn");
+  if (replaceBtn) {
+    replaceBtn.addEventListener("click", async () => {
+      hideWarningModal();
 
-    if (fileState.stage === "select") {
-      while (fileState.tobeSelectedDuplicate.length > 0) {
-        const file = fileState.tobeSelectedDuplicate.pop();
-        const idx = fileState.selected.findIndex((f) => f.name === file.name);
-        if (idx !== -1) {
-          fileState.selected.splice(idx, 1);
+      if (fileState.stage === "select") {
+        while (fileState.tobeSelectedDuplicate.length > 0) {
+          const dupFile = fileState.tobeSelectedDuplicate.pop();
+          const idx = fileState.selected.findIndex((f) => f.name === dupFile.name);
+          if (idx !== -1) {
+            fileState.selected.splice(idx, 1);
+          }
+          fileState.selected.push(dupFile);
         }
-        fileState.selected.push(file);
+        refreshSelectedFiles();
+      } else if (fileState.stage === "upload") {
+        await uploadPathologyReports();
       }
-      refreshSelectedFiles();
-    } else if (fileState.stage === "upload") {
-      const filenameSet = new Set();
-      while (fileState.tobeUploadedDuplicate.length > 0) {
-        const file = fileState.tobeUploadedDuplicate.pop();
-        if (!filenameSet.has(file.name)) {
-          fileState.tobeUploaded.push(file);
-          filenameSet.add(file.name);
+    });
+  }
+
+  const cancelBtn = document.getElementById("cancelBtn");
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      hideWarningModal();
+      if (fileState.stage === "select") {
+        fileState.tobeSelectedDuplicate = [];
+      } else if (fileState.stage === "upload") {
+        fileState.tobeUploaded = [];
+        fileState.tobeUploadedDuplicate = [];
+      }
+    });
+  }
+
+  const uploadForm = document.querySelector("#uploadForm");
+  if (uploadForm) {
+    uploadForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (fileState.selected.length === 0) return;
+
+      fileState.tobeUploaded = fileState.selected.slice();
+      const duplicates = [];
+      for (const file of fileState.tobeUploaded) {
+        if (fileState.filenamesUploaded.includes(file.name)) {
+          duplicates.push(file);
         }
+      }
+
+      if (duplicates.length > 0) {
+        fileState.stage = "upload";
+        fileState.tobeUploadedDuplicate = duplicates;
+        const warningDiv = document.getElementById("duplicateFilesWarning");
+        warningDiv.innerHTML = `<div>The following file(s) have already been uploaded for this participant. Click 'Replace' if you wish to replace the existing file(s).</div>`;
+        const listEle = document.createElement("ul");
+        duplicates.forEach((file) => {
+          const listItem = document.createElement("li");
+          listItem.textContent = file.name;
+          listEle.appendChild(listItem);
+        });
+        warningDiv.appendChild(listEle);
+        showWarningModal();
+        return;
       }
 
       await uploadPathologyReports();
-    }
-  });
-
-  document.getElementById("cancelBtn").addEventListener("click", () => {
-    // Todo: Remove JQuery after migration to Bootstrap 5
-    $("#warningModal").modal("hide");
-  });
-
-  document.querySelector("#uploadForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    fileState.stage = "upload";
-    fileState.tobeUploaded = [];
-    fileState.tobeUploadedDuplicate = [];
-    const filenameSet = new Set();
-
-    for (const file of fileState.selected) {
-      const isDuplicate = fileState.filenamesUploaded.includes(file.name);
-      if (isDuplicate) {
-        fileState.tobeUploadedDuplicate.push(file);
-      } else if (!filenameSet.has(file.name)) {
-        fileState.tobeUploaded.push(file);
-        filenameSet.add(file.name);
-      }
-    }
-
-    if (fileState.tobeUploadedDuplicate.length > 0) {
-      const headingText = "Duplicate Upload";
-      let msg = `Below file has been uploaded previously. Do you want to replace it with the new file or cancel this upload?`;
-      if (fileState.tobeUploadedDuplicate.length > 1) {
-        msg = `Below files have been uploaded  previously. Do you want to replace them with the new files or cancel this upload?`;
-      }
-
-      document.querySelector("#warningModalLabel").textContent = headingText;
-      const warningDiv = document.querySelector("#duplicateFilesWarning");
-      warningDiv.textContent = msg;
-      const listEle = document.createElement("ul");
-      fileState.tobeUploadedDuplicate.forEach((file) => {
-        const listItem = document.createElement("li");
-        listItem.textContent = file.name;
-        listEle.appendChild(listItem);
-      });
-      warningDiv.appendChild(listEle);
-      // Todo: Remove JQuery after migration to Bootstrap 5
-      $("#warningModal").modal({ backdrop: "static", keyboard: false });
-      return;
-    }
-
-    await uploadPathologyReports();
-  });
-
-  document.querySelector("#backToSearchBtn").addEventListener("click", () => {
-    navigateBackToSearchResults().catch((error) => {
-      console.error('Error navigating back to search results:', error);
     });
-  });
+  }
 };
+
+export { addNewFiles };
