@@ -118,6 +118,29 @@ describe('participantDetailsHelpers', () => {
             const langRow = rows.find(r => r.field === fieldMapping.preferredLanguage);
             expect(langRow.editable).to.be.false;
         });
+
+        it('uses the physical address qualifier in the section header only', () => {
+            const participant = createMockParticipant();
+            const rows = module.getImportantRows(participant, {});
+
+            const headingRow = rows.find(r => r.field === 'Physical Address');
+            expect(headingRow).to.exist;
+            expect(headingRow.label).to.equal('Physical Address (if different from mailing address)');
+
+            const physicalFields = [
+                fieldMapping.physicalAddress1,
+                fieldMapping.physicalAddress2,
+                fieldMapping.physicalCity,
+                fieldMapping.physicalState,
+                fieldMapping.physicalZip,
+            ];
+
+            physicalFields.forEach((fieldKey) => {
+                const row = rows.find(r => r.field === fieldKey);
+                expect(row).to.exist;
+                expect(row.label).to.not.include('if different from mailing address');
+            });
+        });
     });
 
     describe('getModalLabel', () => {

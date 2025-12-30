@@ -539,7 +539,7 @@ export const getImportantRows = (participant, changedOption) => {
     const physicalAddressRows = [
         {
             field: 'Physical Address',
-            label: 'Physical Address',
+            label: 'Physical Address (if different from mailing address)',
             editable: false,
             display: true,
             validationType: 'none',
@@ -554,14 +554,14 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: true
         },
         { field: fieldMapping.physicalAddress1,
-            label: 'Physical Address Line 1 (if different from mailing address)',
+            label: 'Physical Address Line 1',
             editable: isEditable,
             display: true,
             validationType: 'address',
             isRequired: false
         },
         { field: fieldMapping.physicalAddress2,
-            label: 'Physical Address Line 2 (if different from mailing address)',
+            label: 'Physical Address Line 2',
             editable: isEditable,
             display: true,
             validationType: 'address',
@@ -575,21 +575,21 @@ export const getImportantRows = (participant, changedOption) => {
             isRequired: false
         },
         { field: fieldMapping.physicalCity,
-            label: 'Physical City (if different from mailing address)',
+            label: 'Physical City',
             editable: isEditable,
             display: true,
             validationType: 'city',
             isRequired: false
         },
         { field: fieldMapping.physicalState,
-            label: 'Physical State / Region (if different from mailing address)',
+            label: 'Physical State / Region',
             editable: isEditable,
             display: true,
             validationType: isPhysicalInternational ? 'none' : 'state',
             isRequired: false
         },
         { field: fieldMapping.physicalZip,
-            label: 'Physical Zip / Postal Code (if different from mailing address)',
+            label: 'Physical Zip / Postal Code',
             editable: isEditable,
             display: true,
             validationType: isPhysicalInternational ? 'none' : 'zip',
