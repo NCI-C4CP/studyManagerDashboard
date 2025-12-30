@@ -130,9 +130,11 @@ describe('participantDetailsHelpers', () => {
             const physicalFields = [
                 fieldMapping.physicalAddress1,
                 fieldMapping.physicalAddress2,
+                fieldMapping.physicalAddress3,
                 fieldMapping.physicalCity,
                 fieldMapping.physicalState,
                 fieldMapping.physicalZip,
+                fieldMapping.physicalCountry,
             ];
 
             physicalFields.forEach((fieldKey) => {
