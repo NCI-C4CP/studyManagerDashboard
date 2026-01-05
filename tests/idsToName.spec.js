@@ -63,6 +63,31 @@ describe('idsToName', () => {
       expect(label).to.equal('Not Yet Eligible');
     });
 
+    it('maps nested baseline payment flags from payment round data', () => {
+      const participant = {
+        [fieldMapping.paymentRound]: {
+          [fieldMapping.baselinePayment]: {
+            [fieldMapping.paymentIssued]: fieldMapping.yes,
+            [fieldMapping.refusedBaselinePayment]: fieldMapping.no,
+          },
+        },
+      };
+
+      const issuedLabel = participantConceptIDToTextMapping(
+        undefined,
+        fieldMapping.paymentIssued,
+        participant,
+      );
+      expect(issuedLabel).to.equal('Yes');
+
+      const refusedLabel = participantConceptIDToTextMapping(
+        undefined,
+        fieldMapping.refusedBaselinePayment,
+        participant,
+      );
+      expect(refusedLabel).to.equal('No');
+    });
+
     it('maps participation status codes to human-readable strings', () => {
       const noRefusal = participantConceptIDToTextMapping(
         '',

@@ -388,6 +388,17 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
             return biospecimenStatus(baselineCollection, conceptID, fieldMapping.biospecimenBaselineCollection);
         }
 
+        // Baseline payment flags (nested in 130371375.266600170)
+        case fieldMapping.paymentIssued:
+        case fieldMapping.refusedBaselinePayment: {
+            const paymentRound = participant?.[fieldMapping.paymentRound];
+            const baselinePaymentRound = paymentRound?.[fieldMapping.baselinePayment];
+            const nestedValue = baselinePaymentRound?.[conceptID];
+            if (nestedValue === fieldMapping.yes) return 'Yes';
+            if (nestedValue === fieldMapping.no) return 'No';
+            return nestedValue?.toString() ?? '';
+        }
+
         // Refusal Flags (nested)
         case fieldMapping.refusedSurvey:
         case fieldMapping.refusedBlood:
