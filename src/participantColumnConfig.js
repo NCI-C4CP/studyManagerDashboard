@@ -177,7 +177,7 @@ const baseBubbleCategories = [
       field(fieldMapping.dhqSurveyStatus, 'Flag 6-mo DHQ3 Surv'),
       field(fieldMapping.cancerScreeningHistorySurveyStatus, 'Flag 9-mo CSH Surv'),
       field(fieldMapping.experienceSurvey, 'Flag 2024 CES Surv'),
-      field(fieldMapping.preferenceSurveyStatus, 'Flag 2025 ROI Pref Surv'),
+      field(fieldMapping.preferenceSurveyStatus, 'Flag 2026 ROI Pref Surv'),
       // Specimen collection status
       field(fieldMapping.baselineBloodCollectedFlag, 'BL Blood Collected'),                 // non-nested
       field(fieldMapping.biospecimenBloodCollection, 'BL Blood Collection Setting'),        // nested 173836415.266600170.592099155
