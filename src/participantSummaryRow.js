@@ -235,7 +235,7 @@ export const baselinePreferenceSurvey = (data) => {
     const refused = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes ? "Y" : "N";
     let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.preferenceSurveyStatus);
 
-    const timeline = "Cross-Sectional 2025";
+    const timeline = "Cross-Sectional 2026";
     const category = "Survey";
     const item = "ROI Preference";
     const setting = "N/A";
