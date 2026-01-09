@@ -15,6 +15,8 @@ const ROLE_DEFAULTS = Object.freeze({
     isParent: false,
     coordinatingCenter: false,
     helpDesk: false,
+    isSiteManager: false,
+    isEHRUploader: false,
 });
 
 const WITHDRAWAL_DEFAULTS = Object.freeze({
@@ -89,8 +91,8 @@ const getCurrentUID = () => {
  * @param {object} initialState - The initial state of the store
  * @returns {object} The store object
  */
-const createStore = (startState = {}) => {
-    let state = JSON.parse(JSON.stringify(startState));
+const createStore = (initialState = {}) => {
+    let state = JSON.parse(JSON.stringify(initialState));
 
     /** @param {object | function} update - an object or a function to update state */
     const setState = (update) => { 
@@ -104,7 +106,6 @@ const createStore = (startState = {}) => {
     return {
         setState,
         getState,
-        // Note: `set` and `get` are implemented as aliases for setState and getState. Added per @we-ai's request.
         set: setState,
         get: getState,
     };
@@ -307,14 +308,10 @@ export const statsState = {
 
 export const roleState = {
     setRoleFlags: async (roleFlags = {}) => {
-        await roleStore.set((prev) => ({
-            isParent: asBoolean(roleFlags.isParent ?? prev.isParent),
-            coordinatingCenter: asBoolean(roleFlags.coordinatingCenter ?? prev.coordinatingCenter),
-            helpDesk: asBoolean(roleFlags.helpDesk ?? prev.helpDesk),
-        }));
+        await roleStore.set((prev) => ({ ...prev, ...roleFlags }));
     },
-    getRoleFlags: () => ({ ...roleStore.get() }),
-    clear: () => roleStore.clear(),
+    getRoleFlags: roleStore.get,
+    clear: roleStore.clear,
 };
 
 
@@ -877,3 +874,18 @@ export const signOutAndClearSession = () => {
     resetAppStateUID();
     window.location.hash = '#';
 };
+
+/**
+ * Check if the logged-in user has an assigned role to access SMDB.
+ * - Valid roles in SMDB: Site Manager, EHR Uploader, Help Desk
+ * - Site Manager: Site users with full permissions and Coordinating Center (CCC) users.
+ * - EHR Uploader: Site users with only EHR upload permission. CCC users do not have this role.
+ * - Help Desk: NORC users
+ * 
+ * @return {boolean} true if authorized, false if not authorized
+ */
+export const checkUserAuthorization = () => {
+    const { isSiteManager, isEHRUploader, helpDesk } = roleState.getRoleFlags();
+
+    return isSiteManager || isEHRUploader || helpDesk;
+}

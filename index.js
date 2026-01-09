@@ -10,7 +10,7 @@ import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
 import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, escapeHTML, renderSiteDropdown, triggerNotificationBanner, showConfirmModal, showAlertModal } from './src/utils.js';
-import { appState, clearUnsaved, initializeAppState, participantState, reportsState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, signOutAndClearSession } from './src/stateManager.js';
+import { appState, clearUnsaved, initializeAppState, participantState, reportsState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, signOutAndClearSession, checkUserAuthorization } from './src/stateManager.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
 import { firebaseConfig as devFirebaseConfig } from "./config/dev/config.js";
@@ -129,7 +129,10 @@ window.onload = async () => {
     }
 
     !isLocalDev && window.DD_RUM && window.DD_RUM.startSessionReplayRecording();
-
+    const isUserLoggedIn = await userLoggedIn();
+    if (isUserLoggedIn) {
+        await initializeAppState();
+    }
     await router();
     activityCheckController();
 };
@@ -192,12 +195,20 @@ export const router = async () => {
     // Update browser hash tracking once route is cleared for navigation
     const markNavigationSucceeded = () => { previousHash = route; };
 
+    const isUserLoggedIn = await userLoggedIn();
     // Authenticated
-    if (await userLoggedIn()) {
-        await initializeAppState();
+    if (isUserLoggedIn) {
+        const isUserAuthorized = checkUserAuthorization();
+        if (!isUserAuthorized) {
+            console.error('User is not authorized to access dashboard. Signing out...');
+            signOutAndClearSession();
+            return;
+        }
 
-        // If authenticated and on login route, send to home
-        if (route === '#login') {
+        const { isEHRUploader } = roleState.getRoleFlags();
+        const validRoutesForEHRUploader = ["#", "#home", "#ehrUpload", "#logout"];
+        // Send to home for invalid routes
+        if (route === '#login' || (isEHRUploader && !validRoutesForEHRUploader.includes(route))) {
             markNavigationSucceeded();
             window.location.hash = '#home';
             return;
@@ -330,10 +341,24 @@ const loginPage = () => {
         const saml = new firebase.auth.SAMLAuthProvider(provider);
         firebase.auth().tenantId = tenantID;
         firebase.auth().signInWithPopup(saml)
-            .then((result) => {
+            .then(async (result) => {
+                showAnimation();
                 userSession.setUser({email: result.user.email});
-                location.hash = '#home'
-                router();
+                const idToken = await getIdToken();
+                if (idToken) {
+                    const authResp = await authorize(idToken);
+                    if (authResp.code === 200) {
+                        await roleState.setRoleFlags(authResp.data);
+                    } else if (authResp.code === 401) {
+                        signOutAndClearSession();
+                    }
+                } else {
+                    console.error('No ID token found after login.');
+                    signOutAndClearSession();
+                }
+
+                hideAnimation();
+                location.hash = '#home';
             })
             .catch((error) => {
                 console.log(error);
@@ -353,32 +378,21 @@ const renderActivityCheck = () => {
 }
 
 const renderDashboard = async () => {
-    const idToken = await getIdToken();
-    if (idToken) {
-        showAnimation();
-        const isAuthorized = await authorize(idToken);
+    updateNavBar('dashboardBtn');
+    mainContent.innerHTML = renderActivityCheck();
+    location.host !== urls.prod ? (mainContent.innerHTML = headsupBanner()) : ``;
+    const { isEHRUploader } = roleState.getRoleFlags();
+    if (isEHRUploader) {
+        mainContent.innerHTML += `
+            <div class="alert alert-info" role="alert" style="margin: 40px auto; max-width: 800px; text-align: center;">
+                You have limited access to the Connect Study Manager Dashboard for Data Uploaders. Please navigate to the upload page in the tabs above for your specific use case. Do not share any Connect data or PII outside of this dashboard. If you have any questions or issues, please email the Connect Coordinating Center at <a href="mailto:ConnectCC@nih.gov">ConnectCC@nih.gov</a>.
+            </div>`;
 
-        if (isAuthorized && isAuthorized.code === 200) {
-            await roleState.setRoleFlags({
-                isParent: isAuthorized.isParent,
-                coordinatingCenter: isAuthorized.coordinatingCenter,
-                helpDesk: isAuthorized.helpDesk,
-            });
-
-            updateNavBar('dashboardBtn');
-
-            mainContent.innerHTML = '';
-            mainContent.innerHTML = renderActivityCheck();
-            location.host !== urls.prod ? mainContent.innerHTML = headsupBanner() : ``
-            await renderCharts(idToken);
-        }
-        if (isAuthorized.code === 401) {
-            signOutAndClearSession();
-        }
-    } else {
-        hideAnimation();
-        window.location.hash = '#';
+        return;
     }
+
+    const idToken = await getIdToken();
+    await renderCharts(idToken);
 }
 
 const renderCharts = async (accessToken) => {
@@ -1197,5 +1211,5 @@ const activityCheckController = () => {
     }
     window.onload = resetTimer;
     document.onmousemove = resetTimer;
-    document.onkeypress = resetTimer;
+    document.onkeydown = resetTimer;
 };
