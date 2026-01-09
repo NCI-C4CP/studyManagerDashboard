@@ -2,15 +2,13 @@ import { renderParticipantLookup, renderCachedSearchResults } from './src/partic
 import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements, participantLookupNavRequest } from './src/navigationBar.js';
 import { renderTable, renderParticipantSearchResults, setupActiveColumns, renderFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
-import { renderKitRequest } from './src/requestHomeCollectionKit.js';
 import { renderRequestAKitConditions } from './src/requestAKitConditions.js';
 import { renderEhrUploadPage } from "./src/ehrUpload.js";
 import { renderSiteMessages } from './src/siteMessages.js';
-import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
 import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, escapeHTML, renderSiteDropdown, triggerNotificationBanner, showConfirmModal, showAlertModal } from './src/utils.js';
-import { appState, clearUnsaved, initializeAppState, participantState, reportsState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, signOutAndClearSession, checkUserAuthorization } from './src/stateManager.js';
+import { appState, clearUnsaved, initializeAppState, participantState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, signOutAndClearSession } from './src/stateManager.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
 import { firebaseConfig as devFirebaseConfig } from "./config/dev/config.js";
@@ -198,13 +196,6 @@ export const router = async () => {
     const isUserLoggedIn = await userLoggedIn();
     // Authenticated
     if (isUserLoggedIn) {
-        const isUserAuthorized = checkUserAuthorization();
-        if (!isUserAuthorized) {
-            console.error('User is not authorized to access dashboard. Signing out...');
-            signOutAndClearSession();
-            return;
-        }
-
         const { isEHRUploader } = roleState.getRoleFlags();
         const validRoutesForEHRUploader = ["#", "#home", "#ehrUpload", "#logout"];
         // Send to home for invalid routes
@@ -348,8 +339,10 @@ const loginPage = () => {
                 if (idToken) {
                     const authResp = await authorize(idToken);
                     if (authResp.code === 200) {
+                        // Authorized user should have one of the roles as true: isSiteManager, isEHRUploader, helpDesk
                         await roleState.setRoleFlags(authResp.data);
                     } else if (authResp.code === 401) {
+                        console.error('User is not authorized to access dashboard. Signing out...');
                         signOutAndClearSession();
                     }
                 } else {
@@ -380,7 +373,7 @@ const renderActivityCheck = () => {
 const renderDashboard = async () => {
     updateNavBar('dashboardBtn');
     mainContent.innerHTML = renderActivityCheck();
-    location.host !== urls.prod ? (mainContent.innerHTML = headsupBanner()) : ``;
+    if (location.host !== urls.prod) mainContent.innerHTML += headsupBanner();
     const { isEHRUploader } = roleState.getRoleFlags();
     if (isEHRUploader) {
         mainContent.innerHTML += `

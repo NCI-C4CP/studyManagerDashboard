@@ -874,18 +874,3 @@ export const signOutAndClearSession = () => {
     resetAppStateUID();
     window.location.hash = '#';
 };
-
-/**
- * Check if the logged-in user has an assigned role to access SMDB.
- * - Valid roles in SMDB: Site Manager, EHR Uploader, Help Desk
- * - Site Manager: Site users with full permissions and Coordinating Center (CCC) users.
- * - EHR Uploader: Site users with only EHR upload permission. CCC users do not have this role.
- * - Help Desk: NORC users
- * 
- * @return {boolean} true if authorized, false if not authorized
- */
-export const checkUserAuthorization = () => {
-    const { isSiteManager, isEHRUploader, helpDesk } = roleState.getRoleFlags();
-
-    return isSiteManager || isEHRUploader || helpDesk;
-}

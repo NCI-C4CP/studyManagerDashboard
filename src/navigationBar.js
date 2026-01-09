@@ -85,19 +85,18 @@ export const dashboardNavBarLinks = () => {
         <li class="nav-item">
             <a class="nav-item nav-link ws-nowrap" href="#home" title="Home" id="dashboardBtn"><i class="fas fa-home"></i> Home</a>
         </li>
-        ${(coordinatingCenter && location.host === urls.prod) ? '' : (`<li class="nav-item" id="ehrUploadBtn">
+        <li class="nav-item" id="ehrUploadBtn">
             <a class="nav-item nav-link ws-nowrap" href="#ehrUpload" title="EHR Upload"><i class="fa fa-upload"></i> EHR Upload</a>
-        </li>`)}
+        </li>
         <li class="nav-item">
             <a class="nav-item nav-link ws-nowrap" href="#logout" title="Log Out"><i class="fas fa-sign-out-alt"></i> Log Out</a>
         </li>
         `;
-    
-    if (isSiteManager || helpDesk) {
-        return normalNavBar;
-    } else if (isEHRUploader) {
+    if (isEHRUploader) {
         return ehrUploaderNavBar;
     }
+
+    return normalNavBar;
 }
 
 export const  renderLogin = () => {
