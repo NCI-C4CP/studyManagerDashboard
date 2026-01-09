@@ -129,4 +129,108 @@ describe('router', function () {
       expect(route.startsWith('#participantDetails')).to.be.true;
     });
   });
+
+  describe('renderDashboard', () => {
+    beforeEach(async () => {
+      if (!document.getElementById('mainContent')) {
+        createDOMFixture('mainContent');
+      }
+
+      const mainContentElement = document.getElementById('mainContent');
+      
+      // Make mainContent available as a global variable (simulating browser behavior for elements with IDs)
+      global.mainContent = mainContentElement;
+      globalThis.mainContent = mainContentElement;
+      
+      await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false, isSiteManager: false, isEHRUploader: false });
+      
+      // Mock getIdToken to avoid Firebase calls
+      global.getIdToken = async () => 'mock-token';
+      
+      // Mock fetch for API calls
+      global.fetch = async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 200, data: [{}] }),
+      });
+    });
+
+    afterEach(() => {
+      delete global.mainContent;
+      delete globalThis.mainContent;
+      delete global.getIdToken;
+      delete global.fetch;
+    });
+
+    it('renders dashboard modal structure for regular users on home route', async () => {
+      window.location.hash = '#home';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(20);
+
+      const mainContent = document.getElementById('mainContent');
+      expect(mainContent.innerHTML).to.include('siteManagerMainModal');
+      expect(mainContent.innerHTML).to.include('modal');
+    });
+
+    it('renders modal for EHR uploaders without rendering charts', async () => {
+      window.location.hash = '#home';
+      const routerModule = await import('../index.js');
+      const indexStateManager = await import('../src/stateManager.js');
+      
+      await indexStateManager.roleState.setRoleFlags({ isEHRUploader: true });
+      
+      await routerModule.router();
+      await waitForAsyncTasks(50);
+
+      const mainContent = document.getElementById('mainContent');
+      const html = mainContent.innerHTML;
+      
+      expect(html).to.include('siteManagerMainModal');
+      expect(html).to.not.include('chart-container');
+    });
+
+    it('shows limited access message for EHR uploaders', async () => {
+      window.location.hash = '#home';
+      const routerModule = await import('../index.js');
+      const indexStateManager = await import('../src/stateManager.js');
+      
+      await indexStateManager.roleState.setRoleFlags({ isEHRUploader: true });
+      await routerModule.router();
+      await waitForAsyncTasks(100);
+
+      const mainContent = document.getElementById('mainContent');
+      const html = mainContent.innerHTML;
+      
+      expect(html).to.include('You have limited access to the Connect Study Manager Dashboard');
+      expect(html).to.include('Data Uploaders');
+      expect(html).to.include('ConnectCC@nih.gov');
+    });
+
+    it('does not render charts for EHR uploaders', async () => {
+      window.location.hash = '#home';
+      const routerModule = await import('../index.js');
+      const indexStateManager = await import('../src/stateManager.js');
+      
+      await indexStateManager.roleState.setRoleFlags({ isEHRUploader: true });
+      
+      await routerModule.router();
+      await waitForAsyncTasks(20);
+
+      const mainContent = document.getElementById('mainContent');
+      expect(mainContent.innerHTML).to.not.include('chart');
+    });
+
+    it('renders modal structure on dashboard', async () => {
+      window.location.hash = '#home';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(20);
+
+      const mainContent = document.getElementById('mainContent');
+      expect(mainContent.innerHTML).to.include('siteManagerMainModal');
+      expect(mainContent.innerHTML).to.include('siteManagerModalHeader');
+      expect(mainContent.innerHTML).to.include('siteManagerModalBody');
+    });
+  });
 });

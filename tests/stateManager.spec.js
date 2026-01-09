@@ -157,6 +157,8 @@ describe('stateManager', () => {
         isParent: true,
         coordinatingCenter: true,
         helpDesk: false,
+        isSiteManager: false,
+        isEHRUploader: false,
       });
     });
 
@@ -167,6 +169,8 @@ describe('stateManager', () => {
         isParent: true,
         coordinatingCenter: true,
         helpDesk: true,
+        isSiteManager: false,
+        isEHRUploader: false,
       });
       
       roleState.clear();
@@ -179,6 +183,8 @@ describe('stateManager', () => {
           isParent: false,
           coordinatingCenter: false,
           helpDesk: false,
+          isSiteManager: false,
+          isEHRUploader: false,
         },
       });
       resetAppStateUID();
@@ -188,6 +194,8 @@ describe('stateManager', () => {
         isParent: true,
         coordinatingCenter: true,
         helpDesk: false,
+        isSiteManager: false,
+        isEHRUploader: false,
       });
     });
 
@@ -201,6 +209,57 @@ describe('stateManager', () => {
         isParent: true,
         coordinatingCenter: true,
         helpDesk: false,
+        isSiteManager: false,
+        isEHRUploader: false,
+      });
+    });
+
+    it('sets and retrieves EHR uploader role flag', async () => {
+      roleState.clear();
+      await roleState.setRoleFlags({ isEHRUploader: true });
+      expect(roleState.getRoleFlags()).to.deep.equal({
+        isParent: false,
+        coordinatingCenter: false,
+        helpDesk: false,
+        isSiteManager: false,
+        isEHRUploader: true,
+      });
+    });
+
+    it('preserves EHR uploader flag when updating other flags', async () => {
+      roleState.clear();
+      await roleState.setRoleFlags({ isEHRUploader: true });
+      await roleState.setRoleFlags({ helpDesk: true });
+      expect(roleState.getRoleFlags()).to.deep.equal({
+        isParent: false,
+        coordinatingCenter: false,
+        helpDesk: true,
+        isSiteManager: false,
+        isEHRUploader: true,
+      });
+    });
+
+    it('sets and retrieves site manager role flag', async () => {
+      roleState.clear();
+      await roleState.setRoleFlags({ isSiteManager: true });
+      expect(roleState.getRoleFlags()).to.deep.equal({
+        isParent: false,
+        coordinatingCenter: false,
+        helpDesk: false,
+        isSiteManager: true,
+        isEHRUploader: false,
+      });
+    });
+
+    it('handles multiple new role flags together', async () => {
+      roleState.clear();
+      await roleState.setRoleFlags({ isSiteManager: true, isEHRUploader: true });
+      expect(roleState.getRoleFlags()).to.deep.equal({
+        isParent: false,
+        coordinatingCenter: false,
+        helpDesk: false,
+        isSiteManager: true,
+        isEHRUploader: true,
       });
     });
   });
@@ -862,6 +921,7 @@ describe('stateManager', () => {
     it('handles unauthenticated state', async () => {
       firebaseStub.setUid(null);
       resetAppStateUID();
+      roleState.clear(); // Clear any existing role state
       await initializeAppState();
 
       // Should initialize with defaults (keep any pre-existing stats if present in appState)
@@ -869,6 +929,8 @@ describe('stateManager', () => {
         isParent: false,
         coordinatingCenter: false,
         helpDesk: false,
+        isSiteManager: false,
+        isEHRUploader: false,
       });
       const stats = statsState.getStats();
       expect(stats && typeof stats === 'object').to.be.true;
@@ -910,6 +972,8 @@ describe('stateManager', () => {
         isParent: false,
         coordinatingCenter: false,
         helpDesk: false,
+        isSiteManager: false,
+        isEHRUploader: false,
       });
       expect(uiState.isSiteDropdownVisible()).to.equal(false);
       expect(uiState.getWithdrawalStatusFlags()).to.deep.equal({

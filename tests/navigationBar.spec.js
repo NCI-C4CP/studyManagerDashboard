@@ -65,38 +65,49 @@ describe('navigationBar', () => {
             expect(html).to.not.include('href="#requestAKitConditions"');
         });
 
-        it('shows Site Messages for coordinating center', async () => {
-            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: true });
+        it('shows Site Messages for site managers', async () => {
+            await roleState.setRoleFlags({ isSiteManager: true });
             const html = dashboardNavBarLinks();
             expect(html).to.include('href="#siteMessages"');
         });
 
-        it('hides Site Messages for parent users', async () => {
-            await roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
+        it('hides Site Messages for help desk', async () => {
+            await roleState.setRoleFlags({ isSiteManager: false, helpDesk: true });
             const html = dashboardNavBarLinks();
             expect(html).to.not.include('href="#siteMessages"');
         });
 
+        it('check links for EHR uploader', async () => {
+            await roleState.setRoleFlags({ isSiteManager: false, isEHRUploader: true });
+            const html = dashboardNavBarLinks();
+            expect(html).to.include('href="#home"');
+            expect(html).to.include('href="#ehrUpload"');
+            expect(html).to.include('href="#logout"');
+            expect(html).to.not.include('href="#requestAKitConditions"');
+            expect(html).to.not.include('href="#siteMessages"');
+            expect(html).to.not.include('id="notifications"');
+        });
+
         it('shows EHR Upload for regular users', async () => {
-            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
+            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false, isEHRUploader: false });
             const html = dashboardNavBarLinks();
             expect(html).to.include('href="#ehrUpload"');
         });
 
         it('hides EHR Upload for helpDesk users', async () => {
-            await roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
+            await roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false, isEHRUploader: false });
             const html = dashboardNavBarLinks();
             expect(html).to.not.include('href="#ehrUpload"');
         });
 
         it('shows Notifications for coordinating center', async () => {
-            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: true });
+            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: true, isEHRUploader: false });
             const html = dashboardNavBarLinks();
             expect(html).to.include('id="notifications"');
         });
 
         it('hides Notifications for regular users', async () => {
-            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
+            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false, isEHRUploader: false });
             const html = dashboardNavBarLinks();
             expect(html).to.not.include('id="notifications"');
         });
