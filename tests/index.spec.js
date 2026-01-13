@@ -131,18 +131,12 @@ describe('router', function () {
   });
 
   describe("renderDashboard", () => {
-    let router;
-
     beforeEach(async () => {
       global.fetch = async () => ({
         ok: true,
         status: 200,
         json: async () => ({ code: 200, data: [{}] }),
       });
-
-      const loadedStateManagerModule = await import('../src/stateManager.js');
-      roleState = loadedStateManagerModule.roleState;
-      router = await loadRouter();
     });
 
     afterEach(() => {
@@ -150,8 +144,11 @@ describe('router', function () {
     });
 
     it("renders homapage for coordinating center users", async () => {
+      const loadedStateManagerModule = await import('../src/stateManager.js');
+      roleState = loadedStateManagerModule.roleState;
       await roleState.setRoleFlags({ isParent: true, coordinatingCenter: true, isSiteManager: true });
       window.location.hash = "#home";
+      const router = await loadRouter();
       await router();
       await waitForAsyncTasks(100);
       expect(navBarLinks.innerHTML).to.include('href="#requestAKitConditions"');
@@ -162,10 +159,13 @@ describe('router', function () {
     });
 
     it("renders homepage for EHR uploaders", async () => {
+      const loadedStateManagerModule = await import('../src/stateManager.js');
+      roleState = loadedStateManagerModule.roleState;
       await roleState.setRoleFlags({ isEHRUploader: true });
       window.location.hash = "#home";
+      const router = await loadRouter();
       await router();
-      await waitForAsyncTasks(100);
+      await waitForAsyncTasks(20);
       expect(navBarLinks.innerHTML).to.include('href="#ehrUpload"');
       expect(navBarLinks.innerHTML).to.not.include("siteManagerModalHeader");
       expect(navBarLinks.innerHTML).to.not.include('href="#siteMessages"');
@@ -173,8 +173,11 @@ describe('router', function () {
     });
 
     it("renders homepage for help desk users", async () => {
+      const loadedStateManagerModule = await import('../src/stateManager.js');
+      roleState = loadedStateManagerModule.roleState;
       await roleState.setRoleFlags({ helpDesk: true });
       window.location.hash = "#home";
+      const router = await loadRouter();
       await router();
       await waitForAsyncTasks(100);
       expect(mainContent.innerHTML).to.include("siteManagerMainModal");
