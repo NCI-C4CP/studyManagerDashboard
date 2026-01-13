@@ -1960,7 +1960,10 @@ const normalizeNameForQuery = (name) => {
     return (name || '').trim().toLowerCase();
 };
 
-// Address field groups
+/**
+ * Address field groups used for USPS validation flags and history tracking.
+ * Mailing address CIDs.
+ */
 export const mailingAddressKeys = [
     fieldMapping.isIntlAddr,
     fieldMapping.address1,
@@ -1973,6 +1976,9 @@ export const mailingAddressKeys = [
     fieldMapping.isPOBox,
 ];
 
+/**
+ * Physical address CIDs.
+ */
 export const physicalAddressKeys = [
     fieldMapping.physicalAddrIntl,
     fieldMapping.physicalAddress1,
@@ -1984,6 +1990,9 @@ export const physicalAddressKeys = [
     fieldMapping.physicalCountry,
 ];
 
+/**
+ * Alternate address CIDs (optional alternate contact address).
+ */
 export const altAddressKeys = [
     fieldMapping.isIntlAltAddress,
     fieldMapping.altAddress1,
@@ -1999,6 +2008,9 @@ export const altAddressKeys = [
 /**
  * If any address fields for a given address type are updated, mark the corresponding USPS validation
  * flag as "unvalidated". We do not run USPS validation in this app, but we do run it in the PWA.
+ *
+ * @param {Object} changedUserDataForProfile - The object with participant profile updates.
+ * @returns {Object} - The same object with USPS "unvalidated" flags when applicable.
  */
 export const applyUSPSUnvalidatedFlags = (changedUserDataForProfile) => {
     if (!changedUserDataForProfile || typeof changedUserDataForProfile !== 'object') return changedUserDataForProfile;
@@ -2161,7 +2173,15 @@ export const findChangedUserDataValues = (newUserData, existingUserData) => {
 
     // If any address values were updated, mark corresponding USPS validation flags as unvalidated.
     // USPS address validation happens in the PWA, but not in SMDB.
+    const profileKeysBeforeUSPS = new Set(Object.keys(changedUserDataForProfile));
     applyUSPSUnvalidatedFlags(changedUserDataForProfile);
+    Object.keys(changedUserDataForProfile).forEach((key) => {
+        if (!profileKeysBeforeUSPS.has(key)) {
+            if (!Object.prototype.hasOwnProperty.call(changedUserDataForHistory, key)) {
+                changedUserDataForHistory[key] = existingUserData[key] ?? '';
+            }
+        }
+    });
 
     return { changedUserDataForProfile, changedUserDataForHistory };
 };
@@ -2236,6 +2256,10 @@ const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
         ...mailingAddressKeys,
         ...physicalAddressKeys,
         ...altAddressKeys,
+        // USPS validation flags
+        fieldMapping.isMailingAddressUSPSUnvalidated,
+        fieldMapping.isPhysicalAddressUSPSUnvalidated,
+        fieldMapping.isAltAddressUSPSUnvalidated,
     ];
 
     keys.forEach((key) => {

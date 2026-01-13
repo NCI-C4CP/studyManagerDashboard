@@ -279,6 +279,22 @@ describe('participantDetailsHelpers', () => {
 
             expect(changedUserDataForProfile[fieldMapping.suffix]).to.equal(fieldMapping.noneOfTheseApply);
         });
+
+        it('records previous USPS validation flags when address fields change', () => {
+            const existingUserData = {
+                [fieldMapping.address1]: '111 Old St',
+                [fieldMapping.isMailingAddressUSPSUnvalidated]: fieldMapping.no,
+            };
+            const newUserData = {
+                [fieldMapping.address1]: '222 New St',
+            };
+
+            const { changedUserDataForProfile, changedUserDataForHistory } =
+                module.findChangedUserDataValues(newUserData, existingUserData);
+
+            expect(changedUserDataForProfile[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
+            expect(changedUserDataForHistory[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.no);
+        });
     });
 
     describe('updateUserHistory', () => {
@@ -383,6 +399,58 @@ describe('participantDetailsHelpers', () => {
             const entry = history[0];
             expect(entry[fieldMapping.physicalAddress1]).to.equal('');
             expect(entry[fieldMapping.altCity]).to.equal('');
+        });
+
+        it('includes international address fields in history entries when present', () => {
+            const existingDataToUpdate = {
+                [fieldMapping.isIntlAddr]: fieldMapping.yes,
+                [fieldMapping.address3]: 'Mailing Line 3',
+                [fieldMapping.country]: 'USA',
+                [fieldMapping.physicalAddrIntl]: fieldMapping.yes,
+                [fieldMapping.physicalAddress3]: 'Physical Line 3',
+                [fieldMapping.physicalCountry]: 'USA',
+                [fieldMapping.isIntlAltAddress]: fieldMapping.yes,
+                [fieldMapping.altAddress3]: 'Alt Line 3',
+                [fieldMapping.altCountry]: 'USA',
+            };
+
+            const history = module.updateUserHistory(
+                existingDataToUpdate,
+                [],
+                'admin@example.com',
+            );
+
+            expect(history).to.have.lengthOf(1);
+            const entry = history[0];
+            expect(entry[fieldMapping.isIntlAddr]).to.equal(fieldMapping.yes);
+            expect(entry[fieldMapping.address3]).to.equal('Mailing Line 3');
+            expect(entry[fieldMapping.country]).to.equal('USA');
+            expect(entry[fieldMapping.physicalAddrIntl]).to.equal(fieldMapping.yes);
+            expect(entry[fieldMapping.physicalAddress3]).to.equal('Physical Line 3');
+            expect(entry[fieldMapping.physicalCountry]).to.equal('USA');
+            expect(entry[fieldMapping.isIntlAltAddress]).to.equal(fieldMapping.yes);
+            expect(entry[fieldMapping.altAddress3]).to.equal('Alt Line 3');
+            expect(entry[fieldMapping.altCountry]).to.equal('USA');
+        });
+
+        it('includes USPS validation flags in history entries when present', () => {
+            const existingDataToUpdate = {
+                [fieldMapping.isMailingAddressUSPSUnvalidated]: fieldMapping.yes,
+                [fieldMapping.isPhysicalAddressUSPSUnvalidated]: fieldMapping.no,
+                [fieldMapping.isAltAddressUSPSUnvalidated]: fieldMapping.yes,
+            };
+
+            const history = module.updateUserHistory(
+                existingDataToUpdate,
+                [],
+                'admin@example.com',
+            );
+
+            expect(history).to.have.lengthOf(1);
+            const entry = history[0];
+            expect(entry[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
+            expect(entry[fieldMapping.isPhysicalAddressUSPSUnvalidated]).to.equal(fieldMapping.no);
+            expect(entry[fieldMapping.isAltAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
         });
     });
 
