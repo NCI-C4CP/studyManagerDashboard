@@ -1960,6 +1960,65 @@ const normalizeNameForQuery = (name) => {
     return (name || '').trim().toLowerCase();
 };
 
+// Address field groups
+export const mailingAddressKeys = [
+    fieldMapping.isIntlAddr,
+    fieldMapping.address1,
+    fieldMapping.address2,
+    fieldMapping.address3,
+    fieldMapping.city,
+    fieldMapping.state,
+    fieldMapping.zip,
+    fieldMapping.country,
+    fieldMapping.isPOBox,
+];
+
+export const physicalAddressKeys = [
+    fieldMapping.physicalAddrIntl,
+    fieldMapping.physicalAddress1,
+    fieldMapping.physicalAddress2,
+    fieldMapping.physicalAddress3,
+    fieldMapping.physicalCity,
+    fieldMapping.physicalState,
+    fieldMapping.physicalZip,
+    fieldMapping.physicalCountry,
+];
+
+export const altAddressKeys = [
+    fieldMapping.isIntlAltAddress,
+    fieldMapping.altAddress1,
+    fieldMapping.altAddress2,
+    fieldMapping.altAddress3,
+    fieldMapping.altCity,
+    fieldMapping.altState,
+    fieldMapping.altZip,
+    fieldMapping.altCountry,
+    fieldMapping.isPOBoxAltAddress,
+];
+
+/**
+ * If any address fields for a given address type are updated, mark the corresponding USPS validation
+ * flag as "unvalidated". We do not run USPS validation in this app, but we do run it in the PWA.
+ */
+export const applyUSPSUnvalidatedFlags = (changedUserDataForProfile) => {
+    if (!changedUserDataForProfile || typeof changedUserDataForProfile !== 'object') return changedUserDataForProfile;
+
+    const hasAnyKey = (keys) =>
+        keys.some((k) => Object.prototype.hasOwnProperty.call(changedUserDataForProfile, k));
+
+    if (hasAnyKey(mailingAddressKeys)) {
+        changedUserDataForProfile[fieldMapping.isMailingAddressUSPSUnvalidated] = fieldMapping.yes;
+    }
+    if (hasAnyKey(physicalAddressKeys)) {
+        changedUserDataForProfile[fieldMapping.isPhysicalAddressUSPSUnvalidated] = fieldMapping.yes;
+    }
+    if (hasAnyKey(altAddressKeys)) {
+        changedUserDataForProfile[fieldMapping.isAltAddressUSPSUnvalidated] = fieldMapping.yes;
+    }
+
+    return changedUserDataForProfile;
+};
+
 /**
  * Build a query array from: `changed` (if provided) otherwise from `participant`
  * Empty strings and falsy values are skipped; uniqueness enforced via Set
@@ -2010,25 +2069,18 @@ const handleQueryArrayField = (types, queryKey, normalizeFn, changedUserDataForP
  *   if user deletes a number, set canWeVoicemail and canWeText to '' (empty string)
  *   if user updates a number, ensure the canWeVoicemail and canWeText values are set. Use previous values as fallback.
 */
-const findChangedUserDataValues = (newUserData, existingUserData) => {
+export const findChangedUserDataValues = (newUserData, existingUserData) => {
     const changedUserDataForProfile = {};
     const changedUserDataForHistory = {};
-    const excludeHistoryKeys = [fieldMapping.email, fieldMapping.email1, fieldMapping.email2];
+    const excludeHistoryKeys = new Set([fieldMapping.email, fieldMapping.email1, fieldMapping.email2].map(String));
     const keysToSkipIfNull = [fieldMapping.canWeText.toString(), fieldMapping.voicemailMobile.toString(), fieldMapping.voicemailHome.toString(), fieldMapping.voicemailOther.toString()];
 
     newUserData = cleanPhoneNumber(newUserData);
 
-    const altAddressFields = [
-        fieldMapping.altAddress1,
-        fieldMapping.altAddress2,
-        fieldMapping.altCity,
-        fieldMapping.altState,
-        fieldMapping.altZip
-    ];
-
     // Check if any alt address fields are being modified. Only proceed with alt address checks if fields are being modified.
-    const isAltAddressModified = altAddressFields.some(field => field in newUserData);
+    const isAltAddressModified = altAddressKeys.some(field => field in newUserData);
     if (isAltAddressModified) {
+        // Alt address has specific doesAltAddressExist flag
         // Determine whether the alternate address exists based on the new and existing data
         const getDoesAltAddressExistValue = (field) => {
             if (field in newUserData) {
@@ -2037,10 +2089,18 @@ const findChangedUserDataValues = (newUserData, existingUserData) => {
             return existingUserData[field] || '';
         };
 
+        const isValidAltAddressUpdate = (value) => {
+            if (value == null || value === '' || value === 'NA') return false;
+
+            // Treat "no" as "no data" so we don't mark the alt address as existing due to falsy/negative flags.
+            if (value?.toString?.() === fieldMapping.no.toString()) return false;
+            return true;
+        };
+
         // Check if any field has a non-empty value after all updates
-        const hasAltAddressData = altAddressFields.some(field => {
+        const hasAltAddressData = altAddressKeys.some(field => {
             const activeAltAddressValue = getDoesAltAddressExistValue(field);
-            return activeAltAddressValue && activeAltAddressValue !== '' && activeAltAddressValue !== 'NA';
+            return isValidAltAddressUpdate(activeAltAddressValue);
         });
 
         changedUserDataForProfile[fieldMapping.doesAltAddressExist] =
@@ -2050,7 +2110,7 @@ const findChangedUserDataValues = (newUserData, existingUserData) => {
     Object.keys(newUserData).forEach(key => {
         if (newUserData[key] !== existingUserData[key]) {
             changedUserDataForProfile[key] = newUserData[key];
-            if (!excludeHistoryKeys.includes(key)) {
+            if (!excludeHistoryKeys.has(key)) {
                 changedUserDataForHistory[key] = existingUserData[key] ?? '';
             }
         }
@@ -2099,6 +2159,10 @@ const findChangedUserDataValues = (newUserData, existingUserData) => {
         if (changedUserDataForHistory[key] === '') changedUserDataForHistory[key] = null;
     });
 
+    // If any address values were updated, mark corresponding USPS validation flags as unvalidated.
+    // USPS address validation happens in the PWA, but not in SMDB.
+    applyUSPSUnvalidatedFlags(changedUserDataForProfile);
+
     return { changedUserDataForProfile, changedUserDataForHistory };
 };
 
@@ -2137,7 +2201,7 @@ const processUserDataUpdate = async (changedUserDataForProfile, changedUserDataF
  * @param {array of objects} userHistory - the user's existing history
  * @returns {userProfileHistoryArray} -the array of objects to write to user profile history, with the new data added to the end of the array
  */
-const updateUserHistory = (existingDataToUpdate, userHistory, adminEmail, newSuffix) => {
+export const updateUserHistory = (existingDataToUpdate, userHistory, adminEmail, newSuffix) => {
     const userProfileHistoryArray = [];
     if (userHistory && Object.keys(userHistory).length > 0) userProfileHistoryArray.push(...userHistory);
 
@@ -2148,37 +2212,6 @@ const updateUserHistory = (existingDataToUpdate, userHistory, adminEmail, newSuf
 
     return userProfileHistoryArray;
 };
-
-/**
- * Delete properties in fields are empty string or 'no' before write to user profile history in firestore
- * @param {array of object} data - The data to write to history
- * @returns {array of object} - this will write to user profile history
- */
-
-const prepareUserHistoryData = (data) => {
-    const fields = [
-        // Physical adress
-        fieldMapping.physicalAddress1,
-        fieldMapping.physicalAddress2,
-        fieldMapping.physicalCity,
-        fieldMapping.physicalState,
-        fieldMapping.physicalZip,
-        // Alternate adress
-        fieldMapping.altAddress1,
-        fieldMapping.altAddress2,
-        fieldMapping.altCity,
-        fieldMapping.altState,
-        fieldMapping.altZip,
-        fieldMapping.isPOBoxAltAddress,
-    ];
-    fields.forEach(key => {
-        if (data[key] === '' || data[key] === fieldMapping.no) {
-            delete data[key];
-        }
-    });
-
-    return data;
-}
 
 const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
     const userHistoryMap = {};
@@ -2199,26 +2232,10 @@ const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
         fieldMapping.voicemailHome,
         fieldMapping.otherPhone,
         fieldMapping.voicemailOther,
-        // Mailing address
-        fieldMapping.address1,
-        fieldMapping.address2,
-        fieldMapping.city,
-        fieldMapping.state,
-        fieldMapping.zip,
-        fieldMapping.isPOBox,
-        // Physical address
-        fieldMapping.physicalAddress1,
-        fieldMapping.physicalAddress2,
-        fieldMapping.physicalCity,
-        fieldMapping.physicalState,
-        fieldMapping.physicalZip,
-        // Alternate adress
-        fieldMapping.altAddress1,
-        fieldMapping.altAddress2,
-        fieldMapping.altCity,
-        fieldMapping.altState,
-        fieldMapping.altZip,
-        fieldMapping.isPOBoxAltAddress,
+        // Address field groups
+        ...mailingAddressKeys,
+        ...physicalAddressKeys,
+        ...altAddressKeys,
     ];
 
     keys.forEach((key) => {
@@ -2245,9 +2262,6 @@ const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
     if (Object.keys(userHistoryMap).length > 0) {
         userHistoryMap[fieldMapping.userProfileUpdateTimestamp] = new Date().toISOString();
         userHistoryMap[fieldMapping.profileChangeRequestedBy] = adminEmail;
-
-        // temp pull out - adding back early June
-        // return prepareUserHistoryData(userHistoryMap);
         
         return userHistoryMap;
     } else {
