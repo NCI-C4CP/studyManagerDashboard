@@ -9,7 +9,7 @@ describe('router', function () {
   let mainContent;
   let navBarLinks;
   const stateManager = stateManagerModule?.default ?? stateManagerModule;
-  let { searchState, participantState, roleState } = stateManager;
+  const { searchState, participantState, roleState } = stateManager;
 
   const loadRouter = async () => {
     const module = await import('../index.js');
