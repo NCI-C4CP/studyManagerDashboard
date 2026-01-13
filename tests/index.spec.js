@@ -9,7 +9,7 @@ describe('router', function () {
   let mainContent;
   let navBarLinks;
   const stateManager = stateManagerModule?.default ?? stateManagerModule;
-  const { searchState, participantState, roleState } = stateManager;
+  let { searchState, participantState, roleState } = stateManager;
 
   const loadRouter = async () => {
     const module = await import('../index.js');
@@ -130,107 +130,57 @@ describe('router', function () {
     });
   });
 
-  describe('renderDashboard', () => {
-    beforeEach(async () => {
-      if (!document.getElementById('mainContent')) {
-        createDOMFixture('mainContent');
-      }
+  describe("renderDashboard", () => {
+    let router;
 
-      const mainContentElement = document.getElementById('mainContent');
-      
-      // Make mainContent available as a global variable (simulating browser behavior for elements with IDs)
-      global.mainContent = mainContentElement;
-      globalThis.mainContent = mainContentElement;
-      
-      await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false, isSiteManager: false, isEHRUploader: false });
-      
-      // Mock getIdToken to avoid Firebase calls
-      global.getIdToken = async () => 'mock-token';
-      
-      // Mock fetch for API calls
+    beforeEach(async () => {
       global.fetch = async () => ({
         ok: true,
         status: 200,
         json: async () => ({ code: 200, data: [{}] }),
       });
+
+      const loadedStateManagerModule = await import('../src/stateManager.js');
+      roleState = loadedStateManagerModule.roleState;
+      router = await loadRouter();
     });
 
     afterEach(() => {
-      delete global.mainContent;
-      delete globalThis.mainContent;
-      delete global.getIdToken;
       delete global.fetch;
     });
 
-    it('renders dashboard modal structure for regular users on home route', async () => {
-      window.location.hash = '#home';
-      const router = await loadRouter();
+    it("renders homapage for coordinating center users", async () => {
+      await roleState.setRoleFlags({ isParent: true, coordinatingCenter: true, isSiteManager: true });
+      window.location.hash = "#home";
       await router();
-      await waitForAsyncTasks(20);
-
-      const mainContent = document.getElementById('mainContent');
-      expect(mainContent.innerHTML).to.include('siteManagerMainModal');
-      expect(mainContent.innerHTML).to.include('modal');
-    });
-
-    it('renders modal for EHR uploaders without rendering charts', async () => {
-      window.location.hash = '#home';
-      const routerModule = await import('../index.js');
-      const indexStateManager = await import('../src/stateManager.js');
-      
-      await indexStateManager.roleState.setRoleFlags({ isEHRUploader: true });
-      
-      await routerModule.router();
-      await waitForAsyncTasks(50);
-
-      const mainContent = document.getElementById('mainContent');
-      const html = mainContent.innerHTML;
-      
-      expect(html).to.include('siteManagerMainModal');
-      expect(html).to.not.include('chart-container');
-    });
-
-    it('shows limited access message for EHR uploaders', async () => {
-      window.location.hash = '#home';
-      const routerModule = await import('../index.js');
-      const indexStateManager = await import('../src/stateManager.js');
-      
-      await indexStateManager.roleState.setRoleFlags({ isEHRUploader: true });
-      await routerModule.router();
       await waitForAsyncTasks(100);
-
-      const mainContent = document.getElementById('mainContent');
-      const html = mainContent.innerHTML;
-      
-      expect(html).to.include('You have limited access to the Connect Study Manager Dashboard');
-      expect(html).to.include('Data Uploaders');
-      expect(html).to.include('ConnectCC@nih.gov');
+      expect(navBarLinks.innerHTML).to.include('href="#requestAKitConditions"');
+      expect(navBarLinks.innerHTML).to.include('href="#siteMessages"');
+      expect(navBarLinks.innerHTML).to.include('href="#ehrUpload"');
+      expect(navBarLinks.innerHTML).to.include('id="createNotificationSchema"');
+      expect(mainContent.innerHTML).to.not.include("You have limited access to the Connect Study Manager Dashboard");
     });
 
-    it('does not render charts for EHR uploaders', async () => {
-      window.location.hash = '#home';
-      const routerModule = await import('../index.js');
-      const indexStateManager = await import('../src/stateManager.js');
-      
-      await indexStateManager.roleState.setRoleFlags({ isEHRUploader: true });
-      
-      await routerModule.router();
-      await waitForAsyncTasks(20);
-
-      const mainContent = document.getElementById('mainContent');
-      expect(mainContent.innerHTML).to.not.include('chart');
-    });
-
-    it('renders modal structure on dashboard', async () => {
-      window.location.hash = '#home';
-      const router = await loadRouter();
+    it("renders homepage for EHR uploaders", async () => {
+      await roleState.setRoleFlags({ isEHRUploader: true });
+      window.location.hash = "#home";
       await router();
-      await waitForAsyncTasks(20);
-
-      const mainContent = document.getElementById('mainContent');
-      expect(mainContent.innerHTML).to.include('siteManagerMainModal');
-      expect(mainContent.innerHTML).to.include('siteManagerModalHeader');
-      expect(mainContent.innerHTML).to.include('siteManagerModalBody');
+      await waitForAsyncTasks(100);
+      expect(navBarLinks.innerHTML).to.include('href="#ehrUpload"');
+      expect(navBarLinks.innerHTML).to.not.include("siteManagerModalHeader");
+      expect(navBarLinks.innerHTML).to.not.include('href="#siteMessages"');
+      expect(mainContent.innerHTML).to.include("You have limited access to the Connect Study Manager Dashboard");
     });
+
+    it("renders homepage for help desk users", async () => {
+      await roleState.setRoleFlags({ helpDesk: true });
+      window.location.hash = "#home";
+      await router();
+      await waitForAsyncTasks(100);
+      expect(mainContent.innerHTML).to.include("siteManagerMainModal");
+      expect(navBarLinks.innerHTML).to.not.include('href="#ehrUpload"');
+      expect(navBarLinks.innerHTML).to.not.include('href="#requestAKitConditions"');
+    });
+
   });
 });

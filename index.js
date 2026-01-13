@@ -372,6 +372,7 @@ const renderActivityCheck = () => {
 
 const renderDashboard = async () => {
     updateNavBar('dashboardBtn');
+    const mainContent = document.getElementById('mainContent');
     mainContent.innerHTML = renderActivityCheck();
     if (location.host !== urls.prod) mainContent.innerHTML += headsupBanner();
     const { isEHRUploader } = roleState.getRoleFlags();
