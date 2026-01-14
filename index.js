@@ -127,10 +127,6 @@ window.onload = async () => {
     }
 
     !isLocalDev && window.DD_RUM && window.DD_RUM.startSessionReplayRecording();
-    const isUserLoggedIn = await userLoggedIn();
-    if (isUserLoggedIn) {
-        await initializeAppState();
-    }
     await router();
     activityCheckController();
 };
@@ -146,6 +142,7 @@ const participantRoutes = [
 
 // Track previous hash for 'no participant selected' and 'unsaved changes' guards.
 let previousHash = window.location.hash;
+let isAppStateInitialized = false;
 
 /**
  * Primary routing logic for the app.
@@ -196,6 +193,10 @@ export const router = async () => {
     const isUserLoggedIn = await userLoggedIn();
     // Authenticated
     if (isUserLoggedIn) {
+        if (!isAppStateInitialized) {
+            await initializeAppState();
+            isAppStateInitialized = true;
+        }
         const { isEHRUploader } = roleState.getRoleFlags();
         const validRoutesForEHRUploader = ["#", "#home", "#ehrUpload", "#logout"];
         // Send to home for invalid routes
