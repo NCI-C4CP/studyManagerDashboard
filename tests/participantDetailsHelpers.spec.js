@@ -295,6 +295,37 @@ describe('participantDetailsHelpers', () => {
             expect(changedUserDataForProfile[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
             expect(changedUserDataForHistory[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.no);
         });
+
+        it('records doesAltAddressExist history when alt address becomes populated', () => {
+            const existingUserData = {
+                [fieldMapping.doesAltAddressExist]: fieldMapping.no,
+            };
+            const newUserData = {
+                [fieldMapping.altAddress1]: '123 Alt St',
+            };
+
+            const { changedUserDataForProfile, changedUserDataForHistory } =
+                module.findChangedUserDataValues(newUserData, existingUserData);
+
+            expect(changedUserDataForProfile[fieldMapping.doesAltAddressExist]).to.equal(fieldMapping.yes);
+            expect(changedUserDataForHistory[fieldMapping.doesAltAddressExist]).to.equal(fieldMapping.no);
+        });
+
+        it('records doesAltAddressExist history when alt address is cleared', () => {
+            const existingUserData = {
+                [fieldMapping.doesAltAddressExist]: fieldMapping.yes,
+                [fieldMapping.altAddress1]: '123 Alt St',
+            };
+            const newUserData = {
+                [fieldMapping.altAddress1]: '',
+            };
+
+            const { changedUserDataForProfile, changedUserDataForHistory } =
+                module.findChangedUserDataValues(newUserData, existingUserData);
+
+            expect(changedUserDataForProfile[fieldMapping.doesAltAddressExist]).to.equal(fieldMapping.no);
+            expect(changedUserDataForHistory[fieldMapping.doesAltAddressExist]).to.equal(fieldMapping.yes);
+        });
     });
 
     describe('updateUserHistory', () => {

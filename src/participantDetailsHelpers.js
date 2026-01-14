@@ -2117,6 +2117,9 @@ export const findChangedUserDataValues = (newUserData, existingUserData) => {
 
         changedUserDataForProfile[fieldMapping.doesAltAddressExist] =
             hasAltAddressData ? fieldMapping.yes : fieldMapping.no;
+        if (changedUserDataForProfile[fieldMapping.doesAltAddressExist] !== existingUserData[fieldMapping.doesAltAddressExist]) {
+            changedUserDataForHistory[fieldMapping.doesAltAddressExist] = existingUserData[fieldMapping.doesAltAddressExist] ?? fieldMapping.no;
+        }
     }
 
     Object.keys(newUserData).forEach(key => {
@@ -2260,6 +2263,7 @@ const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
         fieldMapping.isMailingAddressUSPSUnvalidated,
         fieldMapping.isPhysicalAddressUSPSUnvalidated,
         fieldMapping.isAltAddressUSPSUnvalidated,
+        fieldMapping.doesAltAddressExist,
     ];
 
     keys.forEach((key) => {
