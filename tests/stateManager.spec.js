@@ -157,6 +157,8 @@ describe('stateManager', () => {
         isParent: true,
         coordinatingCenter: true,
         helpDesk: false,
+        isSiteManager: false,
+        isEHRUploader: false,
       });
     });
 
@@ -167,6 +169,8 @@ describe('stateManager', () => {
         isParent: true,
         coordinatingCenter: true,
         helpDesk: true,
+        isSiteManager: false,
+        isEHRUploader: false,
       });
       
       roleState.clear();
@@ -179,6 +183,8 @@ describe('stateManager', () => {
           isParent: false,
           coordinatingCenter: false,
           helpDesk: false,
+          isSiteManager: false,
+          isEHRUploader: false,
         },
       });
       resetAppStateUID();
@@ -188,6 +194,8 @@ describe('stateManager', () => {
         isParent: true,
         coordinatingCenter: true,
         helpDesk: false,
+        isSiteManager: false,
+        isEHRUploader: false,
       });
     });
 
@@ -201,8 +209,11 @@ describe('stateManager', () => {
         isParent: true,
         coordinatingCenter: true,
         helpDesk: false,
+        isSiteManager: false,
+        isEHRUploader: false,
       });
     });
+
   });
 
   describe('uiState', () => {
@@ -862,6 +873,7 @@ describe('stateManager', () => {
     it('handles unauthenticated state', async () => {
       firebaseStub.setUid(null);
       resetAppStateUID();
+      roleState.clear(); // Clear any existing role state
       await initializeAppState();
 
       // Should initialize with defaults (keep any pre-existing stats if present in appState)
@@ -869,6 +881,8 @@ describe('stateManager', () => {
         isParent: false,
         coordinatingCenter: false,
         helpDesk: false,
+        isSiteManager: false,
+        isEHRUploader: false,
       });
       const stats = statsState.getStats();
       expect(stats && typeof stats === 'object').to.be.true;
@@ -910,6 +924,8 @@ describe('stateManager', () => {
         isParent: false,
         coordinatingCenter: false,
         helpDesk: false,
+        isSiteManager: false,
+        isEHRUploader: false,
       });
       expect(uiState.isSiteDropdownVisible()).to.equal(false);
       expect(uiState.getWithdrawalStatusFlags()).to.deep.equal({

@@ -129,4 +129,5 @@ describe('router', function () {
       expect(route.startsWith('#participantDetails')).to.be.true;
     });
   });
+
 });

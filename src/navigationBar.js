@@ -25,14 +25,14 @@ export const renderNavBarLinks = () => {
 }
 
 export const dashboardNavBarLinks = () => {
-    const { isParent, coordinatingCenter, helpDesk } = roleState.getRoleFlags();
+    const { isSiteManager, isEHRUploader, helpDesk, coordinatingCenter } = roleState.getRoleFlags();
     
     // Set up navbar collapse after DOM is updated
     requestAnimationFrame(() => {
         setupNavbarCollapse();
     });
     
-    return `
+    const normalNavBar = `
         <li class="nav-item">
             <a class="nav-item nav-link ws-nowrap" href="#home" title="Home" id="dashboardBtn"><i class="fas fa-home"></i> Home</a>
         </li>
@@ -58,7 +58,7 @@ export const dashboardNavBarLinks = () => {
                 <a class="nav-item nav-link ws-nowrap" href="#requestAKitConditions" title="Manage Automated Kit Request Eligibility"><i class="fa fa-cogs"></i> CCC use only- Set Kit Eligibility</a>
             </li>`) : (``) }
         <div class="w-100 d-none d-lg-block"></div>
-        ${(!isParent || coordinatingCenter) ?
+        ${isSiteManager ?
         (`<li class="nav-item" id="siteMessageBtn">
             <a class="nav-item nav-link ws-nowrap" href="#siteMessages" title="Automated Refusal/Withdrawal Notifications to Sites"><i class="fa fa-comments"></i> Automated Refusal/Withdrawal Notifications to Sites</a>
         </li>`) : (``) }
@@ -80,6 +80,23 @@ export const dashboardNavBarLinks = () => {
             <a class="nav-item nav-link ws-nowrap" href="#logout" title="Log Out"><i class="fas fa-sign-out-alt"></i> Log Out</a>
         </li>
     `;
+
+    const ehrUploaderNavBar = `
+        <li class="nav-item">
+            <a class="nav-item nav-link ws-nowrap" href="#home" title="Home" id="dashboardBtn"><i class="fas fa-home"></i> Home</a>
+        </li>
+        <li class="nav-item" id="ehrUploadBtn">
+            <a class="nav-item nav-link ws-nowrap" href="#ehrUpload" title="EHR Upload"><i class="fa fa-upload"></i> EHR Upload</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-item nav-link ws-nowrap" href="#logout" title="Log Out"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+        </li>
+        `;
+    if (isEHRUploader) {
+        return ehrUploaderNavBar;
+    }
+
+    return normalNavBar;
 }
 
 export const  renderLogin = () => {

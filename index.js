@@ -2,15 +2,13 @@ import { renderParticipantLookup, renderCachedSearchResults } from './src/partic
 import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements, participantLookupNavRequest } from './src/navigationBar.js';
 import { renderTable, renderParticipantSearchResults, setupActiveColumns, renderFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
-import { renderKitRequest } from './src/requestHomeCollectionKit.js';
 import { renderRequestAKitConditions } from './src/requestAKitConditions.js';
 import { renderEhrUploadPage } from "./src/ehrUpload.js";
 import { renderSiteMessages } from './src/siteMessages.js';
-import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
 import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, escapeHTML, renderSiteDropdown, triggerNotificationBanner, showConfirmModal, showAlertModal } from './src/utils.js';
-import { appState, clearUnsaved, initializeAppState, participantState, reportsState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, signOutAndClearSession } from './src/stateManager.js';
+import { appState, clearUnsaved, initializeAppState, participantState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, signOutAndClearSession } from './src/stateManager.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
 import { firebaseConfig as devFirebaseConfig } from "./config/dev/config.js";
@@ -129,7 +127,6 @@ window.onload = async () => {
     }
 
     !isLocalDev && window.DD_RUM && window.DD_RUM.startSessionReplayRecording();
-
     await router();
     activityCheckController();
 };
@@ -145,6 +142,7 @@ const participantRoutes = [
 
 // Track previous hash for 'no participant selected' and 'unsaved changes' guards.
 let previousHash = window.location.hash;
+let isAppStateInitialized = false;
 
 /**
  * Primary routing logic for the app.
@@ -192,12 +190,17 @@ export const router = async () => {
     // Update browser hash tracking once route is cleared for navigation
     const markNavigationSucceeded = () => { previousHash = route; };
 
+    const isUserLoggedIn = await userLoggedIn();
     // Authenticated
-    if (await userLoggedIn()) {
-        await initializeAppState();
-
-        // If authenticated and on login route, send to home
-        if (route === '#login') {
+    if (isUserLoggedIn) {
+        if (!isAppStateInitialized) {
+            await initializeAppState();
+            isAppStateInitialized = true;
+        }
+        const { isEHRUploader } = roleState.getRoleFlags();
+        const validRoutesForEHRUploader = ["#", "#home", "#ehrUpload", "#logout"];
+        // Send to home for invalid routes
+        if (route === '#login' || (isEHRUploader && !validRoutesForEHRUploader.includes(route))) {
             markNavigationSucceeded();
             window.location.hash = '#home';
             return;
@@ -330,10 +333,26 @@ const loginPage = () => {
         const saml = new firebase.auth.SAMLAuthProvider(provider);
         firebase.auth().tenantId = tenantID;
         firebase.auth().signInWithPopup(saml)
-            .then((result) => {
+            .then(async (result) => {
+                showAnimation();
                 userSession.setUser({email: result.user.email});
-                location.hash = '#home'
-                router();
+                const idToken = await getIdToken();
+                if (idToken) {
+                    const authResp = await authorize(idToken);
+                    if (authResp.code === 200) {
+                        // Authorized user should have one of the roles as true: isSiteManager, isEHRUploader, helpDesk
+                        await roleState.setRoleFlags(authResp.data);
+                    } else if (authResp.code === 401) {
+                        console.error('User is not authorized to access dashboard. Signing out...');
+                        signOutAndClearSession();
+                    }
+                } else {
+                    console.error('No ID token found after login.');
+                    signOutAndClearSession();
+                }
+
+                hideAnimation();
+                location.hash = '#home';
             })
             .catch((error) => {
                 console.log(error);
@@ -353,32 +372,22 @@ const renderActivityCheck = () => {
 }
 
 const renderDashboard = async () => {
-    const idToken = await getIdToken();
-    if (idToken) {
-        showAnimation();
-        const isAuthorized = await authorize(idToken);
+    updateNavBar('dashboardBtn');
+    const mainContent = document.getElementById('mainContent');
+    mainContent.innerHTML = renderActivityCheck();
+    if (location.host !== urls.prod) mainContent.innerHTML += headsupBanner();
+    const { isEHRUploader } = roleState.getRoleFlags();
+    if (isEHRUploader) {
+        mainContent.innerHTML += `
+            <div class="alert alert-info" role="alert" style="margin: 40px auto; max-width: 800px; text-align: center;">
+                You have limited access to the Connect Study Manager Dashboard for Data Uploaders. Please navigate to the upload page in the tabs above for your specific use case. Do not share any Connect data or PII outside of this dashboard. If you have any questions or issues, please email the Connect Coordinating Center at <a href="mailto:ConnectCC@nih.gov">ConnectCC@nih.gov</a>.
+            </div>`;
 
-        if (isAuthorized && isAuthorized.code === 200) {
-            await roleState.setRoleFlags({
-                isParent: isAuthorized.isParent,
-                coordinatingCenter: isAuthorized.coordinatingCenter,
-                helpDesk: isAuthorized.helpDesk,
-            });
-
-            updateNavBar('dashboardBtn');
-
-            mainContent.innerHTML = '';
-            mainContent.innerHTML = renderActivityCheck();
-            location.host !== urls.prod ? mainContent.innerHTML = headsupBanner() : ``
-            await renderCharts(idToken);
-        }
-        if (isAuthorized.code === 401) {
-            signOutAndClearSession();
-        }
-    } else {
-        hideAnimation();
-        window.location.hash = '#';
+        return;
     }
+
+    const idToken = await getIdToken();
+    await renderCharts(idToken);
 }
 
 const renderCharts = async (accessToken) => {
@@ -1197,5 +1206,5 @@ const activityCheckController = () => {
     }
     window.onload = resetTimer;
     document.onmousemove = resetTimer;
-    document.onkeypress = resetTimer;
+    document.onkeydown = resetTimer;
 };
