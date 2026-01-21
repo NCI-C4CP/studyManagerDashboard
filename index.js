@@ -544,54 +544,58 @@ const getStatsForDashboard = async (accessToken) => {
 
 /**
  * Check if current user is authorized to access the dashboard
- * @returns {Object|boolean} Authorized roles object if authorized, false otherwise
+ * @returns {Promise<Object|null>} Authorized roles object if authorized, null otherwise
  */
 const authorizeUser = async () => {
   try {
     const idToken = await getIdToken();
-    if (idToken) {
-      const resp = await fetch(`${baseAPI}/dashboard?api=validateSiteUsers`, {
-        method: "GET",
-        headers: {
-          Authorization: "Bearer " + idToken,
-        },
-      });
-
-      const respJson = await resp.json();
-      if (respJson.code === 200) {
-        // Authorized user should have one of the SSO roles as true: isSiteManager, isEHRUploader, helpDesk
-        return respJson.data;
-      }
-
-      console.error(`User is not authorized: ${respJson.message}`);
-      return false;
+    if (!idToken) {
+      console.error("No ID token found for current user.");
+      return null;
     }
 
-    console.error("No ID token found for current user.");
-    return false;
+    const resp = await fetch(`${baseAPI}/dashboard?api=validateSiteUsers`, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer " + idToken,
+      },
+    });
+
+    if (!resp.ok) {
+      console.error(`Authorization request failed: ${resp.status} ${resp.statusText}`);
+      return null;
+    }
+
+    const respJson = await resp.json();
+    if (respJson.code === 200) {
+      return respJson.data;
+    }
+
+    console.error(`User is not authorized: ${respJson.message}`);
+    return null;
   } catch (error) {
     console.error("Error calling authorizeUser():", error);
-    return false;
+    return null;
   }
 };
 
+// Authorized user should have one of the SSO roles
+const ssoRoles = ["isSiteManager", "isEHRUploader", "helpDesk"];
+
 /**
- * Check if user has valid authorization roles. If not, attempt to authorize user and update roles to state manager.
- * @returns {boolean} True if user is authorized, false otherwise
+ * Check if user has valid authorization roles. If not, attempt to authorize user and update refreshed roles to state manager.
+ * @returns {Promise<boolean>} True if user is authorized, false otherwise
  */
 const checkUserAuthorization = async () => {
-  const ssoRoleArr = ["isSiteManager", "isEHRUploader", "helpDesk"];
   const savedRoles = roleState.getRoleFlags();
-  const hasValidRole = ssoRoleArr.some((role) => savedRoles[role] === true);
+  const hasValidRole = ssoRoles.some((role) => savedRoles[role] === true);
   if (hasValidRole) return true;
 
   const authorizedRoles = await authorizeUser();
-  if (authorizedRoles) {
-    await roleState.setRoleFlags(authorizedRoles);
-    return true;
-  }
+  if (!authorizedRoles) return false;
 
-  return false;
+  await roleState.setRoleFlags(authorizedRoles);
+  return true;
 };
 
 const filterGenderMetrics = (participantsGenderMetrics, activeVerifiedParticipants, passiveVerifiedParticipants) => {
