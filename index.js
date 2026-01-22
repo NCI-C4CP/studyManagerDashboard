@@ -142,7 +142,6 @@ const participantRoutes = [
 
 // Track previous hash for 'no participant selected' and 'unsaved changes' guards.
 let previousHash = window.location.hash;
-let isAppStateInitialized = false;
 
 /**
  * Primary routing logic for the app.
@@ -191,12 +190,15 @@ export const router = async () => {
     const markNavigationSucceeded = () => { previousHash = route; };
 
     const isUserLoggedIn = await userLoggedIn();
-    // Authenticated
     if (isUserLoggedIn) {
-        if (!isAppStateInitialized) {
-            await initializeAppState();
-            isAppStateInitialized = true;
+        await initializeAppState();
+        const isUserAuthorized = await checkUserAuthorization();
+        if (!isUserAuthorized) {
+            console.error("User is not authorized to access dashboard. Signing out...");
+            signOutAndClearSession();
+            return;
         }
+
         const { isEHRUploader } = roleState.getRoleFlags();
         const validRoutesForEHRUploader = ["#", "#home", "#ehrUpload", "#logout"];
         // Send to home for invalid routes
@@ -336,18 +338,11 @@ const loginPage = () => {
             .then(async (result) => {
                 showAnimation();
                 userSession.setUser({email: result.user.email});
-                const idToken = await getIdToken();
-                if (idToken) {
-                    const authResp = await authorize(idToken);
-                    if (authResp.code === 200) {
-                        // Authorized user should have one of the roles as true: isSiteManager, isEHRUploader, helpDesk
-                        await roleState.setRoleFlags(authResp.data);
-                    } else if (authResp.code === 401) {
-                        console.error('User is not authorized to access dashboard. Signing out...');
-                        signOutAndClearSession();
-                    }
+                const authorizedRoles = await authorizeUser();
+                if (authorizedRoles) {
+                    await roleState.setRoleFlags(authorizedRoles);
                 } else {
-                    console.error('No ID token found after login.');
+                    console.error("User is not authorized to access dashboard. Signing out...");
                     signOutAndClearSession();
                 }
 
@@ -547,16 +542,61 @@ const getStatsForDashboard = async (accessToken) => {
   }
 };
 
-const authorize = async (siteKey) => {
-    const response = await fetch(`${baseAPI}/dashboard?api=validateSiteUsers`, {
-        method: 'GET',
-        headers: {
-            Authorization: "Bearer " + siteKey
-        }
-    });
-    return await response.json();
+/**
+ * Check if current user is authorized to access the dashboard
+ * @returns {Promise<Object|null>} Authorized roles object if authorized, null otherwise
+ */
+const authorizeUser = async () => {
+  try {
+    const idToken = await getIdToken();
+    if (!idToken) {
+      console.error("No ID token found for current user.");
+      return null;
+    }
 
-}
+    const resp = await fetch(`${baseAPI}/dashboard?api=validateSiteUsers`, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer " + idToken,
+      },
+    });
+
+    if (!resp.ok) {
+      console.error(`Authorization request failed: ${resp.status} ${resp.statusText}`);
+      return null;
+    }
+
+    const respJson = await resp.json();
+    if (respJson.code === 200) {
+      return respJson.data;
+    }
+
+    console.error(`User is not authorized: ${respJson.message}`);
+    return null;
+  } catch (error) {
+    console.error("Error calling authorizeUser():", error);
+    return null;
+  }
+};
+
+// Authorized user should have one of the SSO roles
+const ssoRoles = ["isSiteManager", "isEHRUploader", "helpDesk"];
+
+/**
+ * Check if user has valid authorization roles. If not, attempt to authorize user and update refreshed roles to state manager.
+ * @returns {Promise<boolean>} True if user is authorized, false otherwise
+ */
+const checkUserAuthorization = async () => {
+  const savedRoles = roleState.getRoleFlags();
+  const hasValidRole = ssoRoles.some((role) => savedRoles[role] === true);
+  if (hasValidRole) return true;
+
+  const authorizedRoles = await authorizeUser();
+  if (!authorizedRoles) return false;
+
+  await roleState.setRoleFlags(authorizedRoles);
+  return true;
+};
 
 const filterGenderMetrics = (participantsGenderMetrics, activeVerifiedParticipants, passiveVerifiedParticipants) => {
     const verifiedParticipants =  activeVerifiedParticipants + passiveVerifiedParticipants
