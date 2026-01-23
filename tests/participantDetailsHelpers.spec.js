@@ -296,6 +296,22 @@ describe('participantDetailsHelpers', () => {
             expect(changedUserDataForHistory[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.no);
         });
 
+        it('records USPS validation flags in history even when flag value has not changed (yes -> yes)', () => {
+            const existingUserData = {
+                [fieldMapping.address1]: '111 Old St',
+                [fieldMapping.isMailingAddressUSPSUnvalidated]: fieldMapping.yes,
+            };
+            const newUserData = {
+                [fieldMapping.address1]: '222 New St',
+            };
+
+            const { changedUserDataForProfile, changedUserDataForHistory } =
+                module.findChangedUserDataValues(newUserData, existingUserData);
+
+            expect(changedUserDataForProfile[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
+            expect(changedUserDataForHistory[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
+        });
+
         it('records doesAltAddressExist history when alt address becomes populated', () => {
             const existingUserData = {
                 [fieldMapping.doesAltAddressExist]: fieldMapping.no,
