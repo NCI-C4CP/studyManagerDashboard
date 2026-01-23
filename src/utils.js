@@ -179,9 +179,10 @@ export const renderSiteDropdown = (context = 'lookup', menuId = 'dropdownMenuBut
 export const triggerNotificationBanner = (message, type, timeout) => {
   const alertList = document.getElementById("alert_placeholder");
   if (alertList) {
+      const escapedMessage = message.split(/<br\s*\/?>/i).map(msg => escapeHTML(msg)).join('<br>');
       alertList.innerHTML = `
           <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-              ${message}
+              ${escapedMessage}
               <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                       <span aria-hidden="true">&times;</span>
                   </button>

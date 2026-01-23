@@ -1226,7 +1226,7 @@ const processParticipantLoginMethod = async (participantAuthenticationEmail, aut
                 }
 
             } else {
-                showAuthUpdateAPIError('modalBody', responseJSON.message);
+                showAuthUpdateAPIError('modalBody', responseJSON.message || responseJSON.error || 'Operation Unsuccessful!');
             }
 
         } catch (error) {
@@ -1257,9 +1257,8 @@ const updateParticipantFirestoreProfile = async (updatedOptions, bearerToken) =>
 
     if (response.status === 200) {
         clearUnsaved();
-        showAuthUpdateAPIAlert('success', 'Participant detail updated!');
         return true;
-    } else { 
+    } else {
         hideAnimation();
         console.error(`Error in updating participant data (updateParticipantFirestoreProfile()): ${responseJSON.error || responseJSON.message || 'Unknown error'}`);
         return false;
@@ -1286,11 +1285,11 @@ const updateUIOnAuthResponse = async (changedOption, responseData, status) => {
     hideAnimation();
 
     if (status === 200) {
-        showAuthUpdateAPIAlert('success', 'Operation successful!');
         closeModal();
 
         // Reload participant data and route through state manager
         await reloadParticipantData(changedOption.token);
+        showAuthUpdateAPIAlert('success', 'Operation successful!');
     } else {
         const errorMessage = responseData.error || 'Operation Unsuccessful!';
         showAuthUpdateAPIError('modalBody', errorMessage);
@@ -1301,7 +1300,7 @@ const showAuthUpdateAPIAlert = (type, message) => {
     const alertList = document.getElementById("alert_placeholder");
     alertList.innerHTML = `
         <div class="alert alert-${type}" alert-dismissible fade show" role="alert">
-            ${message}
+            ${escapeHTML(message)}
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
@@ -1312,7 +1311,7 @@ const showAuthUpdateAPIError = (bodyId, message) => {
     const modal = document.getElementById('modalShowMoreData');
     const body = modal?.querySelector(`#${bodyId}`) || document.getElementById(bodyId);
     if (!body) return false;
-    body.innerHTML = `<div>${message}</div>`;
+    body.innerHTML = `<div>${escapeHTML(message || 'An error occurred. Please try again.')}</div>`;
     return false;
 }
 
@@ -1914,11 +1913,11 @@ export const submitClickHandler = async (participant, changedOption) => {
 
                 invalidateSearchResultsCache();
                 clearUnsaved();
-                triggerNotificationBanner('Success! Changes Saved.', 'success');
 
                 const updatedParticipant = await updateParticipantAfterFormSave(participant, changedUserDataForProfile);
                 const resetChanges = {};
                 await renderParticipantDetails(updatedParticipant, resetChanges, 'details', { preserveScrollPosition: true });
+                triggerNotificationBanner('Success! Changes Saved.', 'success');
 
             } catch (error) {
                 console.error('Error:', error);
@@ -2176,13 +2175,18 @@ export const findChangedUserDataValues = (newUserData, existingUserData) => {
 
     // If any address values were updated, mark corresponding USPS validation flags as unvalidated.
     // USPS address validation happens in the PWA, but not in SMDB.
+    // Always record the previous value of these flags in history when their corresponding address changes,
+    // even if the flag value hasn't changed (e.g., yes -> yes).
+    const uspsUnvalidatedFlags = new Set([
+        fieldMapping.isMailingAddressUSPSUnvalidated,
+        fieldMapping.isPhysicalAddressUSPSUnvalidated,
+        fieldMapping.isAltAddressUSPSUnvalidated,
+    ]);
     const profileKeysBeforeUSPS = new Set(Object.keys(changedUserDataForProfile));
     applyUSPSUnvalidatedFlags(changedUserDataForProfile);
     Object.keys(changedUserDataForProfile).forEach((key) => {
-        if (!profileKeysBeforeUSPS.has(key)) {
-            if (!Object.prototype.hasOwnProperty.call(changedUserDataForHistory, key)) {
-                changedUserDataForHistory[key] = existingUserData[key] ?? '';
-            }
+        if (!profileKeysBeforeUSPS.has(key) && uspsUnvalidatedFlags.has(parseInt(key))) {
+            changedUserDataForHistory[key] = existingUserData[key] ?? '';
         }
     });
 
