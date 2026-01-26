@@ -82,6 +82,12 @@ export default
     "altZip": 379899229,
     "isIntlAltAddress": 306739670,
     "isPOBoxAltAddress": 810747471,
+
+    // USPS Address validation flags
+    "isMailingAddressUSPSUnvalidated": 681424869,
+    "isPhysicalAddressUSPSUnvalidated": 598118050,
+    "isAltAddressUSPSUnvalidated": 147838122,
+
     // Alternate contact
     "altContactFirstName": 661719912,
     "altContactLastName": 801653230,

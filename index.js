@@ -2,15 +2,13 @@ import { renderParticipantLookup, renderCachedSearchResults } from './src/partic
 import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, updateActiveElements, participantLookupNavRequest } from './src/navigationBar.js';
 import { renderTable, renderParticipantSearchResults, setupActiveColumns, renderFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
-import { renderKitRequest } from './src/requestHomeCollectionKit.js';
 import { renderRequestAKitConditions } from './src/requestAKitConditions.js';
 import { renderEhrUploadPage } from "./src/ehrUpload.js";
 import { renderSiteMessages } from './src/siteMessages.js';
-import { renderParticipantWithdrawal } from './src/participantWithdrawal.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
 import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, escapeHTML, renderSiteDropdown, triggerNotificationBanner, showConfirmModal, showAlertModal } from './src/utils.js';
-import { appState, clearUnsaved, initializeAppState, participantState, reportsState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, signOutAndClearSession } from './src/stateManager.js';
+import { appState, clearUnsaved, initializeAppState, participantState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, signOutAndClearSession } from './src/stateManager.js';
 import { nameToKeyObj } from './src/idsToName.js';
 import { renderAllCharts } from './src/participantChartsRender.js';
 import { firebaseConfig as devFirebaseConfig } from "./config/dev/config.js";
@@ -129,7 +127,6 @@ window.onload = async () => {
     }
 
     !isLocalDev && window.DD_RUM && window.DD_RUM.startSessionReplayRecording();
-
     await router();
     activityCheckController();
 };
@@ -192,12 +189,20 @@ export const router = async () => {
     // Update browser hash tracking once route is cleared for navigation
     const markNavigationSucceeded = () => { previousHash = route; };
 
-    // Authenticated
-    if (await userLoggedIn()) {
+    const isUserLoggedIn = await userLoggedIn();
+    if (isUserLoggedIn) {
         await initializeAppState();
+        const isUserAuthorized = await checkUserAuthorization();
+        if (!isUserAuthorized) {
+            console.error("User is not authorized to access dashboard. Signing out...");
+            signOutAndClearSession();
+            return;
+        }
 
-        // If authenticated and on login route, send to home
-        if (route === '#login') {
+        const { isEHRUploader } = roleState.getRoleFlags();
+        const validRoutesForEHRUploader = ["#", "#home", "#ehrUpload", "#logout"];
+        // Send to home for invalid routes
+        if (route === '#login' || (isEHRUploader && !validRoutesForEHRUploader.includes(route))) {
             markNavigationSucceeded();
             window.location.hash = '#home';
             return;
@@ -330,10 +335,19 @@ const loginPage = () => {
         const saml = new firebase.auth.SAMLAuthProvider(provider);
         firebase.auth().tenantId = tenantID;
         firebase.auth().signInWithPopup(saml)
-            .then((result) => {
+            .then(async (result) => {
+                showAnimation();
                 userSession.setUser({email: result.user.email});
-                location.hash = '#home'
-                router();
+                const authorizedRoles = await authorizeUser();
+                if (authorizedRoles) {
+                    await roleState.setRoleFlags(authorizedRoles);
+                } else {
+                    console.error("User is not authorized to access dashboard. Signing out...");
+                    signOutAndClearSession();
+                }
+
+                hideAnimation();
+                location.hash = '#home';
             })
             .catch((error) => {
                 console.log(error);
@@ -353,32 +367,22 @@ const renderActivityCheck = () => {
 }
 
 const renderDashboard = async () => {
-    const idToken = await getIdToken();
-    if (idToken) {
-        showAnimation();
-        const isAuthorized = await authorize(idToken);
+    updateNavBar('dashboardBtn');
+    const mainContent = document.getElementById('mainContent');
+    mainContent.innerHTML = renderActivityCheck();
+    if (location.host !== urls.prod) mainContent.innerHTML += headsupBanner();
+    const { isEHRUploader } = roleState.getRoleFlags();
+    if (isEHRUploader) {
+        mainContent.innerHTML += `
+            <div class="alert alert-info" role="alert" style="margin: 40px auto; max-width: 800px; text-align: center;">
+                You have limited access to the Connect Study Manager Dashboard for Data Uploaders. Please navigate to the upload page in the tabs above for your specific use case. Do not share any Connect data or PII outside of this dashboard. If you have any questions or issues, please email the Connect Coordinating Center at <a href="mailto:ConnectCC@nih.gov">ConnectCC@nih.gov</a>.
+            </div>`;
 
-        if (isAuthorized && isAuthorized.code === 200) {
-            await roleState.setRoleFlags({
-                isParent: isAuthorized.isParent,
-                coordinatingCenter: isAuthorized.coordinatingCenter,
-                helpDesk: isAuthorized.helpDesk,
-            });
-
-            updateNavBar('dashboardBtn');
-
-            mainContent.innerHTML = '';
-            mainContent.innerHTML = renderActivityCheck();
-            location.host !== urls.prod ? mainContent.innerHTML = headsupBanner() : ``
-            await renderCharts(idToken);
-        }
-        if (isAuthorized.code === 401) {
-            signOutAndClearSession();
-        }
-    } else {
-        hideAnimation();
-        window.location.hash = '#';
+        return;
     }
+
+    const idToken = await getIdToken();
+    await renderCharts(idToken);
 }
 
 const renderCharts = async (accessToken) => {
@@ -538,16 +542,61 @@ const getStatsForDashboard = async (accessToken) => {
   }
 };
 
-const authorize = async (siteKey) => {
-    const response = await fetch(`${baseAPI}/dashboard?api=validateSiteUsers`, {
-        method: 'GET',
-        headers: {
-            Authorization: "Bearer " + siteKey
-        }
-    });
-    return await response.json();
+/**
+ * Check if current user is authorized to access the dashboard
+ * @returns {Promise<Object|null>} Authorized roles object if authorized, null otherwise
+ */
+const authorizeUser = async () => {
+  try {
+    const idToken = await getIdToken();
+    if (!idToken) {
+      console.error("No ID token found for current user.");
+      return null;
+    }
 
-}
+    const resp = await fetch(`${baseAPI}/dashboard?api=validateSiteUsers`, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer " + idToken,
+      },
+    });
+
+    if (!resp.ok) {
+      console.error(`Authorization request failed: ${resp.status} ${resp.statusText}`);
+      return null;
+    }
+
+    const respJson = await resp.json();
+    if (respJson.code === 200) {
+      return respJson.data;
+    }
+
+    console.error(`User is not authorized: ${respJson.message}`);
+    return null;
+  } catch (error) {
+    console.error("Error calling authorizeUser():", error);
+    return null;
+  }
+};
+
+// Authorized user should have one of the SSO roles
+const ssoRoles = ["isSiteManager", "isEHRUploader", "helpDesk"];
+
+/**
+ * Check if user has valid authorization roles. If not, attempt to authorize user and update refreshed roles to state manager.
+ * @returns {Promise<boolean>} True if user is authorized, false otherwise
+ */
+const checkUserAuthorization = async () => {
+  const savedRoles = roleState.getRoleFlags();
+  const hasValidRole = ssoRoles.some((role) => savedRoles[role] === true);
+  if (hasValidRole) return true;
+
+  const authorizedRoles = await authorizeUser();
+  if (!authorizedRoles) return false;
+
+  await roleState.setRoleFlags(authorizedRoles);
+  return true;
+};
 
 const filterGenderMetrics = (participantsGenderMetrics, activeVerifiedParticipants, passiveVerifiedParticipants) => {
     const verifiedParticipants =  activeVerifiedParticipants + passiveVerifiedParticipants
@@ -1197,5 +1246,5 @@ const activityCheckController = () => {
     }
     window.onload = resetTimer;
     document.onmousemove = resetTimer;
-    document.onkeypress = resetTimer;
+    document.onkeydown = resetTimer;
 };

@@ -40,7 +40,6 @@ const baseBubbleCategories = [
       field(fieldMapping.timeStudyIdSubmitted, 'D/T Study ID Sub'),
       field(fieldMapping.recruitmentType, 'Recruit Type'),
       field(fieldMapping.recruitmentDate, 'D/T Recruit Type Assigned'),
-      field(fieldMapping.campaignType, 'Campaign'),
       field(fieldMapping.reinvitationCampaignType, 'Reinvitation Type'),
       field(fieldMapping.reinvitationDate, 'D/T Reinvitation'),
       field(fieldMapping.signedInFlag, 'Signed-in'),
@@ -76,6 +75,7 @@ const baseBubbleCategories = [
       field(fieldMapping.bswhReportedRaceEthnicity, 'BSWH Reported R/E'),
       field(fieldMapping.eligAlgorithmVersion, 'Elig Algorithm Vers'),
       field(fieldMapping.ihcsMemberStatus, 'IHCS Member Status'),
+      field(fieldMapping.campaignType, 'Campaign'),
     ],
   },
   {
@@ -185,6 +185,8 @@ const baseBubbleCategories = [
       field(fieldMapping.biospecimenUrineCollection, 'BL Urine Collection Setting'),        // nested 173836415.266600170.718172863
       field(fieldMapping.baselineMouthwashCollectedFlag, 'BL MW Collected'),                // non-nested
       field(fieldMapping.biospecimenMouthwashCollection, 'BL Mouthwash Collection Setting'),// nested 173836415.266600170.915179629
+      field(fieldMapping.paymentIssued, 'BL Payment Issued'),                               // nested 130371375.266600170.648936790
+      field(fieldMapping.refusedBaselinePayment, 'BL Payment Ref'),                         // nested 130371375.266600170.648228701
     ],
   },
   // Done and checked beyond here.
