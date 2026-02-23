@@ -18,5 +18,11 @@
     "eslint-config-google": "^0.14.0",
     "jsdom": "^24.0.0",
     "mocha": "^11.0.0"
+  },
+  "overridesNote": {
+    "diff": "8.0.3 for GHSA-73rr-hh4g-fpgx"
+  },
+  "overrides": {
+    "diff": "8.0.3"
   }
 }
