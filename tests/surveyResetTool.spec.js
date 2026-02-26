@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { setupSurveyResetToolPage, resetParticipantSurvey } from '../src/dataCorrectionsTool/surveyResetTool.js';
@@ -32,9 +31,9 @@ describe('surveyResetTool', () => {
             await waitForAsyncTasks();
 
             const content = document.getElementById('mainContent').innerHTML;
-            expect(content).to.include('Survey Status Reset Tool');
-            expect(content).to.include('SSN Survey');
-            expect(document.getElementById('dropdownSurveyMenu')).to.exist;
+            expect(content).toContain('Survey Status Reset Tool');
+            expect(content).toContain('SSN Survey');
+            expect(document.getElementById('dropdownSurveyMenu')).toBeDefined();
         });
     });
 
@@ -52,7 +51,7 @@ describe('surveyResetTool', () => {
             // We can verify UI state change if we simulate the click. Rely on the fact that the click handler calls the logic.
             
             const ssnOption = document.querySelector(`[data-survey="${fieldMapping.ssnStatusFlag}"]`);
-            expect(ssnOption).to.exist;
+            expect(ssnOption).toBeDefined();
         });
 
         it('disables submit and shows note when survey is already not started', async () => {
@@ -78,8 +77,8 @@ describe('surveyResetTool', () => {
             document.querySelector(`[data-survey=\"${fieldMapping.ssnStatusFlag}\"]`).click();
             await waitForAsyncTasks();
 
-            expect(document.getElementById('submitButton').disabled).to.equal(true);
-            expect(document.getElementById('isSurveyAlreadyResetNote').innerHTML).to.contain('no survey data to be reset');
+            expect(document.getElementById('submitButton').disabled).toBe(true);
+            expect(document.getElementById('isSurveyAlreadyResetNote').innerHTML).toContain('no survey data to be reset');
         });
 
         it('enables submit and resets status after confirmation', async () => {
@@ -113,7 +112,7 @@ describe('surveyResetTool', () => {
             document.querySelector(`[data-survey=\"${fieldMapping.ssnStatusFlag}\"]`).click();
             await waitForAsyncTasks();
 
-            expect(document.getElementById('submitButton').disabled).to.equal(false);
+            expect(document.getElementById('submitButton').disabled).toBe(false);
 
             document.getElementById('submitButton').click();
             await waitForAsyncTasks();
@@ -121,10 +120,10 @@ describe('surveyResetTool', () => {
             await waitForAsyncTasks();
 
             const resetCall = fetchCalls.find(call => call.url.includes('resetParticipantSurvey'));
-            expect(resetCall).to.exist;
+            expect(resetCall).toBeDefined();
 
             const statusText = document.getElementById('surveyStatusText').textContent;
-            expect(statusText).to.contain('Not Started');
+            expect(statusText).toContain('Not Started');
         });
     });
 
@@ -152,10 +151,10 @@ describe('surveyResetTool', () => {
 
             const response = await resetParticipantSurvey(fieldMapping.ssnStatusFlag);
 
-            expect(capturedUrl).to.include(`${baseAPI}/dashboard?api=resetParticipantSurvey`);
-            expect(capturedBody.connectId).to.equal('CONN001');
-            expect(capturedBody.survey).to.equal(fieldMapping.ssnStatusFlag);
-            expect(response.code).to.equal(200);
+            expect(capturedUrl).toContain(`${baseAPI}/dashboard?api=resetParticipantSurvey`);
+            expect(capturedBody.connectId).toBe('CONN001');
+            expect(capturedBody.survey).toBe(fieldMapping.ssnStatusFlag);
+            expect(response.code).toBe(200);
         });
 
         it('handles API errors gracefully', async () => {
@@ -170,9 +169,9 @@ describe('surveyResetTool', () => {
 
             try {
                 await resetParticipantSurvey(fieldMapping.ssnStatusFlag);
-                expect.fail('Should have thrown an error');
+                throw new Error('Should have thrown an error');
             } catch (error) {
-                expect(error.message).to.include('500 Error: Server Error');
+                expect(error.message).toContain('500 Error: Server Error');
             }
         });
     });

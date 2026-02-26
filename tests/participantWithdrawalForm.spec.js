@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { 
@@ -35,15 +34,15 @@ describe('participantWithdrawalForm Logic', () => {
             const withdrawCheck = document.getElementById('withdrawConsentCheck');
             const revokeCheck = document.getElementById('revokeHipaaAuthorizationCheck');
 
-            expect(destroyCheck.checked).to.be.false;
-            expect(withdrawCheck.checked).to.be.false;
-            expect(revokeCheck.checked).to.be.false;
+            expect(destroyCheck.checked).toBe(false);
+            expect(withdrawCheck.checked).toBe(false);
+            expect(revokeCheck.checked).toBe(false);
 
             destroyCheck.checked = true;
             destroyCheck.dispatchEvent(new window.Event('change'));
 
-            expect(withdrawCheck.checked).to.be.true;
-            expect(revokeCheck.checked).to.be.true;
+            expect(withdrawCheck.checked).toBe(true);
+            expect(revokeCheck.checked).toBe(true);
         });
 
         it('cannot uncheck "Withdraw Consent" if "Destroy Data" is checked', () => {
@@ -53,14 +52,14 @@ describe('participantWithdrawalForm Logic', () => {
             // Check Destroy Data
             destroyCheck.checked = true;
             destroyCheck.dispatchEvent(new window.Event('change'));
-            expect(withdrawCheck.checked).to.be.true;
+            expect(withdrawCheck.checked).toBe(true);
 
             // Unchecks Withdraw Consent
             withdrawCheck.checked = false;
             withdrawCheck.dispatchEvent(new window.Event('change'));
 
             // Reverts to true
-            expect(withdrawCheck.checked).to.be.true;
+            expect(withdrawCheck.checked).toBe(true);
         });
 
         it('cannot uncheck "Revoke HIPAA" if "Withdraw Consent" is checked', () => {
@@ -70,14 +69,14 @@ describe('participantWithdrawalForm Logic', () => {
             // Check Withdraw Consent
             withdrawCheck.checked = true;
             withdrawCheck.dispatchEvent(new window.Event('change'));
-            expect(revokeCheck.checked).to.be.true;
+            expect(revokeCheck.checked).toBe(true);
 
             // Uncheck Revoke HIPAA
             revokeCheck.checked = false;
             revokeCheck.dispatchEvent(new window.Event('change'));
 
             // Reverts to true
-            expect(revokeCheck.checked).to.be.true;
+            expect(revokeCheck.checked).toBe(true);
         });
 
         it('"Participant Deceased" toggles "Who Requested" inputs', () => {
@@ -86,48 +85,48 @@ describe('participantWithdrawalForm Logic', () => {
             const piRadio = document.getElementById('requestPrincipalInvestigator');
 
             // Initially enabled
-            expect(participantRadio.disabled).to.be.false;
-            expect(piRadio.disabled).to.be.false;
+            expect(participantRadio.disabled).toBe(false);
+            expect(piRadio.disabled).toBe(false);
 
             // Check deceased
             deceasedCheck.checked = true;
             deceasedCheck.dispatchEvent(new window.Event('change'));
 
-            expect(participantRadio.disabled).to.be.true;
-            expect(piRadio.disabled).to.be.true;
+            expect(participantRadio.disabled).toBe(true);
+            expect(piRadio.disabled).toBe(true);
 
             // Uncheck deceased
             deceasedCheck.checked = false;
             deceasedCheck.dispatchEvent(new window.Event('change'));
 
-            expect(participantRadio.disabled).to.be.false;
-            expect(piRadio.disabled).to.be.false;
+            expect(participantRadio.disabled).toBe(false);
+            expect(piRadio.disabled).toBe(false);
         });
     });
 
     describe('Date Validation', () => {
         it('validates future dates for suspend contact', () => {
             const futureYear = new Date().getFullYear() + 1;
-            expect(validateDate('01', '01', futureYear.toString(), 'suspend').isValid).to.be.true;
+            expect(validateDate('01', '01', futureYear.toString(), 'suspend').isValid).toBe(true);
         });
 
         it('invalidates past dates for suspend contact', () => {
             const pastYear = new Date().getFullYear() - 1;
-            expect(validateDate('01', '01', pastYear.toString(), 'suspend').isValid).to.be.false;
+            expect(validateDate('01', '01', pastYear.toString(), 'suspend').isValid).toBe(false);
         });
 
         it('validates past dates for cause of death', () => {
             const pastYear = new Date().getFullYear() - 1;
-            expect(validateDate('01', '01', pastYear.toString(), 'causeOfDeath').isValid).to.be.true;
+            expect(validateDate('01', '01', pastYear.toString(), 'causeOfDeath').isValid).toBe(true);
         });
 
         it('invalidates future dates for cause of death', () => {
             const futureYear = new Date().getFullYear() + 1;
-            expect(validateDate('01', '01', futureYear.toString(), 'causeOfDeath').isValid).to.be.false;
+            expect(validateDate('01', '01', futureYear.toString(), 'causeOfDeath').isValid).toBe(false);
         });
 
         it('handles incomplete dates', () => {
-            expect(validateDate('01', '', '2023', 'suspend').isValid).to.be.false;
+            expect(validateDate('01', '', '2023', 'suspend').isValid).toBe(false);
         });
     });
 
@@ -159,8 +158,8 @@ describe('participantWithdrawalForm Logic', () => {
                 '//' // suspend date
             );
 
-            expect(result[fieldMapping.participationStatus]).to.equal(fieldMapping.refusedAll);
-            expect(result[fieldMapping.refAllFutureActivitesTimeStamp]).to.exist;
+            expect(result[fieldMapping.participationStatus]).toBe(fieldMapping.refusedAll);
+            expect(result[fieldMapping.refAllFutureActivitesTimeStamp]).toBeDefined();
         });
 
         it('calculates correct status for "Withdraw Consent"', async () => {
@@ -178,8 +177,8 @@ describe('participantWithdrawalForm Logic', () => {
                 '//'
             );
 
-            expect(result[fieldMapping.participationStatus]).to.equal(fieldMapping.withdrewConsent);
-            expect(result[fieldMapping.dateWithdrewConsentRequested]).to.exist;
+            expect(result[fieldMapping.participationStatus]).toBe(fieldMapping.withdrewConsent);
+            expect(result[fieldMapping.dateWithdrewConsentRequested]).toBeDefined();
         });
 
         it('calculates correct status for "Destroy Data"', async () => {
@@ -197,8 +196,8 @@ describe('participantWithdrawalForm Logic', () => {
                 '//'
             );
 
-            expect(result[fieldMapping.participationStatus]).to.equal(fieldMapping.destroyDataStatus);
-            expect(result[fieldMapping.dataDestroyCategorical]).to.equal(fieldMapping.requestedDataDestroyNotSigned);
+            expect(result[fieldMapping.participationStatus]).toBe(fieldMapping.destroyDataStatus);
+            expect(result[fieldMapping.dataDestroyCategorical]).toBe(fieldMapping.requestedDataDestroyNotSigned);
         });
 
         it('calculates "Refused Some" for baseline specific refusals', async () => {
@@ -213,8 +212,8 @@ describe('participantWithdrawalForm Logic', () => {
             );
 
             // "Refused some" is the default lower status (score 1)
-            expect(result[fieldMapping.participationStatus]).to.equal(fieldMapping.refusedSome);
-            expect(result[fieldMapping.refBaselineBloodTimeStamp]).to.exist;
+            expect(result[fieldMapping.participationStatus]).toBe(fieldMapping.refusedSome);
+            expect(result[fieldMapping.refBaselineBloodTimeStamp]).toBeDefined();
         });
 
         it('handles suspend contact', async () => {
@@ -226,8 +225,8 @@ describe('participantWithdrawalForm Logic', () => {
                 '12/31/2099'
             );
 
-            expect(result[fieldMapping.suspendContact]).to.equal('12/31/2099');
-            expect(result[fieldMapping.contactSuspended]).to.equal(fieldMapping.yes);
+            expect(result[fieldMapping.suspendContact]).toBe('12/31/2099');
+            expect(result[fieldMapping.contactSuspended]).toBe(fieldMapping.yes);
         });
 
         it('clears "who requested" if only baseline refusals selected', async () => {
@@ -240,7 +239,7 @@ describe('participantWithdrawalForm Logic', () => {
             );
             
             // Expect whoRequested to be present.
-            expect(result[fieldMapping.whoRequested]).to.exist;
+            expect(result[fieldMapping.whoRequested]).toBeDefined();
         });
     });
 });

@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import {
   renderParticipantLookup,
   renderCachedSearchResults,
@@ -44,13 +43,13 @@ describe('participantLookup', () => {
     };
     await searchState.setSearchResults(metadata, [createMockParticipant('test-1')]);
 
-    expect(searchState.getSearchResults()).to.not.equal(null);
+    expect(searchState.getSearchResults()).not.toBe(null);
 
     renderParticipantLookup();
 
-    expect(searchState.getSearchResults()).to.equal(null);
-    expect(document.getElementById('search')).to.not.equal(null);
-    expect(document.getElementById('searchId')).to.not.equal(null);
+    expect(searchState.getSearchResults()).toBe(null);
+    expect(document.getElementById('search')).not.toBe(null);
+    expect(document.getElementById('searchId')).not.toBe(null);
     firebaseStub.setUid('test-user');
   });
 
@@ -68,11 +67,11 @@ describe('participantLookup', () => {
     await renderCachedSearchResults();
 
     const table = document.getElementById('dataTable');
-    expect(table).to.not.equal(null);
+    expect(table).not.toBe(null);
     const rows = table.querySelectorAll('tbody tr');
-    expect(rows.length).to.equal(participants.length);
+    expect(rows.length).toBe(participants.length);
     const backToSearch = document.getElementById('back-to-search');
-    expect(backToSearch).to.not.equal(null);
+    expect(backToSearch).not.toBe(null);
   });
 
   it('rebuilds query strings from lookup metadata', () => {
@@ -88,13 +87,13 @@ describe('participantLookup', () => {
     };
     const query = rebuildQueryString(metadata);
 
-    expect(query).to.include('firstName=ana');
-    expect(query).to.include('lastName=smith');
-    expect(query).to.include('dob=19900102');
-    expect(query).to.include('phone=1234567890');
-    expect(query).to.include('email=ana%40example.com');
-    expect(query).to.include('connectId=12345');
-    expect(query).to.include('token=tkn-1');
-    expect(query).to.include('studyId=std-2');
+    expect(query).toContain('firstName=ana');
+    expect(query).toContain('lastName=smith');
+    expect(query).toContain('dob=19900102');
+    expect(query).toContain('phone=1234567890');
+    expect(query).toContain('email=ana%40example.com');
+    expect(query).toContain('connectId=12345');
+    expect(query).toContain('token=tkn-1');
+    expect(query).toContain('studyId=std-2');
   });
 });

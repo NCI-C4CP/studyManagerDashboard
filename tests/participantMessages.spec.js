@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import { renderMessagesTabContent, getParticipantMessage } from '../src/participantMessages.js';
 import { baseAPI } from '../src/utils.js';
@@ -20,7 +19,7 @@ describe('participantMessages', () => {
     describe('renderMessagesTabContent', () => {
         it('renders "No participant data available" if participant is missing', async () => {
             const html = await renderMessagesTabContent(null);
-            expect(html).to.include('No participant data available');
+            expect(html).toContain('No participant data available');
         });
 
         it('renders "No Messages" when API returns empty list', async () => {
@@ -38,8 +37,8 @@ describe('participantMessages', () => {
             };
 
             const html = await renderMessagesTabContent(participant);
-            expect(html).to.include('No Messages');
-            expect(html).to.include('Participant Messages');
+            expect(html).toContain('No Messages');
+            expect(html).toContain('Participant Messages');
         });
 
         it('renders email messages correctly', async () => {
@@ -68,10 +67,10 @@ describe('participantMessages', () => {
             };
 
             const html = await renderMessagesTabContent(participant);
-            expect(html).to.include('Email (Welcome to Connect)');
-            expect(html).to.include('Hello World');
-            expect(html).to.include('Attempt: 1');
-            expect(html).to.include('Category: Welcome');
+            expect(html).toContain('Email (Welcome to Connect)');
+            expect(html).toContain('Hello World');
+            expect(html).toContain('Attempt: 1');
+            expect(html).toContain('Category: Welcome');
         });
 
         it('renders SMS messages correctly', async () => {
@@ -98,8 +97,8 @@ describe('participantMessages', () => {
             };
 
             const html = await renderMessagesTabContent(participant);
-            expect(html).to.include('SMS Message');
-            expect(html).to.include('Please complete your survey');
+            expect(html).toContain('SMS Message');
+            expect(html).toContain('Please complete your survey');
         });
 
         it('sanitizes HTML style tags from message body', async () => {
@@ -126,9 +125,9 @@ describe('participantMessages', () => {
             };
 
             const html = await renderMessagesTabContent(participant);
-            expect(html).to.include('<p>Content</p>');
-            expect(html).to.not.include('<style>');
-            expect(html).to.not.include('color: red');
+            expect(html).toContain('<p>Content</p>');
+            expect(html).not.toContain('<style>');
+            expect(html).not.toContain('color: red');
         });
     });
 
@@ -150,9 +149,9 @@ describe('participantMessages', () => {
 
             await getParticipantMessage(token, idToken);
 
-            expect(capturedUrl).to.include(`${baseAPI}/dashboard?api=getParticipantNotification`);
-            expect(capturedUrl).to.include(`token=${token}`);
-            expect(capturedHeaders.Authorization).to.equal('Bearer ' + idToken);
+            expect(capturedUrl).toContain(`${baseAPI}/dashboard?api=getParticipantNotification`);
+            expect(capturedUrl).toContain(`token=${token}`);
+            expect(capturedHeaders.Authorization).toBe('Bearer ' + idToken);
         });
     });
 });

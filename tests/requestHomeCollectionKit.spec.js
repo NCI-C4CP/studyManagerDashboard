@@ -1,8 +1,13 @@
-import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { renderKitRequest, renderKitRequestTabContent, requestKit } from '../src/requestHomeCollectionKit.js';
 import { baseAPI } from '../src/utils.js';
+
+vi.mock('../src/navigationBar.js', async (importOriginal) => {
+    const actual = await importOriginal();
+    return { ...actual, updateNavBar: () => {} };
+});
+
 import * as stateManagerModule from '../src/stateManager.js';
 const stateManager = stateManagerModule?.default ?? stateManagerModule;
 const participantState = stateManager.participantState;
@@ -27,7 +32,7 @@ describe('requestHomeCollectionKit', () => {
     describe('renderKitRequestTabContent', () => {
         it('renders "No participant data" if null', () => {
             const html = renderKitRequestTabContent(null);
-            expect(html).to.include('No participant data available');
+            expect(html).toContain('No participant data available');
         });
 
         it('blocks request if address is PO Box', () => {
@@ -36,8 +41,8 @@ describe('requestHomeCollectionKit', () => {
                 [fieldMapping.isPOBox]: fieldMapping.yes
             });
             const html = renderKitRequestTabContent(participant);
-            expect(html).to.include('Participant address is invalid');
-            expect(html).to.not.include('Request Initial Kit</button>'); // Button disabled or not present
+            expect(html).toContain('Participant address is invalid');
+            expect(html).not.toContain('Request Initial Kit</button>'); // Button disabled or not present
         });
 
         it('blocks request if participant withdrew consent', () => {
@@ -49,7 +54,7 @@ describe('requestHomeCollectionKit', () => {
                 [fieldMapping.withdrawConsent]: fieldMapping.yes
             });
             const html = renderKitRequestTabContent(participant);
-            expect(html).to.include('Participant has withdrawn');
+            expect(html).toContain('Participant has withdrawn');
         });
 
         it('allows initial kit request for eligible participant', () => {
@@ -61,8 +66,8 @@ describe('requestHomeCollectionKit', () => {
             });
             // Ensure no previous kits
             const html = renderKitRequestTabContent(participant);
-            expect(html).to.include('Request Initial Kit');
-            expect(html).to.not.include('disabled');
+            expect(html).toContain('Request Initial Kit');
+            expect(html).not.toContain('disabled');
         });
 
         it('allows replacement kit request if initial kit shipped', () => {
@@ -80,7 +85,7 @@ describe('requestHomeCollectionKit', () => {
                 }
             });
             const html = renderKitRequestTabContent(participant);
-            expect(html).to.include('Request Replacement');
+            expect(html).toContain('Request Replacement');
         });
     });
 
@@ -101,8 +106,8 @@ describe('requestHomeCollectionKit', () => {
 
             await requestKit(connectId);
 
-            expect(capturedUrl).to.include(`${baseAPI}/dashboard?api=requestHomeKit`);
-            expect(capturedBody.connectId).to.equal(connectId);
+            expect(capturedUrl).toContain(`${baseAPI}/dashboard?api=requestHomeKit`);
+            expect(capturedBody.connectId).toBe(connectId);
         });
     });
 
@@ -116,9 +121,6 @@ describe('requestHomeCollectionKit', () => {
                 [fieldMapping.physicalAddress1]: '123 Main St'
             });
 
-            // Stub navbar update to avoid DOM dependency
-            const navBarModule = await import('../src/navigationBar.js');
-            navBarModule.updateNavBar = () => {};
 
             // Prepare DOM
             document.body.innerHTML = '<div id="mainContent"></div><div id="navBarLinks"></div>';
@@ -138,14 +140,14 @@ describe('requestHomeCollectionKit', () => {
             await waitForAsyncTasks();
 
             const requestBtn = document.getElementById('requestKitBtn');
-            expect(requestBtn).to.exist;
+            expect(requestBtn).toBeDefined();
             requestBtn.click();
 
             await waitForAsyncTasks();
 
             const modal = document.getElementById('modalSuccess');
-            expect(modal.classList.contains('show') || modal.style.display === 'block').to.be.true;
-            expect(document.getElementById('modalHeader').textContent).to.include('Success');
+            expect(modal.classList.contains('show') || modal.style.display === 'block').toBe(true);
+            expect(document.getElementById('modalHeader').textContent).toContain('Success');
         });
 
         it('updates participant state after successful kit request', async () => {
@@ -162,9 +164,6 @@ describe('requestHomeCollectionKit', () => {
                 token: participant.token, // token is persistent
             };
 
-            // Stub navbar update to avoid DOM dependency
-            const navBarModule = await import('../src/navigationBar.js');
-            navBarModule.updateNavBar = () => {};
 
             document.body.innerHTML = '<div id="mainContent"></div><div id="navBarLinks"></div>';
 
@@ -187,8 +186,8 @@ describe('requestHomeCollectionKit', () => {
             await waitForAsyncTasks(500);
 
             const currentParticipant = participantState.getParticipant();
-            expect(requestCount).to.equal(1);
-            expect(currentParticipant.token).to.equal(participant.token);
+            expect(requestCount).toBe(1);
+            expect(currentParticipant.token).toBe(participant.token);
         });
 
         it('enables request button when address override is checked', async () => {
@@ -218,12 +217,12 @@ describe('requestHomeCollectionKit', () => {
 
             const checkbox = document.getElementById('initialOverrideCheckbox');
             const button = document.getElementById('requestKitBtn');
-            expect(checkbox).to.exist;
-            expect(button.disabled).to.equal(true);
+            expect(checkbox).toBeDefined();
+            expect(button.disabled).toBe(true);
 
             checkbox.click();
             await waitForAsyncTasks();
-            expect(button.disabled).to.equal(false);
+            expect(button.disabled).toBe(false);
         });
     });
 });

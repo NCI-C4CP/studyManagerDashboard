@@ -14,12 +14,11 @@ This directory contains all test files for the Study Manager Dashboard applicati
 
 ## Overview
 
-We use **Mocha** as our test framework with **Chai** for assertions. Tests run in a Node.js environment with **JSDOM** to simulate browser APIs.
+We use **Vitest** as our test framework. Tests run in a Node.js environment with **JSDOM** to simulate browser APIs.
 
-**Test Runner**: Mocha
-**Assertion Library**: Chai (expect style)
-**DOM Simulation**: JSDOM
-**Module System**: ES Modules via esbuild-register
+**Test Runner / Assertion Library**: Vitest
+**DOM Simulation**: JSDOM (via Vitest's built-in jsdom environment)
+**Module System**: Native ES Modules
 
 ## Running Tests
 
@@ -31,7 +30,10 @@ npm test
 npm run test:watch
 
 # Run specific test file
-npx mocha --require esbuild-register tests/stateManager.spec.js
+npx vitest run tests/stateManager.spec.js
+
+# Verbose output
+npx vitest run --reporter=verbose
 ```
 
 ### Understanding Test Output
@@ -134,7 +136,7 @@ import { participantState } from '../src/stateManager.js';
 it('waits for async encryption', async () => {
   await participantState.setParticipant({ id: 1, token: 'secret' });
 
-  expect(sessionStorage.getItem('participantTokenEnc')).to.be.a('string');
+  expect(sessionStorage.getItem('participantTokenEnc')).toBeTypeOf('string');
 });
 ```
 
@@ -148,8 +150,8 @@ it('warns when setting invalid data', () => {
 
   someFunction(invalidData);
 
-  expect(warnings.length).to.be.greaterThan(0);
-  expect(warnings[0]).to.include('invalid');
+  expect(warnings.length).toBeGreaterThan(0);
+  expect(warnings[0]).toContain('invalid');
   restore();
 });
 ```
@@ -167,7 +169,7 @@ import {
 it('processes participant data', () => {
   const participant = createMockParticipant('user-42', { id: 42, name: 'Custom Name' });
   const result = processParticipant(participant);
-  expect(result).to.be.ok;
+  expect(result).toBeTruthy();
 });
 ```
 
@@ -232,7 +234,7 @@ describe('myModule', () => {
         { id: 'sidebar', tagName: 'aside' },
       ],
     });
-    
+
     firebaseStub = suite.firebaseStub;
     cleanup = suite.cleanup;
     mainContent = suite.domFixtures[0];
@@ -246,13 +248,12 @@ describe('myModule', () => {
 
 ### Global Test Stubs
 
-`tests/test-setup.js` provides lightweight globals to let browser-only modules load in Node/JSDOM:
+`tests/testSetup.js` provides lightweight globals to let browser-only modules load in Node/JSDOM:
 - `PDFLib` and `download` are stubbed for report generators.
 - `showdown` is stubbed for markdown conversions in notifications.
 - `requestAnimationFrame` is polyfilled if missing.
 
-If you add a module that depends on a window-global library, stub it here so imports don’t fail under Mocha.
-```
+If you add a module that depends on a window-global library, stub it here so imports don't fail under Vitest.
 
 ## Writing New Tests
 
@@ -268,7 +269,6 @@ touch tests/crypto.spec.js
 ### Step 2: Set Up Test Structure
 
 ```javascript
-import { expect } from 'chai';
 import { someFunction } from '../src/crypto.js';
 import {
   setupTestEnvironment,
@@ -287,11 +287,11 @@ describe('crypto', () => {
   describe('someFunction', () => {
     it('does what it should', () => {
       const result = someFunction('input');
-      expect(result).to.equal('expected');
+      expect(result).toBe('expected');
     });
 
     it('handles edge case', () => {
-      expect(() => someFunction(null)).to.throw();
+      expect(() => someFunction(null)).toThrow();
     });
   });
 });
@@ -333,7 +333,7 @@ Each test should:
 // Good - independent
 it('creates user', () => {
   const user = createUser({ name: 'Test' });
-  expect(user.name).to.equal('Test');
+  expect(user.name).toBe('Test');
 });
 
 // Bad - depends on previous test
@@ -342,7 +342,7 @@ it('creates user', () => {
   user = createUser({ name: 'Test' });
 });
 it('retrieves user', () => {
-  expect(user.name).to.equal('Test'); // Depends on previous test
+  expect(user.name).toBe('Test'); // Depends on previous test
 });
 ```
 
@@ -369,7 +369,7 @@ it('calculates total correctly', () => {
   const total = calculateTotal(items);
 
   // Assert - verify the result
-  expect(total).to.equal(30);
+  expect(total).toBe(30);
 });
 ```
 
@@ -379,14 +379,14 @@ it('calculates total correctly', () => {
 // Good - focused test
 it('encrypts data', () => {
   const encrypted = encrypt('data');
-  expect(encrypted).to.be.a('string');
-  expect(encrypted).to.not.equal('data');
+  expect(encrypted).toBeTypeOf('string');
+  expect(encrypted).not.toBe('data');
 });
 
 it('decrypts data', () => {
   const encrypted = encrypt('data');
   const decrypted = decrypt(encrypted);
-  expect(decrypted).to.equal('data');
+  expect(decrypted).toBe('data');
 });
 
 // Bad - testing too much
@@ -401,20 +401,20 @@ it('encrypts and decrypts and stores and retrieves', () => {
 // Good - async/await
 it('fetches data', async () => {
   const data = await fetchData();
-  expect(data).to.be.ok;
+  expect(data).toBeTruthy();
 });
 
 // Good - explicit promise return
 it('fetches data', () => {
   return fetchData().then(data => {
-    expect(data).to.be.ok;
+    expect(data).toBeTruthy();
   });
 });
 
 // Bad - missing await
 it('fetches data', () => {
   fetchData(); // Promise not awaited - test passes before async completes
-  expect(data).to.be.ok;
+  expect(data).toBeTruthy();
 });
 ```
 
@@ -441,13 +441,13 @@ describe('myModule', () => {
 
 ```javascript
 it('throws error for invalid input', () => {
-  expect(() => processData(null)).to.throw('Invalid input');
+  expect(() => processData(null)).toThrow('Invalid input');
 });
 
 it('returns null for malformed JSON', () => {
   sessionStorage.setItem('data', 'invalid-json{');
   const result = getData();
-  expect(result).to.equal(null);
+  expect(result).toBe(null);
 });
 ```
 
@@ -455,11 +455,11 @@ it('returns null for malformed JSON', () => {
 
 ```javascript
 it('updates state correctly', async () => {
-  expect(getState().count).to.equal(0);
+  expect(getState().count).toBe(0);
 
   await increment();
 
-  expect(getState().count).to.equal(1);
+  expect(getState().count).toBe(1);
 });
 ```
 
@@ -470,10 +470,10 @@ it('persists data to sessionStorage', async () => {
   await saveData({ key: 'value' });
 
   const stored = sessionStorage.getItem('data');
-  expect(stored).to.be.a('string');
+  expect(stored).toBeTypeOf('string');
 
   const parsed = JSON.parse(stored);
-  expect(parsed).to.deep.equal({ key: 'value' });
+  expect(parsed).toEqual({ key: 'value' });
 });
 ```
 
@@ -493,19 +493,18 @@ it('prevents concurrent recovery attempts', async () => {
     recover(),
   ]);
 
-  expect(callCount).to.equal(1); // Should only call once
+  expect(callCount).toBe(1); // Should only call once
 });
 ```
 
 ### View Detailed Output
 
 ```bash
-npm test -- --reporter spec
+npx vitest run --reporter=verbose
 ```
 
 ## Getting Help
 
 - See `tests/stateManager.spec.js` for examples
 - See `tests/helpers.js` for available utilities
-- Consult Mocha docs: https://mochajs.org/
-- Consult Chai docs: https://www.chaijs.com/
+- Consult Vitest docs: https://vitest.dev/

@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import { setupVerificationCorrectionsPage, verificationCorrectionsClickHandler } from '../src/dataCorrectionsTool/verificationCorrectionsTool.js';
 import { appState, participantState, searchState } from '../src/stateManager.js';
@@ -48,15 +47,15 @@ describe('verificationCorrectionsTool', () => {
         });
 
         const submitBtn = document.getElementById('submitCorrection');
-        expect(submitBtn).to.exist;
+        expect(submitBtn).toBeDefined();
         submitBtn.click();
         await waitForAsyncTasks();
 
         const modalBody = document.getElementById('modalBody');
-        expect(modalBody.innerHTML).to.include('Duplicate Type already set');
+        expect(modalBody.innerHTML).toContain('Duplicate Type already set');
         // Confirm button should be absent for invalid selection
         const confirmBtn = modalBody.querySelector('#confirmCorrection');
-        expect(confirmBtn).to.not.exist;
+        expect(confirmBtn).toBeNull();
     });
 
     describe('setupVerificationCorrectionsPage', () => {
@@ -69,10 +68,10 @@ describe('verificationCorrectionsTool', () => {
             await waitForAsyncTasks();
 
             const content = document.getElementById('mainContent').innerHTML;
-            expect(content).to.include('Verification Status');
-            expect(content).to.include('Duplicate Type');
-            expect(content).to.include('Recruit Type');
-            expect(document.getElementById('dropdownVerification')).to.exist;
+            expect(content).toContain('Verification Status');
+            expect(content).toContain('Duplicate Type');
+            expect(content).toContain('Recruit Type');
+            expect(document.getElementById('dropdownVerification')).toBeDefined();
         });
     });
 
@@ -90,11 +89,11 @@ describe('verificationCorrectionsTool', () => {
             await waitForAsyncTasks();
 
             const state = appState.getState().correctedOptions;
-            expect(state[fieldMapping.verifiedFlag]).to.equal(fieldMapping.verified);
+            expect(state[fieldMapping.verifiedFlag]).toBe(fieldMapping.verified);
             
             // Verify date input appeared
             const dateContainer = document.getElementById('verificationDateContainer');
-            expect(dateContainer.style.display).to.equal('block');
+            expect(dateContainer.style.display).toBe('block');
         });
 
         it('selecting a verification status fills verification date and stores corrected options', async () => {
@@ -107,10 +106,10 @@ describe('verificationCorrectionsTool', () => {
             await waitForAsyncTasks();
 
             const dateContainer = document.getElementById('verificationDateContainer');
-            expect(dateContainer.style.display).to.equal('block');
+            expect(dateContainer.style.display).toBe('block');
 
             const corrected = appState.getState().correctedOptions;
-            expect(corrected[fieldMapping.verficationDate]).to.exist;
+            expect(corrected[fieldMapping.verficationDate]).toBeDefined();
         });
 
         it('cleans placeholder selections before rendering modal', async () => {
@@ -130,9 +129,9 @@ describe('verificationCorrectionsTool', () => {
             await waitForAsyncTasks();
 
             const modalBody = document.getElementById('modalBody');
-            expect(modalBody.innerHTML).to.include('No corrections selected');
+            expect(modalBody.innerHTML).toContain('No corrections selected');
             const confirmBtn = modalBody.querySelector('#confirmCorrection');
-            expect(confirmBtn).to.not.exist;
+            expect(confirmBtn).toBeNull();
         });
     });
 
@@ -175,9 +174,9 @@ describe('verificationCorrectionsTool', () => {
             // `findParticipant` uses `baseAPI` + `api=getFilteredParticipants`.
             await verificationCorrectionsClickHandler(selectedOptions);
 
-            expect(capturedUrl).to.include(`${baseAPI}/dashboard?api=participantDataCorrection`);
-            expect(capturedBody.data[0][fieldMapping.verifiedFlag]).to.equal(fieldMapping.verified);
-            expect(capturedBody.data[0].token).to.equal(participant.token);
+            expect(capturedUrl).toContain(`${baseAPI}/dashboard?api=participantDataCorrection`);
+            expect(capturedBody.data[0][fieldMapping.verifiedFlag]).toBe(fieldMapping.verified);
+            expect(capturedBody.data[0].token).toBe(participant.token);
         });
 
         it('invalidates search cache after successful correction', async () => {
@@ -188,7 +187,7 @@ describe('verificationCorrectionsTool', () => {
                 { searchType: 'lookup', token: participant.token },
                 [participant]
             );
-            expect(searchState.getSearchResults()).to.not.equal(null);
+            expect(searchState.getSearchResults()).not.toBe(null);
 
             global.fetch = async (url) => {
                 if (url.includes('participantDataCorrection')) {
@@ -205,7 +204,7 @@ describe('verificationCorrectionsTool', () => {
                 token: participant.token
             });
 
-            expect(searchState.getSearchResults()).to.equal(null);
+            expect(searchState.getSearchResults()).toBe(null);
         });
     });
 });
