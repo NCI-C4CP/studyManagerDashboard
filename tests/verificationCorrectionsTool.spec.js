@@ -47,7 +47,7 @@ describe('verificationCorrectionsTool', () => {
         });
 
         const submitBtn = document.getElementById('submitCorrection');
-        expect(submitBtn).toBeDefined();
+        expect(submitBtn).not.toBeNull();
         submitBtn.click();
         await waitForAsyncTasks();
 
@@ -71,7 +71,7 @@ describe('verificationCorrectionsTool', () => {
             expect(content).toContain('Verification Status');
             expect(content).toContain('Duplicate Type');
             expect(content).toContain('Recruit Type');
-            expect(document.getElementById('dropdownVerification')).toBeDefined();
+            expect(document.getElementById('dropdownVerification')).not.toBeNull();
         });
     });
 
@@ -109,7 +109,7 @@ describe('verificationCorrectionsTool', () => {
             expect(dateContainer.style.display).toBe('block');
 
             const corrected = appState.getState().correctedOptions;
-            expect(corrected[fieldMapping.verficationDate]).toBeDefined();
+            expect(corrected[fieldMapping.verficationDate]).not.toBeNull();
         });
 
         it('cleans placeholder selections before rendering modal', async () => {

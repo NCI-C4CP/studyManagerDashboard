@@ -109,13 +109,13 @@ describe('Tab Integration Tests', () => {
             const summaryTab = document.getElementById('summary-tab');
             const messagesTab = document.getElementById('messages-tab');
 
-            expect(detailsTab).toBeDefined();
-            expect(summaryTab).toBeDefined();
-            expect(messagesTab).toBeDefined();
+            expect(detailsTab).not.toBeNull();
+            expect(summaryTab).not.toBeNull();
+            expect(messagesTab).not.toBeNull();
 
             // Verify details tab content is loaded
             const detailsContent = document.getElementById('details-tab-content-inner');
-            expect(detailsContent).toBeDefined();
+            expect(detailsContent).not.toBeNull();
             // Check for form content
             expect(detailsContent.innerHTML).toContain('Participant Details');
         });
@@ -166,7 +166,7 @@ describe('Tab Integration Tests', () => {
             }
 
             const main = document.getElementById('mainContent');
-            expect(main).toBeDefined();
+            expect(main).not.toBeNull();
         });
 
         it('loads content only once per tab (caching)', async () => {
@@ -175,7 +175,7 @@ describe('Tab Integration Tests', () => {
 
             // Click summary tab
             const summaryTab = document.getElementById('summary-tab');
-            expect(summaryTab).toBeDefined();
+            expect(summaryTab).not.toBeNull();
 
             summaryTab.click();
             await waitForAsyncTasks(500);
@@ -210,9 +210,9 @@ describe('Tab Integration Tests', () => {
             expect(withdrawalTab).toBeNull();
 
             // Details, summary, messages should be visible
-            expect(document.getElementById('details-tab')).toBeDefined();
-            expect(document.getElementById('summary-tab')).toBeDefined();
-            expect(document.getElementById('messages-tab')).toBeDefined();
+            expect(document.getElementById('details-tab')).not.toBeNull();
+            expect(document.getElementById('summary-tab')).not.toBeNull();
+            expect(document.getElementById('messages-tab')).not.toBeNull();
         });
 
         it('handles deep linking to specific tab', async () => {
@@ -256,7 +256,7 @@ describe('Tab Integration Tests', () => {
 
                 // Should have handled gracefully
                 const main = document.getElementById('mainContent');
-                expect(main).toBeDefined();
+                expect(main).not.toBeNull();
             } finally {
                 console.error = originalError;
             }
@@ -367,7 +367,7 @@ describe('Tab Integration Tests', () => {
             await waitForAsyncTasks(50);
 
             const dataCorrectionsTab = document.getElementById('dataCorrections-tab');
-            expect(dataCorrectionsTab).toBeDefined();
+            expect(dataCorrectionsTab).not.toBeNull();
         });
 
         it('allows coordinatingCenter users to access kitRequests tab', async () => {
@@ -377,7 +377,7 @@ describe('Tab Integration Tests', () => {
             await waitForAsyncTasks(50);
 
             const kitRequestsTab = document.getElementById('kitRequests-tab');
-            expect(kitRequestsTab).toBeDefined();
+            expect(kitRequestsTab).not.toBeNull();
         });
 
         it('hides pathology tab from helpDesk users', async () => {

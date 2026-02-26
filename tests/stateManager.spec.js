@@ -87,7 +87,6 @@ describe('stateManager', () => {
       appState.setState({ hasUnsavedChanges: false });
       const state1 = appState.getState();
       const state2 = appState.getState();
-      // TODO: address this
       // Note: appState returns the same reference, mutations will affect it
       // Deep cloning happens in encrypted stores, not in appState itself
       expect(state1).toBe(state2);

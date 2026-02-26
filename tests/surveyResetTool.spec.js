@@ -33,7 +33,7 @@ describe('surveyResetTool', () => {
             const content = document.getElementById('mainContent').innerHTML;
             expect(content).toContain('Survey Status Reset Tool');
             expect(content).toContain('SSN Survey');
-            expect(document.getElementById('dropdownSurveyMenu')).toBeDefined();
+            expect(document.getElementById('dropdownSurveyMenu')).not.toBeNull();
         });
     });
 
@@ -51,7 +51,7 @@ describe('surveyResetTool', () => {
             // We can verify UI state change if we simulate the click. Rely on the fact that the click handler calls the logic.
             
             const ssnOption = document.querySelector(`[data-survey="${fieldMapping.ssnStatusFlag}"]`);
-            expect(ssnOption).toBeDefined();
+            expect(ssnOption).not.toBeNull();
         });
 
         it('disables submit and shows note when survey is already not started', async () => {
@@ -120,7 +120,7 @@ describe('surveyResetTool', () => {
             await waitForAsyncTasks();
 
             const resetCall = fetchCalls.find(call => call.url.includes('resetParticipantSurvey'));
-            expect(resetCall).toBeDefined();
+            expect(resetCall).not.toBeNull();
 
             const statusText = document.getElementById('surveyStatusText').textContent;
             expect(statusText).toContain('Not Started');

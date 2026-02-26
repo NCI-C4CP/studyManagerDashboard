@@ -159,7 +159,7 @@ describe('participantWithdrawalForm Logic', () => {
             );
 
             expect(result[fieldMapping.participationStatus]).toBe(fieldMapping.refusedAll);
-            expect(result[fieldMapping.refAllFutureActivitesTimeStamp]).toBeDefined();
+            expect(result[fieldMapping.refAllFutureActivitesTimeStamp]).not.toBeNull();
         });
 
         it('calculates correct status for "Withdraw Consent"', async () => {
@@ -178,7 +178,7 @@ describe('participantWithdrawalForm Logic', () => {
             );
 
             expect(result[fieldMapping.participationStatus]).toBe(fieldMapping.withdrewConsent);
-            expect(result[fieldMapping.dateWithdrewConsentRequested]).toBeDefined();
+            expect(result[fieldMapping.dateWithdrewConsentRequested]).not.toBeNull();
         });
 
         it('calculates correct status for "Destroy Data"', async () => {
@@ -213,7 +213,7 @@ describe('participantWithdrawalForm Logic', () => {
 
             // "Refused some" is the default lower status (score 1)
             expect(result[fieldMapping.participationStatus]).toBe(fieldMapping.refusedSome);
-            expect(result[fieldMapping.refBaselineBloodTimeStamp]).toBeDefined();
+            expect(result[fieldMapping.refBaselineBloodTimeStamp]).not.toBeNull();
         });
 
         it('handles suspend contact', async () => {
@@ -239,7 +239,7 @@ describe('participantWithdrawalForm Logic', () => {
             );
             
             // Expect whoRequested to be present.
-            expect(result[fieldMapping.whoRequested]).toBeDefined();
+            expect(result[fieldMapping.whoRequested]).not.toBeNull();
         });
     });
 });

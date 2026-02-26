@@ -140,7 +140,7 @@ describe('requestHomeCollectionKit', () => {
             await waitForAsyncTasks();
 
             const requestBtn = document.getElementById('requestKitBtn');
-            expect(requestBtn).toBeDefined();
+            expect(requestBtn).not.toBeNull();
             requestBtn.click();
 
             await waitForAsyncTasks();
@@ -217,7 +217,7 @@ describe('requestHomeCollectionKit', () => {
 
             const checkbox = document.getElementById('initialOverrideCheckbox');
             const button = document.getElementById('requestKitBtn');
-            expect(checkbox).toBeDefined();
+            expect(checkbox).not.toBeNull();
             expect(button.disabled).toBe(true);
 
             checkbox.click();
