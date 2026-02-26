@@ -203,6 +203,7 @@ const raceMapping = {
     // Additional
     [fieldMapping.white]: 'White',
     [fieldMapping.other]: 'Other',
+    [fieldMapping.unavailable]: 'Unavailable/Unknown',
 };
 
 const ethnicityMapping = {
