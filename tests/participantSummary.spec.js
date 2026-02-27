@@ -117,7 +117,7 @@ describe('participantSummary', () => {
 
   it('retrieveDHQHEIReport short-circuits when submission criteria not met', async () => {
     const result = await retrieveDHQHEIReport(fieldMapping.started, null, null);
-    expect(result).toBe(null);
+    expect(result).toBeNull();
   });
 
   describe('hipaaRevocation template states', () => {
@@ -213,22 +213,22 @@ describe('participantSummary', () => {
   describe('retrieveDHQHEIReport input validation', () => {
     it('returns null when studyID is missing', async () => {
       const result = await retrieveDHQHEIReport(fieldMapping.submitted, null, 'user456');
-      expect(result).toBe(null);
+      expect(result).toBeNull();
     });
 
     it('returns null when respondentUsername is missing', async () => {
       const result = await retrieveDHQHEIReport(fieldMapping.submitted, 'study_123', null);
-      expect(result).toBe(null);
+      expect(result).toBeNull();
     });
 
     it('returns null when dhqSurveyStatus is not submitted', async () => {
       const result = await retrieveDHQHEIReport(fieldMapping.started, 'study_123', 'user456');
-      expect(result).toBe(null);
+      expect(result).toBeNull();
     });
 
     it('validates that submission status is checked first', async () => {
       const result = await retrieveDHQHEIReport(fieldMapping.notYetEligible, 'study_123', 'user456');
-      expect(result).toBe(null);
+      expect(result).toBeNull();
     });
   });
 

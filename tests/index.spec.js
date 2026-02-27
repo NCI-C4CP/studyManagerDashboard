@@ -47,7 +47,7 @@ describe('router', () => {
     await waitForAsyncTasks(20);
 
     const cached = searchState.getSearchResults();
-    expect(cached).not.toBe(null);
+    expect(cached).not.toBeNull();
     expect(cached.length).toBe(1);
   });
 
@@ -69,7 +69,7 @@ describe('router', () => {
     await waitForAsyncTasks(20);
 
     const main = document.getElementById('mainContent');
-    expect(main).not.toBe(null);
+    expect(main).not.toBeNull();
   });
 
   it('redirects unauthenticated users to login route', async () => {

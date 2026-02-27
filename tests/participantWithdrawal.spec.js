@@ -54,7 +54,7 @@ describe('participantWithdrawal', () => {
         await waitForAsyncTasks();
 
         const mainContent = document.getElementById('mainContent');
-        expect(mainContent.innerHTML).toContain('Refusal of Study Activites');
+        expect(mainContent.innerHTML).toContain('Refusal of Study Activities');
         expect(mainContent.innerHTML).toContain('Refusal/Withdrawal Requested By');
         expect(mainContent.innerHTML).toContain(participant.Connect_ID);
     });
@@ -70,7 +70,7 @@ describe('participantWithdrawal', () => {
         const mainContent = document.getElementById('mainContent');
         expect(mainContent.innerHTML).toContain('Access Denied');
         expect(mainContent.innerHTML).toContain('Duplicate account');
-        expect(mainContent.innerHTML).not.toContain('Refusal of Study Activites');
+        expect(mainContent.innerHTML).not.toContain('Refusal of Study Activities');
         
         // Check buttons
         expect(document.getElementById('goToParticipantSummaryBtn')).not.toBeNull();

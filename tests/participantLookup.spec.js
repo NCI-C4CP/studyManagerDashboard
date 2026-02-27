@@ -43,13 +43,13 @@ describe('participantLookup', () => {
     };
     await searchState.setSearchResults(metadata, [createMockParticipant('test-1')]);
 
-    expect(searchState.getSearchResults()).not.toBe(null);
+    expect(searchState.getSearchResults()).not.toBeNull();
 
     renderParticipantLookup();
 
-    expect(searchState.getSearchResults()).toBe(null);
-    expect(document.getElementById('search')).not.toBe(null);
-    expect(document.getElementById('searchId')).not.toBe(null);
+    expect(searchState.getSearchResults()).toBeNull();
+    expect(document.getElementById('search')).not.toBeNull();
+    expect(document.getElementById('searchId')).not.toBeNull();
     firebaseStub.setUid('test-user');
   });
 
@@ -67,11 +67,11 @@ describe('participantLookup', () => {
     await renderCachedSearchResults();
 
     const table = document.getElementById('dataTable');
-    expect(table).not.toBe(null);
+    expect(table).not.toBeNull();
     const rows = table.querySelectorAll('tbody tr');
     expect(rows.length).toBe(participants.length);
     const backToSearch = document.getElementById('back-to-search');
-    expect(backToSearch).not.toBe(null);
+    expect(backToSearch).not.toBeNull();
   });
 
   it('rebuilds query strings from lookup metadata', () => {

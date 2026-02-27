@@ -122,7 +122,7 @@ describe('stateManager', () => {
 
       expect(statsState.getStats()).toEqual({});
       expect(statsState.getStatsUpdateTime()).toBe(0);
-      expect(window.sessionStorage.getItem('statsStateEnc')).toBe(null);
+      expect(window.sessionStorage.getItem('statsStateEnc')).toBeNull();
     });
 
     it('resets stats when signed in as a different user', async () => {
@@ -341,15 +341,15 @@ describe('stateManager', () => {
       ));
 
       const recovered = await participantState.recoverParticipantFromSession();
-      expect(recovered).toBe(null);
-      expect(window.sessionStorage.getItem('participantTokenEnc')).toBe(null);
+      expect(recovered).toBeNull();
+      expect(window.sessionStorage.getItem('participantTokenEnc')).toBeNull();
     });
 
     it('returns null for tampered participant token', async () => {
       window.sessionStorage.setItem('participantTokenEnc', 'invalid-payload');
       const token = await participantState.getParticipantToken();
-      expect(token).toBe(null);
-      expect(window.sessionStorage.getItem('participantTokenEnc')).toBe(null);
+      expect(token).toBeNull();
+      expect(window.sessionStorage.getItem('participantTokenEnc')).toBeNull();
     });
 
     it('checks if participant exists in state', async () => {
@@ -415,9 +415,9 @@ describe('stateManager', () => {
       ));
 
       const recovered = await participantState.recoverParticipantFromSession();
-      expect(recovered).toBe(null);
+      expect(recovered).toBeNull();
       // Token should remain for retry
-      expect(window.sessionStorage.getItem('participantTokenEnc')).not.toBe(null);
+      expect(window.sessionStorage.getItem('participantTokenEnc')).not.toBeNull();
     });
 
     it('warns when setting participant without token', async () => {
@@ -470,17 +470,17 @@ describe('stateManager', () => {
 
     it('clears user session data', () => {
       userSession.setUser({ email: 'test@example.com' });
-      expect(userSession.getUser()).not.toBe(null);
+      expect(userSession.getUser()).not.toBeNull();
 
       userSession.clearUser();
-      expect(userSession.getUser()).toBe(null);
-      expect(window.sessionStorage.getItem('userSession')).toBe(null);
+      expect(userSession.getUser()).toBeNull();
+      expect(window.sessionStorage.getItem('userSession')).toBeNull();
     });
 
     it('handles malformed JSON in sessionStorage', () => {
       window.sessionStorage.setItem('userSession', 'invalid-json{');
       const user = userSession.getUser();
-      expect(user).toBe(null);
+      expect(user).toBeNull();
     });
 
     it('warns when setting user without email', () => {
@@ -515,17 +515,17 @@ describe('stateManager', () => {
     });
 
     it('returns null when no reports are set', () => {
-      expect(reportsState.getReports()).toBe(null);
+      expect(reportsState.getReports()).toBeNull();
     });
 
     it('clears reports data', () => {
       const reportsData = { physActReport: { status: 'completed' } };
       reportsState.setReports(reportsData);
 
-      expect(reportsState.getReports()).not.toBe(null);
+      expect(reportsState.getReports()).not.toBeNull();
 
       reportsState.clearReports();
-      expect(reportsState.getReports()).toBe(null);
+      expect(reportsState.getReports()).toBeNull();
     });
 
     it('fetches reports from state or retrieves them via function', async () => {
@@ -588,10 +588,10 @@ describe('stateManager', () => {
     it('clears reports when participant is cleared', async () => {
       const reportsData = { physActReport: { status: 'completed' } };
       reportsState.setReports(reportsData);
-      expect(reportsState.getReports()).not.toBe(null);
+      expect(reportsState.getReports()).not.toBeNull();
 
       participantState.clearParticipant();
-      expect(reportsState.getReports()).toBe(null);
+      expect(reportsState.getReports()).toBeNull();
     });
 
     it('warns when setting null or undefined reports', () => {
@@ -700,14 +700,14 @@ describe('stateManager', () => {
       
       // Clear everything (simulates page refresh/module reload)
       searchState.clearSearchResults();
-      expect(searchState.getCachedMetadata()).toBe(null);
+      expect(searchState.getCachedMetadata()).toBeNull();
       
       // Restore encrypted data to storage (simulating persistence across page refresh)
       window.sessionStorage.setItem('searchMetadataEnc', encryptedPayload);
       
       // Now recover from storage (cache is empty, so should decrypt from storage)
       const recovered = await searchState.getSearchMetadata();
-      expect(recovered).not.toBe(null);
+      expect(recovered).not.toBeNull();
       expect(recovered).toMatchObject({ searchType: 'lookup', firstName: 'recovered-test' });
       
       // Cache should now be populated after recovery
@@ -720,8 +720,8 @@ describe('stateManager', () => {
     it('cleans up tampered metadata', async () => {
       window.sessionStorage.setItem('searchMetadataEnc', 'invalid');
       const metadata = await searchState.getSearchMetadata();
-      expect(metadata).toBe(null);
-      expect(window.sessionStorage.getItem('searchMetadataEnc')).toBe(null);
+      expect(metadata).toBeNull();
+      expect(window.sessionStorage.getItem('searchMetadataEnc')).toBeNull();
       
       searchState.clearSearchResults();
     });
@@ -734,10 +734,10 @@ describe('stateManager', () => {
 
     it('handles null or invalid results array', async () => {
       await searchState.setSearchResults({ searchType: 'lookup' }, null);
-      expect(searchState.getSearchResults()).toBe(null);
+      expect(searchState.getSearchResults()).toBeNull();
 
       await searchState.setSearchResults({ searchType: 'lookup' }, 'not-an-array');
-      expect(searchState.getSearchResults()).toBe(null);
+      expect(searchState.getSearchResults()).toBeNull();
     });
 
     it('warns when setting search results without metadata', async () => {
@@ -752,9 +752,9 @@ describe('stateManager', () => {
       await searchState.setSearchResults({ searchType: 'lookup' }, [{ id: 1 }]);
       searchState.clearSearchResults();
 
-      expect(searchState.getSearchResults()).toBe(null);
-      expect(searchState.getCachedMetadata()).toBe(null);
-      expect(window.sessionStorage.getItem('searchMetadataEnc')).toBe(null);
+      expect(searchState.getSearchResults()).toBeNull();
+      expect(searchState.getCachedMetadata()).toBeNull();
+      expect(window.sessionStorage.getItem('searchMetadataEnc')).toBeNull();
     });
 
     it('clears only results cache while preserving metadata', async () => {
@@ -768,7 +768,7 @@ describe('stateManager', () => {
 
       searchState.clearResultsCache();
 
-      expect(searchState.getSearchResults()).toBe(null);
+      expect(searchState.getSearchResults()).toBeNull();
       expect(searchState.getCachedMetadata()).toMatchObject({ searchType: 'lookup', firstName: 'alex' });
       expect(window.sessionStorage.getItem('searchMetadataEnc')).toBe(encryptedBefore);
     });
@@ -930,9 +930,9 @@ describe('stateManager', () => {
         hasPriorParticipationStatus: false,
         hasPriorSuspendedContact: false,
       });
-      expect(participantState.getParticipant()).toBe(null);
+      expect(participantState.getParticipant()).toBeNull();
       expect(appState.getState().hasUnsavedChanges).toBe(false);
-      expect(reportsState.getReports()).toBe(null);
+      expect(reportsState.getReports()).toBeNull();
       // Note: window.location.hash is skipped in tests because JSDOM doesn't support mutable hash
       // In production, signOutAndClearSession() correctly sets window.location.hash = '#'
       expect(loader.style.display).toBe('none');

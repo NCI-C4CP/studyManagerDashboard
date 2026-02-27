@@ -447,7 +447,7 @@ it('throws error for invalid input', () => {
 it('returns null for malformed JSON', () => {
   sessionStorage.setItem('data', 'invalid-json{');
   const result = getData();
-  expect(result).toBe(null);
+  expect(result).toBeNull();
 });
 ```
 

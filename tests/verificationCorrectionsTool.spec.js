@@ -187,7 +187,7 @@ describe('verificationCorrectionsTool', () => {
                 { searchType: 'lookup', token: participant.token },
                 [participant]
             );
-            expect(searchState.getSearchResults()).not.toBe(null);
+            expect(searchState.getSearchResults()).not.toBeNull();
 
             global.fetch = async (url) => {
                 if (url.includes('participantDataCorrection')) {
@@ -204,7 +204,7 @@ describe('verificationCorrectionsTool', () => {
                 token: participant.token
             });
 
-            expect(searchState.getSearchResults()).toBe(null);
+            expect(searchState.getSearchResults()).toBeNull();
         });
     });
 });
