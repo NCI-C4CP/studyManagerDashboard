@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { bubbleCategories, bubbleFieldMap, defaultColumnKeys } from '../src/participantColumnConfig.js';
 
@@ -20,10 +19,10 @@ describe('participantColumnConfig', () => {
       lastDefinedLabels.set(key, label);
     });
 
-    expect(bubbleFieldMap.size).to.equal(lastDefinedLabels.size);
+    expect(bubbleFieldMap.size).toBe(lastDefinedLabels.size);
     lastDefinedLabels.forEach((label, key) => {
-      expect(bubbleFieldMap.has(key), `missing key ${key}`).to.be.true;
-      expect(bubbleFieldMap.get(key)).to.equal(label);
+      expect(bubbleFieldMap.has(key), `missing key ${key}`).toBe(true);
+      expect(bubbleFieldMap.get(key)).toBe(label);
     });
   });
 
@@ -36,20 +35,20 @@ describe('participantColumnConfig', () => {
     const originalField = { ...fieldRef };
 
     fieldRef.label = 'Modified Label';
-    expect(bubbleFieldMap.get(key)).to.equal(label);
+    expect(bubbleFieldMap.get(key)).toBe(label);
 
     fieldRef.key = 'modified-key';
-    expect(bubbleFieldMap.has(key)).to.be.true;
-    expect(bubbleFieldMap.has('modified-key')).to.be.false;
+    expect(bubbleFieldMap.has(key)).toBe(true);
+    expect(bubbleFieldMap.has('modified-key')).toBe(false);
 
     Object.assign(fieldRef, originalField);
   });
 
   it('should expose required category metadata', () => {
     const identifiers = bubbleCategories.find((category) => category.key === 'identifiers');
-    expect(identifiers).to.exist;
-    expect(identifiers.label).to.equal('Identifiers');
-    expect(identifiers.fields.map((field) => field.key)).to.deep.equal([
+    expect(identifiers).not.toBeNull();
+    expect(identifiers.label).toBe('Identifiers');
+    expect(identifiers.fields.map((field) => field.key)).toEqual([
       'Connect_ID',
       'pin',
       'token',
@@ -57,28 +56,28 @@ describe('participantColumnConfig', () => {
     ]);
 
     const defaultCategory = bubbleCategories.find((category) => category.key === 'default-columns');
-    expect(defaultCategory).to.exist;
-    expect(defaultCategory.fields).to.have.length.greaterThan(0);
+    expect(defaultCategory).not.toBeNull();
+    expect(defaultCategory.fields).toSatisfy(v => v.length > 0);
   });
 
   it('should keep defaultColumnKeys in sync with the default category order', () => {
     const defaultCategory = bubbleCategories.find((category) => category.key === 'default-columns');
     const expectedKeys = defaultCategory.fields.map((field) => field.key);
-    expect(defaultColumnKeys).to.deep.equal(expectedKeys);
+    expect(defaultColumnKeys).toEqual(expectedKeys);
   });
 
   it('should only list default columns that are present in the bubble field map', () => {
     defaultColumnKeys.forEach((key) => {
-      expect(bubbleFieldMap.has(key), `missing bubble field for ${key}`).to.be.true;
-      expect(bubbleFieldMap.get(key)).to.be.a('string').and.to.have.length.greaterThan(0);
+      expect(bubbleFieldMap.has(key), `missing bubble field for ${key}`).toBe(true);
+      expect(bubbleFieldMap.get(key)).toBeTypeOf('string');
     });
   });
 
   it('should include both string and numeric columns in bubbleFieldMap', () => {
-    expect(bubbleFieldMap.has('token')).to.be.true;
-    expect(bubbleFieldMap.has(fieldMapping.verifiedFlag)).to.be.true;
-    expect(bubbleFieldMap.get('token')).to.equal('Token');
-    expect(bubbleFieldMap.get(fieldMapping.verifiedFlag)).to.equal('Verif Stat');
+    expect(bubbleFieldMap.has('token')).toBe(true);
+    expect(bubbleFieldMap.has(fieldMapping.verifiedFlag)).toBe(true);
+    expect(bubbleFieldMap.get('token')).toBe('Token');
+    expect(bubbleFieldMap.get(fieldMapping.verifiedFlag)).toBe('Verif Stat');
   });
 
   describe('category structure validation', () => {
@@ -96,28 +95,28 @@ describe('participantColumnConfig', () => {
 
     it('should contain all expected category keys', () => {
       const actualKeys = bubbleCategories.map((category) => category.key);
-      expect(actualKeys).to.deep.equal(expectedCategoryKeys);
+      expect(actualKeys).toEqual(expectedCategoryKeys);
     });
 
     it('should have non-empty labels for all categories', () => {
       bubbleCategories.forEach((category) => {
-        expect(category.label).to.be.a('string');
-        expect(category.label.length).to.be.greaterThan(0);
+        expect(category.label).toBeTypeOf('string');
+        expect(category.label.length).toBeGreaterThan(0);
       });
     });
 
     it('should have fields array in each category', () => {
       bubbleCategories.forEach((category) => {
-        expect(category.fields).to.be.an('array');
-        expect(category.fields.length).to.be.greaterThan(0);
+        expect(category.fields).toBeInstanceOf(Array);
+        expect(category.fields.length).toBeGreaterThan(0);
       });
     });
 
     it('should not have null field keys in bubbleFieldMap', () => {
       bubbleFieldMap.forEach((label, key) => {
-        expect(key).to.not.be.null;
-        expect(label).to.be.a('string');
-        expect(label.length).to.be.greaterThan(0);
+        expect(key).not.toBeNull();
+        expect(label).toBeTypeOf('string');
+        expect(label.length).toBeGreaterThan(0);
       });
     });
 
@@ -125,16 +124,16 @@ describe('participantColumnConfig', () => {
       bubbleCategories.forEach((category) => {
         const keysInCategory = category.fields.map((field) => field.key);
         const uniqueKeys = new Set(keysInCategory);
-        expect(uniqueKeys.size).to.equal(keysInCategory.length, `Duplicate keys found in category ${category.key}`);
+        expect(uniqueKeys.size).toBe(keysInCategory.length, `Duplicate keys found in category ${category.key}`);
       });
     });
 
     it('should have valid field structure in each category', () => {
       bubbleCategories.forEach((category) => {
         category.fields.forEach((field) => {
-          expect(field).to.have.property('key');
-          expect(field).to.have.property('label');
-          expect(field.label).to.be.a('string');
+          expect(field).toHaveProperty('key');
+          expect(field).toHaveProperty('label');
+          expect(field.label).toBeTypeOf('string');
         });
       });
     });
@@ -149,7 +148,7 @@ describe('participantColumnConfig', () => {
       });
 
       const duplicatedKeys = Array.from(keyOccurrences.entries()).filter(([_, count]) => count > 1);
-      expect(duplicatedKeys.length).to.be.greaterThan(0);
+      expect(duplicatedKeys.length).toBeGreaterThan(0);
     });
   });
 });

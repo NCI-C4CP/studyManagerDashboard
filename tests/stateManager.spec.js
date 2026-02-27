@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import * as stateManagerModule from '../src/stateManager.js';
 import {
   installFirebaseStub,
@@ -70,48 +69,47 @@ describe('stateManager', () => {
   describe('appState', () => {
     it('supports setState and getState methods', () => {
       appState.setState({ hasUnsavedChanges: true });
-      expect(appState.getState().hasUnsavedChanges).to.equal(true);
+      expect(appState.getState().hasUnsavedChanges).toBe(true);
     });
 
     it('supports set and get aliases', () => {
       appState.set({ hasUnsavedChanges: true });
-      expect(appState.get().hasUnsavedChanges).to.equal(true);
+      expect(appState.get().hasUnsavedChanges).toBe(true);
     });
 
     it('supports function-based state updates', () => {
       appState.setState({ hasUnsavedChanges: false });
       appState.setState((prev) => ({ ...prev, hasUnsavedChanges: true }));
-      expect(appState.getState().hasUnsavedChanges).to.equal(true);
+      expect(appState.getState().hasUnsavedChanges).toBe(true);
     });
 
     it('returns current state object', () => {
       appState.setState({ hasUnsavedChanges: false });
       const state1 = appState.getState();
       const state2 = appState.getState();
-      // TODO: address this
       // Note: appState returns the same reference, mutations will affect it
       // Deep cloning happens in encrypted stores, not in appState itself
-      expect(state1).to.equal(state2);
+      expect(state1).toBe(state2);
     });
   });
 
   describe('statsState', () => {
     it('sets and retrieves stats data', async () => {
       await statsState.setStats({ foo: 'bar' }, 123);
-      expect(statsState.getStats()).to.deep.equal({ foo: 'bar' });
-      expect(statsState.getStatsUpdateTime()).to.equal(123);
+      expect(statsState.getStats()).toEqual({ foo: 'bar' });
+      expect(statsState.getStatsUpdateTime()).toBe(123);
     });
 
     it('persists stats across hydration', async () => {
       await statsState.setStats({ persisted: true }, 999);
-      expect(window.sessionStorage.getItem('statsStateEnc')).to.be.a('string');
+      expect(window.sessionStorage.getItem('statsStateEnc')).toBeTypeOf('string');
 
       appState.setState({ stats: { statsData: {}, statsDataUpdateTime: 0 } });
       resetAppStateUID();
       await initializeAppState();
 
-      expect(statsState.getStats()).to.deep.equal({ persisted: true });
-      expect(statsState.getStatsUpdateTime()).to.equal(999);
+      expect(statsState.getStats()).toEqual({ persisted: true });
+      expect(statsState.getStatsUpdateTime()).toBe(999);
     });
 
     it('falls back to defaults when stats payload is tampered', async () => {
@@ -122,9 +120,9 @@ describe('stateManager', () => {
       resetAppStateUID();
       await initializeAppState();
 
-      expect(statsState.getStats()).to.deep.equal({});
-      expect(statsState.getStatsUpdateTime()).to.equal(0);
-      expect(window.sessionStorage.getItem('statsStateEnc')).to.equal(null);
+      expect(statsState.getStats()).toEqual({});
+      expect(statsState.getStatsUpdateTime()).toBe(0);
+      expect(window.sessionStorage.getItem('statsStateEnc')).toBeNull();
     });
 
     it('resets stats when signed in as a different user', async () => {
@@ -134,26 +132,26 @@ describe('stateManager', () => {
       resetAppStateUID();
       await initializeAppState();
 
-      expect(statsState.getStats()).to.deep.equal({});
-      expect(statsState.getStatsUpdateTime()).to.equal(0);
+      expect(statsState.getStats()).toEqual({});
+      expect(statsState.getStatsUpdateTime()).toBe(0);
     });
 
     it('validates timestamp to be finite and non-negative', async () => {
       await statsState.setStats({}, -1);
-      expect(statsState.getStatsUpdateTime()).to.equal(0);
+      expect(statsState.getStatsUpdateTime()).toBe(0);
 
       await statsState.setStats({}, NaN);
-      expect(statsState.getStatsUpdateTime()).to.equal(0);
+      expect(statsState.getStatsUpdateTime()).toBe(0);
 
       await statsState.setStats({}, Infinity);
-      expect(statsState.getStatsUpdateTime()).to.equal(0);
+      expect(statsState.getStatsUpdateTime()).toBe(0);
     });
   });
 
   describe('roleState', () => {
     it('sets and retrieves role flags', async () => {
       await roleState.setRoleFlags({ isParent: true, coordinatingCenter: '1', helpDesk: 0 });
-      expect(roleState.getRoleFlags()).to.deep.equal({
+      expect(roleState.getRoleFlags()).toEqual({
         isParent: true,
         coordinatingCenter: true,
         helpDesk: false,
@@ -165,7 +163,7 @@ describe('stateManager', () => {
     it('preserves existing flags when partial update provided', async () => {
       await roleState.setRoleFlags({ isParent: true, coordinatingCenter: true });
       await roleState.setRoleFlags({ helpDesk: true });
-      expect(roleState.getRoleFlags()).to.deep.equal({
+      expect(roleState.getRoleFlags()).toEqual({
         isParent: true,
         coordinatingCenter: true,
         helpDesk: true,
@@ -190,7 +188,7 @@ describe('stateManager', () => {
       resetAppStateUID();
       await initializeAppState();
 
-      expect(roleState.getRoleFlags()).to.deep.equal({
+      expect(roleState.getRoleFlags()).toEqual({
         isParent: true,
         coordinatingCenter: true,
         helpDesk: false,
@@ -205,7 +203,7 @@ describe('stateManager', () => {
         coordinatingCenter: 1,
         helpDesk: 'false',
       });
-      expect(roleState.getRoleFlags()).to.deep.equal({
+      expect(roleState.getRoleFlags()).toEqual({
         isParent: true,
         coordinatingCenter: true,
         helpDesk: false,
@@ -218,19 +216,19 @@ describe('stateManager', () => {
 
   describe('uiState', () => {
     it('manages UI flags and withdrawal helpers', async () => {
-      expect(uiState.isSiteDropdownVisible()).to.equal(false);
+      expect(uiState.isSiteDropdownVisible()).toBe(false);
 
       await uiState.setSiteDropdownVisible(true);
-      expect(uiState.isSiteDropdownVisible()).to.equal(true);
+      expect(uiState.isSiteDropdownVisible()).toBe(true);
 
       await uiState.setWithdrawalStatusFlags({ hasPriorParticipationStatus: 'true' });
-      expect(uiState.getWithdrawalStatusFlags()).to.deep.include({
+      expect(uiState.getWithdrawalStatusFlags()).toMatchObject({
         hasPriorParticipationStatus: true,
         hasPriorSuspendedContact: false,
       });
 
       await uiState.clearWithdrawalStatusFlags();
-      expect(uiState.getWithdrawalStatusFlags()).to.deep.equal({
+      expect(uiState.getWithdrawalStatusFlags()).toEqual({
         hasPriorParticipationStatus: false,
         hasPriorSuspendedContact: false,
       });
@@ -255,8 +253,8 @@ describe('stateManager', () => {
       resetAppStateUID();
       await initializeAppState();
 
-      expect(uiState.isSiteDropdownVisible()).to.equal(true);
-      expect(uiState.getWithdrawalStatusFlags()).to.deep.equal({
+      expect(uiState.isSiteDropdownVisible()).toBe(true);
+      expect(uiState.getWithdrawalStatusFlags()).toEqual({
         hasPriorParticipationStatus: true,
         hasPriorSuspendedContact: true,
       });
@@ -264,13 +262,13 @@ describe('stateManager', () => {
 
     it('normalizes boolean values for site dropdown visibility', async () => {
       await uiState.setSiteDropdownVisible('true');
-      expect(uiState.isSiteDropdownVisible()).to.equal(true);
+      expect(uiState.isSiteDropdownVisible()).toBe(true);
 
       await uiState.setSiteDropdownVisible(0);
-      expect(uiState.isSiteDropdownVisible()).to.equal(false);
+      expect(uiState.isSiteDropdownVisible()).toBe(false);
 
       await uiState.setSiteDropdownVisible(1);
-      expect(uiState.isSiteDropdownVisible()).to.equal(true);
+      expect(uiState.isSiteDropdownVisible()).toBe(true);
     });
 
     it('preserves other withdrawal flags when updating one', async () => {
@@ -283,18 +281,18 @@ describe('stateManager', () => {
         hasPriorParticipationStatus: false,
       });
 
-      expect(uiState.getWithdrawalStatusFlags()).to.deep.equal({
+      expect(uiState.getWithdrawalStatusFlags()).toEqual({
         hasPriorParticipationStatus: false,
         hasPriorSuspendedContact: true,
       });
     });
 
     it('defaults filtersExpanded to true and persists updates', async () => {
-      expect(uiState.isFiltersExpanded()).to.equal(true);
+      expect(uiState.isFiltersExpanded()).toBe(true);
 
       await uiState.setFiltersExpanded(false);
-      expect(uiState.isFiltersExpanded()).to.equal(false);
-      expect(window.sessionStorage.getItem('uiFlagsEnc')).to.be.a('string');
+      expect(uiState.isFiltersExpanded()).toBe(false);
+      expect(window.sessionStorage.getItem('uiFlagsEnc')).toBeTypeOf('string');
 
       appState.setState({
         uiFlags: {
@@ -310,7 +308,7 @@ describe('stateManager', () => {
       resetAppStateUID();
       await initializeAppState();
 
-      expect(uiState.isFiltersExpanded()).to.equal(false);
+      expect(uiState.isFiltersExpanded()).toBe(false);
     });
   });
 
@@ -320,7 +318,7 @@ describe('stateManager', () => {
       await participantState.setParticipant(participantPayload);
 
       const stored = window.sessionStorage.getItem('participantTokenEnc');
-      expect(stored).to.be.a('string');
+      expect(stored).toBeTypeOf('string');
 
       appState.setState({ participant: null });
 
@@ -329,8 +327,8 @@ describe('stateManager', () => {
       ));
 
       const recovered = await participantState.recoverParticipantFromSession();
-      expect(recovered).to.deep.equal(participantPayload);
-      expect(participantState.getParticipant()).to.deep.equal(participantPayload);
+      expect(recovered).toEqual(participantPayload);
+      expect(participantState.getParticipant()).toEqual(participantPayload);
     });
 
     it('clears stored participant token when recovery fails', async () => {
@@ -343,23 +341,23 @@ describe('stateManager', () => {
       ));
 
       const recovered = await participantState.recoverParticipantFromSession();
-      expect(recovered).to.equal(null);
-      expect(window.sessionStorage.getItem('participantTokenEnc')).to.equal(null);
+      expect(recovered).toBeNull();
+      expect(window.sessionStorage.getItem('participantTokenEnc')).toBeNull();
     });
 
     it('returns null for tampered participant token', async () => {
       window.sessionStorage.setItem('participantTokenEnc', 'invalid-payload');
       const token = await participantState.getParticipantToken();
-      expect(token).to.equal(null);
-      expect(window.sessionStorage.getItem('participantTokenEnc')).to.equal(null);
+      expect(token).toBeNull();
+      expect(window.sessionStorage.getItem('participantTokenEnc')).toBeNull();
     });
 
     it('checks if participant exists in state', async () => {
-      expect(participantState.hasParticipant()).to.equal(false);
+      expect(participantState.hasParticipant()).toBe(false);
       await participantState.setParticipant({ id: 1, token: 'test-token' });
-      expect(participantState.hasParticipant()).to.equal(true);
+      expect(participantState.hasParticipant()).toBe(true);
       participantState.clearParticipant();
-      expect(participantState.hasParticipant()).to.equal(false);
+      expect(participantState.hasParticipant()).toBe(false);
     });
 
     it('retrieves participant from state or recovers from session', async () => {
@@ -373,8 +371,8 @@ describe('stateManager', () => {
       appState.setState({ participant: null });
 
       const recovered = await participantState.getParticipantFromState();
-      expect(recovered).to.deep.equal(participantPayload);
-      expect(participantState.getParticipant()).to.deep.equal(participantPayload);
+      expect(recovered).toEqual(participantPayload);
+      expect(participantState.getParticipant()).toEqual(participantPayload);
     });
 
     it('prevents concurrent participant recovery attempts', async () => {
@@ -399,10 +397,10 @@ describe('stateManager', () => {
         participantState.recoverParticipantFromSession(),
       ]);
 
-      expect(callCount).to.equal(1);
-      expect(result1).to.deep.equal(participantPayload);
-      expect(result2).to.deep.equal(participantPayload);
-      expect(result3).to.deep.equal(participantPayload);
+      expect(callCount).toBe(1);
+      expect(result1).toEqual(participantPayload);
+      expect(result2).toEqual(participantPayload);
+      expect(result3).toEqual(participantPayload);
     });
 
     it('handles network errors during recovery gracefully', async () => {
@@ -417,24 +415,24 @@ describe('stateManager', () => {
       ));
 
       const recovered = await participantState.recoverParticipantFromSession();
-      expect(recovered).to.equal(null);
+      expect(recovered).toBeNull();
       // Token should remain for retry
-      expect(window.sessionStorage.getItem('participantTokenEnc')).to.not.equal(null);
+      expect(window.sessionStorage.getItem('participantTokenEnc')).not.toBeNull();
     });
 
     it('warns when setting participant without token', async () => {
       const { warnings, restore } = captureConsoleWarnings();
       await participantState.setParticipant({ id: 1 });
-      expect(warnings.length).to.be.greaterThan(0);
-      expect(warnings[0]).to.include('missing token property');
+      expect(warnings.length).toBeGreaterThan(0);
+      expect(warnings[0]).toContain('missing token property');
       restore();
     });
 
     it('warns when setting null participant', async () => {
       const { warnings, restore } = captureConsoleWarnings();
       await participantState.setParticipant(null);
-      expect(warnings.length).to.be.greaterThan(0);
-      expect(warnings[0]).to.include('null or undefined');
+      expect(warnings.length).toBeGreaterThan(0);
+      expect(warnings[0]).toContain('null or undefined');
       restore();
     });
   });
@@ -445,59 +443,59 @@ describe('stateManager', () => {
       userSession.setUser(userData);
 
       const retrieved = userSession.getUser();
-      expect(retrieved).to.deep.equal(userData);
-      expect(window.sessionStorage.getItem('userSession')).to.be.a('string');
+      expect(retrieved).toEqual(userData);
+      expect(window.sessionStorage.getItem('userSession')).toBeTypeOf('string');
     });
 
     it('retrieves user email from session', () => {
       const userData = { email: 'test@example.com', name: 'Test User' };
       userSession.setUser(userData);
 
-      expect(userSession.getUserEmail()).to.equal('test@example.com');
+      expect(userSession.getUserEmail()).toBe('test@example.com');
     });
 
     it('returns empty string when no user email exists', () => {
-      expect(userSession.getUserEmail()).to.equal('');
+      expect(userSession.getUserEmail()).toBe('');
     });
 
     it('checks if user session exists', () => {
-      expect(userSession.hasUser()).to.equal(false);
+      expect(userSession.hasUser()).toBe(false);
 
       userSession.setUser({ email: 'test@example.com' });
-      expect(userSession.hasUser()).to.equal(true);
+      expect(userSession.hasUser()).toBe(true);
 
       userSession.clearUser();
-      expect(userSession.hasUser()).to.equal(false);
+      expect(userSession.hasUser()).toBe(false);
     });
 
     it('clears user session data', () => {
       userSession.setUser({ email: 'test@example.com' });
-      expect(userSession.getUser()).to.not.equal(null);
+      expect(userSession.getUser()).not.toBeNull();
 
       userSession.clearUser();
-      expect(userSession.getUser()).to.equal(null);
-      expect(window.sessionStorage.getItem('userSession')).to.equal(null);
+      expect(userSession.getUser()).toBeNull();
+      expect(window.sessionStorage.getItem('userSession')).toBeNull();
     });
 
     it('handles malformed JSON in sessionStorage', () => {
       window.sessionStorage.setItem('userSession', 'invalid-json{');
       const user = userSession.getUser();
-      expect(user).to.equal(null);
+      expect(user).toBeNull();
     });
 
     it('warns when setting user without email', () => {
       const { warnings, restore } = captureConsoleWarnings();
       userSession.setUser({ name: 'No Email User' });
-      expect(warnings.length).to.be.greaterThan(0);
-      expect(warnings[0]).to.include('missing or invalid');
+      expect(warnings.length).toBeGreaterThan(0);
+      expect(warnings[0]).toContain('missing or invalid');
       restore();
     });
 
     it('warns when setting null user', () => {
       const { warnings, restore } = captureConsoleWarnings();
       userSession.setUser(null);
-      expect(warnings.length).to.be.greaterThan(0);
-      expect(warnings[0]).to.include('missing or invalid');
+      expect(warnings.length).toBeGreaterThan(0);
+      expect(warnings[0]).toContain('missing or invalid');
       restore();
     });
   });
@@ -511,23 +509,23 @@ describe('stateManager', () => {
       reportsState.setReports(reportsData);
       const retrieved = reportsState.getReports();
 
-      expect(retrieved).to.deep.equal(reportsData);
+      expect(retrieved).toEqual(reportsData);
       
       reportsState.clearReports();
     });
 
     it('returns null when no reports are set', () => {
-      expect(reportsState.getReports()).to.equal(null);
+      expect(reportsState.getReports()).toBeNull();
     });
 
     it('clears reports data', () => {
       const reportsData = { physActReport: { status: 'completed' } };
       reportsState.setReports(reportsData);
 
-      expect(reportsState.getReports()).to.not.equal(null);
+      expect(reportsState.getReports()).not.toBeNull();
 
       reportsState.clearReports();
-      expect(reportsState.getReports()).to.equal(null);
+      expect(reportsState.getReports()).toBeNull();
     });
 
     it('fetches reports from state or retrieves them via function', async () => {
@@ -535,7 +533,7 @@ describe('stateManager', () => {
       const mockPhysActReport = { status: 'completed', data: { steps: 5000 } };
 
       const retrievePhysicalActivityReport = async (p) => {
-        expect(p).to.deep.equal(participant);
+        expect(p).toEqual(participant);
         return mockPhysActReport;
       };
 
@@ -544,8 +542,8 @@ describe('stateManager', () => {
         retrievePhysicalActivityReport,
       );
 
-      expect(reports.physActReport).to.deep.equal(mockPhysActReport);
-      expect(reportsState.getReports()).to.deep.equal(reports);
+      expect(reports.physActReport).toEqual(mockPhysActReport);
+      expect(reportsState.getReports()).toEqual(reports);
       
       reportsState.clearReports();
     });
@@ -567,8 +565,8 @@ describe('stateManager', () => {
         retrievePhysicalActivityReport,
       );
 
-      expect(fetchCallCount).to.equal(0);
-      expect(reports).to.deep.equal(cachedReports);
+      expect(fetchCallCount).toBe(0);
+      expect(reports).toEqual(cachedReports);
       
       reportsState.clearReports();
     });
@@ -582,7 +580,7 @@ describe('stateManager', () => {
         retrievePhysicalActivityReport,
       );
 
-      expect(reports).to.deep.equal({});
+      expect(reports).toEqual({});
       
       reportsState.clearReports();
     });
@@ -590,22 +588,22 @@ describe('stateManager', () => {
     it('clears reports when participant is cleared', async () => {
       const reportsData = { physActReport: { status: 'completed' } };
       reportsState.setReports(reportsData);
-      expect(reportsState.getReports()).to.not.equal(null);
+      expect(reportsState.getReports()).not.toBeNull();
 
       participantState.clearParticipant();
-      expect(reportsState.getReports()).to.equal(null);
+      expect(reportsState.getReports()).toBeNull();
     });
 
     it('warns when setting null or undefined reports', () => {
       const { warnings, restore } = captureConsoleWarnings();
       reportsState.setReports(null);
-      expect(warnings.length).to.be.greaterThan(0);
-      expect(warnings[0]).to.include('null or undefined');
+      expect(warnings.length).toBeGreaterThan(0);
+      expect(warnings[0]).toContain('null or undefined');
       restore();
 
       const { warnings: warnings2, restore: restore2 } = captureConsoleWarnings();
       reportsState.setReports(undefined);
-      expect(warnings2.length).to.be.greaterThan(0);
+      expect(warnings2.length).toBeGreaterThan(0);
       restore2();
     });
   });
@@ -619,32 +617,32 @@ describe('stateManager', () => {
       const results = [{ id: 1 }];
 
       await searchState.setSearchResults(metadata, results);
-      expect(searchState.getSearchResults()).to.deep.equal(results);
+      expect(searchState.getSearchResults()).toEqual(results);
       const cached = searchState.getCachedMetadata();
-      expect(cached).to.include({ searchType: 'lookup', firstName: 'alex' });
+      expect(cached).toMatchObject({ searchType: 'lookup', firstName: 'alex' });
       
       // Verify metadata is encrypted and stored
       const storedEncrypted = window.sessionStorage.getItem('searchMetadataEnc');
-      expect(storedEncrypted).to.be.a('string');
-      expect(storedEncrypted).to.match(/^v1:/); // Verify encryption format
+      expect(storedEncrypted).toBeTypeOf('string');
+      expect(storedEncrypted).toMatch(/^v1:/); // Verify encryption format
     });
 
     it('normalizes and persists predefined metadata', async () => {
       const normalized = await searchState.initializePredefinedMetadata({ routeKey: 'verified' });
-      expect(normalized).to.deep.include({ searchType: 'predefined', routeKey: 'verified' });
+      expect(normalized).toMatchObject({ searchType: 'predefined', routeKey: 'verified' });
       
       // Verify metadata is encrypted and stored
       const storedEncrypted = window.sessionStorage.getItem('searchMetadataEnc');
-      expect(storedEncrypted).to.be.a('string');
-      expect(storedEncrypted).to.match(/^v1:/);
+      expect(storedEncrypted).toBeTypeOf('string');
+      expect(storedEncrypted).toMatch(/^v1:/);
       
       const updated = await searchState.updatePredefinedMetadata({ pageNumber: 2 });
-      expect(updated.pageNumber).to.equal(2);
+      expect(updated.pageNumber).toBe(2);
       
       // Verify updated metadata is also persisted
       const updatedEncrypted = window.sessionStorage.getItem('searchMetadataEnc');
-      expect(updatedEncrypted).to.be.a('string');
-      expect(updatedEncrypted).to.not.equal(storedEncrypted); // Different IV each time
+      expect(updatedEncrypted).toBeTypeOf('string');
+      expect(updatedEncrypted).not.toBe(storedEncrypted); // Different IV each time
     });
 
     it('handles complex predefined metadata with filters and pagination', async () => {
@@ -658,7 +656,7 @@ describe('stateManager', () => {
         cursorHistory: ['cursor1', 'cursor2'],
       });
 
-      expect(metadata).to.deep.include({
+      expect(metadata).toMatchObject({
         searchType: 'predefined',
         routeKey: 'all',
         siteCode: 'SITE001',
@@ -667,18 +665,18 @@ describe('stateManager', () => {
         pageNumber: 3,
         direction: 'next',
       });
-      expect(metadata.cursorHistory).to.deep.equal(['cursor1', 'cursor2']);
+      expect(metadata.cursorHistory).toEqual(['cursor1', 'cursor2']);
     });
 
     it('infers predefined type from routeKey or effectiveType', async () => {
       const metadata1 = await searchState.initializePredefinedMetadata({ routeKey: 'verified' });
-      expect(metadata1.searchType).to.equal('predefined');
-      expect(metadata1.predefinedType).to.equal('verified');
-      expect(metadata1.effectiveType).to.equal('verified');
+      expect(metadata1.searchType).toBe('predefined');
+      expect(metadata1.predefinedType).toBe('verified');
+      expect(metadata1.effectiveType).toBe('verified');
 
       const metadata2 = await searchState.initializePredefinedMetadata({ effectiveType: 'cannotbeverified' });
-      expect(metadata2.predefinedType).to.equal('cannotbeverified');
-      expect(metadata2.routeKey).to.equal('cannotbeverified');
+      expect(metadata2.predefinedType).toBe('cannotbeverified');
+      expect(metadata2.routeKey).toBe('cannotbeverified');
     });
 
     it('persists encrypted metadata to sessionStorage', async () => {
@@ -686,8 +684,8 @@ describe('stateManager', () => {
       await searchState.setSearchResults(metadata, [{ id: 1 }]);
 
       const storedEncrypted = window.sessionStorage.getItem('searchMetadataEnc');
-      expect(storedEncrypted).to.be.a('string');
-      expect(storedEncrypted).to.match(/^v1:/); // Verify encryption format
+      expect(storedEncrypted).toBeTypeOf('string');
+      expect(storedEncrypted).toMatch(/^v1:/); // Verify encryption format
     });
 
     it('recovers search metadata from sessionStorage when cache is empty', async () => {
@@ -698,22 +696,22 @@ describe('stateManager', () => {
       
       // Save the encrypted payload
       const encryptedPayload = window.sessionStorage.getItem('searchMetadataEnc');
-      expect(encryptedPayload).to.be.a('string');
+      expect(encryptedPayload).toBeTypeOf('string');
       
       // Clear everything (simulates page refresh/module reload)
       searchState.clearSearchResults();
-      expect(searchState.getCachedMetadata()).to.equal(null);
+      expect(searchState.getCachedMetadata()).toBeNull();
       
       // Restore encrypted data to storage (simulating persistence across page refresh)
       window.sessionStorage.setItem('searchMetadataEnc', encryptedPayload);
       
       // Now recover from storage (cache is empty, so should decrypt from storage)
       const recovered = await searchState.getSearchMetadata();
-      expect(recovered).to.not.equal(null);
-      expect(recovered).to.deep.include({ searchType: 'lookup', firstName: 'recovered-test' });
+      expect(recovered).not.toBeNull();
+      expect(recovered).toMatchObject({ searchType: 'lookup', firstName: 'recovered-test' });
       
       // Cache should now be populated after recovery
-      expect(searchState.getCachedMetadata()).to.deep.include({ searchType: 'lookup', firstName: 'recovered-test' });
+      expect(searchState.getCachedMetadata()).toMatchObject({ searchType: 'lookup', firstName: 'recovered-test' });
       
       searchState.clearSearchResults();
       window.sessionStorage.removeItem('searchMetadataEnc');
@@ -722,31 +720,31 @@ describe('stateManager', () => {
     it('cleans up tampered metadata', async () => {
       window.sessionStorage.setItem('searchMetadataEnc', 'invalid');
       const metadata = await searchState.getSearchMetadata();
-      expect(metadata).to.equal(null);
-      expect(window.sessionStorage.getItem('searchMetadataEnc')).to.equal(null);
+      expect(metadata).toBeNull();
+      expect(window.sessionStorage.getItem('searchMetadataEnc')).toBeNull();
       
       searchState.clearSearchResults();
     });
 
     it('reports whether cached metadata exists', async () => {
-      expect(searchState.hasSearchResults()).to.equal(false);
+      expect(searchState.hasSearchResults()).toBe(false);
       await searchState.setSearchResults({ searchType: 'lookup' }, [{ id: 1 }]);
-      expect(searchState.hasSearchResults()).to.equal(true);
+      expect(searchState.hasSearchResults()).toBe(true);
     });
 
     it('handles null or invalid results array', async () => {
       await searchState.setSearchResults({ searchType: 'lookup' }, null);
-      expect(searchState.getSearchResults()).to.equal(null);
+      expect(searchState.getSearchResults()).toBeNull();
 
       await searchState.setSearchResults({ searchType: 'lookup' }, 'not-an-array');
-      expect(searchState.getSearchResults()).to.equal(null);
+      expect(searchState.getSearchResults()).toBeNull();
     });
 
     it('warns when setting search results without metadata', async () => {
       const { warnings, restore } = captureConsoleWarnings();
       await searchState.setSearchResults(null, [{ id: 1 }]);
-      expect(warnings.length).to.be.greaterThan(0);
-      expect(warnings[0]).to.include('metadata is null or undefined');
+      expect(warnings.length).toBeGreaterThan(0);
+      expect(warnings[0]).toContain('metadata is null or undefined');
       restore();
     });
 
@@ -754,9 +752,9 @@ describe('stateManager', () => {
       await searchState.setSearchResults({ searchType: 'lookup' }, [{ id: 1 }]);
       searchState.clearSearchResults();
 
-      expect(searchState.getSearchResults()).to.equal(null);
-      expect(searchState.getCachedMetadata()).to.equal(null);
-      expect(window.sessionStorage.getItem('searchMetadataEnc')).to.equal(null);
+      expect(searchState.getSearchResults()).toBeNull();
+      expect(searchState.getCachedMetadata()).toBeNull();
+      expect(window.sessionStorage.getItem('searchMetadataEnc')).toBeNull();
     });
 
     it('clears only results cache while preserving metadata', async () => {
@@ -764,29 +762,29 @@ describe('stateManager', () => {
       const results = [{ id: 1 }];
 
       await searchState.setSearchResults(metadata, results);
-      expect(searchState.getSearchResults()).to.deep.equal(results);
+      expect(searchState.getSearchResults()).toEqual(results);
       const encryptedBefore = window.sessionStorage.getItem('searchMetadataEnc');
-      expect(encryptedBefore).to.be.a('string');
+      expect(encryptedBefore).toBeTypeOf('string');
 
       searchState.clearResultsCache();
 
-      expect(searchState.getSearchResults()).to.equal(null);
-      expect(searchState.getCachedMetadata()).to.include({ searchType: 'lookup', firstName: 'alex' });
-      expect(window.sessionStorage.getItem('searchMetadataEnc')).to.equal(encryptedBefore);
+      expect(searchState.getSearchResults()).toBeNull();
+      expect(searchState.getCachedMetadata()).toMatchObject({ searchType: 'lookup', firstName: 'alex' });
+      expect(window.sessionStorage.getItem('searchMetadataEnc')).toBe(encryptedBefore);
     });
 
     it('builds predefined search metadata', () => {
       const metadata = buildPredefinedSearchMetadata({ routeKey: 'all' });
-      expect(metadata).to.deep.include({ searchType: 'predefined', routeKey: 'all' });
+      expect(metadata).toMatchObject({ searchType: 'predefined', routeKey: 'all' });
     });
 
     it('merges metadata updates correctly', async () => {
       await searchState.initializePredefinedMetadata({ routeKey: 'verified', pageNumber: 1 });
       const updated = await searchState.updatePredefinedMetadata({ pageNumber: 2, siteCode: 'SITE001' });
 
-      expect(updated.routeKey).to.equal('verified');
-      expect(updated.pageNumber).to.equal(2);
-      expect(updated.siteCode).to.equal('SITE001');
+      expect(updated.routeKey).toBe('verified');
+      expect(updated.pageNumber).toBe(2);
+      expect(updated.siteCode).toBe('SITE001');
     });
   });
 
@@ -813,8 +811,8 @@ describe('stateManager', () => {
 
       invalidateSearchResultsCache();
 
-      expect(clearResultsCalled).to.equal(true);
-      expect(clearAllCalled).to.equal(false);
+      expect(clearResultsCalled).toBe(true);
+      expect(clearAllCalled).toBe(false);
     });
 
     it('falls back to clearSearchResults when partial cache clear is unavailable', () => {
@@ -825,22 +823,22 @@ describe('stateManager', () => {
 
       invalidateSearchResultsCache();
 
-      expect(clearAllCalled).to.equal(true);
+      expect(clearAllCalled).toBe(true);
     });
   });
 
   describe('unsaved changes', () => {
     it('marks changes as unsaved', () => {
-      expect(appState.getState().hasUnsavedChanges).to.equal(false);
+      expect(appState.getState().hasUnsavedChanges).toBe(false);
       markUnsaved();
-      expect(appState.getState().hasUnsavedChanges).to.equal(true);
+      expect(appState.getState().hasUnsavedChanges).toBe(true);
     });
 
     it('clears unsaved changes flag', () => {
       appState.setState({ hasUnsavedChanges: true });
-      expect(appState.getState().hasUnsavedChanges).to.equal(true);
+      expect(appState.getState().hasUnsavedChanges).toBe(true);
       clearUnsaved();
-      expect(appState.getState().hasUnsavedChanges).to.equal(false);
+      expect(appState.getState().hasUnsavedChanges).toBe(false);
     });
   });
 
@@ -855,9 +853,9 @@ describe('stateManager', () => {
       await initializeAppState();
       const secondState = appState.getState();
 
-      expect(secondState).to.not.equal(firstState);
-      expect(statsState.getStats()).to.deep.equal({ baz: 'qux' });
-      expect(statsState.getStatsUpdateTime()).to.equal(456);
+      expect(secondState).not.toBe(firstState);
+      expect(statsState.getStats()).toEqual({ baz: 'qux' });
+      expect(statsState.getStatsUpdateTime()).toBe(456);
     });
 
     it('returns early if already initialized for current user', async () => {
@@ -866,8 +864,8 @@ describe('stateManager', () => {
 
       // Should return immediately without re-hydrating
       const state = await initializeAppState();
-      expect(statsState.getStats()).to.deep.equal({ test: 'data' });
-      expect(state).to.deep.include({ stats: { statsData: { test: 'data' }, statsDataUpdateTime: 123 } });
+      expect(statsState.getStats()).toEqual({ test: 'data' });
+      expect(state).toMatchObject({ stats: { statsData: { test: 'data' }, statsDataUpdateTime: 123 } });
     });
 
     it('handles unauthenticated state', async () => {
@@ -877,7 +875,7 @@ describe('stateManager', () => {
       await initializeAppState();
 
       // Should initialize with defaults (keep any pre-existing stats if present in appState)
-      expect(roleState.getRoleFlags()).to.deep.equal({
+      expect(roleState.getRoleFlags()).toEqual({
         isParent: false,
         coordinatingCenter: false,
         helpDesk: false,
@@ -885,7 +883,7 @@ describe('stateManager', () => {
         isEHRUploader: false,
       });
       const stats = statsState.getStats();
-      expect(stats && typeof stats === 'object').to.be.true;
+      expect(stats && typeof stats === 'object').toBe(true);
     });
   });
 
@@ -899,7 +897,7 @@ describe('stateManager', () => {
       await initializeAppState();
 
       // Should load defaults for new user
-      expect(statsState.getStats()).to.deep.equal({});
+      expect(statsState.getStats()).toEqual({});
     });
   });
 
@@ -918,26 +916,26 @@ describe('stateManager', () => {
 
       signOutAndClearSession();
 
-      expect(signOutCalled).to.equal(true);
-      expect(statsState.getStats()).to.deep.equal({});
-      expect(roleState.getRoleFlags()).to.deep.equal({
+      expect(signOutCalled).toBe(true);
+      expect(statsState.getStats()).toEqual({});
+      expect(roleState.getRoleFlags()).toEqual({
         isParent: false,
         coordinatingCenter: false,
         helpDesk: false,
         isSiteManager: false,
         isEHRUploader: false,
       });
-      expect(uiState.isSiteDropdownVisible()).to.equal(false);
-      expect(uiState.getWithdrawalStatusFlags()).to.deep.equal({
+      expect(uiState.isSiteDropdownVisible()).toBe(false);
+      expect(uiState.getWithdrawalStatusFlags()).toEqual({
         hasPriorParticipationStatus: false,
         hasPriorSuspendedContact: false,
       });
-      expect(participantState.getParticipant()).to.equal(null);
-      expect(appState.getState().hasUnsavedChanges).to.equal(false);
-      expect(reportsState.getReports()).to.equal(null);
+      expect(participantState.getParticipant()).toBeNull();
+      expect(appState.getState().hasUnsavedChanges).toBe(false);
+      expect(reportsState.getReports()).toBeNull();
       // Note: window.location.hash is skipped in tests because JSDOM doesn't support mutable hash
       // In production, signOutAndClearSession() correctly sets window.location.hash = '#'
-      expect(loader.style.display).to.equal('none');
+      expect(loader.style.display).toBe('none');
     });
   });
 });

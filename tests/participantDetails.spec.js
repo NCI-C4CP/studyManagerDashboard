@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 
@@ -73,15 +72,15 @@ describe('participantDetails Integration', () => {
         const mainContent = document.getElementById('mainContent');
         
         // Check for Header
-        expect(mainContent.innerHTML).to.include(participant.Connect_ID);
+        expect(mainContent.innerHTML).toContain(participant.Connect_ID);
         
         // Check for Search Buttons
-        expect(document.getElementById('backToSearchResultsBtn')).to.exist;
-        expect(document.getElementById('backToParticipantLookupBtn')).to.exist;
+        expect(document.getElementById('backToSearchResultsBtn')).not.toBeNull();
+        expect(document.getElementById('backToParticipantLookupBtn')).not.toBeNull();
         
         // Check for Tabs
-        expect(document.querySelector('.participant-tabs')).to.exist;
-        expect(document.getElementById('details-tab').classList.contains('active')).to.be.true;
+        expect(document.querySelector('.participant-tabs')).not.toBeNull();
+        expect(document.getElementById('details-tab').classList.contains('active')).toBe(true);
     });
 
     it('Participant Lookup button requests a fresh lookup form instead of cached results', async () => {
@@ -90,13 +89,13 @@ describe('participantDetails Integration', () => {
         await waitForAsyncTasks();
 
         const lookupBtn = document.getElementById('backToParticipantLookupBtn');
-        expect(lookupBtn).to.exist;
+        expect(lookupBtn).not.toBeNull();
 
         lookupBtn.click();
         const navModule = await import('../src/navigationBar.js');
         const { participantLookupNavRequest } = navModule?.default ?? navModule;
-        expect(participantLookupNavRequest()).to.equal(true);
-        expect(window.location.hash).to.equal('#participantLookup');
+        expect(participantLookupNavRequest()).toBe(true);
+        expect(window.location.hash).toBe('#participantLookup');
     });
 
     it('loads details tab content by default', async () => {
@@ -105,9 +104,9 @@ describe('participantDetails Integration', () => {
         await waitForAsyncTasks();
 
         const detailsContent = document.getElementById('details-tab-content-inner');
-        expect(detailsContent.innerHTML).to.include('Participant Details');
-        expect(detailsContent.innerHTML).to.include('Last Name');
-        expect(detailsContent.innerHTML).to.include('John'); // Default fName
+        expect(detailsContent.innerHTML).toContain('Participant Details');
+        expect(detailsContent.innerHTML).toContain('Last Name');
+        expect(detailsContent.innerHTML).toContain('John'); // Default fName
     });
 
     it('opens edit modal when Edit button is clicked', async () => {
@@ -119,16 +118,16 @@ describe('participantDetails Integration', () => {
         // We need to find the button associated with fieldMapping.lName
         // The helper generates buttons with id `${conceptId}button`
         const editButton = document.getElementById(`${fieldMapping.lName}button`);
-        expect(editButton).to.exist;
+        expect(editButton).not.toBeNull();
 
         editButton.click();
         await waitForAsyncTasks();
 
         const modalHeader = document.getElementById('modalHeader');
-        expect(modalHeader.innerHTML).to.include('Edit Last Name');
+        expect(modalHeader.innerHTML).toContain('Edit Last Name');
         
         const modalBody = document.getElementById('modalBody');
-        expect(modalBody.querySelector('input')).to.exist;
+        expect(modalBody.querySelector('input')).not.toBeNull();
     });
 
     it('clears pending edits and participant state when navigating back to search results', async () => {
@@ -142,14 +141,14 @@ describe('participantDetails Integration', () => {
         await waitForAsyncTasks();
 
         const backBtn = document.getElementById('backToSearchResultsBtn');
-        expect(backBtn).to.exist;
+        expect(backBtn).not.toBeNull();
 
         backBtn.click();
         await waitForAsyncTasks(100);
 
-        expect(appState.getState().changedOption).to.deep.equal({});
-        expect(appState.getState().hasUnsavedChanges).to.equal(false);
-        expect(participantState.getParticipant()).to.be.null;
+        expect(appState.getState().changedOption).toEqual({});
+        expect(appState.getState().hasUnsavedChanges).toBe(false);
+        expect(participantState.getParticipant()).toBeNull();
     });
 
     it('keeps edit modal populated when withdrawal modal markup is present', async () => {
@@ -182,8 +181,8 @@ describe('participantDetails Integration', () => {
         await waitForAsyncTasks(100);
 
         const modalBody = document.getElementById('modalBody');
-        expect(modalBody).to.exist;
-        expect(modalBody.querySelector('input')).to.exist;
+        expect(modalBody).not.toBeNull();
+        expect(modalBody.querySelector('input')).not.toBeNull();
     });
 
     it('stages changes when modal form is submitted', async () => {
@@ -207,14 +206,14 @@ describe('participantDetails Integration', () => {
 
         // Check that UI updated (yellow background on row)
         const row = document.getElementById(`${fieldMapping.lName}row`);
-        expect(row.style.backgroundColor).to.equal('rgb(255, 250, 202)'); // #FFFACA
+        expect(row.style.backgroundColor).toBe('rgb(255, 250, 202)'); // #FFFACA
         
         // Check that value updated in UI
         const valueCell = document.getElementById(`${fieldMapping.lName}value`);
-        expect(valueCell.innerHTML).to.include('DoeUpdated');
+        expect(valueCell.innerHTML).toContain('DoeUpdated');
 
         // Check that Save Changes button exists
-        expect(document.getElementById('updateMemberData')).to.exist;
+        expect(document.getElementById('updateMemberData')).not.toBeNull();
     });
 
     it('submits data to API when Save Changes is clicked', async () => {
@@ -255,10 +254,10 @@ describe('participantDetails Integration', () => {
         saveBtn.click();
         await waitForAsyncTasks();
 
-        expect(fetchCalled).to.be.true;
-        expect(fetchUrl).to.include('api=updateParticipantDataNotSite');
+        expect(fetchCalled).toBe(true);
+        expect(fetchUrl).toContain('api=updateParticipantDataNotSite');
         // Check that payload contains the update (flat structure)
-        expect(fetchBody[fieldMapping.lName]).to.equal('DoeUpdated');
+        expect(fetchBody[fieldMapping.lName]).toBe('DoeUpdated');
     });
 
     it('persists changes to participant state and clears dirty markers after save', async () => {
@@ -298,12 +297,12 @@ describe('participantDetails Integration', () => {
         // Value should reflect updated preference
         try {
             const prefValueCell = document.getElementById(`${fieldMapping.prefName}value`);
-            expect(prefValueCell.innerHTML).to.include('UpdatedPref');
+            expect(prefValueCell.innerHTML).toContain('UpdatedPref');
 
             // No dirty state note after successful save
             const row = document.getElementById(`${fieldMapping.prefName}row`);
             const actionCell = row?.querySelector('td:last-child');
-            expect(actionCell?.textContent || '').to.not.include('Please save changes');
+            expect(actionCell?.textContent || '').not.toContain('Please save changes');
 
             // Participant state updated for subsequent renders/tabs
         } finally {
@@ -344,7 +343,7 @@ describe('participantDetails Integration', () => {
         await waitForAsyncTasks(100);
 
         const lastCall = scrollCalls[scrollCalls.length - 1];
-        expect(lastCall).to.deep.equal({ top: 275, behavior: 'auto' });
+        expect(lastCall).toEqual({ top: 275, behavior: 'auto' });
 
         window.scrollTo = originalScrollTo;
     });

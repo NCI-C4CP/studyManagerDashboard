@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, installFirebaseStub, waitForAsyncTasks } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 
@@ -34,20 +33,20 @@ describe('participantDetailsHelpers', () => {
 
     describe('formatPhoneNumber', () => {
         it('formats 10 digit number correctly', () => {
-            expect(module.formatPhoneNumber('1234567890')).to.equal('(123) 456-7890');
+            expect(module.formatPhoneNumber('1234567890')).toBe('(123) 456-7890');
         });
 
         it('formats 11 digit number starting with 1 correctly', () => {
-            expect(module.formatPhoneNumber('11234567890')).to.equal('(123) 456-7890');
+            expect(module.formatPhoneNumber('11234567890')).toBe('(123) 456-7890');
         });
 
         it('returns empty string for empty input', () => {
-            expect(module.formatPhoneNumber('')).to.equal('');
-            expect(module.formatPhoneNumber(null)).to.equal('');
+            expect(module.formatPhoneNumber('')).toBe('');
+            expect(module.formatPhoneNumber(null)).toBe('');
         });
 
         it('handles non-numeric input gracefully', () => {
-            expect(module.formatPhoneNumber('abc')).to.equal('() -'); // Current implementation behavior
+            expect(module.formatPhoneNumber('abc')).toBe('() -'); // Current implementation behavior
         });
     });
 
@@ -58,8 +57,8 @@ describe('participantDetailsHelpers', () => {
             const rows = module.getImportantRows(participant, changedOption);
             
             const lastNameRow = rows.find(r => r.field === fieldMapping.lName);
-            expect(lastNameRow).to.exist;
-            expect(lastNameRow.editable).to.be.true;
+            expect(lastNameRow).not.toBeNull();
+            expect(lastNameRow.editable).toBe(true);
         });
 
         it('disables editing for data destroyed participants', () => {
@@ -75,7 +74,7 @@ describe('participantDetailsHelpers', () => {
             const rows = module.getImportantRows(participant, {});
             
             const lastNameRow = rows.find(r => r.field === fieldMapping.lName);
-            expect(lastNameRow.editable).to.be.false;
+            expect(lastNameRow.editable).toBe(false);
         });
 
         it('disables editing for duplicate participants', () => {
@@ -90,7 +89,7 @@ describe('participantDetailsHelpers', () => {
             const rows = module.getImportantRows(participant, {});
             
             const lastNameRow = rows.find(r => r.field === fieldMapping.lName);
-            expect(lastNameRow.editable).to.be.false;
+            expect(lastNameRow.editable).toBe(false);
         });
 
         it('shows preferred language edit for helpDesk', () => {
@@ -99,7 +98,7 @@ describe('participantDetailsHelpers', () => {
             const rows = module.getImportantRows(participant, {});
             
             const langRow = rows.find(r => r.field === fieldMapping.preferredLanguage);
-            expect(langRow.editable).to.be.true;
+            expect(langRow.editable).toBe(true);
         });
 
         it('shows preferred language edit for coordinatingCenter', () => {
@@ -108,7 +107,7 @@ describe('participantDetailsHelpers', () => {
             const rows = module.getImportantRows(participant, {});
             
             const langRow = rows.find(r => r.field === fieldMapping.preferredLanguage);
-            expect(langRow.editable).to.be.true;
+            expect(langRow.editable).toBe(true);
         });
 
         it('hides preferred language edit for regular users', () => {
@@ -116,7 +115,7 @@ describe('participantDetailsHelpers', () => {
             const rows = module.getImportantRows(participant, {});
             
             const langRow = rows.find(r => r.field === fieldMapping.preferredLanguage);
-            expect(langRow.editable).to.be.false;
+            expect(langRow.editable).toBe(false);
         });
 
         it('uses the physical address qualifier in the section header only', () => {
@@ -124,8 +123,8 @@ describe('participantDetailsHelpers', () => {
             const rows = module.getImportantRows(participant, {});
 
             const headingRow = rows.find(r => r.field === 'Physical Address');
-            expect(headingRow).to.exist;
-            expect(headingRow.label).to.equal('Physical Address (if different from mailing address)');
+            expect(headingRow).not.toBeNull();
+            expect(headingRow.label).toBe('Physical Address (if different from mailing address)');
 
             const physicalFields = [
                 fieldMapping.physicalAddress1,
@@ -139,20 +138,20 @@ describe('participantDetailsHelpers', () => {
 
             physicalFields.forEach((fieldKey) => {
                 const row = rows.find(r => r.field === fieldKey);
-                expect(row).to.exist;
-                expect(row.label).to.not.include('if different from mailing address');
+                expect(row).not.toBeNull();
+                expect(row.label).not.toContain('if different from mailing address');
             });
         });
     });
 
     describe('getModalLabel', () => {
         it('returns readable label for known keys', () => {
-            expect(module.getModalLabel('LastName')).to.equal('Last Name');
-            expect(module.getModalLabel('Mobilephone')).to.equal('Mobile Phone');
+            expect(module.getModalLabel('LastName')).toBe('Last Name');
+            expect(module.getModalLabel('Mobilephone')).toBe('Mobile Phone');
         });
 
         it('returns key itself if not found in map', () => {
-            expect(module.getModalLabel('UnknownKey')).to.equal('UnknownKey');
+            expect(module.getModalLabel('UnknownKey')).toBe('UnknownKey');
         });
     });
 
@@ -180,10 +179,10 @@ describe('participantDetailsHelpers', () => {
                     changedUserDataForProfile,
                 );
 
-                expect(updated[fieldMapping.prefName]).to.equal('New Pref');
-                expect(updated.query.allPhoneNo).to.deep.equal(['2222222222']);
-                expect(calls).to.have.lengthOf(1);
-                expect(calls[0]).to.deep.equal(updated);
+                expect(updated[fieldMapping.prefName]).toBe('New Pref');
+                expect(updated.query.allPhoneNo).toEqual(['2222222222']);
+                expect(calls).toHaveLength(1);
+                expect(calls[0]).toEqual(updated);
             } finally {
                 stateManager.participantState.setParticipant = originalSetParticipant;
             }
@@ -194,27 +193,27 @@ describe('participantDetailsHelpers', () => {
         it('sets mailing USPS unvalidated flag when any mailing address field is changed', () => {
             const changed = { [fieldMapping.address1]: '123 Main St' };
             module.applyUSPSUnvalidatedFlags(changed);
-            expect(changed[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
+            expect(changed[fieldMapping.isMailingAddressUSPSUnvalidated]).toBe(fieldMapping.yes);
         });
 
         it('sets physical USPS unvalidated flag when any physical address field is changed', () => {
             const changed = { [fieldMapping.physicalZip]: '12345' };
             module.applyUSPSUnvalidatedFlags(changed);
-            expect(changed[fieldMapping.isPhysicalAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
+            expect(changed[fieldMapping.isPhysicalAddressUSPSUnvalidated]).toBe(fieldMapping.yes);
         });
 
         it('sets alternate USPS unvalidated flag when any alternate address field is changed', () => {
             const changed = { [fieldMapping.altCity]: 'Boston' };
             module.applyUSPSUnvalidatedFlags(changed);
-            expect(changed[fieldMapping.isAltAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
+            expect(changed[fieldMapping.isAltAddressUSPSUnvalidated]).toBe(fieldMapping.yes);
         });
 
         it('does not set any USPS flags when no address fields are changed', () => {
             const changed = { [fieldMapping.prefName]: 'Test' };
             module.applyUSPSUnvalidatedFlags(changed);
-            expect(changed).to.not.have.property(fieldMapping.isMailingAddressUSPSUnvalidated);
-            expect(changed).to.not.have.property(fieldMapping.isPhysicalAddressUSPSUnvalidated);
-            expect(changed).to.not.have.property(fieldMapping.isAltAddressUSPSUnvalidated);
+            expect(changed).not.toHaveProperty(String(fieldMapping.isMailingAddressUSPSUnvalidated));
+            expect(changed).not.toHaveProperty(String(fieldMapping.isPhysicalAddressUSPSUnvalidated));
+            expect(changed).not.toHaveProperty(String(fieldMapping.isAltAddressUSPSUnvalidated));
         });
     });
 
@@ -236,14 +235,14 @@ describe('participantDetailsHelpers', () => {
             const { changedUserDataForProfile, changedUserDataForHistory } =
                 module.findChangedUserDataValues(newUserData, existingUserData);
 
-            expect(changedUserDataForProfile[fieldMapping.prefName]).to.equal('New Pref');
-            expect(changedUserDataForProfile[fieldMapping.email]).to.equal('new@example.com');
-            expect(changedUserDataForProfile[fieldMapping.cellPhone]).to.equal('5550000000');
-            expect(changedUserDataForHistory[fieldMapping.prefName]).to.equal('Old Pref');
-            expect(changedUserDataForHistory[fieldMapping.cellPhone]).to.equal('5551234567');
-            expect(changedUserDataForHistory[fieldMapping.voicemailMobile]).to.equal(fieldMapping.yes);
-            expect(changedUserDataForHistory[fieldMapping.canWeText]).to.equal(fieldMapping.no);
-            expect(changedUserDataForHistory).to.not.have.property(fieldMapping.email);
+            expect(changedUserDataForProfile[fieldMapping.prefName]).toBe('New Pref');
+            expect(changedUserDataForProfile[fieldMapping.email]).toBe('new@example.com');
+            expect(changedUserDataForProfile[fieldMapping.cellPhone]).toBe('5550000000');
+            expect(changedUserDataForHistory[fieldMapping.prefName]).toBe('Old Pref');
+            expect(changedUserDataForHistory[fieldMapping.cellPhone]).toBe('5551234567');
+            expect(changedUserDataForHistory[fieldMapping.voicemailMobile]).toBe(fieldMapping.yes);
+            expect(changedUserDataForHistory[fieldMapping.canWeText]).toBe(fieldMapping.no);
+            expect(changedUserDataForHistory).not.toHaveProperty(String(fieldMapping.email));
         });
 
         it('sets voicemail and text preferences to "no" when a cell phone is removed', () => {
@@ -259,11 +258,11 @@ describe('participantDetailsHelpers', () => {
             const { changedUserDataForProfile, changedUserDataForHistory } =
                 module.findChangedUserDataValues(newUserData, existingUserData);
 
-            expect(changedUserDataForProfile[fieldMapping.cellPhone]).to.equal('');
-            expect(changedUserDataForProfile[fieldMapping.voicemailMobile]).to.equal(fieldMapping.no);
-            expect(changedUserDataForProfile[fieldMapping.canWeText]).to.equal(fieldMapping.no);
-            expect(changedUserDataForHistory[fieldMapping.voicemailMobile]).to.equal(fieldMapping.yes);
-            expect(changedUserDataForHistory[fieldMapping.canWeText]).to.equal(fieldMapping.yes);
+            expect(changedUserDataForProfile[fieldMapping.cellPhone]).toBe('');
+            expect(changedUserDataForProfile[fieldMapping.voicemailMobile]).toBe(fieldMapping.no);
+            expect(changedUserDataForProfile[fieldMapping.canWeText]).toBe(fieldMapping.no);
+            expect(changedUserDataForHistory[fieldMapping.voicemailMobile]).toBe(fieldMapping.yes);
+            expect(changedUserDataForHistory[fieldMapping.canWeText]).toBe(fieldMapping.yes);
         });
 
         it('normalizes empty suffix values to "none of these apply"', () => {
@@ -277,7 +276,7 @@ describe('participantDetailsHelpers', () => {
             const { changedUserDataForProfile } =
                 module.findChangedUserDataValues(newUserData, existingUserData);
 
-            expect(changedUserDataForProfile[fieldMapping.suffix]).to.equal(fieldMapping.noneOfTheseApply);
+            expect(changedUserDataForProfile[fieldMapping.suffix]).toBe(fieldMapping.noneOfTheseApply);
         });
 
         it('records previous USPS validation flags when address fields change', () => {
@@ -292,8 +291,8 @@ describe('participantDetailsHelpers', () => {
             const { changedUserDataForProfile, changedUserDataForHistory } =
                 module.findChangedUserDataValues(newUserData, existingUserData);
 
-            expect(changedUserDataForProfile[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
-            expect(changedUserDataForHistory[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.no);
+            expect(changedUserDataForProfile[fieldMapping.isMailingAddressUSPSUnvalidated]).toBe(fieldMapping.yes);
+            expect(changedUserDataForHistory[fieldMapping.isMailingAddressUSPSUnvalidated]).toBe(fieldMapping.no);
         });
 
         it('records USPS validation flags in history even when flag value has not changed (yes -> yes)', () => {
@@ -308,8 +307,8 @@ describe('participantDetailsHelpers', () => {
             const { changedUserDataForProfile, changedUserDataForHistory } =
                 module.findChangedUserDataValues(newUserData, existingUserData);
 
-            expect(changedUserDataForProfile[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
-            expect(changedUserDataForHistory[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
+            expect(changedUserDataForProfile[fieldMapping.isMailingAddressUSPSUnvalidated]).toBe(fieldMapping.yes);
+            expect(changedUserDataForHistory[fieldMapping.isMailingAddressUSPSUnvalidated]).toBe(fieldMapping.yes);
         });
 
         it('records doesAltAddressExist history when alt address becomes populated', () => {
@@ -323,8 +322,8 @@ describe('participantDetailsHelpers', () => {
             const { changedUserDataForProfile, changedUserDataForHistory } =
                 module.findChangedUserDataValues(newUserData, existingUserData);
 
-            expect(changedUserDataForProfile[fieldMapping.doesAltAddressExist]).to.equal(fieldMapping.yes);
-            expect(changedUserDataForHistory[fieldMapping.doesAltAddressExist]).to.equal(fieldMapping.no);
+            expect(changedUserDataForProfile[fieldMapping.doesAltAddressExist]).toBe(fieldMapping.yes);
+            expect(changedUserDataForHistory[fieldMapping.doesAltAddressExist]).toBe(fieldMapping.no);
         });
 
         it('records doesAltAddressExist history when alt address is cleared', () => {
@@ -339,8 +338,8 @@ describe('participantDetailsHelpers', () => {
             const { changedUserDataForProfile, changedUserDataForHistory } =
                 module.findChangedUserDataValues(newUserData, existingUserData);
 
-            expect(changedUserDataForProfile[fieldMapping.doesAltAddressExist]).to.equal(fieldMapping.no);
-            expect(changedUserDataForHistory[fieldMapping.doesAltAddressExist]).to.equal(fieldMapping.yes);
+            expect(changedUserDataForProfile[fieldMapping.doesAltAddressExist]).toBe(fieldMapping.no);
+            expect(changedUserDataForHistory[fieldMapping.doesAltAddressExist]).toBe(fieldMapping.yes);
         });
     });
 
@@ -364,16 +363,16 @@ describe('participantDetailsHelpers', () => {
                 'admin@example.com',
             );
 
-            expect(history).to.have.lengthOf(2);
-            expect(history[0]).to.deep.equal(existingHistory[0]);
+            expect(history).toHaveLength(2);
+            expect(history[0]).toEqual(existingHistory[0]);
 
             const entry = history[1];
-            expect(entry[fieldMapping.prefName]).to.equal('Old Pref');
-            expect(entry[fieldMapping.cellPhone]).to.equal('5551234567');
-            expect(entry[fieldMapping.voicemailMobile]).to.equal(fieldMapping.no);
-            expect(entry[fieldMapping.canWeText]).to.equal(fieldMapping.yes);
-            expect(entry[fieldMapping.profileChangeRequestedBy]).to.equal('admin@example.com');
-            expect(Number.isNaN(Date.parse(entry[fieldMapping.userProfileUpdateTimestamp]))).to.equal(false);
+            expect(entry[fieldMapping.prefName]).toBe('Old Pref');
+            expect(entry[fieldMapping.cellPhone]).toBe('5551234567');
+            expect(entry[fieldMapping.voicemailMobile]).toBe(fieldMapping.no);
+            expect(entry[fieldMapping.canWeText]).toBe(fieldMapping.yes);
+            expect(entry[fieldMapping.profileChangeRequestedBy]).toBe('admin@example.com');
+            expect(Number.isNaN(Date.parse(entry[fieldMapping.userProfileUpdateTimestamp]))).toBe(false);
         });
 
         it('omits email fields and null values from history entries', () => {
@@ -389,11 +388,11 @@ describe('participantDetailsHelpers', () => {
                 'admin@example.com',
             );
 
-            expect(history).to.have.lengthOf(1);
+            expect(history).toHaveLength(1);
             const entry = history[0];
-            expect(entry[fieldMapping.lName]).to.equal('Doe');
-            expect(entry).to.not.have.property(fieldMapping.email);
-            expect(entry).to.not.have.property(fieldMapping.prefName);
+            expect(entry[fieldMapping.lName]).toBe('Doe');
+            expect(entry).not.toHaveProperty(String(fieldMapping.email));
+            expect(entry).not.toHaveProperty(String(fieldMapping.prefName));
         });
 
         it('adds a default suffix entry when new suffix is provided without an existing suffix', () => {
@@ -408,8 +407,8 @@ describe('participantDetailsHelpers', () => {
                 fieldMapping.jr,
             );
 
-            expect(history).to.have.lengthOf(1);
-            expect(history[0][fieldMapping.suffix]).to.equal(fieldMapping.noneOfTheseApply);
+            expect(history).toHaveLength(1);
+            expect(history[0][fieldMapping.suffix]).toBe(fieldMapping.noneOfTheseApply);
         });
 
         it('returns existing history unchanged when there are no tracked history fields', () => {
@@ -425,8 +424,8 @@ describe('participantDetailsHelpers', () => {
                 'admin@example.com',
             );
 
-            expect(history).to.have.lengthOf(1);
-            expect(history[0]).to.deep.equal(existingHistory[0]);
+            expect(history).toHaveLength(1);
+            expect(history[0]).toEqual(existingHistory[0]);
         });
 
         it('preserves empty string address fields in history entries', () => {
@@ -442,10 +441,10 @@ describe('participantDetailsHelpers', () => {
                 'admin@example.com',
             );
 
-            expect(history).to.have.lengthOf(1);
+            expect(history).toHaveLength(1);
             const entry = history[0];
-            expect(entry[fieldMapping.physicalAddress1]).to.equal('');
-            expect(entry[fieldMapping.altCity]).to.equal('');
+            expect(entry[fieldMapping.physicalAddress1]).toBe('');
+            expect(entry[fieldMapping.altCity]).toBe('');
         });
 
         it('includes international address fields in history entries when present', () => {
@@ -467,17 +466,17 @@ describe('participantDetailsHelpers', () => {
                 'admin@example.com',
             );
 
-            expect(history).to.have.lengthOf(1);
+            expect(history).toHaveLength(1);
             const entry = history[0];
-            expect(entry[fieldMapping.isIntlAddr]).to.equal(fieldMapping.yes);
-            expect(entry[fieldMapping.address3]).to.equal('Mailing Line 3');
-            expect(entry[fieldMapping.country]).to.equal('USA');
-            expect(entry[fieldMapping.physicalAddrIntl]).to.equal(fieldMapping.yes);
-            expect(entry[fieldMapping.physicalAddress3]).to.equal('Physical Line 3');
-            expect(entry[fieldMapping.physicalCountry]).to.equal('USA');
-            expect(entry[fieldMapping.isIntlAltAddress]).to.equal(fieldMapping.yes);
-            expect(entry[fieldMapping.altAddress3]).to.equal('Alt Line 3');
-            expect(entry[fieldMapping.altCountry]).to.equal('USA');
+            expect(entry[fieldMapping.isIntlAddr]).toBe(fieldMapping.yes);
+            expect(entry[fieldMapping.address3]).toBe('Mailing Line 3');
+            expect(entry[fieldMapping.country]).toBe('USA');
+            expect(entry[fieldMapping.physicalAddrIntl]).toBe(fieldMapping.yes);
+            expect(entry[fieldMapping.physicalAddress3]).toBe('Physical Line 3');
+            expect(entry[fieldMapping.physicalCountry]).toBe('USA');
+            expect(entry[fieldMapping.isIntlAltAddress]).toBe(fieldMapping.yes);
+            expect(entry[fieldMapping.altAddress3]).toBe('Alt Line 3');
+            expect(entry[fieldMapping.altCountry]).toBe('USA');
         });
 
         it('includes USPS validation flags in history entries when present', () => {
@@ -493,11 +492,11 @@ describe('participantDetailsHelpers', () => {
                 'admin@example.com',
             );
 
-            expect(history).to.have.lengthOf(1);
+            expect(history).toHaveLength(1);
             const entry = history[0];
-            expect(entry[fieldMapping.isMailingAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
-            expect(entry[fieldMapping.isPhysicalAddressUSPSUnvalidated]).to.equal(fieldMapping.no);
-            expect(entry[fieldMapping.isAltAddressUSPSUnvalidated]).to.equal(fieldMapping.yes);
+            expect(entry[fieldMapping.isMailingAddressUSPSUnvalidated]).toBe(fieldMapping.yes);
+            expect(entry[fieldMapping.isPhysicalAddressUSPSUnvalidated]).toBe(fieldMapping.no);
+            expect(entry[fieldMapping.isAltAddressUSPSUnvalidated]).toBe(fieldMapping.yes);
         });
     });
 
@@ -542,14 +541,14 @@ describe('participantDetailsHelpers', () => {
                 document.getElementById('updateMemberData').click();
                 await waitForAsyncTasks(50);
 
-                expect(payloads).to.have.length.greaterThan(0);
+                expect(payloads).toSatisfy(v => v.length > 0);
                 const payload = payloads[payloads.length - 1];
                 const history = payload[fieldMapping.userProfileHistory];
-                expect(history).to.have.lengthOf(2);
+                expect(history).toHaveLength(2);
                 const latestEntry = history[1];
-                expect(latestEntry[fieldMapping.cellPhone]).to.equal('5551234567');
-                expect(latestEntry[fieldMapping.profileChangeRequestedBy]).to.equal('admin@example.com');
-                expect(Number.isNaN(Date.parse(latestEntry[fieldMapping.userProfileUpdateTimestamp]))).to.equal(false);
+                expect(latestEntry[fieldMapping.cellPhone]).toBe('5551234567');
+                expect(latestEntry[fieldMapping.profileChangeRequestedBy]).toBe('admin@example.com');
+                expect(Number.isNaN(Date.parse(latestEntry[fieldMapping.userProfileUpdateTimestamp]))).toBe(false);
             } finally {
                 global.fetch = originalFetch;
             }
@@ -581,9 +580,9 @@ describe('participantDetailsHelpers', () => {
                 document.getElementById('updateMemberData').click();
                 await waitForAsyncTasks(50);
 
-                expect(payloads).to.have.length.greaterThan(0);
+                expect(payloads).toSatisfy(v => v.length > 0);
                 const payload = payloads[payloads.length - 1];
-                expect(payload).to.not.have.property(fieldMapping.userProfileHistory);
+                expect(payload).not.toHaveProperty(String(fieldMapping.userProfileHistory));
             } finally {
                 global.fetch = originalFetch;
             }
@@ -618,7 +617,7 @@ describe('participantDetailsHelpers', () => {
                 await waitForAsyncTasks(50);
 
                 const payload = payloads[payloads.length - 1];
-                expect(payload['query.allPhoneNo']).to.deep.equal(['5550000000', '2223334444']);
+                expect(payload['query.allPhoneNo']).toEqual(['5550000000', '2223334444']);
             } finally {
                 global.fetch = originalFetch;
             }
@@ -654,7 +653,7 @@ describe('participantDetailsHelpers', () => {
                 await waitForAsyncTasks(50);
 
                 const payload = payloads[payloads.length - 1];
-                expect(payload['query.allEmails']).to.deep.equal(['new@example.com', 'second@example.com']);
+                expect(payload['query.allEmails']).toEqual(['new@example.com', 'second@example.com']);
             } finally {
                 global.fetch = originalFetch;
             }
@@ -698,9 +697,9 @@ describe('participantDetailsHelpers', () => {
                 document.getElementById('updateMemberData').click();
                 await waitForAsyncTasks(25);
 
-                expect(calls).to.have.length.greaterThan(0);
+                expect(calls).toSatisfy(v => v.length > 0);
                 const payload = calls[calls.length - 1];
-                expect(payload[fieldMapping.doesAltAddressExist]).to.equal(fieldMapping.no);
+                expect(payload[fieldMapping.doesAltAddressExist]).toBe(fieldMapping.no);
             } finally {
                 global.fetch = originalFetch;
             }
