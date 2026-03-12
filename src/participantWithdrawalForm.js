@@ -7,6 +7,7 @@ import { refreshParticipantHeaders } from './participantHeader.js';
 
 export const renderWithdrawalForm = () => {
     const participant = participantState.getParticipant();
+    console.log("🚀 ~ renderWithdrawalForm ~ participant:", participant)
     return `        
         <div class="row">
             <div class="col-md-6">
@@ -704,7 +705,13 @@ export const reasonForRefusalPage = (selectedRefusalWithdrawalCheckboxes, select
         });
     })
     document.getElementById('submit').addEventListener('click', async () => {
-        await handleResponseSubmission(selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate)
+        // selectedRefusalWithdrawalCheckboxes
+        console.log("🚀 ~ reasonForRefusalPage ~-----------------------------------")
+        console.log("🚀 ~ reasonForRefusalPage ~ selectedRefusalWithdrawalCheckboxes:", selectedRefusalWithdrawalCheckboxes)
+        console.log("🚀 ~ reasonForRefusalPage ~ selectedWhoRequestedRadios:", selectedWhoRequestedRadios)
+        console.log("🚀 ~ reasonForRefusalPage ~ suspendDate:", suspendDate)
+        console.log("🚀 ~ reasonForRefusalPage ~-----------------------------------")
+        await handleResponseSubmission(selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate) // NOTE: submit to look into
     })
 }
 
@@ -754,6 +761,13 @@ export const causeOfDeathPage = (selectedRefusalWithdrawalCheckboxes) => {
 }
 
 const handleResponseSubmission = async (selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate) => {
+    // ------
+    console.log("🚀 ~ handleResponseSubmission ~-----------------------------------")
+    console.log("🚀 ~ handleResponseSubmission ~ suspendDate:", suspendDate)
+    console.log("🚀 ~ handleResponseSubmission ~ source:", source)
+    console.log("🚀 ~ handleResponseSubmission ~ selectedWhoRequestedRadios:", selectedWhoRequestedRadios)
+    console.log("🚀 ~ handleResponseSubmission ~ selectedRefusalWithdrawalCheckboxes:", selectedRefusalWithdrawalCheckboxes)
+    console.log("🚀 ~ handleResponseSubmission ~-----------------------------------")
     let selectedReasonsForWithdrawal = []
 
     const otherReasonsInput = document.getElementById('otherReasonsInput');
@@ -761,10 +775,16 @@ const handleResponseSubmission = async (selectedRefusalWithdrawalCheckboxes, sel
 
     let checkboxes = document.getElementsByName('options');
     checkboxes.forEach(checkbox => { if (checkbox.checked) {  selectedReasonsForWithdrawal.push(checkbox)} });
-
+    console.log("🚀 ~ handleResponseSubmission ~ checkboxes:", checkboxes)
+    // selectedReasonsForWithdrawal
+    console.log("🚀 ~ handleResponseSubmission ~ selectedReasonsForWithdrawal:", selectedReasonsForWithdrawal)
+    // return;
     try {
         const completeRefusalData = await processRefusalWithdrawalResponses(selectedReasonsForWithdrawal, selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate);
+        console.log("🚀 ~ handleResponseSubmission ~ completeRefusalData:", completeRefusalData)
+        // return;
         const updatedParticipant = await sendRefusalWithdrawalResponses(completeRefusalData);
+        console.log("🚀 ~ handleResponseSubmission ~ updatedParticipant:", updatedParticipant)
         if (!updatedParticipant) {
             return;
         }
@@ -781,6 +801,7 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
     let sendRefusalData = {};
     let highestStatus = [];
     sendRefusalData[fieldMapping.refusalOptions] = {};
+    // selectedRefusalWithdrawalCheckboxes
     selectedRefusalWithdrawalCheckboxes.forEach(x => {
         if (parseInt(x.dataset.optionkey) === fieldMapping.refusedSurvey) {
             setRefusalTimeStamp(sendRefusalData, x.dataset.optionkey, fieldMapping.refBaselineSurveyTimeStamp);
@@ -821,7 +842,12 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
         else {
             sendRefusalData[x.dataset.optionkey] = fieldMapping.yes
         }
+
+        // console.log("🚀 ~ processRefusalWithdrawalResponses ~ sendRefusalData:", sendRefusalData)
     })
+
+    // sendRefusalData
+    console.log("🚀 ~ processRefusalWithdrawalResponses ~ sendRefusalData after processing checkboxes:", sendRefusalData)
 
     if (selectedWhoRequestedRadios.length != 0) {
         // Find the radio button and text input (if it exists) from the array.
@@ -851,11 +877,15 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
 
     const { hasPriorSuspendedContact, hasPriorParticipationStatus } = uiState.getWithdrawalStatusFlags();
     if (hasPriorSuspendedContact) {
+        console.log("🚀 ~ processRefusalWithdrawalResponses ~ hasPriorSuspendedContact:", hasPriorSuspendedContact)
         if (suspendDate === '//') sendRefusalData[fieldMapping.suspendContact] = '';
         await uiState.setWithdrawalStatusFlags({ hasPriorSuspendedContact: false });
     }
 
     if (hasPriorParticipationStatus) {
+        console.log("🚀 ~ processRefusalWithdrawalResponses ~ hasPriorParticipationStatus is true!!!")
+        console.log("---")
+        console.log("check suspendDate ---- suspendDate !== '//'", suspendDate !== '//')
         const prevParticipantStatusScore =   { "No Refusal": 0,
                                             "Refused some activities": 1,  
                                             "Refused all future activities": 2,
@@ -864,11 +894,14 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
                                             "Destroy Data": 5,
                                             "Deceased": 6, }
         const participant = participantState.getParticipant();
+        console.log("🚀 ~ processRefusalWithdrawalResponses ~ participant:", participant)
         let prevParticipantStatusSelection = fieldMapping[participant[fieldMapping.participationStatus]]
+        console.log("🚀 ~ processRefusalWithdrawalResponses ~ prevParticipantStatusSelection:", prevParticipantStatusSelection)
         prevParticipantStatusSelection = prevParticipantStatusScore[prevParticipantStatusSelection]
         highestStatus.push(parseInt(prevParticipantStatusSelection))
-
-        if (suspendDate !== '//') sendRefusalData[fieldMapping.participationStatus] = fieldMapping.noRefusal
+        console.log("sendRefusalData[fieldMapping.participationStatus]", sendRefusalData[fieldMapping.participationStatus])
+        console.log("sendRefusalData[fieldMapping.participationStatus]", "-----")
+        console.log("sendRefusalData[fieldMapping.participationStatus]", sendRefusalData[fieldMapping.participationStatus])
         await uiState.setWithdrawalStatusFlags({ hasPriorParticipationStatus: false });
     }
     
