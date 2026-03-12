@@ -229,6 +229,26 @@ describe('participantWithdrawalForm Logic', () => {
             expect(result[fieldMapping.contactSuspended]).toBe(fieldMapping.yes);
         });
 
+        it('does not overwrite prior participation status during suspend-only submission', async () => {
+            const participant = createMockParticipant({
+                [fieldMapping.participationStatus]: fieldMapping.refusedAll
+            });
+            await participantState.setParticipant(participant);
+            await uiState.setWithdrawalStatusFlags({ hasPriorParticipationStatus: true });
+
+            const result = await processRefusalWithdrawalResponses(
+                [],
+                [],
+                [mockRadio(fieldMapping.requestParticipant)],
+                'page1',
+                '12/31/2099'
+            );
+
+            expect(result[fieldMapping.suspendContact]).toBe('12/31/2099');
+            expect(result[fieldMapping.contactSuspended]).toBe(fieldMapping.yes);
+            expect(result[fieldMapping.participationStatus]).toBeUndefined();
+        });
+
         it('clears "who requested" if only baseline refusals selected', async () => {
             // This logic is tricky. Scenario: User selects ONLY "Baseline Blood Donation".
             // hasBaselineRefusalsSelected = true. statusConceptId = refusedSome.
