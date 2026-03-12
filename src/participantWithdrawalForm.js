@@ -10,7 +10,7 @@ export const renderWithdrawalForm = () => {
     return `        
         <div class="row">
             <div class="col-md-6">
-                <h6><b><u>Refusal of Study Activites</u></b></h6>
+                <h6><b><u>Refusal of Study Activities</u></b></h6>
                 <span class="withdrawal-form-span"><i>Select all that apply</i></span>
                 <br />
                 <div class="withdrawal-form-div">

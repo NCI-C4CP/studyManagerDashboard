@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import {
   getSurveyStatus,
@@ -44,7 +43,7 @@ describe('participantSummaryRow', () => {
 
       const status = getSurveyStatus(participant, fieldMapping.bohStatusFlag);
 
-      expect(status).to.deep.equal({
+      expect(status).toEqual({
         icon: 'fa fa-check fa-2x',
         color: 'icon--success',
         itemStatus: 'Submitted',
@@ -60,7 +59,7 @@ describe('participantSummaryRow', () => {
 
       const status = getSurveyStatus(participant, fieldMapping.bloodUrineSurveyFlag);
 
-      expect(status).to.deep.equal({
+      expect(status).toEqual({
         icon: 'fa fa-hashtag fa-2x',
         color: 'icon--warning',
         itemStatus: 'Started',
@@ -75,13 +74,13 @@ describe('participantSummaryRow', () => {
 
       const status = getSurveyStatus(participant, fieldMapping.mouthwashSurveyFlag);
 
-      expect(status.date).to.equal('N/A');
-      expect(status.itemStatus).to.equal('Submitted');
+      expect(status.date).toBe('N/A');
+      expect(status.itemStatus).toBe('Submitted');
     });
 
     it('returns N/A metadata when survey flag is unmapped', () => {
       const status = getSurveyStatus({}, 999999);
-      expect(status).to.deep.equal({
+      expect(status).toEqual({
         icon: 'fa fa-times fa-2x',
         color: 'icon--error',
         itemStatus: 'N/A',
@@ -96,7 +95,7 @@ describe('participantSummaryRow', () => {
 
       const status = getSurveyStatus(participant, fieldMapping.mreStatusFlag);
 
-      expect(status).to.deep.equal({
+      expect(status).toEqual({
         icon: 'fa fa-times fa-2x',
         color: 'icon--error',
         itemStatus: 'Not Started',
@@ -111,7 +110,7 @@ describe('participantSummaryRow', () => {
 
       const status = getSurveyStatus(participant, fieldMapping.promisSurveyFlag);
 
-      expect(status).to.deep.equal({
+      expect(status).toEqual({
         icon: 'fa fa-times fa-2x',
         color: 'icon--error',
         itemStatus: 'Not Yet Eligible',
@@ -128,7 +127,7 @@ describe('participantSummaryRow', () => {
 
       flags.forEach((flag) => {
         const status = getSurveyStatus({}, flag);
-        expect(status).to.deep.equal({
+        expect(status).toEqual({
           icon: 'fa fa-times fa-2x',
           color: 'icon--error',
           itemStatus: 'Not Eligible',
@@ -139,7 +138,7 @@ describe('participantSummaryRow', () => {
 
     it('falls back to Not Yet Eligible for DHQ', () => {
       const status = getSurveyStatus({}, fieldMapping.dhqSurveyStatus);
-      expect(status).to.deep.equal({
+      expect(status).toEqual({
         icon: 'fa fa-times fa-2x',
         color: 'icon--error',
         itemStatus: 'Not Yet Eligible',
@@ -153,7 +152,7 @@ describe('participantSummaryRow', () => {
       };
 
       const status = getSurveyStatus(participant, fieldMapping.sasStatusFlag);
-      expect(status).to.deep.equal({
+      expect(status).toEqual({
         icon: 'fa fa-times fa-2x',
         color: 'icon--error',
         itemStatus: 'N/A',
@@ -172,12 +171,12 @@ describe('participantSummaryRow', () => {
 
       const row = consentHandler(participant);
 
-      expect(row).to.include('fa fa-check fa-2x icon--success');
-      expect(row).to.include('Signed');
-      expect(row).to.include(formatDate('2024-03-20T00:00:00Z'));
-      expect(row).to.include('v2');
-      expect(row).to.include('id="downloadCopy"');
-      expect(row).to.not.include('link--disabled');
+      expect(row).toContain('fa fa-check fa-2x icon--success');
+      expect(row).toContain('Signed');
+      expect(row).toContain(formatDate('2024-03-20T00:00:00Z'));
+      expect(row).toContain('v2');
+      expect(row).toContain('id="downloadCopy"');
+      expect(row).not.toContain('link--disabled');
     });
 
     it('renders not signed consent row with disabled link', () => {
@@ -187,11 +186,11 @@ describe('participantSummaryRow', () => {
 
       const row = consentHandler(participant);
 
-      expect(row).to.include('fa fa-times fa-2x icon--error');
-      expect(row).to.include('Not Signed');
-      expect(row).to.include('N/A');
-      expect(row).to.include('link--disabled');
-      expect(row).to.not.include('id="downloadCopy"');
+      expect(row).toContain('fa fa-times fa-2x icon--error');
+      expect(row).toContain('Not Signed');
+      expect(row).toContain('N/A');
+      expect(row).toContain('link--disabled');
+      expect(row).not.toContain('id="downloadCopy"');
     });
   });
 
@@ -204,17 +203,17 @@ describe('participantSummaryRow', () => {
       });
 
       const row = hipaaHandler(participant);
-      expect(row).to.include('HIPAA');
-      expect(row).to.include('fa fa-check');
-      expect(row).to.include('icon--success');
-      expect(row).to.include(formatDate('2024-04-02T00:00:00Z'));
-      expect(row).to.include('downloadCopyHIPAA');
+      expect(row).toContain('HIPAA');
+      expect(row).toContain('fa fa-check');
+      expect(row).toContain('icon--success');
+      expect(row).toContain(formatDate('2024-04-02T00:00:00Z'));
+      expect(row).toContain('downloadCopyHIPAA');
     });
 
     it('renders disabled HIPAA row when not signed', () => {
       const row = hipaaHandler(buildParticipant());
-      expect(row).to.include('Not Signed');
-      expect(row).to.include('link--disabled');
+      expect(row).toContain('Not Signed');
+      expect(row).toContain('link--disabled');
     });
 
     it('renders user profile submission state', () => {
@@ -222,13 +221,13 @@ describe('participantSummaryRow', () => {
         [fieldMapping.userProfileFlag]: fieldMapping.yes,
         [fieldMapping.userProfileDateTime]: '2024-05-01T00:00:00Z',
       }));
-      expect(submittedRow).to.include('Submitted');
-      expect(submittedRow).to.include(formatDate('2024-05-01T00:00:00Z'));
-      expect(submittedRow).to.include('N</td>');
+      expect(submittedRow).toContain('Submitted');
+      expect(submittedRow).toContain(formatDate('2024-05-01T00:00:00Z'));
+      expect(submittedRow).toContain('N</td>');
 
       const pendingRow = userProfile(buildParticipant());
-      expect(pendingRow).to.include('Not Submitted');
-      expect(pendingRow).to.include('N/A');
+      expect(pendingRow).toContain('Not Submitted');
+      expect(pendingRow).toContain('N/A');
     });
   });
 
@@ -240,28 +239,28 @@ describe('participantSummaryRow', () => {
 
     it('marks verified participants with checkmark and date', () => {
       const row = verificationStatus(createParticipant(fieldMapping.verified));
-      expect(row).to.include('fa fa-check');
-      expect(row).to.include('icon--success');
-      expect(row).to.include('Verified');
-      expect(row).to.include(formatDate('2024-05-10T00:00:00Z'));
+      expect(row).toContain('fa fa-check');
+      expect(row).toContain('icon--success');
+      expect(row).toContain('Verified');
+      expect(row).toContain(formatDate('2024-05-10T00:00:00Z'));
     });
 
     it('shows pending icons for not yet verified participants', () => {
       const row = verificationStatus(createParticipant(fieldMapping.notYetVerified));
-      expect(row).to.include('fa fa-hashtag');
-      expect(row).to.include('Not yet Verified');
-      expect(row).to.include('N/A');
+      expect(row).toContain('fa fa-hashtag');
+      expect(row).toContain('Not yet Verified');
+      expect(row).toContain('N/A');
     });
 
     it('handles outreach timed out with warning styling', () => {
       const row = verificationStatus(createParticipant(fieldMapping.outreachTimedout));
-      expect(row).to.include('fa fa-hashtag');
-      expect(row).to.include('Outreach Timed Out');
+      expect(row).toContain('fa fa-hashtag');
+      expect(row).toContain('Outreach Timed Out');
     });
 
     it('flags unknown statuses as errors', () => {
       const row = verificationStatus(createParticipant(999999));
-      expect(row).to.include('Error: unhandled status in verificationStatus');
+      expect(row).toContain('Error: unhandled status in verificationStatus');
     });
   });
 
@@ -276,9 +275,9 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselineBOHSurvey(participant);
-      expect(row).to.include('Y');
-      expect(row).to.include('Submitted');
-      expect(row).to.include(formatDate('2024-03-03T00:00:00Z'));
+      expect(row).toContain('Y');
+      expect(row).toContain('Submitted');
+      expect(row).toContain(formatDate('2024-03-03T00:00:00Z'));
     });
   });
 
@@ -298,9 +297,9 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselineBloodSample(participant);
-      expect(row).to.include('Collected');
-      expect(row).to.include('Research');
-      expect(row).to.include('01/10/2024');
+      expect(row).toContain('Collected');
+      expect(row).toContain('Research');
+      expect(row).toContain('01/10/2024');
     });
 
     it('renders clinical urine collection details', () => {
@@ -318,10 +317,10 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselineUrineSample(participant);
-      expect(row).to.include('Collected');
-      expect(row).to.include('Clinical');
-      expect(row).to.include('Y');
-      expect(row).to.include('02/02/2024');
+      expect(row).toContain('Collected');
+      expect(row).toContain('Clinical');
+      expect(row).toContain('Y');
+      expect(row).toContain('02/02/2024');
     });
 
     it('displays research mouthwash collection errors for malformed dates', () => {
@@ -336,7 +335,7 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselineResearchMouthwashSample(participant);
-      expect(row).to.include('Invalid timestamp format: not-a-date');
+      expect(row).toContain('Invalid timestamp format: not-a-date');
     });
 
     it('renders home mouthwash initial kits with refusal state and kit status', () => {
@@ -356,10 +355,10 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselineHomeMouthwashSample(participant);
-      expect(row).to.include('Home Mouthwash Initial');
-      expect(row).to.include('Collected');
-      expect(row).to.include('Kit Received');
-      expect(row).to.include('Y');
+      expect(row).toContain('Home Mouthwash Initial');
+      expect(row).toContain('Collected');
+      expect(row).toContain('Kit Received');
+      expect(row).toContain('Y');
     });
 
     it('renders replacement kits without refusal data and exposes kit status text', () => {
@@ -375,10 +374,10 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselineMouthwashR1Sample(participant);
-      expect(row).to.include('Home Mouthwash R1');
-      expect(row).to.include('Not Collected');
-      expect(row).to.include('Kit Pending');
-      expect(row).to.include('N/A');
+      expect(row).toContain('Home Mouthwash R1');
+      expect(row).toContain('Not Collected');
+      expect(row).toContain('Kit Pending');
+      expect(row).toContain('N/A');
     });
   });
 
@@ -395,9 +394,9 @@ describe('participantSummaryRow', () => {
       };
 
       const row = baselinePayment(participant);
-      expect(row).to.include('Eligible');
-      expect(row).to.include('Gift Card');
-      expect(row).to.include('05/01/2024');
+      expect(row).toContain('Eligible');
+      expect(row).toContain('Gift Card');
+      expect(row).toContain('05/01/2024');
     });
 
     it('renders issued payment metadata when incentives are processed', () => {
@@ -411,7 +410,7 @@ describe('participantSummaryRow', () => {
       };
 
       const row = baselinePayment(participant);
-      expect(row).to.include('Issued on 05/02/2024');
+      expect(row).toContain('Issued on 05/02/2024');
     });
 
     it('renders declined payment when participant refused baseline payment', () => {
@@ -429,8 +428,8 @@ describe('participantSummaryRow', () => {
       };
 
       const row = baselinePayment(participant);
-      expect(row).to.include('Not Eligible');
-      expect(row).to.include('Declined on 05/03/2024');
+      expect(row).toContain('Not Eligible');
+      expect(row).toContain('Declined on 05/03/2024');
     });
 
     it('renders physical activity report availability with viewed status', () => {
@@ -447,9 +446,9 @@ describe('participantSummaryRow', () => {
       };
 
       const row = baselinePhysActReport(participant, reports);
-      expect(row).to.include('Available');
-      expect(row).to.include('Viewed');
-      expect(row).to.include('downloadPhysActReport');
+      expect(row).toContain('Available');
+      expect(row).toContain('Viewed');
+      expect(row).toContain('downloadPhysActReport');
     });
 
     it('renders DHQ3 HEI report rows with combined internal/external statuses', () => {
@@ -461,15 +460,15 @@ describe('participantSummaryRow', () => {
       });
 
       const row = dhq3Report(participant, {});
-      expect(row).to.include('Available');
-      expect(row).to.include('Int: Viewed, Ext: Declined');
-      expect(row).to.include('downloadDHQHEIReport');
+      expect(row).toContain('Available');
+      expect(row).toContain('Int: Viewed, Ext: Declined');
+      expect(row).toContain('downloadDHQHEIReport');
     });
 
     it('disables DHQ3 HEI report when survey not submitted', () => {
       const row = dhq3Report(buildParticipant(), {});
-      expect(row).to.include('Unavailable');
-      expect(row).to.include('link--disabled');
+      expect(row).toContain('Unavailable');
+      expect(row).toContain('link--disabled');
     });
   });
 
@@ -481,7 +480,7 @@ describe('participantSummaryRow', () => {
 
       const status = biospecimenStatus(collection, fieldMapping.biospecimenBloodCollection, fieldMapping.biospecimenBaselineCollection);
 
-      expect(status).to.equal('Research');
+      expect(status).toBe('Research');
     });
 
     it('returns Clinical when collection type is clinical', () => {
@@ -491,7 +490,7 @@ describe('participantSummaryRow', () => {
 
       const status = biospecimenStatus(collection, fieldMapping.biospecimenUrineCollection, fieldMapping.biospecimenBaselineCollection);
 
-      expect(status).to.equal('Clinical');
+      expect(status).toBe('Clinical');
     });
 
     it('returns Home when collection type is home', () => {
@@ -501,13 +500,13 @@ describe('participantSummaryRow', () => {
 
       const status = biospecimenStatus(collection, fieldMapping.biospecimenMouthwashCollection, fieldMapping.biospecimenBaselineCollection);
 
-      expect(status).to.equal('Home');
+      expect(status).toBe('Home');
     });
 
     it('returns N/A when collection is null', () => {
       const status = biospecimenStatus(null, fieldMapping.biospecimenBloodCollection, fieldMapping.biospecimenBaselineCollection);
 
-      expect(status).to.equal('N/A');
+      expect(status).toBe('N/A');
     });
 
     it('returns N/A when collection type is unrecognized', () => {
@@ -517,7 +516,7 @@ describe('participantSummaryRow', () => {
 
       const status = biospecimenStatus(collection, fieldMapping.biospecimenBloodCollection, fieldMapping.biospecimenBaselineCollection);
 
-      expect(status).to.equal('N/A');
+      expect(status).toBe('N/A');
     });
   });
 
@@ -529,23 +528,23 @@ describe('participantSummaryRow', () => {
 
     it('handles cannotBeVerified status', () => {
       const row = verificationStatus(createParticipant(fieldMapping.cannotBeVerified));
-      expect(row).to.include('fa fa-times');
-      expect(row).to.include('icon--error');
-      expect(row).to.include('Cannot Be Verified');
+      expect(row).toContain('fa fa-times');
+      expect(row).toContain('icon--error');
+      expect(row).toContain('Cannot Be Verified');
     });
 
     it('handles noLongerEnrolling status', () => {
       const row = verificationStatus(createParticipant(fieldMapping.noLongerEnrolling));
-      expect(row).to.include('fa fa-times');
-      expect(row).to.include('icon--error');
-      expect(row).to.include('No Longer Enrolling');
+      expect(row).toContain('fa fa-times');
+      expect(row).toContain('icon--error');
+      expect(row).toContain('No Longer Enrolling');
     });
 
     it('handles duplicate status', () => {
       const row = verificationStatus(createParticipant(fieldMapping.duplicate));
-      expect(row).to.include('fa fa-times');
-      expect(row).to.include('icon--error');
-      expect(row).to.include('Duplicate');
+      expect(row).toContain('fa fa-times');
+      expect(row).toContain('icon--error');
+      expect(row).toContain('Duplicate');
     });
   });
 
@@ -559,11 +558,11 @@ describe('participantSummaryRow', () => {
       });
 
       const row = dhqSurvey(participant);
-      expect(row).to.include('DHQ III');
-      expect(row).to.include('Follow-Up 6-mo');
-      expect(row).to.include('Submitted');
-      expect(row).to.include('Username: participant123');
-      expect(row).to.include('Study ID:  456');
+      expect(row).toContain('DHQ III');
+      expect(row).toContain('Follow-Up 6-mo');
+      expect(row).toContain('Submitted');
+      expect(row).toContain('Username: participant123');
+      expect(row).toContain('Study ID:  456');
     });
 
     it('renders N/A setting when username or study ID is missing', () => {
@@ -573,9 +572,9 @@ describe('participantSummaryRow', () => {
       });
 
       const row = dhqSurvey(participant);
-      expect(row).to.include('Started');
+      expect(row).toContain('Started');
       const settingMatch = row.match(/<td>N\/A<\/td>/g);
-      expect(settingMatch).to.not.be.null;
+      expect(settingMatch).not.toBeNull();
     });
 
     it('includes refusal when all future activities are refused', () => {
@@ -585,8 +584,8 @@ describe('participantSummaryRow', () => {
       });
 
       const row = dhqSurvey(participant);
-      expect(row).to.include('Not Started');
-      expect(row).to.include('>Y<');
+      expect(row).toContain('Not Started');
+      expect(row).toContain('>Y<');
     });
 
     it('includes refusal when all future surveys are refused', () => {
@@ -598,7 +597,7 @@ describe('participantSummaryRow', () => {
       });
 
       const row = dhqSurvey(participant);
-      expect(row).to.include('>Y<');
+      expect(row).toContain('>Y<');
     });
   });
 
@@ -610,9 +609,9 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselinePromisSurvey(participant);
-      expect(row).to.include('Follow-Up 3-mo');
-      expect(row).to.include('Quality of Life');
-      expect(row).to.include('Submitted');
+      expect(row).toContain('Follow-Up 3-mo');
+      expect(row).toContain('Quality of Life');
+      expect(row).toContain('Submitted');
     });
 
     it('marks refusal when quality of life survey is refused', () => {
@@ -624,7 +623,7 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselinePromisSurvey(participant);
-      expect(row).to.include('>Y<');
+      expect(row).toContain('>Y<');
     });
 
     it('marks refusal when all future surveys are refused', () => {
@@ -636,7 +635,7 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselinePromisSurvey(participant);
-      expect(row).to.include('>Y<');
+      expect(row).toContain('>Y<');
     });
 
     it('marks refusal when all future activities are refused', () => {
@@ -646,7 +645,7 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselinePromisSurvey(participant);
-      expect(row).to.include('>Y<');
+      expect(row).toContain('>Y<');
     });
 
     it('shows no refusal when none of the refusal flags are set', () => {
@@ -655,7 +654,7 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselinePromisSurvey(participant);
-      expect(row).to.include('>N<');
+      expect(row).toContain('>N<');
     });
   });
 
@@ -674,11 +673,11 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselineMouthwashR2Sample(participant);
-      expect(row).to.include('Home Mouthwash R2');
-      expect(row).to.include('Collected');
-      expect(row).to.include('Kit Received');
-      expect(row).to.include('10/10/2024');
-      expect(row).to.include('Home');
+      expect(row).toContain('Home Mouthwash R2');
+      expect(row).toContain('Collected');
+      expect(row).toContain('Kit Received');
+      expect(row).toContain('10/10/2024');
+      expect(row).toContain('Home');
     });
 
     it('renders R2 kit as not collected when shipped but not received', () => {
@@ -694,9 +693,9 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselineMouthwashR2Sample(participant);
-      expect(row).to.include('Home Mouthwash R2');
-      expect(row).to.include('Not Collected');
-      expect(row).to.include('Kit Shipped');
+      expect(row).toContain('Home Mouthwash R2');
+      expect(row).toContain('Not Collected');
+      expect(row).toContain('Kit Shipped');
     });
 
     it('always shows N/A for refusal on R2 replacement kits', () => {
@@ -717,22 +716,22 @@ describe('participantSummaryRow', () => {
 
       const row = baselineMouthwashR2Sample(participant);
       const refusalMatch = row.match(/>N\/A</g);
-      expect(refusalMatch).to.not.be.null;
-      expect(refusalMatch.length).to.be.greaterThan(0);
+      expect(refusalMatch).not.toBeNull();
+      expect(refusalMatch.length).toBeGreaterThan(0);
     });
   });
 
   describe('edge cases and null/undefined handling', () => {
     it('handles null participant in verificationStatus', () => {
       const row = verificationStatus(null);
-      expect(row).to.include('N/A');
-      expect(row).to.include('fa fa-times');
+      expect(row).toContain('N/A');
+      expect(row).toContain('fa fa-times');
     });
 
     it('handles undefined participant in verificationStatus', () => {
       const row = verificationStatus(undefined);
-      expect(row).to.include('N/A');
-      expect(row).to.include('fa fa-times');
+      expect(row).toContain('N/A');
+      expect(row).toContain('fa fa-times');
     });
 
     it('handles missing refusalOptions gracefully in baselineBOHSurvey', () => {
@@ -742,8 +741,8 @@ describe('participantSummaryRow', () => {
       };
 
       const row = baselineBOHSurvey(participant);
-      expect(row).to.include('N</td>');
-      expect(row).to.include('Submitted');
+      expect(row).toContain('N</td>');
+      expect(row).toContain('Submitted');
     });
 
     it('handles empty refusalOptions object in baselinePromisSurvey', () => {
@@ -753,7 +752,7 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselinePromisSurvey(participant);
-      expect(row).to.include('>N<');
+      expect(row).toContain('>N<');
     });
 
     it('handles missing biospecimenCollectionDetail in baselineBloodSample', () => {
@@ -762,43 +761,43 @@ describe('participantSummaryRow', () => {
       });
 
       const row = baselineBloodSample(participant);
-      expect(row).to.include('Not Collected');
-      expect(row).to.include('N/A');
+      expect(row).toContain('Not Collected');
+      expect(row).toContain('N/A');
     });
 
     it('handles missing collectionDetails in baselineHomeMouthwashSample', () => {
       const participant = buildParticipant();
 
       const row = baselineHomeMouthwashSample(participant);
-      expect(row).to.include('Not Collected');
-      expect(row).to.include('N/A');
+      expect(row).toContain('Not Collected');
+      expect(row).toContain('N/A');
     });
 
     it('handles missing paymentRound in baselinePayment', () => {
       const participant = {};
 
       const row = baselinePayment(participant);
-      expect(row).to.include('N/A');
+      expect(row).toContain('N/A');
     });
 
     it('handles null participant in baselinePayment', () => {
       const row = baselinePayment(null);
-      expect(row).to.include('N/A');
+      expect(row).toContain('N/A');
     });
 
     it('handles missing reports object in baselinePhysActReport', () => {
       const participant = buildParticipant();
 
       const row = baselinePhysActReport(participant, null);
-      expect(row).to.include('Unavailable');
-      expect(row).to.include('link--disabled');
+      expect(row).toContain('Unavailable');
+      expect(row).toContain('link--disabled');
     });
 
     it('handles empty reports object in baselinePhysActReport', () => {
       const participant = buildParticipant();
 
       const row = baselinePhysActReport(participant, {});
-      expect(row).to.include('Unavailable');
+      expect(row).toContain('Unavailable');
     });
 
     it('handles missing physActReport in reports', () => {
@@ -806,7 +805,7 @@ describe('participantSummaryRow', () => {
       const reports = { otherReport: {} };
 
       const row = baselinePhysActReport(participant, reports);
-      expect(row).to.include('Unavailable');
+      expect(row).toContain('Unavailable');
     });
 
     it('handles missing report status in baselinePhysActReport', () => {
@@ -819,8 +818,8 @@ describe('participantSummaryRow', () => {
       };
 
       const row = baselinePhysActReport(participant, reports);
-      expect(row).to.include('Available');
-      expect(row).to.include('N/A');
+      expect(row).toContain('Available');
+      expect(row).toContain('N/A');
     });
 
     it('handles missing dhqSurveyCompletedDate in dhq3Report', () => {
@@ -829,8 +828,8 @@ describe('participantSummaryRow', () => {
       });
 
       const row = dhq3Report(participant, {});
-      expect(row).to.include('Available');
-      expect(row).to.include('N/A');
+      expect(row).toContain('Available');
+      expect(row).toContain('N/A');
     });
 
     it('handles missing internal/external report statuses in dhq3Report', () => {
@@ -840,8 +839,8 @@ describe('participantSummaryRow', () => {
       });
 
       const row = dhq3Report(participant, {});
-      expect(row).to.include('Int: Unread');
-      expect(row).to.include('Ext: Unread');
+      expect(row).toContain('Int: Unread');
+      expect(row).toContain('Ext: Unread');
     });
 
     it('handles consent with missing date', () => {
@@ -851,8 +850,8 @@ describe('participantSummaryRow', () => {
       };
 
       const row = consentHandler(participant);
-      expect(row).to.include('Signed');
-      expect(row).to.include('undefined');
+      expect(row).toContain('Signed');
+      expect(row).toContain('undefined');
     });
 
     it('handles HIPAA with missing date', () => {
@@ -862,7 +861,7 @@ describe('participantSummaryRow', () => {
       });
 
       const row = hipaaHandler(participant);
-      expect(row).to.include('Signed');
+      expect(row).toContain('Signed');
     });
   });
 });

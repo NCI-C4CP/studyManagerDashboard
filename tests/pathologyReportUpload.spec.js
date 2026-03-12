@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import conceptIds from '../src/fieldToConceptIdMapping.js';
 import { renderPathologyTabContent } from '../src/pathologyReportUpload.js';
@@ -29,7 +28,7 @@ describe('pathologyReportUpload', () => {
     describe('renderPathologyTabContent', () => {
         it('renders "No participant data" if null', async () => {
             const html = await renderPathologyTabContent(null);
-            expect(html).to.include('No participant data available');
+            expect(html).toContain('No participant data available');
         });
 
         it('blocks access if participant is not verified', async () => {
@@ -37,7 +36,7 @@ describe('pathologyReportUpload', () => {
                 [conceptIds.verifiedFlag]: conceptIds.notYetVerified
             });
             const html = await renderPathologyTabContent(participant);
-            expect(html).to.include('Participant does not meet the criteria');
+            expect(html).toContain('Participant does not meet the criteria');
         });
 
         it('blocks access if participant withdrew consent', async () => {
@@ -45,7 +44,7 @@ describe('pathologyReportUpload', () => {
                 [conceptIds.withdrawConsent]: conceptIds.yes
             });
             const html = await renderPathologyTabContent(participant);
-            expect(html).to.include('Participant does not meet the criteria');
+            expect(html).toContain('Participant does not meet the criteria');
         });
 
         it('renders upload interface for eligible participant', async () => {
@@ -71,8 +70,8 @@ describe('pathologyReportUpload', () => {
             };
 
             const html = await renderPathologyTabContent(participant);
-            expect(html).to.include('Select Pathology Reports');
-            expect(html).to.include('Drop files here');
+            expect(html).toContain('Select Pathology Reports');
+            expect(html).toContain('Drop files here');
         });
 
         it('clicking "choose your files" opens file picker instead of navigating', async () => {
@@ -106,8 +105,8 @@ describe('pathologyReportUpload', () => {
             const event = new window.Event('click', { bubbles: true, cancelable: true });
             link.dispatchEvent(event);
 
-            expect(clicked).to.be.true;
-            expect(event.defaultPrevented).to.be.true;
+            expect(clicked).toBe(true);
+            expect(event.defaultPrevented).toBe(true);
         });
 
         it('dropping files does not navigate away and prevents default navigation', async () => {
@@ -140,7 +139,7 @@ describe('pathologyReportUpload', () => {
 
             window.dispatchEvent(dropEvent);
 
-            expect(prevented).to.be.true;
+            expect(prevented).toBe(true);
         });
 
     });

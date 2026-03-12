@@ -1,28 +1,27 @@
-import { expect } from 'chai';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { surveyFlagToDateMapping, participantConceptIDToTextMapping } from '../src/idsToName.js';
 
 describe('idsToName', () => {
   describe('surveyFlagToDateMapping', () => {
     it('maps baseline surveys to their start and completion concept IDs', () => {
-      expect(surveyFlagToDateMapping[fieldMapping.bohStatusFlag]).to.deep.equal({
+      expect(surveyFlagToDateMapping[fieldMapping.bohStatusFlag]).toEqual({
         startDate: fieldMapping.bohStartDate1,
         completeDate: fieldMapping.bohCompletedDate1,
       });
 
-      expect(surveyFlagToDateMapping[fieldMapping.bloodUrineSurveyFlag]).to.deep.equal({
+      expect(surveyFlagToDateMapping[fieldMapping.bloodUrineSurveyFlag]).toEqual({
         startDate: fieldMapping.bloodUrineSurveyStartedDate,
         completeDate: fieldMapping.bloodUrineSurveyCompletedDate,
       });
     });
 
     it('includes cross-sectional surveys used in summary rows', () => {
-      expect(surveyFlagToDateMapping[fieldMapping.experienceSurvey]).to.deep.equal({
+      expect(surveyFlagToDateMapping[fieldMapping.experienceSurvey]).toEqual({
         startDate: fieldMapping.experienceSurveyStartDate,
         completeDate: fieldMapping.experienceCompleteDate,
       });
 
-      expect(surveyFlagToDateMapping[fieldMapping.preferenceSurveyStatus]).to.deep.equal({
+      expect(surveyFlagToDateMapping[fieldMapping.preferenceSurveyStatus]).toEqual({
         startDate: fieldMapping.preferenceSurveyStartDate,
         completeDate: fieldMapping.preferenceSurveyCompletedDate,
       });
@@ -42,7 +41,7 @@ describe('idsToName', () => {
         participant,
       );
 
-      expect(label).to.equal('Started');
+      expect(label).toBe('Started');
     });
 
     it('returns Not Eligible fallback for experience survey with no response', () => {
@@ -51,7 +50,7 @@ describe('idsToName', () => {
         fieldMapping.experienceSurvey,
         {},
       );
-      expect(label).to.equal('Not Eligible');
+      expect(label).toBe('Not Eligible');
     });
 
     it('returns Not Yet Eligible fallback for DHQ without state', () => {
@@ -60,7 +59,7 @@ describe('idsToName', () => {
         fieldMapping.dhqSurveyStatus,
         {},
       );
-      expect(label).to.equal('Not Yet Eligible');
+      expect(label).toBe('Not Yet Eligible');
     });
 
     it('maps nested baseline payment flags from payment round data', () => {
@@ -78,14 +77,14 @@ describe('idsToName', () => {
         fieldMapping.paymentIssued,
         participant,
       );
-      expect(issuedLabel).to.equal('Yes');
+      expect(issuedLabel).toBe('Yes');
 
       const refusedLabel = participantConceptIDToTextMapping(
         undefined,
         fieldMapping.refusedBaselinePayment,
         participant,
       );
-      expect(refusedLabel).to.equal('No');
+      expect(refusedLabel).toBe('No');
     });
 
     it('maps participation status codes to human-readable strings', () => {
@@ -94,14 +93,14 @@ describe('idsToName', () => {
         fieldMapping.participationStatus,
         {},
       );
-      expect(noRefusal).to.equal('No Refusal');
+      expect(noRefusal).toBe('No Refusal');
 
       const refusedAll = participantConceptIDToTextMapping(
         fieldMapping.refusedAll,
         fieldMapping.participationStatus,
         {},
       );
-      expect(refusedAll).to.equal('Refused All');
+      expect(refusedAll).toBe('Refused All');
     });
 
     it('returns ERROR for unknown participation codes', () => {
@@ -110,7 +109,7 @@ describe('idsToName', () => {
         fieldMapping.participationStatus,
         {},
       );
-      expect(label).to.equal(`ERROR: Unknown Participation Status (${fieldMapping.participationStatus}: 999999)`);
+      expect(label).toBe(`ERROR: Unknown Participation Status (${fieldMapping.participationStatus}: 999999)`);
     });
 
     it('returns Unknown Status for unrecognized verification values', () => {
@@ -119,7 +118,7 @@ describe('idsToName', () => {
         fieldMapping.verifiedFlag,
         {},
       );
-      expect(label).to.equal(`ERROR: Unknown Verification Status (${fieldMapping.verifiedFlag}: 123456)`);
+      expect(label).toBe(`ERROR: Unknown Verification Status (${fieldMapping.verifiedFlag}: 123456)`);
     });
 
     it('maps country concept IDs to country names', () => {
@@ -129,7 +128,7 @@ describe('idsToName', () => {
         fieldMapping.country,
         {},
       );
-      expect(mailingCountry).to.equal('United States of America');
+      expect(mailingCountry).toBe('United States of America');
 
       // Test physical address country
       const physicalCountry = participantConceptIDToTextMapping(
@@ -137,7 +136,7 @@ describe('idsToName', () => {
         fieldMapping.physicalCountry,
         {},
       );
-      expect(physicalCountry).to.equal('Canada');
+      expect(physicalCountry).toBe('Canada');
 
       // Test alternate address country
       const altCountry = participantConceptIDToTextMapping(
@@ -145,7 +144,7 @@ describe('idsToName', () => {
         fieldMapping.altCountry,
         {},
       );
-      expect(altCountry).to.equal('Germany');
+      expect(altCountry).toBe('Germany');
     });
 
     it('maps country 3-character codes to country names', () => {
@@ -155,7 +154,7 @@ describe('idsToName', () => {
         fieldMapping.country,
         {},
       );
-      expect(mailingCountry).to.equal('United States of America');
+      expect(mailingCountry).toBe('United States of America');
 
       // Test physical address with code3
       const physicalCountry = participantConceptIDToTextMapping(
@@ -163,7 +162,7 @@ describe('idsToName', () => {
         fieldMapping.physicalCountry,
         {},
       );
-      expect(physicalCountry).to.equal('Canada');
+      expect(physicalCountry).toBe('Canada');
 
       // Test alternate address with code3
       const altCountry = participantConceptIDToTextMapping(
@@ -171,7 +170,7 @@ describe('idsToName', () => {
         fieldMapping.altCountry,
         {},
       );
-      expect(altCountry).to.equal('Germany');
+      expect(altCountry).toBe('Germany');
     });
 
     it('handles uppercase country codes', () => {
@@ -180,7 +179,7 @@ describe('idsToName', () => {
         fieldMapping.country,
         {},
       );
-      expect(country).to.equal('United States of America');
+      expect(country).toBe('United States of America');
     });
 
     it('returns empty string for missing country values', () => {
@@ -189,14 +188,14 @@ describe('idsToName', () => {
         fieldMapping.country,
         {},
       );
-      expect(label).to.equal('');
+      expect(label).toBe('');
 
       const nullLabel = participantConceptIDToTextMapping(
         null,
         fieldMapping.physicalCountry,
         {},
       );
-      expect(nullLabel).to.equal('');
+      expect(nullLabel).toBe('');
     });
 
     it('returns error for unknown country concept IDs', () => {
@@ -205,7 +204,7 @@ describe('idsToName', () => {
         fieldMapping.altCountry,
         {},
       );
-      expect(label).to.equal(`ERROR: Unknown Country (${fieldMapping.altCountry}: 999999999)`);
+      expect(label).toBe(`ERROR: Unknown Country (${fieldMapping.altCountry}: 999999999)`);
     });
 
     it('returns error for unknown country codes', () => {
@@ -214,7 +213,7 @@ describe('idsToName', () => {
         fieldMapping.country,
         {},
       );
-      expect(label).to.equal(`ERROR: Unknown Country (${fieldMapping.country}: xyz)`);
+      expect(label).toBe(`ERROR: Unknown Country (${fieldMapping.country}: xyz)`);
     });
 
     it('maps match status flags to Matched/Not Matched', () => {
@@ -227,7 +226,7 @@ describe('idsToName', () => {
         fieldMapping.firstNameMatch,
         participantMatched,
       );
-      expect(matched).to.equal('Matched');
+      expect(matched).toBe('Matched');
 
       // Test Not Matched
       const participantNotMatched = {
@@ -238,7 +237,7 @@ describe('idsToName', () => {
         fieldMapping.lastNameMatch,
         participantNotMatched,
       );
-      expect(notMatched).to.equal('Not Matched');
+      expect(notMatched).toBe('Not Matched');
 
       // Test other match fields
       const participantDob = {
@@ -249,7 +248,7 @@ describe('idsToName', () => {
         fieldMapping.dobMatch,
         participantDob,
       );
-      expect(dobMatched).to.equal('Matched');
+      expect(dobMatched).toBe('Matched');
 
       const participantPin = {
         state: { [fieldMapping.pinMatch]: fieldMapping.notMatched },
@@ -259,7 +258,7 @@ describe('idsToName', () => {
         fieldMapping.pinMatch,
         participantPin,
       );
-      expect(pinNotMatched).to.equal('Not Matched');
+      expect(pinNotMatched).toBe('Not Matched');
     });
 
     it('returns empty string for missing match status values', () => {
@@ -268,14 +267,14 @@ describe('idsToName', () => {
         fieldMapping.tokenMatch,
         {},
       );
-      expect(label).to.equal('');
+      expect(label).toBe('');
 
       const nullLabel = participantConceptIDToTextMapping(
         null,
         fieldMapping.zipCodeMatch,
         {},
       );
-      expect(nullLabel).to.equal('');
+      expect(nullLabel).toBe('');
     });
 
     it('returns error for unknown match status values', () => {
@@ -287,7 +286,7 @@ describe('idsToName', () => {
         fieldMapping.firstNameMatch,
         participant,
       );
-      expect(label).to.equal(`ERROR: Unknown Match Status (${fieldMapping.firstNameMatch}: 999999)`);
+      expect(label).toBe(`ERROR: Unknown Match Status (${fieldMapping.firstNameMatch}: 999999)`);
     });
 
     it('maps criterium match flags to Criterium Met/Not Met', () => {
@@ -300,7 +299,7 @@ describe('idsToName', () => {
         fieldMapping.siteMatch,
         participantMet,
       );
-      expect(criteriumMet).to.equal('Criterium Met');
+      expect(criteriumMet).toBe('Criterium Met');
 
       // Test Criterium Not Met
       const participantNotMet = {
@@ -311,7 +310,7 @@ describe('idsToName', () => {
         fieldMapping.ageMatch,
         participantNotMet,
       );
-      expect(criteriumNotMet).to.equal('Criterium Not Met');
+      expect(criteriumNotMet).toBe('Criterium Not Met');
 
       // Test another criterium field
       const participantCancer = {
@@ -322,7 +321,7 @@ describe('idsToName', () => {
         fieldMapping.cancerStatusMatch,
         participantCancer,
       );
-      expect(cancerStatus).to.equal('Criterium Met');
+      expect(cancerStatus).toBe('Criterium Met');
     });
 
     it('returns empty string for missing criterium match values', () => {
@@ -331,7 +330,7 @@ describe('idsToName', () => {
         fieldMapping.siteMatch,
         {},
       );
-      expect(label).to.equal('');
+      expect(label).toBe('');
     });
 
     it('returns error for unknown criterium match values', () => {
@@ -343,7 +342,7 @@ describe('idsToName', () => {
         fieldMapping.ageMatch,
         participant,
       );
-      expect(label).to.equal(`ERROR: Unknown Criterium Status (${fieldMapping.ageMatch}: 888888)`);
+      expect(label).toBe(`ERROR: Unknown Criterium Status (${fieldMapping.ageMatch}: 888888)`);
     });
 
     it('maps refusal flags using participant.refusalOptions data', () => {
@@ -365,8 +364,8 @@ describe('idsToName', () => {
         participant,
       );
 
-      expect(surveyRefusal).to.equal('Yes');
-      expect(futureRefusal).to.equal('No');
+      expect(surveyRefusal).toBe('Yes');
+      expect(futureRefusal).toBe('No');
     });
   });
 });
