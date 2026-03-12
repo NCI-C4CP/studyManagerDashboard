@@ -823,8 +823,6 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
         }
     })
 
-    // sendRefusalData
-
     if (selectedWhoRequestedRadios.length != 0) {
         // Find the radio button and text input (if it exists) from the array.
         // Standard options are radio buttons, the "Other" option is a radio button and text input.
@@ -858,7 +856,6 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
     }
 
     if (hasPriorParticipationStatus) {
-
         const prevParticipantStatusScore =   { "No Refusal": 0,
                                             "Refused some activities": 1,  
                                             "Refused all future activities": 2,
