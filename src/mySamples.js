@@ -11,16 +11,14 @@ const langArray = Object.keys(langObj).sort();
  * @returns {Promise<Array>} Array of My Samples records, or empty array on error.
  */
 const getAllMySamples = async () => {
-  showAnimation();
   const idToken = await getIdToken();
-
   const response = await fetch(`${baseAPI}/dashboard?api=getAllMySamples`, {
     method: 'GET',
     headers: {
       Authorization: 'Bearer ' + idToken,
     },
   });
-  hideAnimation();
+
   const res = await response.json();
   if (res.code === 200) {
     return res.data;
@@ -114,7 +112,7 @@ const renderContent = (contentData, isReadOnly = false) => {
  * @param {'edit'|'view'} type - Whether to render in edit or read-only view mode.
  * @returns {string} HTML string for the selected data.
  */
-const renderSeletedContent = (selectedData, type) => {
+const renderSelectedContent = (selectedData, type) => {
   let isReadOnly = true;
   let titleStr = '';
   let buttonWrapper = '';
@@ -193,7 +191,7 @@ const handleContentPreview = () => {
     if (!textareaEle || !contentPreviewDiv || !refreshBtn) continue;
 
     refreshBtn.addEventListener('click', () => {
-      contentPreviewDiv.innerHTML = converter.makeHtml(`<div>${textareaEle.value}</div>`);
+      contentPreviewDiv.innerHTML = DOMPurify.sanitize(converter.makeHtml(`<div>${textareaEle.value}</div>`));
     });
   }
 };
@@ -217,7 +215,7 @@ const handleViewAndEdit = () => {
               selectedData,
             },
           }));
-          mainContent.innerHTML = renderSeletedContent(selectedData, 'edit');
+          mainContent.innerHTML = renderSelectedContent(selectedData, 'edit');
           handleContentPreview();
           handleFormSubmit();
           handleExitForm();
@@ -229,7 +227,7 @@ const handleViewAndEdit = () => {
           const header = document.getElementById('modalHeader');
           header.innerHTML = `<h5>View My Samples Content for ${selectedData.siteAcronym}</h5><button type="button" class="btn-close" id="closeModal" data-bs-dismiss="modal" aria-label="Close"></button>`;
           const body = document.getElementById('modalBody');
-          body.innerHTML = renderSeletedContent(selectedData, 'view');
+          body.innerHTML = renderSelectedContent(selectedData, 'view');
           handleContentPreview();
         });
     });
@@ -244,9 +242,13 @@ export const renderMySamplesPage = async () => {
   updateNavBar('mySamplesBtn');
   if (!appState.getState().mySamples) {
     showAnimation();
-    const dataArray = await getAllMySamples();
-    hideAnimation();
-    appState.setState({ mySamples: { allData: dataArray } });
+    try {
+      const dataArray = await getAllMySamples();
+      hideAnimation();
+      appState.setState({ mySamples: { allData: dataArray } });
+    } finally {
+      hideAnimation();
+    }
   }
 
   let wrappedHtml = '';
@@ -275,6 +277,7 @@ export const renderMySamplesPage = async () => {
                 <br />
                 <span> <h4 style="text-align: center;">My Samples Contents</h4> </span>
             </div>
+            <div id="alert_placeholder"></div>
             ${wrappedHtml}
         </div>
         <div class="modal fade" id="modalShowContent" data-bs-keyboard="false" tabindex="-1" role="dialog" data-bs-backdrop="static" aria-hidden="true">
