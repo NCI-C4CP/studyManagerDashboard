@@ -61,20 +61,6 @@ const updateMySamples = async (payload, action = 'save') => {
   triggerNotificationBanner(`Error Updating My Samples: ${res.message}`, 'danger');
 };
 
-const adjustHtmlBeforeDisplay = (html) => {
-  return html
-    .replaceAll(`class="messagesBodyFont collapse"`, `class="messagesBodyFont collapse show"`)
-    .replaceAll('fa-plus', 'fa-plus_hide')
-    .replaceAll('fa-minus', 'fa-minus_hide');
-};
-
-const adjustHtmlBeforeUpdate = (html) => {
-  return html
-    .replaceAll(`class="messagesBodyFont collapse show"`, `class="messagesBodyFont collapse"`)
-    .replaceAll('fa-plus_hide', 'fa-plus')
-    .replaceAll('fa-minus_hide', 'fa-minus');
-};
-
 const handleExitForm = () => {
   const exitBtn = document.getElementById('exitFormBtn');
   exitBtn.addEventListener('click', async () => {
@@ -90,12 +76,12 @@ const renderContent = (data, isReadOnly = false) => {
             ${langArray
               .map((lang) => {
                 const langFull = langObj[lang];
-                const adjustedHtmlContent = adjustHtmlBeforeDisplay(data[lang]);
+                const adjustedHtmlContent = data[lang];
                 return `
                 <div class="row" data-content-lang="${lang}">
                     <label class="col-form-label col-md-1" for="${lang}Content">${langFull}</label>
                     <textarea rows="5" class="col-md-5"  id="${lang}Content" placeholder="${langFull} Content" ${readonlyCheck}>${adjustedHtmlContent}</textarea>
-                    <div class="col ml-3" id="${lang}ContentPreview"></div>
+                    <div class="col ms-3" id="${lang}ContentPreview"></div>
                 </div>
                 `;
               })
@@ -126,10 +112,10 @@ const renderSeletedContent = (data, type) => {
                     <button type="submit" title="Save as a draft. Not used in MyConnect." class="btn btn-primary" id="saveBtn" data-action="save" ${readonlyCheck}>
                         Save as Draft
                     </button>
-                    <button type="submit" title="Publish and use in MyConnect." class="btn btn-success ml-2" id="publishBtn" data-action="publish" ${readonlyCheck}>
+                    <button type="submit" title="Publish and use in MyConnect." class="btn btn-success ms-2" id="publishBtn" data-action="publish" ${readonlyCheck}>
                         Publish
                     </button>
-                    <button type="button" class="btn btn-danger ml-2" id="exitFormBtn" ${readonlyCheck}>Exit Editing</button>
+                    <button type="button" class="btn btn-danger ms-2" id="exitFormBtn" ${readonlyCheck}>Exit Editing</button>
                 </div>
             </form>
         </div>
@@ -153,7 +139,7 @@ const handleFormSubmit = () => {
           return;
         }
 
-        data.update[lang] = adjustHtmlBeforeUpdate(currContent);
+        data.update[lang] = currContent;
       }
     }
 
@@ -204,7 +190,7 @@ const handleViewAndEdit = () => {
       viewButton &&
         viewButton.addEventListener('click', () => {
           const header = document.getElementById('modalHeader');
-          header.innerHTML = `<h5>View My Samples Content for ${selectedData.siteAcronym}</h5><button type="button" class="modal-close-btn" id="closeModal" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
+          header.innerHTML = `<h5>View My Samples Content for ${selectedData.siteAcronym}</h5><button type="button" class="btn-close" id="closeModal" data-bs-dismiss="modal" aria-label="Close"></button>`;
           const body = document.getElementById('modalBody');
           body.innerHTML = renderSeletedContent(selectedData, 'view');
           handleContentPreview();
@@ -236,7 +222,7 @@ export const renderMySamplesPage = async () => {
           </div>
           <div class="card-body">
               <h5 class="card-title">${data.siteName} </h5>
-              <button type="button" class="btn btn-primary" title="View published content" id="viewContent" data-action="view" data-toggle="modal" data-target="#modalShowContent">View</button>
+              <button type="button" class="btn btn-primary" title="View published content" id="viewContent" data-action="view" data-bs-toggle="modal" data-bs-target="#modalShowContent">View</button>
               <button type="button" class="btn btn-success" id="editContent" data-action="edit">${data.saved ? 'Edit Draft' : 'Edit'}</button>
           </div>
       </div>`;
@@ -250,7 +236,7 @@ export const renderMySamplesPage = async () => {
             </div>
             ${wrappedHtml}
         </div>
-        <div class="modal fade" id="modalShowContent" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+        <div class="modal fade" id="modalShowContent" data-bs-keyboard="false" tabindex="-1" role="dialog" data-bs-backdrop="static" aria-hidden="true">
             <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
                 <div class="modal-content sub-div-shadow">
                     <div class="modal-header" id="modalHeader"></div>

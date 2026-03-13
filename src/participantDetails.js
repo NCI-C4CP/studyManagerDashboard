@@ -270,7 +270,7 @@ const changeParticipantDetail = (participant, changedOption) => {
                         if (editModalHeader && editModalBody) {
                             editModalHeader.innerHTML = `
                                 <h5>Edit ${editModalLabel}</h5>
-                                <button type="button" class="modal-close-btn" id="closeModal" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
+                                <button type="button" class="btn-close" id="closeModal" data-bs-dismiss="modal" aria-label="Close"></button>`;
 
                             editModalBody.innerHTML = `
                                 <div>
@@ -331,8 +331,8 @@ const getButtonToRender = (variableLabel, conceptId, disableButton, isParticipan
 
     return `
         <a class="showMore" 
-            data-toggle="modal" 
-            data-target="#modalShowMoreData"
+            data-bs-toggle="modal"
+            data-bs-target="#modalShowMoreData"
             name="modalParticipantData"
             id="${buttonId}"
             ${participantKey}
@@ -345,7 +345,7 @@ const getButtonToRender = (variableLabel, conceptId, disableButton, isParticipan
 
 const renderBackToSearchDivAndButton = () => {
     return `
-        <div class="float-left">
+        <div class="float-start">
             <button type="button" class="btn btn-primary me-2" id="backToSearchResultsBtn">Back to Search Results</button>
             <button type="button" class="btn btn-secondary" id="backToParticipantLookupBtn">Participant Lookup</button>
         </div>
@@ -355,7 +355,7 @@ const renderBackToSearchDivAndButton = () => {
 const renderDetailsTableHeader = () => {
     return `
         <table class="table detailsTable"> <h4 style="text-align: center;">Participant Details</h4>
-            <thead style="position: sticky;" class="thead-dark"> 
+            <thead style="position: sticky;" class="table-dark">
                 <tr>
                     <th style="text-align: left;" scope="col">Field</th>
                     <th style="text-align: left;" scope="col">Value</th>
@@ -424,8 +424,8 @@ const renderFormInModal = (participant, changedOption, conceptId, participantKey
             <span style="font-size: 12px;" id="showNote"><i></i></span>
             <br/>
             <div style="display:inline-block;">
-                <button type="button" class="btn btn-danger me-2" data-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary" id="editModal" data-toggle="modal">Submit</button>
+                <button type="button" class="btn btn-danger me-2" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="editModal" data-bs-toggle="modal">Submit</button>
             </div>
         </form>
     `;
@@ -433,7 +433,7 @@ const renderFormInModal = (participant, changedOption, conceptId, participantKey
 
 const renderCancelChangesAndSaveChangesButtons = (position) => {
     return `
-        <div class="float-right" style="display:inline-block;">
+        <div class="float-end" style="display:inline-block;">
             <button type="button" id="cancelChanges${position}" class="btn btn-danger me-2">Cancel Changes</button>
             <button type="submit" id="updateMemberData" class="updateMemberData btn btn-primary">Save Changes</button>
         </div>

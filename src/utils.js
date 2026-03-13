@@ -166,7 +166,7 @@ export const renderSiteDropdown = (context = 'lookup', menuId = 'dropdownMenuBut
     return `
         <div class="dropdown" ${isVisible ? '' : 'hidden'}>
             ${showPreferenceLabel ? `<label class="col-form-label search-label">Site Preference</label> &nbsp;` : ''}
-            <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownSites" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-siteKey="allResults">
+            <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownSites" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-siteKey="allResults">
                 All Sites
             </button>
             <ul class="dropdown-menu" id="${menuId}" aria-labelledby="dropdownMenuButton">
@@ -184,9 +184,7 @@ export const triggerNotificationBanner = (message, type, timeout) => {
       alertList.innerHTML = `
           <div class="alert alert-${type} alert-dismissible fade show" role="alert">
               ${escapedMessage}
-              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                      <span aria-hidden="true">&times;</span>
-                  </button>
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           </div>`;
   
     if (!timeout) return;
@@ -654,12 +652,12 @@ const navGuardModalHandler = () => {
 
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div class="modal fade" id="${modalId}" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+    <div class="modal fade" id="${modalId}" data-bs-keyboard="false" tabindex="-1" role="dialog" data-bs-backdrop="static" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content sub-div-shadow">
           <div class="modal-header">
             <h5 class="modal-title" id="${modalId}Title"></h5>
-            <button type="button" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body" id="${modalId}Body"></div>
           <div class="modal-footer" id="${modalId}Footer"></div>
@@ -676,8 +674,8 @@ const navGuardModalHandler = () => {
 const openBootstrapModal = (modalId) => {
   const trigger = document.createElement('button');
   trigger.style.display = 'none';
-  trigger.setAttribute('data-toggle', 'modal');
-  trigger.setAttribute('data-target', `#${modalId}`);
+  trigger.setAttribute('data-bs-toggle', 'modal');
+  trigger.setAttribute('data-bs-target', `#${modalId}`);
   document.body.appendChild(trigger);
   trigger.click();
   document.body.removeChild(trigger);
@@ -698,8 +696,8 @@ export const showConfirmModal = ({ title = 'Confirm', message = '', confirmText 
     if (bodyEl) bodyEl.innerHTML = `<div>${escapeHTML(message)}</div>`;
     if (footerEl) {
       footerEl.innerHTML = `
-        <button type="button" class="btn btn-danger" id="${modalId}Cancel" data-dismiss="modal">${escapeHTML(cancelText)}</button>
-        <button type="button" class="btn btn-primary" id="${modalId}Confirm" data-dismiss="modal">${escapeHTML(confirmText)}</button>`;
+        <button type="button" class="btn btn-danger" id="${modalId}Cancel" data-bs-dismiss="modal">${escapeHTML(cancelText)}</button>
+        <button type="button" class="btn btn-primary" id="${modalId}Confirm" data-bs-dismiss="modal">${escapeHTML(confirmText)}</button>`;
     }
 
     const confirmBtn = document.getElementById(`${modalId}Confirm`);
@@ -750,7 +748,7 @@ export const showAlertModal = ({ title = 'Alert', message = '', okText = 'OK' } 
     if (bodyEl) bodyEl.innerHTML = `<div>${escapeHTML(message)}</div>`;
     if (footerEl) {
       footerEl.innerHTML = `
-        <button type="button" class="btn btn-primary" id="${modalId}Ok" data-dismiss="modal">${escapeHTML(okText)}</button>`;
+        <button type="button" class="btn btn-primary" id="${modalId}Ok" data-bs-dismiss="modal">${escapeHTML(okText)}</button>`;
     }
 
     const okBtn = document.getElementById(`${modalId}Ok`);

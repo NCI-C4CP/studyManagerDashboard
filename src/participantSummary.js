@@ -85,7 +85,7 @@ const renderSummaryContent = (participant, reports) => {
             <span> <h4 style="text-align: center;">Participant Summary </h4> </span>
             <div class="sticky-header">
                 <table class="table table-striped">
-                    <thead class="thead-dark sticky-row">
+                    <thead class="table-dark sticky-row">
                         <tr>
                             <th class="sticky-row" scope="col">Icon</th>
                             <th class="sticky-row" scope="col">Timeline</th>
@@ -205,7 +205,7 @@ export const render = (participant, reports) => {
                     <span> <h4 style="text-align: center;">Participant Summary </h4> </span>
                     <div class="sticky-header">
                         <table class="table table-striped">
-                            <thead class="thead-dark sticky-row"> 
+                            <thead class="table-dark sticky-row"> 
                                 <tr>
                                     <th class="sticky-row" scope="col">Icon</th>
                                     <th class="sticky-row" scope="col">Timeline</th>
@@ -657,7 +657,7 @@ const hipaaRevocation = (participant) => {
     participant && 
     participant[fieldMapping.revokeHIPAA] === (fieldMapping.yes) ?
     ( participant[fieldMapping.signedHIPAARevoc] === fieldMapping.yes ?
-        ( template += `<td><i class="fa fa-check fa-2x icon--success"></i></td>
+        ( template += `<td><i class="fa-solid fa-check fa-2x icon--success"></i></td>
                         <td>Revocation</td>
                         <td>Agreement</td>
                         <td>HIPAA Revoc Form</td>
@@ -667,7 +667,7 @@ const hipaaRevocation = (participant) => {
                         <td>N/A</td>
                         <td><a class="link--action" target="_blank" id="downloadCopyHipaaRevoc">Download Link</a></td>
         ` ) : 
-        ( template += `<td><i class="fa fa-times fa-2x icon--error"></i></td>
+        ( template += `<td><i class="fa-solid fa-xmark fa-2x icon--error"></i></td>
                         <td>Revocation</td>
                         <td>Agreement</td>
                         <td>HIPAA Revoc Form</td>
@@ -678,7 +678,7 @@ const hipaaRevocation = (participant) => {
                         <td><span class="link--disabled">Download Link</span></td>` 
     ) ):
      (
-        template +=`<td><i class="fa fa-times fa-2x icon--error"></i></td>
+        template +=`<td><i class="fa-solid fa-xmark fa-2x icon--error"></i></td>
                     <td>Revocation</td>
                     <td>Agreement</td>
                     <td>HIPAA Revoc Form</td>
@@ -696,7 +696,7 @@ const dataDestroy = (participant) => {
     participant && 
     participant[fieldMapping.destroyData] === (fieldMapping.yes) ?
         ( participant[fieldMapping.signedDataDestroy] === fieldMapping.yes ?
-            ( template += `<td><i class="fa fa-check fa-2x icon--success"></i></td>
+            ( template += `<td><i class="fa-solid fa-check fa-2x icon--success"></i></td>
                             <td>Destruction</td>
                             <td>Agreement</td>
                             <td>Data Destroy Form</td>
@@ -706,7 +706,7 @@ const dataDestroy = (participant) => {
                             <td>N/A</td>
                             <td><a class="link--action" target="_blank" id="downloadCopyDataDestroy">Download Link</a></td>
             ` ) : 
-        ( template += `<td><i class="fa fa-times fa-2x icon--error"></i></td>
+        ( template += `<td><i class="fa-solid fa-xmark fa-2x icon--error"></i></td>
                         <td>Destruction</td>
                         <td>Agreement</td>
                         <td>Data Destroy Form</td>
@@ -718,7 +718,7 @@ const dataDestroy = (participant) => {
         ` )  )
     : 
     (
-        template +=`<td><i class="fa fa-times fa-2x icon--error"></i></td>
+        template +=`<td><i class="fa-solid fa-xmark fa-2x icon--error"></i></td>
                     <td>Destruction</td>
                     <td>Agreement</td>
                     <td>Data Destroy Form</td>
@@ -742,8 +742,8 @@ const renderResetUserButton = (participantUid) => {
         <button
             type="button"
             class="btn btn-danger"
-            data-toggle="modal" 
-            data-target="#resetParticipantModal"
+            data-bs-toggle="modal"
+            data-bs-target="#resetParticipantModal"
             name="modalResetParticipant"
             id="openResetDialog"
             data-participantuid="${participantUid}"
@@ -881,11 +881,11 @@ const resetParticipantConfirm = () => {
         const uid = data.participantuid;
         header.innerHTML = `
                 <h5>Confirm Participant Reset</h5>
-                <button type="button" class="modal-close-btn" id="closeResetModal" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
+                <button type="button" class="btn-close" id="closeResetModal" data-bs-dismiss="modal" aria-label="Close"></button>`;
         body.innerHTML = `<div>
             Are you sure you want to reset this participant to a just-verified state? This cannot be undone.
                 <div style="display:inline-block;">
-                        <button type="submit" class="btn btn-danger" data-dismiss="modal" target="_blank" id="cancelReset">Cancel</button>
+                        <button type="submit" class="btn btn-danger" data-bs-dismiss="modal" target="_blank" id="cancelReset">Cancel</button>
                         &nbsp;
                         <button type="button" class="btn btn-primary" id="resetUserBtn">Confirm</button>
                     </div>
