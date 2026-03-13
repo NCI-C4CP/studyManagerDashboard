@@ -149,7 +149,7 @@ describe('participantWithdrawalForm Logic', () => {
 
         it('calculates correct status for "Refused All Future Activities"', async () => {
             const selected = [mockCheckbox(fieldMapping.refusedAllFutureActivities, "All Future Study Activities")];
-            
+
             const result = await processRefusalWithdrawalResponses(
                 [], // reasons
                 selected, // refusals
@@ -244,9 +244,23 @@ describe('participantWithdrawalForm Logic', () => {
                 '12/31/2099'
             );
 
-            expect(result[fieldMapping.suspendContact]).toBe('12/31/2099');
             expect(result[fieldMapping.contactSuspended]).toBe(fieldMapping.yes);
+            // participationStatus should not update on suspend-only submission if there is a prior status
             expect(result[fieldMapping.participationStatus]).toBeUndefined();
+            expect(result[fieldMapping.suspendContact]).toBe('12/31/2099');
+            // the following refusal timestamps should not be set on suspend-only submission if there is a prior status
+            expect(result[fieldMapping.refBaselineBloodTimeStamp]).toBeUndefined();
+            expect(result[fieldMapping.refBaselineUrineTimeStamp]).toBeUndefined();
+            expect(result[fieldMapping.refBaselineMouthwashTimeStamp]).toBeUndefined();
+            expect(result[fieldMapping.refBaselineSpecimenSurveysTimeStamp]).toBeUndefined();
+            expect(result[fieldMapping.refBaselineAllFutureSpecimensTimeStamp]).toBeUndefined();
+            expect(result[fieldMapping.refBaselineAllFutureSurveysTimeStamp]).toBeUndefined();
+            expect(result[fieldMapping.refQualityOfLifeSurveyTimeStamp]).toBeUndefined();
+            expect(result[fieldMapping.refAllFutureQualityOfLifeSurveysTimeStamp]).toBeUndefined();
+            expect(result[fieldMapping.refExperienceSurveyTimeStamp]).toBeUndefined();
+            expect(result[fieldMapping.refAllFutureActivitesTimeStamp]).toBeUndefined();
+            expect(result[fieldMapping.refCancerScreeningHistorySurveyTimeStamp]).toBeUndefined();
+            expect(result[fieldMapping.refAllFutureExperienceSurveysTimeStamp]).toBeUndefined();
         });
 
         it('clears "who requested" if only baseline refusals selected', async () => {
