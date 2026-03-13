@@ -7,6 +7,7 @@ import { renderEhrUploadPage } from "./src/ehrUpload.js";
 import { renderSiteMessages } from './src/siteMessages.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
 import { renderRetrieveNotificationSchema, showDraftSchemas } from './src/retrieveNotifications.js';
+import { renderMySamplesPage } from './src/mySamples.js';
 import { getIdToken, userLoggedIn, baseAPI, urls, getParticipants, showAnimation, hideAnimation, sortByKey, escapeHTML, renderSiteDropdown, triggerNotificationBanner, showConfirmModal, showAlertModal } from './src/utils.js';
 import { appState, clearUnsaved, initializeAppState, participantState, roleState, statsState, uiState, userSession, searchState, buildPredefinedSearchMetadata, signOutAndClearSession } from './src/stateManager.js';
 import { nameToKeyObj } from './src/idsToName.js';
@@ -277,6 +278,7 @@ export const router = async () => {
         else if (route === '#notifications/showDraftSchemas') return showDraftSchemas();
         else if (route === '#requestAKitConditions') return renderRequestAKitConditions();
         else if (route === '#ehrUpload') return renderEhrUploadPage();
+        else if (route === '#mySamples') return renderMySamplesPage();
         else if (route === '#logout') return signOutAndClearSession();
         else if (route !== '#home' && route !== '#') {
             console.error('Unhandled route. Going to home page. Route:', route);

@@ -66,6 +66,10 @@ export const dashboardNavBarLinks = () => {
             <a class="nav-item nav-link ws-nowrap" href="#ehrUpload" title="EHR Upload"><i class="fa fa-upload"></i> EHR Upload</a>
         </li>`)}
         ${coordinatingCenter ?
+        (`<li class="nav-item" id="mySamplesBtn">
+            <a class="nav-item nav-link ws-nowrap" href="#mySamples" title="Edit My Samples"><i class="fas fa-edit"></i> My Samples</a>
+        </li>`) : (``) }
+        ${coordinatingCenter ?
         (`<li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle ws-nowrap" id="notifications" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <i class="fa fa-bell"></i> Notifications 
