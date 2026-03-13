@@ -704,7 +704,7 @@ export const reasonForRefusalPage = (selectedRefusalWithdrawalCheckboxes, select
         });
     })
     document.getElementById('submit').addEventListener('click', async () => {
-        await handleResponseSubmission(selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate)
+        await handleResponseSubmission(selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate);
     })
 }
 
@@ -855,6 +855,8 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
         await uiState.setWithdrawalStatusFlags({ hasPriorSuspendedContact: false });
     }
 
+    const hasStatusSelection = selectedRefusalWithdrawalCheckboxes.length !== 0;
+
     if (hasPriorParticipationStatus) {
         const prevParticipantStatusScore =   { "No Refusal": 0,
                                             "Refused some activities": 1,  
@@ -864,11 +866,13 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
                                             "Destroy Data": 5,
                                             "Deceased": 6, }
         const participant = participantState.getParticipant();
-        let prevParticipantStatusSelection = fieldMapping[participant[fieldMapping.participationStatus]]
-        prevParticipantStatusSelection = prevParticipantStatusScore[prevParticipantStatusSelection]
-        highestStatus.push(parseInt(prevParticipantStatusSelection))
+        let prevParticipantStatusSelection = fieldMapping[participant[fieldMapping.participationStatus]];
 
-        if (suspendDate !== '//') sendRefusalData[fieldMapping.participationStatus] = fieldMapping.noRefusal
+        if (hasStatusSelection) {
+            prevParticipantStatusSelection = prevParticipantStatusScore[prevParticipantStatusSelection];
+            highestStatus.push(parseInt(prevParticipantStatusSelection));
+        }
+
         await uiState.setWithdrawalStatusFlags({ hasPriorParticipationStatus: false });
     }
     
@@ -957,7 +961,6 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
     }
 
     sendRefusalData['token'] = token;
-
     return sendRefusalData;
 }
 
