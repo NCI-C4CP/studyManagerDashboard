@@ -89,13 +89,20 @@ const renderContent = (contentData, isReadOnly = false) => {
                 const adjustedHtmlContent = contentData[lang];
                 return `
                 <div class="row" data-content-lang="${lang}">
-                    <label class="col-form-label col-md-1" for="${lang}Content">${langFull}</label>
-                    <textarea rows="5" class="col-md-5"  id="${lang}Content" placeholder="${langFull} Content" ${readonlyCheck}>${adjustedHtmlContent}</textarea>
+                    <div class="col-12 mb-1">
+                        <div class="row">
+                            <div class="col-md-5"></div>
+                            <div class="col text-center ms-3">
+                                <button type="button" class="btn btn-outline-secondary" id="${lang}RefreshBtn">Preview ${langFull} Content</button>
+                            </div>
+                        </div>
+                    </div>
+                    <textarea rows="5" class="col-md-5" id="${lang}Content" placeholder="${langFull} Content" ${readonlyCheck}>${adjustedHtmlContent}</textarea>
                     <div class="col ms-3" id="${lang}ContentPreview"></div>
                 </div>
                 `;
               })
-              .join('')}
+              .join('<hr>')}
         </div>
     </div>
   `;
@@ -110,12 +117,22 @@ const renderContent = (contentData, isReadOnly = false) => {
 const renderSeletedContent = (selectedData, type) => {
   let isReadOnly = true;
   let titleStr = '';
+  let buttonWrapper = '';
   if (type === 'edit') {
-    titleStr = `Edit My Samples Template for ${selectedData.siteAcronym}`;
+    titleStr = `Edit My Samples Content for ${selectedData.siteAcronym}`;
     isReadOnly = false;
+    buttonWrapper = `
+      <div class="mt-4 mb-4 d-flex justify-content-center">
+          <button type="submit" title="Save as a draft. Not used in MyConnect." class="btn btn-primary" id="saveBtn" data-action="save">
+              Save as Draft
+          </button>
+          <button type="submit" title="Publish and use in MyConnect." class="btn btn-success ms-2" id="publishBtn" data-action="publish">
+              Publish
+          </button>
+          <button type="button" class="btn btn-danger ms-2" id="exitFormBtn">Exit Editing</button>
+      </div>`;
   }
 
-  const readonlyCheck = isReadOnly ? 'disabled' : '';
   return `
     <div class="container-fluid">
         <div id="root root-margin"> 
@@ -124,15 +141,7 @@ const renderSeletedContent = (selectedData, type) => {
             <span> <h4 style="text-align: center">${titleStr}</h4> </span>
             <form method="post" class="mt-3" id="mySamplesForm">
                 ${renderContent(selectedData.saved || selectedData.published, isReadOnly)}
-                <div class="mt-4 mb-4 d-flex justify-content-center">
-                    <button type="submit" title="Save as a draft. Not used in MyConnect." class="btn btn-primary" id="saveBtn" data-action="save" ${readonlyCheck}>
-                        Save as Draft
-                    </button>
-                    <button type="submit" title="Publish and use in MyConnect." class="btn btn-success ms-2" id="publishBtn" data-action="publish" ${readonlyCheck}>
-                        Publish
-                    </button>
-                    <button type="button" class="btn btn-danger ms-2" id="exitFormBtn" ${readonlyCheck}>Exit Editing</button>
-                </div>
+                ${buttonWrapper}
             </form>
         </div>
     </div>`;
@@ -169,8 +178,8 @@ const handleFormSubmit = () => {
 };
 
 /**
- * Attaches mouseenter listeners to each language textarea to render a live
- * markdown/HTML preview in the preview area.
+ * Attaches click listeners to each language's refresh button to render the
+ * textarea content as HTML in the adjacent preview area.
  */
 const handleContentPreview = () => {
   const contentDivList = document.querySelectorAll('div[data-content-lang]');
@@ -180,12 +189,12 @@ const handleContentPreview = () => {
     const lang = contentDiv.dataset.contentLang;
     const textareaEle = contentDiv.querySelector('textarea');
     const contentPreviewDiv = contentDiv.querySelector(`#${lang}ContentPreview`);
-    if (!textareaEle || !contentPreviewDiv || textareaEle.hasRefreshListener) continue;
+    const refreshBtn = contentDiv.querySelector(`#${lang}RefreshBtn`);
+    if (!textareaEle || !contentPreviewDiv || !refreshBtn) continue;
 
-    textareaEle.addEventListener('mouseenter', () => {
+    refreshBtn.addEventListener('click', () => {
       contentPreviewDiv.innerHTML = converter.makeHtml(`<div>${textareaEle.value}</div>`);
     });
-    textareaEle.hasRefreshListener = true;
   }
 };
 
