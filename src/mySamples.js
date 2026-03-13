@@ -6,6 +6,10 @@ const converter = new showdown.Converter();
 const langObj = { en: 'English', es: 'Spanish' };
 const langArray = Object.keys(langObj).sort();
 
+/**
+ * Fetches all My Samples data from backend API
+ * @returns {Promise<Array>} Array of My Samples records, or empty array on error.
+ */
 const getAllMySamples = async () => {
   showAnimation();
   const idToken = await getIdToken();
@@ -27,10 +31,10 @@ const getAllMySamples = async () => {
 };
 
 /**
- *
- * @param {*} payload - {update: object, id: string}
- * @param {*} action - 'save' or 'publish'
- * @returns
+ * Saves or publishes a My Samples content changes.
+ * @param {{ update: Object, id: string }} payload - The update payload containing new content and the record ID.
+ * @param {'save'|'publish'} action - Whether to save as draft or publish.
+ * @returns {Promise<void>}
  */
 const updateMySamples = async (payload, action = 'save') => {
   showAnimation();
@@ -68,7 +72,13 @@ const handleExitForm = () => {
   });
 };
 
-const renderContent = (data, isReadOnly = false) => {
+/**
+ * Renders content editor and viewer.
+ * @param {{ en: string, es: string }} contentData - Content keyed by language code.
+ * @param {boolean} isReadOnly - Whether the fields should be disabled.
+ * @returns {string} HTML string for the content form section.
+ */
+const renderContent = (contentData, isReadOnly = false) => {
   const readonlyCheck = isReadOnly ? 'disabled' : '';
   return `
     <div class="row">
@@ -76,7 +86,7 @@ const renderContent = (data, isReadOnly = false) => {
             ${langArray
               .map((lang) => {
                 const langFull = langObj[lang];
-                const adjustedHtmlContent = data[lang];
+                const adjustedHtmlContent = contentData[lang];
                 return `
                 <div class="row" data-content-lang="${lang}">
                     <label class="col-form-label col-md-1" for="${lang}Content">${langFull}</label>
@@ -91,11 +101,17 @@ const renderContent = (data, isReadOnly = false) => {
   `;
 };
 
-const renderSeletedContent = (data, type) => {
+/**
+ * Renders the full edit or view form for a selected My Samples record.
+ * @param {{ siteName: string, siteAcronym: string, saved: Object|null, published: Object, id: string }} selectedData - The selected site's My Samples data.
+ * @param {'edit'|'view'} type - Whether to render in edit or read-only view mode.
+ * @returns {string} HTML string for the selected data.
+ */
+const renderSeletedContent = (selectedData, type) => {
   let isReadOnly = true;
   let titleStr = '';
   if (type === 'edit') {
-    titleStr = `Edit My Samples Template for ${data.siteAcronym}`;
+    titleStr = `Edit My Samples Template for ${selectedData.siteAcronym}`;
     isReadOnly = false;
   }
 
@@ -107,7 +123,7 @@ const renderSeletedContent = (data, type) => {
             <br />
             <span> <h4 style="text-align: center">${titleStr}</h4> </span>
             <form method="post" class="mt-3" id="mySamplesForm">
-                ${renderContent(data.saved || data.published, isReadOnly)}
+                ${renderContent(selectedData.saved || selectedData.published, isReadOnly)}
                 <div class="mt-4 mb-4 d-flex justify-content-center">
                     <button type="submit" title="Save as a draft. Not used in MyConnect." class="btn btn-primary" id="saveBtn" data-action="save" ${readonlyCheck}>
                         Save as Draft
@@ -122,6 +138,10 @@ const renderSeletedContent = (data, type) => {
     </div>`;
 };
 
+/**
+ * Attaches a submit listener to the My Samples form, collecting textarea content
+ * and calling updateMySamples with the appropriate save or publish action.
+ */
 const handleFormSubmit = () => {
   const form = document.getElementById('mySamplesForm');
   form.addEventListener('submit', async (e) => {
@@ -148,6 +168,10 @@ const handleFormSubmit = () => {
   });
 };
 
+/**
+ * Attaches mouseenter listeners to each language textarea to render a live
+ * markdown/HTML preview in the preview area.
+ */
 const handleContentPreview = () => {
   const contentDivList = document.querySelectorAll('div[data-content-lang]');
   if (contentDivList.length === 0) return;
@@ -165,6 +189,10 @@ const handleContentPreview = () => {
   }
 };
 
+/**
+ * Attaches click listeners to View and Edit buttons on each site's content card,
+ * opening the modal for viewing or navigating to the edit form.
+ */
 const handleViewAndEdit = () => {
   const contentDivList = Array.from(document.querySelectorAll('div.card.contentRow'));
   if (contentDivList.length > 0) {
@@ -199,6 +227,10 @@ const handleViewAndEdit = () => {
   }
 };
 
+/**
+ * Renders My Samples entry page, fetching data from backend API if not already cached in app state.
+ * @returns {Promise<void>}
+ */
 export const renderMySamplesPage = async () => {
   updateNavBar('mySamplesBtn');
   if (!appState.getState().mySamples) {
