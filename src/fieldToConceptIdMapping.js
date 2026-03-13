@@ -513,6 +513,7 @@ export default
     'lowIncomeAreas': 663706936,
     'researchRegistry': 208952854,
     'popUp': 296312382,
+    'urgentCareVisit': 130709488,
     'noneOftheAbove': 398561594,
     // Note: 'other': 181769837 is a valid campaign type (already accounted for in fieldMapping).
 
