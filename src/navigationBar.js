@@ -19,7 +19,7 @@ export const setParticipantLookupNavRequest = (value = false) => {
 export const renderNavBarLinks = () => {
     return `
         <li class="nav-item active">
-            <a class="nav-item nav-link active" href="#" title="Home"><i class="fas fa-home"></i> Home</a>
+            <a class="nav-item nav-link active" href="#" title="Home"><i class="fa-solid fa-home"></i> Home</a>
         </li>
     `;
 }
@@ -34,11 +34,11 @@ export const dashboardNavBarLinks = () => {
     
     const normalNavBar = `
         <li class="nav-item">
-            <a class="nav-item nav-link ws-nowrap" href="#home" title="Home" id="dashboardBtn"><i class="fas fa-home"></i> Home</a>
+            <a class="nav-item nav-link ws-nowrap" href="#home" title="Home" id="dashboardBtn"><i class="fa-solid fa-home"></i> Home</a>
         </li>
         <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle ws-nowrap" id="participants" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <i class="fas fa-users"></i> Participants
+            <a class="nav-link dropdown-toggle ws-nowrap" id="participants" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fa-solid fa-users"></i> Participants
             </a>
             <div class="dropdown-menu sub-div-shadow" aria-labelledby="participants">
                 <a class="dropdown-item" href="#participants/notyetverified" id="notVerifiedBtn">Not Yet Verified Participants</a>
@@ -51,24 +51,28 @@ export const dashboardNavBarLinks = () => {
             </div>
         </li>
         <li class="nav-item" id="participantLookupBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#participantLookup" title="Participant Lookup"><i class="fas fa-search"></i> Participant Lookup</a>
+            <a class="nav-item nav-link ws-nowrap" href="#participantLookup" title="Participant Lookup"><i class="fa-solid fa-magnifying-glass"></i> Participant Lookup</a>
         </li>
         ${coordinatingCenter ?
             (`<li class="nav-item" id="manageRequestAKitConditionsBtn">
-                <a class="nav-item nav-link ws-nowrap" href="#requestAKitConditions" title="Manage Automated Kit Request Eligibility"><i class="fa fa-cogs"></i> CCC use only- Set Kit Eligibility</a>
+                <a class="nav-item nav-link ws-nowrap" href="#requestAKitConditions" title="Manage Automated Kit Request Eligibility"><i class="fa-solid fa-gears"></i> CCC use only- Set Kit Eligibility</a>
             </li>`) : (``) }
         <div class="w-100 d-none d-lg-block"></div>
         ${isSiteManager ?
         (`<li class="nav-item" id="siteMessageBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#siteMessages" title="Automated Refusal/Withdrawal Notifications to Sites"><i class="fa fa-comments"></i> Automated Refusal/Withdrawal Notifications to Sites</a>
+            <a class="nav-item nav-link ws-nowrap" href="#siteMessages" title="Automated Refusal/Withdrawal Notifications to Sites"><i class="fa-solid fa-comments"></i> Automated Refusal/Withdrawal Notifications to Sites</a>
         </li>`) : (``) }
         ${(helpDesk || (coordinatingCenter && location.host === urls.prod)) ? '' : (`<li class="nav-item" id="ehrUploadBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#ehrUpload" title="EHR Upload"><i class="fa fa-upload"></i> EHR Upload</a>
+            <a class="nav-item nav-link ws-nowrap" href="#ehrUpload" title="EHR Upload"><i class="fa-solid fa-upload"></i> EHR Upload</a>
         </li>`)}
         ${coordinatingCenter ?
+        (`<li class="nav-item" id="mySamplesBtn">
+            <a class="nav-item nav-link ws-nowrap" href="#mySamples" title="Edit My Samples"><i class="fa-solid fa-pen-to-square"></i> My Samples</a>
+        </li>`) : (``) }
+        ${coordinatingCenter ?
         (`<li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle ws-nowrap" id="notifications" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <i class="fa fa-bell"></i> Notifications 
+                <a class="nav-link dropdown-toggle ws-nowrap" id="notifications" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa-solid fa-bell"></i> Notifications 
                 </a>
                 <div class="dropdown-menu sub-div-shadow" aria-labelledby="notifications">
                     <a class="dropdown-item" href="#notifications/createnotificationschema" id="createNotificationSchema">Create A New Schema</a>
@@ -77,19 +81,19 @@ export const dashboardNavBarLinks = () => {
                 </div>
             </li>`) : (``) }
         <li class="nav-item">
-            <a class="nav-item nav-link ws-nowrap" href="#logout" title="Log Out"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+            <a class="nav-item nav-link ws-nowrap" href="#logout" title="Log Out"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</a>
         </li>
     `;
 
     const ehrUploaderNavBar = `
         <li class="nav-item">
-            <a class="nav-item nav-link ws-nowrap" href="#home" title="Home" id="dashboardBtn"><i class="fas fa-home"></i> Home</a>
+            <a class="nav-item nav-link ws-nowrap" href="#home" title="Home" id="dashboardBtn"><i class="fa-solid fa-home"></i> Home</a>
         </li>
         <li class="nav-item" id="ehrUploadBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#ehrUpload" title="EHR Upload"><i class="fa fa-upload"></i> EHR Upload</a>
+            <a class="nav-item nav-link ws-nowrap" href="#ehrUpload" title="EHR Upload"><i class="fa-solid fa-upload"></i> EHR Upload</a>
         </li>
         <li class="nav-item">
-            <a class="nav-item nav-link ws-nowrap" href="#logout" title="Log Out"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+            <a class="nav-item nav-link ws-nowrap" href="#logout" title="Log Out"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</a>
         </li>
         `;
     if (isEHRUploader) {
@@ -107,8 +111,8 @@ export const  renderLogin = () => {
         <h4>Single Sign-On</h4>
         <form id="ssoLogin">
             <div class="row">
-                <div class="col">
-                    <input type="email" required id="ssoEmail" class="form-control col-md-3" placeholder="Enter Your Organizational Email">
+                <div class="col-md-4">
+                    <input type="email" required id="ssoEmail" class="form-control" placeholder="Enter Your Organizational Email">
                 </div>
             </div>
             <div class="row">
@@ -210,7 +214,7 @@ export const updateActiveElements = (type) => {
     removeActiveClass('dropdown-item', 'dd-item-active');
     removeActiveClass('nav-link', 'active');
 
-    document.getElementById('participants').innerHTML = `<i class="fas fa-users"></i> ${titleMap[type]}`;
+    document.getElementById('participants').innerHTML = `<i class="fa-solid fa-users"></i> ${titleMap[type]}`;
     document.getElementById('participants').classList.add('active');
     document.getElementById(buttonMap[type])?.classList.add('dd-item-active');
 };

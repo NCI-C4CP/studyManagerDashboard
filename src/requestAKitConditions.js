@@ -81,41 +81,41 @@ const renderRequestAKitConditionsHTML = (data = {}) => {
         <br />
         <form method="post" class="mt-3" id="configForm">
           <div id="conditionsDiv" data-current-index="${conditionIndex}">${conditionHtmlStrAll}</div>
-          <div class="form-group">
+          <div class="mb-3">
             <button type="button" class="btn btn-outline-primary" id="addOneCondition">Add Condition</button>
             <button type="button" class="btn btn-outline-secondary" id="addSqlCondition">Add SQL Condition(s)</button>
           </div>
           <div id="sortsDiv" data-current-index="${sortIndex}">${sortsHtmlStrAll}</div>
-          <div class="form-group">
+          <div class="mb-3">
             <button type="button" class="btn btn-outline-primary" id="addOneSort">Add Sort</button>
           </div>
-          <div class="row form-group mt-4 mb-4 d-flex">
+          <div class="row mb-3 mt-4 mb-4 d-flex">
             <div class="col-md-12">
-              Limit updates to the first <input type="number" class="mr-0 ml-0" id="limit" value="${data.limit || ''}" /> participants found.
+              Limit updates to the first <input type="number" class="me-0 ms-0" id="limit" value="${data.limit || ''}" /> participants found.
             </div>
           </div>
           <div class="mt-4 mb-4 d-flex justify-content-center">
               <button type="submit" title="Save schema as complete." class="btn btn-primary" id="updateId">
                   Save Changes
               </button>
-              <button type="button" class="btn btn-danger ml-2" id="exitForm">Exit Without Saving</button>
+              <button type="button" class="btn btn-danger ms-2" id="exitForm">Exit Without Saving</button>
           </div>
         </form>
 
         <hr style="border: solid gray 1px" />
-        <div class="row form-group align-items-center">
+        <div class="row mb-3 align-items-center">
             <div class="col-md-3">
                 <button type="button" class="btn btn-secondary" id="dryRunBtn" title="See the SQL query that is run and how many results it returns without a limit">Save & Dry Run Without Limit</button>
             </div>
             <div class="col-md-12" id="dry-run-results"></div>
         </div>
-        <div class="row form-group align-items-center">
+        <div class="row mb-3 align-items-center">
             <div class="col-md-3">
               <button type="button" class="btn btn-success" id="liveRunBtn" title="Run the query and update the results.">Save & Run Eligibility Updates</button>
             </div>
             <div class="col-md-12" id="live-run-results"></div>
         </div>
-        <div class="row form-group">
+        <div class="row mb-3">
           <div class="col-md-1"></div>
           <div class="col-md-10 text-center">
             Firestore backup to BigQuery (BQ) occurs at 2:45pm ET, 7:45pm ET and 12:00am ET. Data pulled in this query relies on BQ, and Kit Eligible flags set via this functionality will update in BQ when the next scheduled backup occurs.
@@ -147,45 +147,49 @@ const getConditionHtmlStr = (index = 0, isReadOnly = false, condition = []) => {
   const readonlyCheck = isReadOnly ? "disabled" : "";
   const [conditionKey = null, conditionOperator = null, conditionValue = null] = condition;
   return `
-    <div class="row form-group" data-condition-idx="${index}" data-condition-type="simple">
+    <div class="row mb-3" data-condition-idx="${index}" data-condition-type="simple">
         <label class="col-form-label col-md-2">Condition</label>
-        <div class="col-md-3 mr-2 p-0">
+        <div class="col-md-3 me-2 p-0">
           <input list="dataListConditionKey${index}" class="form-control" name="condition-key" ${conditionKey ? `value="${escapeHTML(conditionKey)}"` : ""}  ${readonlyCheck}>
           <datalist id="dataListConditionKey${index}">
               ${conceptsOptionsStr}
           </datalist>
         </div>
-        <select name="condition-operator" class="col-md-1 form-control mr-2" ${readonlyCheck}>
-            <option value="equals" ${conditionOperator === "equals" ? "selected" : ""}>equals</option>
-            <option value="notequals" ${conditionOperator === "notequals" ? "selected" : ""}>notequals</option>
-            <option value="greater" ${conditionOperator === "greater" ? "selected" : ""}>greater</option>
-            <option value="greaterequals" ${conditionOperator === "greaterequals" ? "selected" : ""}>greaterequals</option>
-            <option value="less" ${conditionOperator === "less" ? "selected" : ""}>less</option>
-            <option value="lessequals" ${conditionOperator === "lessequals" ? "selected" : ""}>lessequals</option>
-        </select>
-        <select name="value-type" class="col-md-1 form-control mr-2" ${readonlyCheck}>
-            <option value="number" ${typeof conditionValue === "number" ? "selected" : ""}>number</option>
-            <option value="string" ${typeof conditionValue === "string" ? "selected" : ""}>string</option>
-        </select>
-        <div class="condition-value col-md-3 mr-2 p-0">
+        <div class="col-md-1 me-2 p-0">
+          <select name="condition-operator" class="form-select" ${readonlyCheck}>
+              <option value="equals" ${conditionOperator === "equals" ? "selected" : ""}>equals</option>
+              <option value="notequals" ${conditionOperator === "notequals" ? "selected" : ""}>notequals</option>
+              <option value="greater" ${conditionOperator === "greater" ? "selected" : ""}>greater</option>
+              <option value="greaterequals" ${conditionOperator === "greaterequals" ? "selected" : ""}>greaterequals</option>
+              <option value="less" ${conditionOperator === "less" ? "selected" : ""}>less</option>
+              <option value="lessequals" ${conditionOperator === "lessequals" ? "selected" : ""}>lessequals</option>
+          </select>
+        </div>
+        <div class="col-md-1 me-2 p-0">
+          <select name="value-type" class="form-select" ${readonlyCheck}>
+              <option value="number" ${typeof conditionValue === "number" ? "selected" : ""}>number</option>
+              <option value="string" ${typeof conditionValue === "string" ? "selected" : ""}>string</option>
+          </select>
+        </div>
+        <div class="condition-value col-md-3 me-2 p-0">
           <input list="dataListConditionValue${index}" class="form-control" name="condition-value" ${conditionValue ? `value="${escapeHTML(conditionValue)}"` : ""} ${readonlyCheck}>
           <datalist id="dataListConditionValue${index}">
               ${conceptsOptionsStr}
           </datalist>
         </div>
-        <button type ="button" data-btn-idx="${index}" ${readonlyCheck} class="btn btn-warning ml-1 col-md-1" title="Delete condition in this row">Delete</button>
+        <button type ="button" data-btn-idx="${index}" ${readonlyCheck} class="btn btn-warning ms-1 col-md-1" title="Delete condition in this row">Delete</button>
     </div>`;
 };
 
 const getSQLConditionHtmlStr = (index = 0, isReadOnly = false, conditionStr = "") => {
   const readonlyCheck = isReadOnly ? "disabled" : "";
   return `
-    <div class="row form-group" data-condition-idx="${index}" data-condition-type="sql">
+    <div class="row mb-3" data-condition-idx="${index}" data-condition-type="sql">
         <label class="col-form-label col-md-3">SQL Conditions</label>
-        <div class="col-md-7 mr-2 p-0">
+        <div class="col-md-7 me-2 p-0">
           <textarea required class="form-control" rows="2" placeholder='d_685002411.d_867203506=104430631 AND (d_827220437=531629870 OR d_827220437=548392715) AND d_914594314>"2024-01-01" AND d_914594314<"2024-09-10T20:05:16.490Z"' ${readonlyCheck}>${escapeHTML(conditionStr)}</textarea>
         </div>
-        <button type ="button" data-btn-idx="${index}" ${readonlyCheck} class="btn btn-warning ml-4 col-md-1" title="Delete SQL conditions in this row">Delete</button>
+        <button type ="button" data-btn-idx="${index}" ${readonlyCheck} class="btn btn-warning ms-4 col-md-1" title="Delete SQL conditions in this row">Delete</button>
     </div>`;
 };
 
@@ -229,19 +233,21 @@ const handleDeleteExistingConditions = () => {
 const getSortHTMLStr = (index = 0, sort = []) => {
   const [sortKey = null, sortOrder = 'ASC'] = sort;
   return `
-    <div class="row form-group" data-sort-idx="${index}">
+    <div class="row mb-3" data-sort-idx="${index}">
         <label class="col-form-label col-md-1">Order By</label>
-        <div class="col-md-3 mr-2 p-0">
+        <div class="col-md-3 me-2 p-0">
           <input list="dataListSortKey${index}" class="form-control" name="sort-key" ${sortKey ? `value="${sortKey}"` : ""}>
           <datalist id="dataListSortKey${index}">
               ${conceptsOptionsStr}
           </datalist>
         </div>
-        <select name="sort-order" class="col-md-1 form-control mr-2">
-            <option value="ASC" ${sortOrder === "ASC" ? "selected" : ""}>ASC</option>
-            <option value="DESC" ${sortOrder === "DESC" ? "selected" : ""}>DESC</option>
-        </select>
-        <button type ="button" data-btn-idx="${index}" class="btn btn-warning ml-1 col-md-1" title="Delete sort in this row">Delete</button>
+        <div class="col-md-1 me-2 p-0">
+          <select name="sort-order" class="form-select">
+              <option value="ASC" ${sortOrder === "ASC" ? "selected" : ""}>ASC</option>
+              <option value="DESC" ${sortOrder === "DESC" ? "selected" : ""}>DESC</option>
+          </select>
+        </div>
+        <button type ="button" data-btn-idx="${index}" class="btn btn-warning ms-1 col-md-1" title="Delete sort in this row">Delete</button>
     </div>
   `;
 }

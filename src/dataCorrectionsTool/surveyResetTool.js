@@ -52,7 +52,7 @@ const renderDataCorrectionsSelectionContent = (participant) => {
                         <div style="display:flex">
                             <p class="infoLabel">Update Survey:</p>
                             <div class="btn-group dropright">
-                                <button type="button" class="btn btn-info dropdown-toggle selectButton" data-toggle="dropdown" aria-expanded="false"  style="margin-left: 1rem;">
+                                <button type="button" class="btn btn-info dropdown-toggle selectButton" data-bs-toggle="dropdown" aria-expanded="false"  style="margin-left: 1rem;">
                                     Select
                                 </button>
                                 <div id="dropdownSurveyMenu" class="dropdown-menu">
@@ -75,7 +75,7 @@ const renderDataCorrectionsSelectionContent = (participant) => {
                                 <button type="button" class="btn btn-danger" id="clearSurveySelect" style="margin-left: 0.5rem;">Clear</button>
                             </div>
                             <div style="margin-left: 3rem;">
-                                <button type="button" class="btn btn-primary" id="submitButton" data-toggle="modal" data-target="#modalConfirmReset">Submit</button>
+                                <button type="button" class="btn btn-primary" id="submitButton" data-bs-toggle="modal" data-bs-target="#modalConfirmReset">Submit</button>
                             </div>
                         </div>
                     </div>
@@ -89,16 +89,14 @@ const renderDataCorrectionsSelectionContent = (participant) => {
                 <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="confirmModalHeader">Confirm Survey Reset</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="confirmResetButton" data-dismiss="modal">Confirm</button>
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmResetButton" data-bs-dismiss="modal">Confirm</button>
                 </div>
                 </div>
             </div>
@@ -238,7 +236,7 @@ const submitSurveyStatusReset = () => {
 const displayAlreadyResetNote = () => { 
     const isSurveyAlreadyResetNote = document.getElementById('isSurveyAlreadyResetNote');
     if (!isSurveyAlreadyResetNote) return;
-    isSurveyAlreadyResetNote.innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> The survey is "Not Started". There is no survey data to be reset.</span>`;
+    isSurveyAlreadyResetNote.innerHTML = `<span><i class="fa-solid fa-square-check fa-lg" style="color: #4CAF50; background: white;"></i> The survey is "Not Started". There is no survey data to be reset.</span>`;
 }
 
 const removeAlreadyResetNote = () => { 

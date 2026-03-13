@@ -974,9 +974,7 @@ export const attachUpdateLoginMethodListeners = (participantAuthenticationEmail,
             }
             header.innerHTML = `
                 <h5>${typeName} Login</h5>
-                <button type="button" class="modal-close-btn" data-dismiss="modal" id="closeModal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>`;
+                <button type="button" class="btn-close" data-bs-dismiss="modal" id="closeModal" aria-label="Close"></button>`;
             const currentLogins = { 
                 phone: participantAuthenticationPhone, 
                 email: participantAuthenticationEmail 
@@ -1054,7 +1052,7 @@ const generateLoginFormInputFields = (currentLogins, loginType) => {
 
     const { currentLogin, labelForNewLogin, newLoginId, confirmLabel, confirmId } = loginTypeConfig[loginType];
 
-    return `<div class="form-group">
+    return `<div class="mb-3">
                 <label class="col-form-label search-label">Current ${capitalizeFirstLetter(loginType)} Login</label>
                 <input class="form-control" value="${currentLogin}" disabled/>
                 <label class="col-form-label search-label">${labelForNewLogin}</label>
@@ -1070,11 +1068,11 @@ const generateLoginFormInputFields = (currentLogins, loginType) => {
 
 const generateAuthenticationFormButtons = (doesEmailLoginExist, doesPhoneLoginExist, loginType) => {
     return `
-        <div class="form-group">
-            <button type="button" class="btn btn-danger mr-2" data-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary" data-toggle="modal">Submit</button>
-            ${loginType === 'email' && doesEmailLoginExist && doesPhoneLoginExist ? `<button type="button" class="btn btn-warning float-right" id="removeUserLoginEmail">Remove this Login</button>` : ''}
-            ${loginType === 'phone' && doesEmailLoginExist && doesPhoneLoginExist ? `<button type="button" class="btn btn-warning float-right" id="removeUserLoginPhone">Remove this Login</button>` : ''}
+        <div class="mb-3">
+            <button type="button" class="btn btn-danger me-2" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" data-bs-toggle="modal">Submit</button>
+            ${loginType === 'email' && doesEmailLoginExist && doesPhoneLoginExist ? `<button type="button" class="btn btn-warning float-end" id="removeUserLoginEmail">Remove this Login</button>` : ''}
+            ${loginType === 'phone' && doesEmailLoginExist && doesPhoneLoginExist ? `<button type="button" class="btn btn-warning float-end" id="removeUserLoginPhone">Remove this Login</button>` : ''}
         </div>
         `;
 };
@@ -1301,9 +1299,7 @@ const showAuthUpdateAPIAlert = (type, message) => {
     alertList.innerHTML = `
         <div class="alert alert-${type} alert-dismissible fade show" role="alert">
             ${escapeHTML(message)}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>`;
 }
 

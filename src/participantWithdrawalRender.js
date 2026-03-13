@@ -200,9 +200,10 @@ export const renderCauseOptions = () => {
     const template = `
             <div>
                     <span> Date of Death:
-                    <div class="form-group row">
+                    <div class="row mb-3">
                     <label class="col-md-4 col-form-label">Month</label>
-                    <select id="causeOfDeathMonth" class="form-control required-field col-md-4" data-error-required='Please select your Month.'>
+                    <div class="col-md-4">
+                    <select id="causeOfDeathMonth" class="form-select required-field" data-error-required='Please select your Month.'>
                         <option class="option-dark-mode" value="">Select month</option>
                         <option class="option-dark-mode" value="01">1 - January</option>
                         <option class="option-dark-mode" value="02">2 - February</option>
@@ -217,16 +218,21 @@ export const renderCauseOptions = () => {
                         <option class="option-dark-mode" value="11">11 - November</option>
                         <option class="option-dark-mode" value="12">12 - December</option>
                     </select>
+                    </div>
                 </div>
-                <div class="form-group row">
+                <div class="row mb-3">
                     <label class="col-md-4 col-form-label">Day</label>
-                    <select class="form-control required-field col-md-4" data-error-required='Please select your day.' id="causeOfDeathDay"></select>
+                    <div class="col-md-4">
+                    <select class="form-select required-field" data-error-required='Please select your day.' id="causeOfDeathDay"></select>
+                    </div>
                 </div>
-                <div class="form-group row">
+                <div class="row mb-3">
                     <label class="col-md-4 col-form-label">Year</label>
-                    <input type="text" class="form-control required-field input-validation col-md-4" data-error-required='Please select your year.' 
+                    <div class="col-md-4">
+                    <input type="text" class="form-control required-field input-validation" data-error-required='Please select your year.'
                     data-validation-pattern="year" data-error-validation="Your year must contain four digits in the YYYY format." maxlength="4" id="causeOfDeathYear" list="yearsOption" title="Year, must be in 1900s" Placeholder="Enter year">
                     <datalist id="yearsOption"></datalist>
+                    </div>
                 </div>
                     </span>
                     <br />

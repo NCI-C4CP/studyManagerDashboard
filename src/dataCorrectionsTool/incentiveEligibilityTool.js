@@ -50,7 +50,7 @@ const renderIncentiveEligibilityToolContent = (participant) => {
                         <div style="display:flex">
                             <p class="infoLabel">Payment Round:</p>    
                             <div class="btn-group dropright">
-                                <button type="button" class="btn btn-info dropdown-toggle selectButton ml-3" data-toggle="dropdown" aria-expanded="false">
+                                <button type="button" class="btn btn-info dropdown-toggle selectButton ms-3" data-bs-toggle="dropdown" aria-expanded="false">
                                     Select
                                 </button>
                                 <div id="dropdownPaymentMenu" class="dropdown-menu">
@@ -79,7 +79,7 @@ const renderIncentiveEligibilityToolContent = (participant) => {
                                 <button type="button" class="btn btn-danger" id="clearPaymentRoundButton" style="margin-left: 0.5rem;">Clear</button>
                             </div>
                             <div style="margin-left: 3rem;">
-                                <button type="button" class="btn btn-primary" id="submitButton" data-toggle="modal" data-target="#modalConfirmUpdateEligibility">Submit</button>
+                                <button type="button" class="btn btn-primary" id="submitButton" data-bs-toggle="modal" data-bs-target="#modalConfirmUpdateEligibility">Submit</button>
                             </div>
                         </div>
                     </div>
@@ -93,16 +93,14 @@ const renderIncentiveEligibilityToolContent = (participant) => {
                 <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="confirmModalHeader">Confirm Update Incentive Eligibility</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="confirmUpdateEligibility" data-dismiss="modal">Confirm</button>
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmUpdateEligibility" data-bs-dismiss="modal">Confirm</button>
                 </div>
                 </div>
             </div>
@@ -204,7 +202,7 @@ const handleParticipantPaymentTextContent = (participant, isEligibleForIncentive
     } else if (isEligibleForIncentiveUpdate === false) {
         incentiveStatusText.textContent = 'Incentive Eligibility Status: Eligible';
         dateOfEligibilityText.textContent = `Date of Eligibility: ${formatUTCDate(participant?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
-        isIncentiveEligibleNote.innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
+        isIncentiveEligibleNote.innerHTML = `<span><i class="fa-solid fa-square-check fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
 
     } else {
         incentiveStatusText.textContent = 'Incentive Eligibility Status: ';
@@ -311,7 +309,7 @@ const handleConfirmClick = async (participant) => {
                 invalidateSearchResultsCache();
                 refreshParticipantHeaders(currentParticipantData);
                 document.getElementById('incentiveStatusText').textContent = 'Incentive Eligibility Status: Eligible';
-                document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fas fa-check-square fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
+                document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fa-solid fa-square-check fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
                 document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${formatUTCDate(currentParticipantData?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
                 removeSetDateOfEligibilityContent();
             }

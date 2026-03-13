@@ -40,7 +40,7 @@ const render = (schemaArray, showDrafts) => {
                 <br />
                 <span> <h4 style="text-align: center;">${titleStr}</h4> </span>
                 <div style="margin-top:10px; padding:15px;" class="dropdown" id="dropdownForm">
-                    <button class="btn btn-secondary dropdown-toggle dropdown-toggle-sites" id="dropdownCategories" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <button class="btn btn-secondary dropdown-toggle dropdown-toggle-sites" id="dropdownCategories" type="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Filter by Category
                     </button>
                     <ul class="dropdown-menu" id="dropdownMenuButtonCategories" aria-labelledby="dropdownMenuButton">
@@ -49,7 +49,7 @@ const render = (schemaArray, showDrafts) => {
             </div>
             ${renderNotificationCards(schemaArray)}
         </div>
-        <div class="modal fade" id="modalShowSchema" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+        <div class="modal fade" id="modalShowSchema" data-bs-keyboard="false" tabindex="-1" role="dialog" data-bs-backdrop="static" aria-hidden="true">
             <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
                 <div class="modal-content sub-div-shadow">
                     <div class="modal-header" id="modalHeader"></div>
@@ -89,7 +89,7 @@ const renderNotificationCards = (schemaArray) => {
           <div class="card-body">
               <h5 class="card-title">Category: ${schema.category} </h5>
               <p class="card-text">${schema.description}</p>
-              <button type="button" class="btn btn-success viewSchema" data-toggle="modal" data-target="#modalShowSchema" data-schema-idx=${idx}>View</button>
+              <button type="button" class="btn btn-success viewSchema" data-bs-toggle="modal" data-bs-target="#modalShowSchema" data-schema-idx=${idx}>View</button>
               <button type="button" class="btn btn-primary editSchema" data-schema-idx=${idx}>Edit</button>
           </div>
       </div>`;
@@ -107,7 +107,7 @@ const handleViewNotificationSchema = () => {
         const schemaData = appState.getState().notification.schemaArray[viewButton.dataset.schemaIdx];
         const header = document.getElementById("modalHeader");
         const body = document.getElementById("modalBody");
-        header.innerHTML = `<h5>View Schema</h5><button type="button" class="modal-close-btn" id="closeModal" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
+        header.innerHTML = `<h5>View Schema</h5><button type="button" class="btn-close" id="closeModal" data-bs-dismiss="modal" aria-label="Close"></button>`;
 
         body.innerHTML = `<div>${getSchemaHtmlStr(schemaData, true)}</div>`;
         handleEmailPreview();

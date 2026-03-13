@@ -185,7 +185,7 @@ export const renderKitRequestTabContent = (participant) => {
     const content = `
         ${renderParticipantHeader(participant)}
         <div id="alert_placeholder"></div>
-        <div class="modal fade" id="modalSuccess" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+        <div class="modal fade" id="modalSuccess" data-bs-keyboard="false" tabindex="-1" role="dialog" data-bs-backdrop="static" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                 <div class="modal-content sub-div-shadow">
                     <div class="modal-header" id="modalHeader"></div>
@@ -225,8 +225,8 @@ const renderReplacementScreen = (kitAlreadyReceived) => {
         <button
             id="requestReplacementKitBtn"
             class="btn btn-primary"
-            data-toggle="modal" 
-            data-target="#modalSuccess"
+            data-bs-toggle="modal" 
+            data-bs-target="#modalSuccess"
             name="modalResetParticipant"
         >
             Request Replacement
@@ -242,8 +242,8 @@ const renderInitialKitSection = (alreadyOrdered) => {
         <button
             id="requestKitBtn"
             class="btn btn-primary"
-            data-toggle="modal" 
-            data-target="#modalSuccess"
+            data-bs-toggle="modal" 
+            data-bs-target="#modalSuccess"
             name="modalResetParticipant"
         >
             Request Initial Kit
@@ -261,8 +261,8 @@ const renderInvalidAddressSection = (allowOverride, kitLevel) => {
             <button
                 id="${kitLevel === 'initial' ? 'requestKitBtn' : 'requestReplacementKitBtn'}"
                 class="btn btn-primary"
-                data-toggle="modal" 
-                data-target="#modalSuccess"
+                data-bs-toggle="modal" 
+                data-bs-target="#modalSuccess"
                 name="modalResetParticipant"
                 disabled
             >
@@ -400,7 +400,7 @@ const render = (participant) => {
         template += `
             <div id="root" > 
             <div id="alert_placeholder"></div>
-            <div class="modal fade" id="modalSuccess" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+            <div class="modal fade" id="modalSuccess" data-bs-keyboard="false" tabindex="-1" role="dialog" data-bs-backdrop="static" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                     <div class="modal-content sub-div-shadow">
                         <div class="modal-header" id="modalHeader"></div>
@@ -460,7 +460,7 @@ const bindEventRequestKitButton = (connectId, token) => {
             const body = document.getElementById('modalBody');  
             header.innerHTML = `
                     <h5>Success! Kit requested.</h5>
-                    <button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <button type="button" id="closeModal" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 `
             body.innerHTML = `<div>
                 Please wait while we refresh the participant information and navigate to the participant details page.
@@ -500,7 +500,7 @@ const bindEventRequestReplacementButton = (connectId, token) => {
             const body = document.getElementById('modalBody');  
             header.innerHTML = `
                     <h5>Success! Replacement requested.</h5>
-                    <button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <button type="button" id="closeModal" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 `
             body.innerHTML = `<div>
                 Please wait while we refresh the participant information and navigate to the participant details page.
@@ -582,7 +582,7 @@ export const requestKit = async (connectId) => {
 
 const renderBackToSearchDivAndButton = () => {
     return `
-        <div class="float-left">
+        <div class="float-start">
             <button type="button" class="btn btn-primary" id="displaySearchResultsBtn">Back to Search</button>    
         </div>
         

@@ -89,8 +89,8 @@ export const buildAccessDeniedTemplate = (participant) => {
                     <p>Duplicate account. Withdrawal page is not accessible for this participant.</p>
                 </div>
                 <div class="text-center">
-                    <button type="button" class="btn btn-primary mt-3 mr-2" id="goToParticipantSummaryBtn">Participant Summary</button>
-                    <button type="button" class="btn btn-secondary mt-3 mr-2" id="goToParticipantDetailsBtn">Participant Details</button>
+                    <button type="button" class="btn btn-primary mt-3 me-2" id="goToParticipantSummaryBtn">Participant Summary</button>
+                    <button type="button" class="btn btn-secondary mt-3 me-2" id="goToParticipantDetailsBtn">Participant Details</button>
                     <button type="button" class="btn btn-info mt-3" id="goToParticipantLookupBtn">Participant Lookup</button>
                 </div>
             </div>
@@ -123,17 +123,13 @@ const checkPreviousWithdrawalStatus = async (participant) => {
         withdrawalFlags.hasPriorParticipationStatus = true;
         template += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
                         Previously Selected Refusal Option(s): <b> ${getParticipantSelectedRefusals(participant)} </b>
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>`
     } else if (participant[fieldMapping.suspendContact] !== "" && participant[fieldMapping.suspendContact] !== ``) {
         withdrawalFlags.hasPriorSuspendedContact = true;
         template += `<div class="alert alert-warning alert-dismissible fade show" role="alert">
                         <b> ${getParticipantSuspendedDate(participant)} </b>
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>`
     }
 
