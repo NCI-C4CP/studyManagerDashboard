@@ -202,7 +202,7 @@ describe('participantDetails Integration', () => {
         // Submit form
         const form = document.getElementById('formResponse');
         form.dispatchEvent(new window.Event('submit'));
-        await waitForAsyncTasks();
+        await waitForAsyncTasks(100);
 
         // Check that UI updated (yellow background on row)
         const row = document.getElementById(`${fieldMapping.lName}row`);

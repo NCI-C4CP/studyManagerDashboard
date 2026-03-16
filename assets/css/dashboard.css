@@ -172,6 +172,10 @@ table {
     color: #ffffff;
 }
 
+.modal-header .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
 .modal-content {
     border: 0px;
 }
@@ -721,3 +725,6 @@ iframe[src*="firebaseapp.com/__/auth/iframe"] {
         padding-top: 8rem;
     }
 }
+
+[data-bs-toggle="collapse"]:not(.collapsed) .fa-plus { display: none; }
+[data-bs-toggle="collapse"].collapsed .fa-minus { display: none; }

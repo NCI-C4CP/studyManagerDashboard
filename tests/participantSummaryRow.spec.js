@@ -44,7 +44,7 @@ describe('participantSummaryRow', () => {
       const status = getSurveyStatus(participant, fieldMapping.bohStatusFlag);
 
       expect(status).toEqual({
-        icon: 'fa fa-check fa-2x',
+        icon: 'fa-solid fa-check fa-2x',
         color: 'icon--success',
         itemStatus: 'Submitted',
         date: formatDate('2024-04-15T00:00:00Z'),
@@ -60,7 +60,7 @@ describe('participantSummaryRow', () => {
       const status = getSurveyStatus(participant, fieldMapping.bloodUrineSurveyFlag);
 
       expect(status).toEqual({
-        icon: 'fa fa-hashtag fa-2x',
+        icon: 'fa-solid fa-hashtag fa-2x',
         color: 'icon--warning',
         itemStatus: 'Started',
         date: formatDate('2024-01-05T12:00:00Z'),
@@ -81,7 +81,7 @@ describe('participantSummaryRow', () => {
     it('returns N/A metadata when survey flag is unmapped', () => {
       const status = getSurveyStatus({}, 999999);
       expect(status).toEqual({
-        icon: 'fa fa-times fa-2x',
+        icon: 'fa-solid fa-xmark fa-2x',
         color: 'icon--error',
         itemStatus: 'N/A',
         date: 'N/A',
@@ -96,7 +96,7 @@ describe('participantSummaryRow', () => {
       const status = getSurveyStatus(participant, fieldMapping.mreStatusFlag);
 
       expect(status).toEqual({
-        icon: 'fa fa-times fa-2x',
+        icon: 'fa-solid fa-xmark fa-2x',
         color: 'icon--error',
         itemStatus: 'Not Started',
         date: 'N/A',
@@ -111,7 +111,7 @@ describe('participantSummaryRow', () => {
       const status = getSurveyStatus(participant, fieldMapping.promisSurveyFlag);
 
       expect(status).toEqual({
-        icon: 'fa fa-times fa-2x',
+        icon: 'fa-solid fa-xmark fa-2x',
         color: 'icon--error',
         itemStatus: 'Not Yet Eligible',
         date: 'N/A',
@@ -128,7 +128,7 @@ describe('participantSummaryRow', () => {
       flags.forEach((flag) => {
         const status = getSurveyStatus({}, flag);
         expect(status).toEqual({
-          icon: 'fa fa-times fa-2x',
+          icon: 'fa-solid fa-xmark fa-2x',
           color: 'icon--error',
           itemStatus: 'Not Eligible',
           date: 'N/A',
@@ -139,7 +139,7 @@ describe('participantSummaryRow', () => {
     it('falls back to Not Yet Eligible for DHQ', () => {
       const status = getSurveyStatus({}, fieldMapping.dhqSurveyStatus);
       expect(status).toEqual({
-        icon: 'fa fa-times fa-2x',
+        icon: 'fa-solid fa-xmark fa-2x',
         color: 'icon--error',
         itemStatus: 'Not Yet Eligible',
         date: 'N/A',
@@ -153,7 +153,7 @@ describe('participantSummaryRow', () => {
 
       const status = getSurveyStatus(participant, fieldMapping.sasStatusFlag);
       expect(status).toEqual({
-        icon: 'fa fa-times fa-2x',
+        icon: 'fa-solid fa-xmark fa-2x',
         color: 'icon--error',
         itemStatus: 'N/A',
         date: 'N/A',
@@ -171,7 +171,7 @@ describe('participantSummaryRow', () => {
 
       const row = consentHandler(participant);
 
-      expect(row).toContain('fa fa-check fa-2x icon--success');
+      expect(row).toContain('fa-solid fa-check fa-2x icon--success');
       expect(row).toContain('Signed');
       expect(row).toContain(formatDate('2024-03-20T00:00:00Z'));
       expect(row).toContain('v2');
@@ -186,7 +186,7 @@ describe('participantSummaryRow', () => {
 
       const row = consentHandler(participant);
 
-      expect(row).toContain('fa fa-times fa-2x icon--error');
+      expect(row).toContain('fa-solid fa-xmark fa-2x icon--error');
       expect(row).toContain('Not Signed');
       expect(row).toContain('N/A');
       expect(row).toContain('link--disabled');
@@ -204,7 +204,7 @@ describe('participantSummaryRow', () => {
 
       const row = hipaaHandler(participant);
       expect(row).toContain('HIPAA');
-      expect(row).toContain('fa fa-check');
+      expect(row).toContain('fa-solid fa-check');
       expect(row).toContain('icon--success');
       expect(row).toContain(formatDate('2024-04-02T00:00:00Z'));
       expect(row).toContain('downloadCopyHIPAA');
@@ -239,7 +239,7 @@ describe('participantSummaryRow', () => {
 
     it('marks verified participants with checkmark and date', () => {
       const row = verificationStatus(createParticipant(fieldMapping.verified));
-      expect(row).toContain('fa fa-check');
+      expect(row).toContain('fa-solid fa-check');
       expect(row).toContain('icon--success');
       expect(row).toContain('Verified');
       expect(row).toContain(formatDate('2024-05-10T00:00:00Z'));
@@ -247,14 +247,14 @@ describe('participantSummaryRow', () => {
 
     it('shows pending icons for not yet verified participants', () => {
       const row = verificationStatus(createParticipant(fieldMapping.notYetVerified));
-      expect(row).toContain('fa fa-hashtag');
+      expect(row).toContain('fa-solid fa-hashtag');
       expect(row).toContain('Not yet Verified');
       expect(row).toContain('N/A');
     });
 
     it('handles outreach timed out with warning styling', () => {
       const row = verificationStatus(createParticipant(fieldMapping.outreachTimedout));
-      expect(row).toContain('fa fa-hashtag');
+      expect(row).toContain('fa-solid fa-hashtag');
       expect(row).toContain('Outreach Timed Out');
     });
 
@@ -528,21 +528,21 @@ describe('participantSummaryRow', () => {
 
     it('handles cannotBeVerified status', () => {
       const row = verificationStatus(createParticipant(fieldMapping.cannotBeVerified));
-      expect(row).toContain('fa fa-times');
+      expect(row).toContain('fa-solid fa-xmark');
       expect(row).toContain('icon--error');
       expect(row).toContain('Cannot Be Verified');
     });
 
     it('handles noLongerEnrolling status', () => {
       const row = verificationStatus(createParticipant(fieldMapping.noLongerEnrolling));
-      expect(row).toContain('fa fa-times');
+      expect(row).toContain('fa-solid fa-xmark');
       expect(row).toContain('icon--error');
       expect(row).toContain('No Longer Enrolling');
     });
 
     it('handles duplicate status', () => {
       const row = verificationStatus(createParticipant(fieldMapping.duplicate));
-      expect(row).toContain('fa fa-times');
+      expect(row).toContain('fa-solid fa-xmark');
       expect(row).toContain('icon--error');
       expect(row).toContain('Duplicate');
     });
@@ -725,13 +725,13 @@ describe('participantSummaryRow', () => {
     it('handles null participant in verificationStatus', () => {
       const row = verificationStatus(null);
       expect(row).toContain('N/A');
-      expect(row).toContain('fa fa-times');
+      expect(row).toContain('fa-solid fa-xmark');
     });
 
     it('handles undefined participant in verificationStatus', () => {
       const row = verificationStatus(undefined);
       expect(row).toContain('N/A');
-      expect(row).toContain('fa fa-times');
+      expect(row).toContain('fa-solid fa-xmark');
     });
 
     it('handles missing refusalOptions gracefully in baselineBOHSurvey', () => {

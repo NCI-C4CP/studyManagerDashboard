@@ -128,4 +128,62 @@ describe('router', () => {
     });
   });
 
+  describe('#mySamples route', () => {
+    beforeEach(() => {
+      global.showdown = { Converter: function () { this.makeHtml = (str) => str; } };
+      global.DOMPurify = { sanitize: (str) => str };
+      global.fetch = async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 200, data: [{ id: 'site-1', siteAcronym: 'NCI', siteName: 'National Cancer Institute', saved: null, published: { en: 'Hello', es: 'Hola' } }] }),
+      });
+    });
+
+    afterEach(() => {
+      delete global.showdown;
+      delete global.DOMPurify;
+      delete global.fetch;
+      const { appState } = stateManagerModule?.default ?? stateManagerModule;
+      appState.setState((state) => ({ ...state, mySamples: null }));
+    });
+
+    it('renders My Samples page for #mySamples route', async () => {
+      window.location.hash = '#mySamples';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main).not.toBeNull();
+      expect(main.innerHTML).toContain('My Samples');
+    });
+
+    it('renders site cards when data is returned', async () => {
+      window.location.hash = '#mySamples';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main.innerHTML).toContain('NCI');
+      expect(main.innerHTML).toContain('National Cancer Institute');
+    });
+
+    it('renders empty state when no data is returned', async () => {
+      global.fetch = async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 200, data: [] }),
+      });
+
+      window.location.hash = '#mySamples';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main.innerHTML).toContain('My Samples Data Not Found');
+    });
+  });
+
 });
