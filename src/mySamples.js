@@ -91,7 +91,7 @@ const renderContent = (contentData, isReadOnly = false) => {
                         <div class="row">
                             <div class="col-md-5"></div>
                             <div class="col text-center ms-3">
-                                <button type="button" class="btn btn-outline-secondary" id="${lang}RefreshBtn">Preview ${langFull} Content</button>
+                                <button type="button" class="btn btn-outline-secondary" id="${lang}RefreshBtn" title="Click to get refreshed view of content">Refresh ${langFull} Content</button>
                             </div>
                         </div>
                     </div>
@@ -162,11 +162,11 @@ const handleFormSubmit = () => {
       if (textareaEle) {
         const currContent = textareaEle.value.trim();
         if (currContent.length === 0) {
-          triggerNotificationBanner(`Please fill in the ${langObj[lang]} content!`, 'danger');
+          triggerNotificationBanner(`Please fill in ${langObj[lang]} content!`, 'danger');
           return;
         }
 
-        data.update[lang] = currContent;
+        data.update[lang] = converter.makeHtml(currContent);
       }
     }
 
