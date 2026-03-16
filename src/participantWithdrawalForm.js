@@ -870,7 +870,7 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
 
         if (hasStatusSelection) {
             prevParticipantStatusSelection = prevParticipantStatusScore[prevParticipantStatusSelection];
-            highestStatus.push(parseInt(prevParticipantStatusSelection));
+            highestStatus.push((prevParticipantStatusSelection));
         }
 
         await uiState.setWithdrawalStatusFlags({ hasPriorParticipationStatus: false });
