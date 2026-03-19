@@ -4,7 +4,8 @@ import {
     installFirebaseStub,
     createMockParticipant,
     waitForAsyncTasks,
-    clearAllState
+    clearAllState,
+    trackAsyncEventHandlers
 } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 
@@ -18,6 +19,7 @@ describe('Tab Integration Tests', () => {
     let getTabIdFromHash;
     let roleState;
     let participantState;
+    let asyncHandlerTracker;
 
     const loadModules = async () => {
         if (renderParticipantDetails && activateTab && getTabIdFromHash) return;
@@ -35,7 +37,8 @@ describe('Tab Integration Tests', () => {
 
     beforeEach(async () => {
         setupTestEnvironment();
-        
+        asyncHandlerTracker = trackAsyncEventHandlers();
+
         // Mock fetch globally
         global.fetch = async () => ({
             ok: true,
@@ -87,6 +90,11 @@ describe('Tab Integration Tests', () => {
     });
 
     afterEach(async () => {
+        if (asyncHandlerTracker) {
+            await asyncHandlerTracker.allSettled();
+            asyncHandlerTracker.restore();
+            asyncHandlerTracker = null;
+        }
         delete global.fetch;
         await participantState.clearParticipant();
         delete global.$;
@@ -178,7 +186,8 @@ describe('Tab Integration Tests', () => {
             expect(summaryTab).not.toBeNull();
 
             summaryTab.click();
-            await waitForAsyncTasks(500);
+            await asyncHandlerTracker.allSettled();
+            await waitForAsyncTasks(200);
 
             const summaryContent = document.getElementById('summary-tab-content-inner');
             expect(summaryContent.innerHTML).toContain('Participant Summary');
@@ -189,10 +198,10 @@ describe('Tab Integration Tests', () => {
             // Click away and back to summary
             const detailsTab = document.getElementById('details-tab');
             detailsTab.click();
-            await waitForAsyncTasks(50);
+            await asyncHandlerTracker.allSettled();
 
             summaryTab.click();
-            await waitForAsyncTasks(50);
+            await asyncHandlerTracker.allSettled();
 
             // Content should be the same (cached, not reloaded)
             expect(summaryContent.innerHTML).toBe(firstContent);
@@ -275,7 +284,7 @@ describe('Tab Integration Tests', () => {
             const messagesTab = document.getElementById('messages-tab');
             messagesTab.click();
 
-            await waitForAsyncTasks(100);
+            await asyncHandlerTracker.allSettled();
 
             // Both should complete without errors
             const summaryContent = document.getElementById('summary-tab-content-inner');
@@ -296,7 +305,8 @@ describe('Tab Integration Tests', () => {
             // Use messages tab which is more likely to propagate error than summary
             const messagesTab = document.getElementById('messages-tab');
             messagesTab.click();
-            await waitForAsyncTasks(300);
+            await asyncHandlerTracker.allSettled();
+            await waitForAsyncTasks(200);
 
             const messagesContent = document.getElementById('messages-tab-content-inner');
             // Should show error message instead of crashing
@@ -330,7 +340,7 @@ describe('Tab Integration Tests', () => {
             // Switch to summary tab
             const summaryTab = document.getElementById('summary-tab');
             summaryTab.click();
-            await waitForAsyncTasks(50);
+            await asyncHandlerTracker.allSettled();
 
             // Hash should update (via updateHashForTab in event handler)
             expect(window.location.hash).toContain('participantDetails');

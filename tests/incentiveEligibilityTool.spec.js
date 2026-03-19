@@ -1,18 +1,25 @@
-import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
+import { setupTestSuite, createMockParticipant, waitForAsyncTasks, trackAsyncEventHandlers } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { setupIncentiveEligibilityToolPage } from '../src/dataCorrectionsTool/incentiveEligibilityTool.js';
 
 describe('incentiveEligibilityTool', () => {
     let cleanup;
+    let asyncHandlerTracker;
 
     beforeEach(async () => {
         const suite = await setupTestSuite({
             domFixtures: [{ id: 'mainContent' }]
         });
         cleanup = suite.cleanup;
+        asyncHandlerTracker = trackAsyncEventHandlers();
     });
 
-    afterEach(() => {
+    afterEach(async () => {
+        if (asyncHandlerTracker) {
+            await asyncHandlerTracker.allSettled();
+            asyncHandlerTracker.restore();
+            asyncHandlerTracker = null;
+        }
         cleanup();
     });
 
@@ -55,7 +62,7 @@ describe('incentiveEligibilityTool', () => {
         const baselineOption = document.querySelector(`[data-payment="${fieldMapping.baseline}"]`);
         expect(baselineOption).not.toBeNull();
         baselineOption.click();
-        await waitForAsyncTasks();
+        await asyncHandlerTracker.allSettled();
 
         const dateInput = document.getElementById('dateOfEligibilityInput');
         expect(dateInput).not.toBeNull();
@@ -67,7 +74,7 @@ describe('incentiveEligibilityTool', () => {
         const confirmBtn = document.getElementById('confirmUpdateEligibility');
         expect(confirmBtn).not.toBeNull();
         confirmBtn.click();
-        await waitForAsyncTasks();
+        await asyncHandlerTracker.allSettled();
 
         const updateCall = fetchCalls.find(call => call.url.includes('updateParticipantIncentiveEligibility'));
         expect(updateCall).not.toBeNull();
@@ -103,7 +110,7 @@ describe('incentiveEligibilityTool', () => {
 
         const baselineOption = document.querySelector(`[data-payment="${fieldMapping.baseline}"]`);
         baselineOption.click();
-        await waitForAsyncTasks();
+        await asyncHandlerTracker.allSettled();
 
         const submitButton = document.getElementById('submitButton');
         expect(submitButton.disabled).toBe(true);

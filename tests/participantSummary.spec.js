@@ -3,7 +3,7 @@ import { urls } from '../src/utils.js';
 import { renderParticipantHeader } from '../src/participantHeader.js';
 import { participantState } from '../src/stateManager.js';
 import { refreshParticipantAfterReset } from '../src/participantSummary.js';
-import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, waitForAsyncTasks, installFirebaseStub } from './helpers.js';
+import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, waitForAsyncTasks, installFirebaseStub, trackAsyncEventHandlers } from './helpers.js';
 
 const createPdfLibStub = () => {
   const stubPage = {
@@ -55,6 +55,7 @@ describe('participantSummary', () => {
   let renderParticipantSummary;
   let retrieveDHQHEIReport;
   let renderSummaryTabContent;
+  let asyncHandlerTracker;
 
   const ensureModuleLoaded = async () => {
     if (render && renderParticipantSummary && retrieveDHQHEIReport && renderSummaryTabContent) return;
@@ -75,6 +76,11 @@ describe('participantSummary', () => {
   });
 
   afterEach(async () => {
+    if (asyncHandlerTracker) {
+      await asyncHandlerTracker.allSettled();
+      asyncHandlerTracker.restore();
+      asyncHandlerTracker = null;
+    }
     await waitForAsyncTasks();
     teardownTestEnvironment();
   });
@@ -302,6 +308,7 @@ describe('participantSummary', () => {
   describe('reset participant modal isolation', () => {
     beforeEach(() => {
       process.env.NODE_ENV = 'test';
+      asyncHandlerTracker = trackAsyncEventHandlers();
       // Minimal edit modal skeleton to verify it is untouched by reset flow
       document.body.innerHTML = `
         <div id="navBarLinks"></div>
@@ -331,7 +338,7 @@ describe('participantSummary', () => {
 
       // Click reset to trigger modal content
       resetBtn.click();
-      await waitForAsyncTasks();
+      await asyncHandlerTracker.allSettled();
 
       const resetModalHeader = document.getElementById('resetModalHeader');
       const resetModalBody = document.getElementById('resetModalBody');
@@ -358,21 +365,20 @@ describe('participantSummary', () => {
       expect(resetBtn).not.toBeNull();
 
       resetBtn.click();
-      await waitForAsyncTasks();
+      await asyncHandlerTracker.allSettled();
       const modalEl = document.getElementById('resetParticipantModal');
       expect(modalEl.classList.contains('show') || modalEl.style.display === 'block').toBe(true);
 
       const confirmBtn = document.getElementById('resetUserBtn');
       expect(confirmBtn).not.toBeNull();
-      
+
       global.fetch = async () => ({
         ok: true,
         json: async () => ({ code: 200, data: { data: participant } })
       });
 
       confirmBtn.click();
-      await waitForAsyncTasks();
-      await new Promise(res => setTimeout(res, 0));
+      await asyncHandlerTracker.allSettled();
       expect(modalEl.classList.contains('show')).toBe(false);
       expect(modalEl.style.display === '' || modalEl.style.display === 'none').toBe(true);
 
@@ -406,13 +412,12 @@ describe('participantSummary', () => {
       const resetBtn = document.getElementById('openResetDialog');
       expect(resetBtn).not.toBeNull();
       resetBtn.click();
-      await waitForAsyncTasks();
+      await asyncHandlerTracker.allSettled();
 
       const confirmBtn = document.getElementById('resetUserBtn');
       expect(confirmBtn).not.toBeNull();
       confirmBtn.click();
-      await waitForAsyncTasks();
-      await new Promise(res => setTimeout(res, 10));
+      await asyncHandlerTracker.allSettled();
       await refreshParticipantAfterReset(updatedParticipant);
 
       const mainContentHtml = document.getElementById('mainContent').innerHTML;
