@@ -1,10 +1,11 @@
-import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, installFirebaseStub, waitForAsyncTasks } from './helpers.js';
+import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, installFirebaseStub, waitForAsyncTasks, trackAsyncEventHandlers } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 
 describe('participantDetailsHelpers', () => {
     let module;
     let roleState;
     let appState;
+    let asyncHandlerTracker;
 
     const loadModule = async () => {
         if (module && roleState && appState) return;
@@ -27,7 +28,14 @@ describe('participantDetailsHelpers', () => {
         appState.setState({ loginMechanism: { email: true, phone: true } });
     });
 
-    afterEach(() => {
+    afterEach(async () => {
+        // Wait for in-flight async event handlers (e.g. the submitClickHandler's
+        // async click callback) to avoid document not found errors on teardown.
+        if (asyncHandlerTracker) {
+            await asyncHandlerTracker.allSettled();
+            asyncHandlerTracker.restore();
+            asyncHandlerTracker = null;
+        }
         teardownTestEnvironment();
     });
 
@@ -536,10 +544,11 @@ describe('participantDetailsHelpers', () => {
             };
 
             try {
+                asyncHandlerTracker = trackAsyncEventHandlers();
                 const changedOption = { [fieldMapping.cellPhone]: '5550000000' };
                 await module.submitClickHandler(participant, changedOption);
                 document.getElementById('updateMemberData').click();
-                await waitForAsyncTasks(50);
+                await asyncHandlerTracker.allSettled();
 
                 expect(payloads).toSatisfy(v => v.length > 0);
                 const payload = payloads[payloads.length - 1];
@@ -575,10 +584,11 @@ describe('participantDetailsHelpers', () => {
             };
 
             try {
+                asyncHandlerTracker = trackAsyncEventHandlers();
                 const changedOption = { [fieldMapping.cellPhone]: '5550000000' };
                 await module.submitClickHandler(participant, changedOption);
                 document.getElementById('updateMemberData').click();
-                await waitForAsyncTasks(50);
+                await asyncHandlerTracker.allSettled();
 
                 expect(payloads).toSatisfy(v => v.length > 0);
                 const payload = payloads[payloads.length - 1];
@@ -611,10 +621,11 @@ describe('participantDetailsHelpers', () => {
             };
 
             try {
+                asyncHandlerTracker = trackAsyncEventHandlers();
                 const changedOption = { [fieldMapping.cellPhone]: '5550000000' };
                 await module.submitClickHandler(participant, changedOption);
                 document.getElementById('updateMemberData').click();
-                await waitForAsyncTasks(50);
+                await asyncHandlerTracker.allSettled();
 
                 const payload = payloads[payloads.length - 1];
                 expect(payload['query.allPhoneNo']).toEqual(['5550000000', '2223334444']);
@@ -647,10 +658,11 @@ describe('participantDetailsHelpers', () => {
             };
 
             try {
+                asyncHandlerTracker = trackAsyncEventHandlers();
                 const changedOption = { [fieldMapping.accountEmail]: 'New@Example.com' };
                 await module.submitClickHandler(participant, changedOption);
                 document.getElementById('updateMemberData').click();
-                await waitForAsyncTasks(50);
+                await asyncHandlerTracker.allSettled();
 
                 const payload = payloads[payloads.length - 1];
                 expect(payload['query.allEmails']).toEqual(['new@example.com', 'second@example.com']);
@@ -689,13 +701,14 @@ describe('participantDetailsHelpers', () => {
             };
 
             try {
+                asyncHandlerTracker = trackAsyncEventHandlers();
                 // Changed option: only toggle isIntlAltAddress to "no"
                 const changedOption = { [fieldMapping.isIntlAltAddress]: fieldMapping.no };
                 await module.submitClickHandler(participant, changedOption);
 
                 // Click to trigger handler
                 document.getElementById('updateMemberData').click();
-                await waitForAsyncTasks(25);
+                await asyncHandlerTracker.allSettled();
 
                 expect(calls).toSatisfy(v => v.length > 0);
                 const payload = calls[calls.length - 1];

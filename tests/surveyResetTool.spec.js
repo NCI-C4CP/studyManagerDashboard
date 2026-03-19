@@ -1,4 +1,4 @@
-import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
+import { setupTestSuite, createMockParticipant, waitForAsyncTasks, trackAsyncEventHandlers } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { setupSurveyResetToolPage, resetParticipantSurvey } from '../src/dataCorrectionsTool/surveyResetTool.js';
 import { participantState } from '../src/stateManager.js';
@@ -7,11 +7,13 @@ import { baseAPI } from '../src/utils.js';
 describe('surveyResetTool', () => {
     let cleanup;
     let firebaseStub;
+    let asyncHandlerTracker;
 
     beforeEach(async () => {
         const suite = await setupTestSuite();
         cleanup = suite.cleanup;
         firebaseStub = suite.firebaseStub;
+        asyncHandlerTracker = trackAsyncEventHandlers();
 
         document.body.innerHTML = `
             <div id="mainContent"></div>
@@ -20,7 +22,12 @@ describe('surveyResetTool', () => {
         `;
     });
 
-    afterEach(() => {
+    afterEach(async () => {
+        if (asyncHandlerTracker) {
+            await asyncHandlerTracker.allSettled();
+            asyncHandlerTracker.restore();
+            asyncHandlerTracker = null;
+        }
         cleanup();
     });
 
@@ -75,7 +82,7 @@ describe('surveyResetTool', () => {
             await waitForAsyncTasks();
 
             document.querySelector(`[data-survey=\"${fieldMapping.ssnStatusFlag}\"]`).click();
-            await waitForAsyncTasks();
+            await asyncHandlerTracker.allSettled();
 
             expect(document.getElementById('submitButton').disabled).toBe(true);
             expect(document.getElementById('isSurveyAlreadyResetNote').innerHTML).toContain('no survey data to be reset');
@@ -110,14 +117,14 @@ describe('surveyResetTool', () => {
             await waitForAsyncTasks();
 
             document.querySelector(`[data-survey=\"${fieldMapping.ssnStatusFlag}\"]`).click();
-            await waitForAsyncTasks();
+            await asyncHandlerTracker.allSettled();
 
             expect(document.getElementById('submitButton').disabled).toBe(false);
 
             document.getElementById('submitButton').click();
-            await waitForAsyncTasks();
+            await asyncHandlerTracker.allSettled();
             document.getElementById('confirmResetButton').click();
-            await waitForAsyncTasks();
+            await asyncHandlerTracker.allSettled();
 
             const resetCall = fetchCalls.find(call => call.url.includes('resetParticipantSurvey'));
             expect(resetCall).not.toBeNull();

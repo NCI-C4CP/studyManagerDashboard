@@ -1,4 +1,4 @@
-import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
+import { setupTestSuite, createMockParticipant, waitForAsyncTasks, trackAsyncEventHandlers } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { renderKitRequest, renderKitRequestTabContent, requestKit } from '../src/requestHomeCollectionKit.js';
 import { baseAPI } from '../src/utils.js';
@@ -15,17 +15,24 @@ const participantState = stateManager.participantState;
 describe('requestHomeCollectionKit', () => {
     let cleanup;
     let firebaseStub;
+    let asyncHandlerTracker;
 
     beforeEach(async () => {
         const suite = await setupTestSuite();
         cleanup = suite.cleanup;
         firebaseStub = suite.firebaseStub;
+        asyncHandlerTracker = trackAsyncEventHandlers();
 
         // Mock requestAnimationFrame to run immediately
         global.requestAnimationFrame = (callback) => callback();
     });
 
-    afterEach(() => {
+    afterEach(async () => {
+        if (asyncHandlerTracker) {
+            await asyncHandlerTracker.allSettled();
+            asyncHandlerTracker.restore();
+            asyncHandlerTracker = null;
+        }
         cleanup();
     });
 
@@ -143,7 +150,7 @@ describe('requestHomeCollectionKit', () => {
             expect(requestBtn).not.toBeNull();
             requestBtn.click();
 
-            await waitForAsyncTasks();
+            await asyncHandlerTracker.allSettled();
 
             const modal = document.getElementById('modalSuccess');
             expect(modal.classList.contains('show') || modal.style.display === 'block').toBe(true);
@@ -183,7 +190,7 @@ describe('requestHomeCollectionKit', () => {
             await waitForAsyncTasks();
 
             document.getElementById('requestKitBtn').click();
-            await waitForAsyncTasks(500);
+            await asyncHandlerTracker.allSettled();
 
             const currentParticipant = participantState.getParticipant();
             expect(requestCount).toBe(1);
@@ -221,7 +228,7 @@ describe('requestHomeCollectionKit', () => {
             expect(button.disabled).toBe(true);
 
             checkbox.click();
-            await waitForAsyncTasks();
+            await asyncHandlerTracker.allSettled();
             expect(button.disabled).toBe(false);
         });
     });
