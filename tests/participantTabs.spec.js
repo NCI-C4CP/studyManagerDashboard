@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import {
     setupTestEnvironment,
     teardownTestEnvironment,
@@ -67,51 +66,51 @@ describe('participantTabs', () => {
             roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
             const tabs = getVisibleTabs();
             const tabIds = tabs.map(t => t.id);
-            expect(tabIds).to.include('withdrawal');
-            expect(tabIds).to.include('pathology');
-            expect(tabIds).to.include('details');
-            expect(tabIds).to.include('summary');
-            expect(tabIds).to.include('messages');
-            expect(tabs.length).to.be.at.least(5);
+            expect(tabIds).toContain('withdrawal');
+            expect(tabIds).toContain('pathology');
+            expect(tabIds).toContain('details');
+            expect(tabIds).toContain('summary');
+            expect(tabIds).toContain('messages');
+            expect(tabs.length).toBeGreaterThanOrEqual(5);
         });
 
         it('hides withdrawal tab from non-parent users', () => {
             roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
             const tabs = getVisibleTabs();
-            expect(tabs.map(t => t.id)).to.not.include('withdrawal');
+            expect(tabs.map(t => t.id)).not.toContain('withdrawal');
         });
 
         it('hides pathology tab from helpDesk users', () => {
             roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
             const tabs = getVisibleTabs();
-            expect(tabs.map(t => t.id)).to.not.include('pathology');
+            expect(tabs.map(t => t.id)).not.toContain('pathology');
         });
 
         it('shows dataCorrections and kitRequests to helpDesk users', () => {
             roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
             const tabs = getVisibleTabs();
-            expect(tabs.map(t => t.id)).to.include('dataCorrections');
-            expect(tabs.map(t => t.id)).to.include('kitRequests');
+            expect(tabs.map(t => t.id)).toContain('dataCorrections');
+            expect(tabs.map(t => t.id)).toContain('kitRequests');
         });
 
         it('shows dataCorrections and kitRequests to coordinatingCenter users', () => {
             roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: true });
             const tabs = getVisibleTabs();
-            expect(tabs.map(t => t.id)).to.include('dataCorrections');
-            expect(tabs.map(t => t.id)).to.include('kitRequests');
+            expect(tabs.map(t => t.id)).toContain('dataCorrections');
+            expect(tabs.map(t => t.id)).toContain('kitRequests');
         });
 
         it('hides dataCorrections and kitRequests from regular users', () => {
             roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
             const tabs = getVisibleTabs();
-            expect(tabs.map(t => t.id)).to.not.include('dataCorrections');
-            expect(tabs.map(t => t.id)).to.not.include('kitRequests');
+            expect(tabs.map(t => t.id)).not.toContain('dataCorrections');
+            expect(tabs.map(t => t.id)).not.toContain('kitRequests');
         });
 
         it('always shows details, summary, and messages tabs', () => {
             roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
             const tabs = getVisibleTabs();
-            expect(tabs.map(t => t.id)).to.include.members(['details', 'summary', 'messages']);
+            expect(tabs.map(t => t.id)).toEqual(expect.arrayContaining(['details', 'summary', 'messages']));
         });
     });
 
@@ -122,37 +121,37 @@ describe('participantTabs', () => {
 
         it('renders Bootstrap tab navigation with correct structure', () => {
             const html = renderTabNavigation('details');
-            expect(html).to.include('<ul class="nav nav-tabs participant-tabs"');
-            expect(html).to.include('id="details-tab"');
+            expect(html).toContain('<ul class="nav nav-tabs participant-tabs"');
+            expect(html).toContain('id="details-tab"');
             // data-toggle="tab" was removed
-            expect(html).to.not.include('data-toggle="tab"');
+            expect(html).not.toContain('data-toggle="tab"');
         });
 
         it('marks specified tab as active', () => {
             const html = renderTabNavigation('summary');
-            expect(html).to.include('id="summary-tab"');
-            expect(html).to.include('class="nav-link active"');
-            expect(html).to.include('aria-selected="true"');
+            expect(html).toContain('id="summary-tab"');
+            expect(html).toContain('class="nav-link active"');
+            expect(html).toContain('aria-selected="true"');
         });
 
         it('renders only visible tabs based on role', () => {
             roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
             const html = renderTabNavigation('details');
-            expect(html).to.not.include('id="withdrawal-tab"');
-            expect(html).to.include('id="details-tab"');
+            expect(html).not.toContain('id="withdrawal-tab"');
+            expect(html).toContain('id="details-tab"');
         });
 
         it('defaults to details tab when activeTabId is not provided', () => {
             const html = renderTabNavigation();
-            expect(html).to.include('id="details-tab"');
-            expect(html).to.include('class="nav-link active"');
+            expect(html).toContain('id="details-tab"');
+            expect(html).toContain('class="nav-link active"');
         });
 
         it('includes proper ARIA attributes for accessibility', () => {
             const html = renderTabNavigation('details');
-            expect(html).to.include('role="tab"');
-            expect(html).to.include('aria-controls="details-content"');
-            expect(html).to.include('role="tablist"');
+            expect(html).toContain('role="tab"');
+            expect(html).toContain('aria-controls="details-content"');
+            expect(html).toContain('role="tablist"');
         });
     });
 
@@ -163,27 +162,27 @@ describe('participantTabs', () => {
 
         it('renders tab content containers with correct structure', () => {
             const html = renderTabContentContainers('details');
-            expect(html).to.include('class="tab-content participant-tab-content"');
-            expect(html).to.include('id="details-content"');
-            expect(html).to.include('class="tab-pane');
+            expect(html).toContain('class="tab-content participant-tab-content"');
+            expect(html).toContain('id="details-content"');
+            expect(html).toContain('class="tab-pane');
         });
 
         it('marks specified tab content as active', () => {
             const html = renderTabContentContainers('summary');
-            expect(html).to.include('id="summary-content"');
-            expect(html).to.include('show active');
+            expect(html).toContain('id="summary-content"');
+            expect(html).toContain('show active');
         });
 
         it('shows loading spinner for active tab', () => {
             const html = renderTabContentContainers('details');
-            expect(html).to.include('fa-spinner');
+            expect(html).toContain('fa-spinner');
         });
 
         it('renders only visible tab containers based on role', () => {
             roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
             const html = renderTabContentContainers('details');
-            expect(html).to.not.include('id="withdrawal-content"');
-            expect(html).to.include('id="details-content"');
+            expect(html).not.toContain('id="withdrawal-content"');
+            expect(html).toContain('id="details-content"');
         });
 
         it('keeps dataCorrections tab active when deep-linking into a tool', async () => {
@@ -198,8 +197,8 @@ describe('participantTabs', () => {
             await loadTabContent('dataCorrections', participant);
 
             const dataCorrectionsTab = document.getElementById('dataCorrections-tab');
-            expect(dataCorrectionsTab.classList.contains('active')).to.be.true;
-            expect(dataCorrectionsTab.getAttribute('aria-selected')).to.equal('true');
+            expect(dataCorrectionsTab.classList.contains('active')).toBe(true);
+            expect(dataCorrectionsTab.getAttribute('aria-selected')).toBe('true');
         });
 
         it('resets dataCorrections content to selector when reselecting the tab', async () => {
@@ -215,7 +214,7 @@ describe('participantTabs', () => {
             await loadTabContent('dataCorrections', participant);
 
             let container = document.getElementById('dataCorrectionsToolContainer');
-            expect(container.innerHTML).to.include('Verification Status');
+            expect(container.innerHTML).toContain('Verification Status');
 
             // Reselect base tab (no tool hash) should show selector, not tool content
             window.location.hash = '#participantDetails/dataCorrections';
@@ -223,8 +222,8 @@ describe('participantTabs', () => {
 
             container = document.getElementById('dataCorrectionsToolContainer');
             const contentWrapper = document.getElementById('dataCorrections-tab-content-inner');
-            expect(contentWrapper.innerHTML).to.include('Please select the tool you would like to use');
-            expect(container.innerHTML).to.not.include('Verification Status');
+            expect(contentWrapper.innerHTML).toContain('Please select the tool you would like to use');
+            expect(container.innerHTML).not.toContain('Verification Status');
         });
     });
 
@@ -250,7 +249,7 @@ describe('participantTabs', () => {
             const promise = loadTabContent('summary', participant);
             await waitForAsyncTasks(10); // Wait for initial render (spinner) but less than fetch delay
             const container = document.getElementById('summary-tab-content-inner');
-            expect(container.innerHTML).to.include('fa-spinner');
+            expect(container.innerHTML).toContain('fa-spinner');
             await promise;
             
             global.fetch = originalFetch;
@@ -260,7 +259,7 @@ describe('participantTabs', () => {
             document.body.innerHTML = '<div id="details-tab-content-inner"></div>';
             await loadTabContent('details', participant);
             const container = document.getElementById('details-tab-content-inner');
-            expect(container.innerHTML).to.include('participant-details-content');
+            expect(container.innerHTML).toContain('participant-details-content');
         });
 
         it('re-renders details tab when clicked to reflect updated participant state', async () => {
@@ -285,7 +284,7 @@ describe('participantTabs', () => {
             await loadTabContent('details', participantState.getParticipant());
 
             const container = document.getElementById('details-tab-content-inner');
-            expect(container.innerHTML).to.include('participant-details-content');
+            expect(container.innerHTML).toContain('participant-details-content');
         });
 
         it('loads summary tab content', async () => {
@@ -293,7 +292,7 @@ describe('participantTabs', () => {
             await loadTabContent('summary', participant, null);
             await waitForAsyncTasks(50);
             const container = document.getElementById('summary-tab-content-inner');
-            expect(container.innerHTML).to.include('Participant Summary');
+            expect(container.innerHTML).toContain('Participant Summary');
         });
 
         it('loads messages tab content', async () => {
@@ -301,7 +300,7 @@ describe('participantTabs', () => {
             await loadTabContent('messages', participant);
             await waitForAsyncTasks(50);
             const container = document.getElementById('messages-tab-content-inner');
-            expect(container.innerHTML).to.include('Participant Messages');
+            expect(container.innerHTML).toContain('Participant Messages');
         });
 
         it('handles errors gracefully with error message', async () => {
@@ -309,7 +308,7 @@ describe('participantTabs', () => {
             // Pass null participant to trigger error in summary rendering
             await loadTabContent('summary', null);
             const container = document.getElementById('summary-tab-content-inner');
-            expect(container.innerHTML).to.include('No participant data available');
+            expect(container.innerHTML).toContain('No participant data available');
         });
 
         it('logs error when container not found', async () => {
@@ -320,7 +319,7 @@ describe('participantTabs', () => {
             document.body.innerHTML = ''; // No container
             await loadTabContent('details', participant);
 
-            expect(errors.some(e => e.includes('Tab content container not found'))).to.be.true;
+            expect(errors.some(e => e.includes('Tab content container not found'))).toBe(true);
             console.error = originalError;
         });
 
@@ -328,7 +327,7 @@ describe('participantTabs', () => {
             document.body.innerHTML = '<div id="unknown-tab-content-inner"></div>';
             await loadTabContent('unknown', participant);
             const container = document.getElementById('unknown-tab-content-inner');
-            expect(container.innerHTML).to.include('Unknown tab');
+            expect(container.innerHTML).toContain('Unknown tab');
         });
     });
 
@@ -338,46 +337,46 @@ describe('participantTabs', () => {
         });
 
         it('extracts tab ID from hash', () => {
-            expect(getTabIdFromHash('#participantDetails/summary')).to.equal('summary');
-            expect(getTabIdFromHash('#participantDetails/withdrawal')).to.equal('withdrawal');
-            expect(getTabIdFromHash('#participantDetails/messages')).to.equal('messages');
+            expect(getTabIdFromHash('#participantDetails/summary')).toBe('summary');
+            expect(getTabIdFromHash('#participantDetails/withdrawal')).toBe('withdrawal');
+            expect(getTabIdFromHash('#participantDetails/messages')).toBe('messages');
         });
 
         it('defaults to details for invalid hash format', () => {
-            expect(getTabIdFromHash('#participantDetails')).to.equal('details');
-            expect(getTabIdFromHash('#')).to.equal('details');
-            expect(getTabIdFromHash('')).to.equal('details');
+            expect(getTabIdFromHash('#participantDetails')).toBe('details');
+            expect(getTabIdFromHash('#')).toBe('details');
+            expect(getTabIdFromHash('')).toBe('details');
         });
 
         it('defaults to details for unauthorized tab access', () => {
             roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
-            expect(getTabIdFromHash('#participantDetails/withdrawal')).to.equal('details');
-            expect(getTabIdFromHash('#participantDetails/dataCorrections')).to.equal('details');
+            expect(getTabIdFromHash('#participantDetails/withdrawal')).toBe('details');
+            expect(getTabIdFromHash('#participantDetails/dataCorrections')).toBe('details');
         });
 
         it('allows access to authorized tabs', () => {
             roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
-            expect(getTabIdFromHash('#participantDetails/dataCorrections')).to.equal('dataCorrections');
-            expect(getTabIdFromHash('#participantDetails/kitRequests')).to.equal('kitRequests');
+            expect(getTabIdFromHash('#participantDetails/dataCorrections')).toBe('dataCorrections');
+            expect(getTabIdFromHash('#participantDetails/kitRequests')).toBe('kitRequests');
         });
 
         it('handles hash with trailing slash', () => {
-            expect(getTabIdFromHash('#participantDetails/summary/')).to.equal('summary');
+            expect(getTabIdFromHash('#participantDetails/summary/')).toBe('summary');
         });
     });
 
     describe('updateHashForTab', () => {
         it('updates URL hash with history entry by default', () => {
             updateHashForTab('summary');
-            expect(window.location.hash).to.equal('#participantDetails/summary');
+            expect(window.location.hash).toBe('#participantDetails/summary');
         });
 
         it('updates URL hash for different tabs', () => {
             updateHashForTab('withdrawal');
-            expect(window.location.hash).to.equal('#participantDetails/withdrawal');
+            expect(window.location.hash).toBe('#participantDetails/withdrawal');
 
             updateHashForTab('messages');
-            expect(window.location.hash).to.equal('#participantDetails/messages');
+            expect(window.location.hash).toBe('#participantDetails/messages');
         });
 
         it('updates URL hash without history entry when updateHistory is false', () => {
@@ -390,7 +389,7 @@ describe('participantTabs', () => {
             
             updateHashForTab('summary', false);
             
-            expect(replaceStateCalled).to.be.true;
+            expect(replaceStateCalled).toBe(true);
             window.history.replaceState = originalReplaceState;
         });
     });
@@ -418,23 +417,23 @@ describe('participantTabs', () => {
             const summaryPane = document.getElementById('summary-content');
             const detailsPane = document.getElementById('details-content');
 
-            expect(summaryTab.classList.contains('active')).to.be.true;
-            expect(summaryTab.getAttribute('aria-selected')).to.equal('true');
-            expect(detailsTab.classList.contains('active')).to.be.false;
-            expect(detailsTab.getAttribute('aria-selected')).to.equal('false');
-            expect(summaryPane.classList.contains('show')).to.be.true;
-            expect(summaryPane.classList.contains('active')).to.be.true;
-            expect(detailsPane.classList.contains('show')).to.be.false;
-            expect(detailsPane.classList.contains('active')).to.be.false;
+            expect(summaryTab.classList.contains('active')).toBe(true);
+            expect(summaryTab.getAttribute('aria-selected')).toBe('true');
+            expect(detailsTab.classList.contains('active')).toBe(false);
+            expect(detailsTab.getAttribute('aria-selected')).toBe('false');
+            expect(summaryPane.classList.contains('show')).toBe(true);
+            expect(summaryPane.classList.contains('active')).toBe(true);
+            expect(detailsPane.classList.contains('show')).toBe(false);
+            expect(detailsPane.classList.contains('active')).toBe(false);
         });
 
         it('handles missing tab gracefully', () => {
-            expect(() => activateTab('nonexistent')).to.not.throw();
+            expect(() => activateTab('nonexistent')).not.toThrow();
         });
 
         it('handles missing nav list gracefully', () => {
             document.body.innerHTML = '<a id="summary-tab" class="nav-link">Summary</a>';
-            expect(() => activateTab('summary')).to.not.throw();
+            expect(() => activateTab('summary')).not.toThrow();
         });
     });
 
@@ -445,7 +444,15 @@ describe('participantTabs', () => {
             participant = createMockParticipant('test-123');
             roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
 
+            // Stub dynamic import hook to prevent renderParticipantDetails from firing
+            // during tab click tests (it would replace the DOM and cause unhandled rejections)
+            global.__dynamicImportForParticipantTabs = async () => ({
+                renderParticipantDetails: () => {},
+            });
+
             document.body.innerHTML = `
+                <div id="mainContent"></div>
+                <div id="navBarLinks"></div>
                 <ul class="participant-tabs">
                     <li class="nav-item">
                         <a id="details-tab" class="nav-link" href="#details-content">Details</a>
@@ -465,19 +472,24 @@ describe('participantTabs', () => {
             `;
         });
 
-        it('initializes without errors when all tabs are present', () => {
-            expect(() => initializeTabListeners(participant)).to.not.throw();
+        afterEach(() => {
+            delete global.__dynamicImportForParticipantTabs;
         });
 
-        it('attaches event listeners to all visible tabs', () => {
+        it('initializes without errors when all tabs are present', () => {
+            expect(() => initializeTabListeners(participant)).not.toThrow();
+        });
+
+        it('attaches event listeners to all visible tabs', async () => {
             // Test event delegation by simulating a click
             initializeTabListeners(participant);
 
             const detailsTab = document.getElementById('details-tab');
             detailsTab.click();
-            
+            await waitForAsyncTasks();
+
             // Verify active class
-            expect(detailsTab.classList.contains('active')).to.be.true;
+            expect(detailsTab.classList.contains('active')).toBe(true);
         });
 
         it('handles missing tab elements gracefully', () => {
@@ -487,7 +499,7 @@ describe('participantTabs', () => {
 
             document.body.innerHTML = '<div id="details-tab-content-inner"></div>';
 
-            expect(() => initializeTabListeners(participant)).to.not.throw();
+            expect(() => initializeTabListeners(participant)).not.toThrow();
 
             console.warn = originalWarn;
         });
@@ -519,7 +531,7 @@ describe('participantTabs', () => {
 
             await new Promise((resolve) => setTimeout(resolve, 0));
 
-            expect(calledWithPending).to.be.true;
+            expect(calledWithPending).toBe(true);
 
             global.__dynamicImportForParticipantTabs = originalHook;
         });
@@ -531,13 +543,13 @@ describe('participantTabs', () => {
             document.body.innerHTML = '<div id="details-tab-content-inner"></div>';
             await loadTabContent('details', null);
             const detailsContainer = document.getElementById('details-tab-content-inner');
-            expect(detailsContainer.innerHTML).to.include('participant-details-content');
+            expect(detailsContainer.innerHTML).toContain('participant-details-content');
 
             // Summary tab does require participant
             document.body.innerHTML = '<div id="summary-tab-content-inner"></div>';
             await loadTabContent('summary', null);
             const summaryContainer = document.getElementById('summary-tab-content-inner');
-            expect(summaryContainer.innerHTML).to.include('No participant data available');
+            expect(summaryContainer.innerHTML).toContain('No participant data available');
         });
 
         it('handles rapid tab ID extraction from different hash formats', () => {
@@ -555,7 +567,7 @@ describe('participantTabs', () => {
 
             testCases.forEach(([hash, expected]) => {
                 const result = getTabIdFromHash(hash);
-                expect(result).to.equal(expected, `Failed for hash: ${hash}, got: ${result}`);
+                expect(result).toBe(expected, `Failed for hash: ${hash}, got: ${result}`);
             });
         });
     });

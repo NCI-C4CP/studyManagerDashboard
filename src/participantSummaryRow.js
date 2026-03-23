@@ -10,9 +10,9 @@ import fieldMapping from './fieldToConceptIdMapping.js';
 
 // Icon and color constants for Icon table column.
 const ICONS = {
-    CHECKMARK: "fa fa-check fa-2x",
-    HASHTAG: "fa fa-hashtag fa-2x",
-    X: "fa fa-times fa-2x",
+    CHECKMARK: "fa-solid fa-check fa-2x",
+    HASHTAG: "fa-solid fa-hashtag fa-2x",
+    X: "fa-solid fa-xmark fa-2x",
 };
 
 const COLORS = {

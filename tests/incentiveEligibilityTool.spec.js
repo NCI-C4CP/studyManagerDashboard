@@ -1,19 +1,25 @@
-import { expect } from 'chai';
-import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
+import { setupTestSuite, createMockParticipant, waitForAsyncTasks, trackAsyncEventHandlers } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { setupIncentiveEligibilityToolPage } from '../src/dataCorrectionsTool/incentiveEligibilityTool.js';
 
 describe('incentiveEligibilityTool', () => {
     let cleanup;
+    let asyncHandlerTracker;
 
     beforeEach(async () => {
         const suite = await setupTestSuite({
             domFixtures: [{ id: 'mainContent' }]
         });
         cleanup = suite.cleanup;
+        asyncHandlerTracker = trackAsyncEventHandlers();
     });
 
-    afterEach(() => {
+    afterEach(async () => {
+        if (asyncHandlerTracker) {
+            await asyncHandlerTracker.allSettled();
+            asyncHandlerTracker.restore();
+            asyncHandlerTracker = null;
+        }
         cleanup();
     });
 
@@ -54,26 +60,26 @@ describe('incentiveEligibilityTool', () => {
         await waitForAsyncTasks();
 
         const baselineOption = document.querySelector(`[data-payment="${fieldMapping.baseline}"]`);
-        expect(baselineOption).to.exist;
+        expect(baselineOption).not.toBeNull();
         baselineOption.click();
-        await waitForAsyncTasks();
+        await asyncHandlerTracker.allSettled();
 
         const dateInput = document.getElementById('dateOfEligibilityInput');
-        expect(dateInput).to.exist;
-        expect(dateInput.disabled).to.be.false;
+        expect(dateInput).not.toBeNull();
+        expect(dateInput.disabled).toBe(false);
 
         dateInput.value = '2024-01-02';
         dateInput.dispatchEvent(new window.Event('change', { bubbles: true }));
 
         const confirmBtn = document.getElementById('confirmUpdateEligibility');
-        expect(confirmBtn).to.exist;
+        expect(confirmBtn).not.toBeNull();
         confirmBtn.click();
-        await waitForAsyncTasks();
+        await asyncHandlerTracker.allSettled();
 
         const updateCall = fetchCalls.find(call => call.url.includes('updateParticipantIncentiveEligibility'));
-        expect(updateCall).to.exist;
+        expect(updateCall).not.toBeNull();
         const body = JSON.parse(updateCall.options.body);
-        expect(body.dateOfEligibilityInput).to.include('2024-01-02');
+        expect(body.dateOfEligibilityInput).toContain('2024-01-02');
     });
 
     it('disables submit and shows already-eligible note when participant is already eligible', async () => {
@@ -104,12 +110,12 @@ describe('incentiveEligibilityTool', () => {
 
         const baselineOption = document.querySelector(`[data-payment="${fieldMapping.baseline}"]`);
         baselineOption.click();
-        await waitForAsyncTasks();
+        await asyncHandlerTracker.allSettled();
 
         const submitButton = document.getElementById('submitButton');
-        expect(submitButton.disabled).to.equal(true);
+        expect(submitButton.disabled).toBe(true);
 
         const note = document.getElementById('isIncentiveEligibleNote');
-        expect(note.innerHTML).to.contain('already incentive eligible');
+        expect(note.innerHTML).toContain('already incentive eligible');
     });
 });

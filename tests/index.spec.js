@@ -1,10 +1,8 @@
-import { expect } from 'chai';
 import { setupTestEnvironment, teardownTestEnvironment, installFirebaseStub, createDOMFixture, cleanupDOMFixture, clearAllState, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import * as stateManagerModule from '../src/stateManager.js';
 import { setParticipantLookupNavRequest } from '../src/navigationBar.js';
 
-describe('router', function () {
-  this.timeout(5000);
+describe('router', () => {
   let firebaseStub;
   let mainContent;
   let navBarLinks;
@@ -49,8 +47,8 @@ describe('router', function () {
     await waitForAsyncTasks(20);
 
     const cached = searchState.getSearchResults();
-    expect(cached).to.not.equal(null);
-    expect(cached.length).to.equal(1);
+    expect(cached).not.toBeNull();
+    expect(cached.length).toBe(1);
   });
 
   it('shows fresh lookup form when nav intent is set', async () => {
@@ -71,7 +69,7 @@ describe('router', function () {
     await waitForAsyncTasks(20);
 
     const main = document.getElementById('mainContent');
-    expect(main).to.not.equal(null);
+    expect(main).not.toBeNull();
   });
 
   it('redirects unauthenticated users to login route', async () => {
@@ -82,7 +80,7 @@ describe('router', function () {
     await router();
     await waitForAsyncTasks(20);
 
-    expect(window.location.hash).to.equal('#login');
+    expect(window.location.hash).toBe('#login');
   });
 
   describe('participant details routing', () => {
@@ -112,21 +110,79 @@ describe('router', function () {
       const summaryRoute = '#participantDetails/summary';
       const withdrawalRoute = '#participantDetails/withdrawal';
 
-      expect(detailsRoute.startsWith('#participantDetails')).to.be.true;
-      expect(summaryRoute.startsWith('#participantDetails')).to.be.true;
-      expect(withdrawalRoute.startsWith('#participantDetails')).to.be.true;
+      expect(detailsRoute.startsWith('#participantDetails')).toBe(true);
+      expect(summaryRoute.startsWith('#participantDetails')).toBe(true);
+      expect(withdrawalRoute.startsWith('#participantDetails')).toBe(true);
     });
 
     it('extracts tab IDs from participant details routes', () => {
-      expect('#participantDetails/summary'.split('/')[1]).to.equal('summary');
-      expect('#participantDetails/withdrawal'.split('/')[1]).to.equal('withdrawal');
-      expect('#participantDetails/messages'.split('/')[1]).to.equal('messages');
-      expect('#participantDetails'.split('/')[1]).to.be.undefined;
+      expect('#participantDetails/summary'.split('/')[1]).toBe('summary');
+      expect('#participantDetails/withdrawal'.split('/')[1]).toBe('withdrawal');
+      expect('#participantDetails/messages'.split('/')[1]).toBe('messages');
+      expect('#participantDetails'.split('/')[1]).toBeUndefined();
     });
 
     it('identifies data corrections route as participant-dependent', () => {
       const route = '#participantDetails/dataCorrections';
-      expect(route.startsWith('#participantDetails')).to.be.true;
+      expect(route.startsWith('#participantDetails')).toBe(true);
+    });
+  });
+
+  describe('#mySamples route', () => {
+    beforeEach(() => {
+      global.showdown = { Converter: function () { this.makeHtml = (str) => str; } };
+      global.DOMPurify = { sanitize: (str) => str };
+      global.fetch = async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 200, data: [{ id: 'site-1', siteAcronym: 'NCI', siteName: 'National Cancer Institute', saved: null, published: { en: 'Hello', es: 'Hola' } }] }),
+      });
+    });
+
+    afterEach(() => {
+      delete global.showdown;
+      delete global.DOMPurify;
+      delete global.fetch;
+      const { appState } = stateManagerModule?.default ?? stateManagerModule;
+      appState.setState((state) => ({ ...state, mySamples: null }));
+    });
+
+    it('renders My Samples page for #mySamples route', async () => {
+      window.location.hash = '#mySamples';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main).not.toBeNull();
+      expect(main.innerHTML).toContain('My Samples');
+    });
+
+    it('renders site cards when data is returned', async () => {
+      window.location.hash = '#mySamples';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main.innerHTML).toContain('NCI');
+      expect(main.innerHTML).toContain('National Cancer Institute');
+    });
+
+    it('renders empty state when no data is returned', async () => {
+      global.fetch = async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 200, data: [] }),
+      });
+
+      window.location.hash = '#mySamples';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main.innerHTML).toContain('My Samples Data Not Found');
     });
   });
 
