@@ -190,7 +190,7 @@ export const getActiveColumns = () => {
 
 const renderBubbleButton = (buttonKey, buttonLabel) => {    
     const dataValue = typeof buttonKey === 'number' ? buttonKey : `${buttonKey}`;
-    return `<button name="column-filter" class="filter-btn sub-div-shadow mr-2 mb-2" data-column="${dataValue}">${buttonLabel}</button>`;
+    return `<button name="column-filter" class="filter-btn sub-div-shadow me-2 mb-2" data-column="${dataValue}">${buttonLabel}</button>`;
 };
 
 const renderBubbleCategory = (category, isFirst = false) => {
@@ -203,7 +203,7 @@ const renderBubbleCategory = (category, isFirst = false) => {
         <details class="bubble-category" data-category-key="${category.key}"${openAttribute}>
             <summary class="bubble-category-summary d-flex justify-content-between align-items-center">
                 <span>${category.label}</span>
-                <span class="badge badge-pill badge-info category-count d-none" data-category-count="${category.key}"></span>
+                <span class="badge rounded-pill text-bg-info category-count d-none" data-category-count="${category.key}"></span>
             </summary>
             <div class="bubble-category-body d-flex flex-wrap align-items-center" style="margin-top: 1rem;">
                 ${buttons}
@@ -224,14 +224,14 @@ const renderSearchBubbles = () => {
                 <div class="sub-div-shadow p-3 mb-3 rounded" id="bubbleFiltersContainer">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center">
-                            <h5 class="mb-0 mr-2">Fields to Display</h5>
-                            <button class="btn btn-outline-dark btn-sm ml-2" id="resetToDefaultFieldsButton">Reset To Default Fields</button>
+                            <h5 class="mb-0 me-2">Fields to Display</h5>
+                            <button class="btn btn-outline-dark btn-sm ms-2" id="resetToDefaultFieldsButton">Reset To Default Fields</button>
                         </div>
                         <div class="d-flex align-items-center">
-                            <span id="bubbleFiltersTotalBadge" class="badge badge-pill badge-info d-none mr-3 ml-3"></span>
+                            <span id="bubbleFiltersTotalBadge" class="badge rounded-pill text-bg-info d-none me-3 ms-3"></span>
                             <button type="button" class="btn btn-link p-0 text-decoration-none" id="toggleBubbleFilters" aria-expanded="${filtersExpanded}" aria-controls="bubbleFiltersBody">
-                                <span id="bubbleFiltersToggleLabel" class="mr-2">${toggleLabel}</span>
-                                <i id="bubbleFiltersToggleIcon" class="fa fa-caret-${toggleIconDirection}" aria-hidden="true"></i>
+                                <span id="bubbleFiltersToggleLabel" class="me-2">${toggleLabel}</span>
+                                <i id="bubbleFiltersToggleIcon" class="fa-solid fa-caret-${toggleIconDirection}" aria-hidden="true"></i>
                             </button>
                         </div>
                     </div>
@@ -267,14 +267,14 @@ export const renderTable = (data, source) => {
                                     <button type="button" class="btn btn-outline-info btn-lg" id="passiveFilter">Passive</button>
                                 </div>
 
-                                <form class="form-inline align-items-center" id="dateFilters">
-                                    <label for="startDate" class="font-weight-bold mr-3">Verification Status Time:</label>
-                                    <div class="form-group mr-2">
-                                        <span class="small text-muted mr-1">From:</span>
+                                <form class="d-flex flex-wrap align-items-center gap-2" id="dateFilters">
+                                    <label for="startDate" class="fw-bold me-3">Verification Status Time:</label>
+                                    <div class="d-flex align-items-center me-2">
+                                        <span class="small text-muted me-1">From:</span>
                                         <input type="date" class="form-control" id="startDate" style="width:160px; height:40px;">
                                     </div>
-                                    <div class="form-group mr-2">
-                                        <span class="small text-muted mr-1">To:</span>
+                                    <div class="d-flex align-items-center me-2">
+                                        <span class="small text-muted me-1">To:</span>
                                         <input type="date" class="form-control" id="endDate" style="width:160px; height:40px;">
                                     </div>
                                     <button type="button" class="btn btn-outline-danger" id="resetDate">Reset date filters</button>
@@ -290,7 +290,7 @@ export const renderTable = (data, source) => {
     template += `
                 <div class="row">
                     <div class="col">
-                        <div class="float-left">
+                        <div class="float-start">
                             ${backToSearch}
                         </div>
                     </div>
@@ -301,7 +301,7 @@ export const renderTable = (data, source) => {
                             <div id="paginationContainer"></div>
                         </div>
                     
-                        <div class="modal fade" id="modalShowMoreData" data-keyboard="false" data-backdrop="static" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+                        <div class="modal fade" id="modalShowMoreData" data-bs-keyboard="false" data-bs-backdrop="static" tabindex="-1" role="dialog" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                                 <div class="modal-content sub-div-shadow">
                                     <div class="modal-header" id="modalHeader"></div>
@@ -630,7 +630,7 @@ const paginationTemplate = () => {
         <nav aria-label="Participant data pagination">
             <div class="pagination sub-div-shadow d-flex align-items-center" style="border-radius:6px; background-color:white;">
                 <button id="previousLink" class="btn page-item flex-grow-1" ${pageNumber === 1 ? `disabled` : ``} style="border-right:1px solid #dee2e6; min-width:120px; text-align:center;">
-                    <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
                     &nbsp;Previous
                 </button>
                 
@@ -640,7 +640,7 @@ const paginationTemplate = () => {
                 
                 <button id="nextLink" class="btn page-item flex-grow-1" ${cursorHistory[pageNumber - 1] ? `` : `disabled`} style="border-left:1px solid #dee2e6; min-width:120px; text-align:center;">
                     Next&nbsp;
-                    <i class="fa fa-arrow-right" aria-hidden="true"></i>
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                 </button>
             </div>
         </nav>
@@ -654,7 +654,7 @@ const buildSearchResultsTableHeader = () => {
         return `<th class="sticky-row">${columnName}</th>`;
     });
 
-    return `<thead class="thead-dark sticky-row">
+    return `<thead class="table-dark sticky-row">
             <tr>
                 <th class="sticky-row">Select</th>
                 ${headerStringArray.join("")}
@@ -696,7 +696,7 @@ const addEventShowMoreInfo = (data) => {
             const header = document.getElementById('modalHeader');
             const body = document.getElementById('modalBody');
             const user = filteredData[0];
-            header.innerHTML = `<h4>${user[fieldMapping.fName]} ${user[fieldMapping.lName]}</h4><button type="button" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`
+            header.innerHTML = `<h4>${user[fieldMapping.fName]} ${user[fieldMapping.lName]}</h4><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>`
             let template = '<div>';
             for(let key in user){
                 if(typeof user[key] === 'object') {
@@ -825,9 +825,7 @@ const alertTrigger = () => {
     template += `
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             No results found!
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-        </button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>`
     alertList.innerHTML = template;
     return template;

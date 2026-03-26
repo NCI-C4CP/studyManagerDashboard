@@ -147,17 +147,12 @@ const showWarningModal = (headingText, msg, stringArray, modalNewStatus = "", pr
   warningDiv.appendChild(ulEle);
   document.querySelector("#proceedBtn").textContent = proceedBtnText;
   modalStatus = modalNewStatus;
-  // Todo: Remove JQuery after migration to Bootstrap 5
-  // const modal = new bootstrap.Modal("#warningModal", { backdrop: "static", keyboard: false });
-  // modal.show();
-  $("#warningModal").modal({ backdrop: "static", keyboard: false });
+  const modal = new bootstrap.Modal(document.getElementById("warningModal"), { backdrop: "static", keyboard: false });
+  modal.show();
 };
 
 const hideWarningModal = () => {
-  // Todo: Remove JQuery after migration to Bootstrap 5
-  // const modal = new bootstrap.Modal("#warningModal", { backdrop: "static", keyboard: false });
-  // modal.hide();
-  $("#warningModal").modal("hide");
+  bootstrap.Modal.getInstance(document.getElementById("warningModal"))?.hide();
 };
 
 const selectNewFiles = (newFiles) => {
