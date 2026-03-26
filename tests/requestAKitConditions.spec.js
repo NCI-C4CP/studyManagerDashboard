@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { setupTestSuite, waitForAsyncTasks } from './helpers.js';
 import { renderRequestAKitConditions, processRequestAKitConditions, storeRequestAKitConditions } from '../src/requestAKitConditions.js';
 import { baseAPI } from '../src/utils.js';
@@ -51,10 +50,10 @@ describe('requestAKitConditions', () => {
             await renderRequestAKitConditions();
             
             const content = document.getElementById('mainContent').innerHTML;
-            expect(content).to.include('Set Kit Eligibility');
-            expect(content).to.include('Add Condition');
-            expect(content).to.include('Add Sort');
-            expect(content).to.include('Save Changes');
+            expect(content).toContain('Set Kit Eligibility');
+            expect(content).toContain('Add Condition');
+            expect(content).toContain('Add Sort');
+            expect(content).toContain('Save Changes');
         });
     });
 
@@ -71,7 +70,7 @@ describe('requestAKitConditions', () => {
             };
 
             await processRequestAKitConditions(false);
-            expect(capturedUrl).to.include('api=processRequestAKitConditions&updateDb=false');
+            expect(capturedUrl).toContain('api=processRequestAKitConditions&updateDb=false');
         });
 
         it('calls processing API correctly for live run', async () => {
@@ -86,7 +85,7 @@ describe('requestAKitConditions', () => {
             };
 
             await processRequestAKitConditions(true);
-            expect(capturedUrl).to.include('api=processRequestAKitConditions&updateDb=true');
+            expect(capturedUrl).toContain('api=processRequestAKitConditions&updateDb=true');
         });
     });
 
@@ -106,8 +105,8 @@ describe('requestAKitConditions', () => {
             };
 
             await storeRequestAKitConditions(schema);
-            expect(capturedUrl).to.include('api=updateRequestAKitConditions');
-            expect(capturedBody.data).to.deep.equal(schema);
+            expect(capturedUrl).toContain('api=updateRequestAKitConditions');
+            expect(capturedBody.data).toEqual(schema);
         });
     });
 });

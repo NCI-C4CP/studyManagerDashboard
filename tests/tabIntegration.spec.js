@@ -1,16 +1,17 @@
-import { expect } from 'chai';
 import {
     setupTestEnvironment,
     teardownTestEnvironment,
     installFirebaseStub,
     createMockParticipant,
     waitForAsyncTasks,
-    clearAllState
+    clearAllState,
+    trackAsyncEventHandlers
 } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 
-describe('Tab Integration Tests', function () {
-    this.timeout(10000);
+vi.setConfig({ testTimeout: 10000 });
+
+describe('Tab Integration Tests', () => {
     let firebaseStub;
     let participant;
     let renderParticipantDetails;
@@ -18,6 +19,7 @@ describe('Tab Integration Tests', function () {
     let getTabIdFromHash;
     let roleState;
     let participantState;
+    let asyncHandlerTracker;
 
     const loadModules = async () => {
         if (renderParticipantDetails && activateTab && getTabIdFromHash) return;
@@ -35,7 +37,8 @@ describe('Tab Integration Tests', function () {
 
     beforeEach(async () => {
         setupTestEnvironment();
-        
+        asyncHandlerTracker = trackAsyncEventHandlers();
+
         // Mock fetch globally
         global.fetch = async () => ({
             ok: true,
@@ -87,6 +90,11 @@ describe('Tab Integration Tests', function () {
     });
 
     afterEach(async () => {
+        if (asyncHandlerTracker) {
+            await asyncHandlerTracker.allSettled();
+            asyncHandlerTracker.restore();
+            asyncHandlerTracker = null;
+        }
         delete global.fetch;
         await participantState.clearParticipant();
         delete global.$;
@@ -101,23 +109,23 @@ describe('Tab Integration Tests', function () {
             await waitForAsyncTasks(50);
 
             let main = document.getElementById('mainContent');
-            expect(main.innerHTML).to.include('participant-tabs');
-            expect(main.innerHTML).to.include('details-tab');
+            expect(main.innerHTML).toContain('participant-tabs');
+            expect(main.innerHTML).toContain('details-tab');
 
             // Verify all visible tabs are rendered
             const detailsTab = document.getElementById('details-tab');
             const summaryTab = document.getElementById('summary-tab');
             const messagesTab = document.getElementById('messages-tab');
 
-            expect(detailsTab).to.exist;
-            expect(summaryTab).to.exist;
-            expect(messagesTab).to.exist;
+            expect(detailsTab).not.toBeNull();
+            expect(summaryTab).not.toBeNull();
+            expect(messagesTab).not.toBeNull();
 
             // Verify details tab content is loaded
             const detailsContent = document.getElementById('details-tab-content-inner');
-            expect(detailsContent).to.exist;
+            expect(detailsContent).not.toBeNull();
             // Check for form content
-            expect(detailsContent.innerHTML).to.include('Participant Details');
+            expect(detailsContent.innerHTML).toContain('Participant Details');
         });
 
         it('maintains tab state when navigating back with browser button', async () => {
@@ -126,18 +134,18 @@ describe('Tab Integration Tests', function () {
             await renderParticipantDetails(participant, {}, 'summary');
             await waitForAsyncTasks(50);
 
-            expect(window.location.hash).to.include('summary');
+            expect(window.location.hash).toContain('summary');
 
             // Verify summary tab is active
             const main = document.getElementById('mainContent');
-            expect(main.innerHTML).to.include('participant-tabs');
+            expect(main.innerHTML).toContain('participant-tabs');
 
             // Navigate back to details
             window.location.hash = '#participantDetails/details';
             await renderParticipantDetails(participant, {}, 'details');
             await waitForAsyncTasks(50);
 
-            expect(window.location.hash).to.include('details');
+            expect(window.location.hash).toContain('details');
         });
 
         it('handles rapid tab switching without errors', async () => {
@@ -160,13 +168,13 @@ describe('Tab Integration Tests', function () {
                 await waitForAsyncTasks(50);
 
                 // Should not have thrown any errors
-                expect(errors.length).to.equal(0);
+                expect(errors.length).toBe(0);
             } finally {
                 console.error = originalError;
             }
 
             const main = document.getElementById('mainContent');
-            expect(main).to.exist;
+            expect(main).not.toBeNull();
         });
 
         it('loads content only once per tab (caching)', async () => {
@@ -175,13 +183,14 @@ describe('Tab Integration Tests', function () {
 
             // Click summary tab
             const summaryTab = document.getElementById('summary-tab');
-            expect(summaryTab).to.exist;
+            expect(summaryTab).not.toBeNull();
 
             summaryTab.click();
-            await waitForAsyncTasks(500);
+            await asyncHandlerTracker.allSettled();
+            await waitForAsyncTasks(200);
 
             const summaryContent = document.getElementById('summary-tab-content-inner');
-            expect(summaryContent.innerHTML).to.include('Participant Summary');
+            expect(summaryContent.innerHTML).toContain('Participant Summary');
 
             // Store content
             const firstContent = summaryContent.innerHTML;
@@ -189,13 +198,13 @@ describe('Tab Integration Tests', function () {
             // Click away and back to summary
             const detailsTab = document.getElementById('details-tab');
             detailsTab.click();
-            await waitForAsyncTasks(50);
+            await asyncHandlerTracker.allSettled();
 
             summaryTab.click();
-            await waitForAsyncTasks(50);
+            await asyncHandlerTracker.allSettled();
 
             // Content should be the same (cached, not reloaded)
-            expect(summaryContent.innerHTML).to.equal(firstContent);
+            expect(summaryContent.innerHTML).toBe(firstContent);
         });
 
         it('respects role-based tab visibility in full workflow', async () => {
@@ -207,12 +216,12 @@ describe('Tab Integration Tests', function () {
 
             // Withdrawal tab should not be visible
             const withdrawalTab = document.getElementById('withdrawal-tab');
-            expect(withdrawalTab).to.be.null;
+            expect(withdrawalTab).toBeNull();
 
             // Details, summary, messages should be visible
-            expect(document.getElementById('details-tab')).to.exist;
-            expect(document.getElementById('summary-tab')).to.exist;
-            expect(document.getElementById('messages-tab')).to.exist;
+            expect(document.getElementById('details-tab')).not.toBeNull();
+            expect(document.getElementById('summary-tab')).not.toBeNull();
+            expect(document.getElementById('messages-tab')).not.toBeNull();
         });
 
         it('handles deep linking to specific tab', async () => {
@@ -220,14 +229,14 @@ describe('Tab Integration Tests', function () {
             window.location.hash = '#participantDetails/summary';
 
             const tabId = getTabIdFromHash(window.location.hash);
-            expect(tabId).to.equal('summary');
+            expect(tabId).toBe('summary');
 
             await renderParticipantDetails(participant, {}, tabId);
             await waitForAsyncTasks(50);
 
             // Verify summary tab is rendered
             const main = document.getElementById('mainContent');
-            expect(main.innerHTML).to.include('summary-tab');
+            expect(main.innerHTML).toContain('summary-tab');
         });
 
         it('prevents unauthorized tab access via URL', async () => {
@@ -238,7 +247,7 @@ describe('Tab Integration Tests', function () {
             const tabId = getTabIdFromHash(window.location.hash);
 
             // Should default to 'details' instead of 'withdrawal'
-            expect(tabId).to.equal('details');
+            expect(tabId).toBe('details');
         });
     });
 
@@ -256,7 +265,7 @@ describe('Tab Integration Tests', function () {
 
                 // Should have handled gracefully
                 const main = document.getElementById('mainContent');
-                expect(main).to.exist;
+                expect(main).not.toBeNull();
             } finally {
                 console.error = originalError;
             }
@@ -275,14 +284,14 @@ describe('Tab Integration Tests', function () {
             const messagesTab = document.getElementById('messages-tab');
             messagesTab.click();
 
-            await waitForAsyncTasks(100);
+            await asyncHandlerTracker.allSettled();
 
             // Both should complete without errors
             const summaryContent = document.getElementById('summary-tab-content-inner');
             const messagesContent = document.getElementById('messages-tab-content-inner');
 
-            expect(summaryContent.innerHTML).to.not.be.empty;
-            expect(messagesContent.innerHTML).to.not.be.empty;
+            expect(summaryContent.innerHTML).not.toBe('');
+            expect(messagesContent.innerHTML).not.toBe('');
         });
 
         it('handles network errors during content load gracefully', async () => {
@@ -296,18 +305,19 @@ describe('Tab Integration Tests', function () {
             // Use messages tab which is more likely to propagate error than summary
             const messagesTab = document.getElementById('messages-tab');
             messagesTab.click();
-            await waitForAsyncTasks(300);
+            await asyncHandlerTracker.allSettled();
+            await waitForAsyncTasks(200);
 
             const messagesContent = document.getElementById('messages-tab-content-inner');
             // Should show error message instead of crashing
-            expect(messagesContent.innerHTML).to.include('Error Loading Content');
+            expect(messagesContent.innerHTML).toContain('Error Loading Content');
 
             global.fetch = originalFetch;
         });
 
         it('handles tab activation when tab element is missing', () => {
             // Activate non-existent tab
-            expect(() => activateTab('nonexistent')).to.not.throw();
+            expect(() => activateTab('nonexistent')).not.toThrow();
         });
 
         it('handles hash changes for invalid tab IDs', () => {
@@ -315,7 +325,7 @@ describe('Tab Integration Tests', function () {
             const tabId = getTabIdFromHash(window.location.hash);
 
             // Default to 'details'
-            expect(tabId).to.equal('details');
+            expect(tabId).toBe('details');
         });
     });
 
@@ -330,10 +340,10 @@ describe('Tab Integration Tests', function () {
             // Switch to summary tab
             const summaryTab = document.getElementById('summary-tab');
             summaryTab.click();
-            await waitForAsyncTasks(50);
+            await asyncHandlerTracker.allSettled();
 
             // Hash should update (via updateHashForTab in event handler)
-            expect(window.location.hash).to.include('participantDetails');
+            expect(window.location.hash).toContain('participantDetails');
         });
 
         it('supports forward/back navigation between tabs', async () => {
@@ -350,12 +360,12 @@ describe('Tab Integration Tests', function () {
             // Go back to summary
             window.location.hash = '#participantDetails/summary';
             const tabId = getTabIdFromHash(window.location.hash);
-            expect(tabId).to.equal('summary');
+            expect(tabId).toBe('summary');
 
             // Go back to details
             window.location.hash = '#participantDetails/details';
             const tabId2 = getTabIdFromHash(window.location.hash);
-            expect(tabId2).to.equal('details');
+            expect(tabId2).toBe('details');
         });
     });
 
@@ -367,7 +377,7 @@ describe('Tab Integration Tests', function () {
             await waitForAsyncTasks(50);
 
             const dataCorrectionsTab = document.getElementById('dataCorrections-tab');
-            expect(dataCorrectionsTab).to.exist;
+            expect(dataCorrectionsTab).not.toBeNull();
         });
 
         it('allows coordinatingCenter users to access kitRequests tab', async () => {
@@ -377,7 +387,7 @@ describe('Tab Integration Tests', function () {
             await waitForAsyncTasks(50);
 
             const kitRequestsTab = document.getElementById('kitRequests-tab');
-            expect(kitRequestsTab).to.exist;
+            expect(kitRequestsTab).not.toBeNull();
         });
 
         it('hides pathology tab from helpDesk users', async () => {
@@ -387,7 +397,7 @@ describe('Tab Integration Tests', function () {
             await waitForAsyncTasks(50);
 
             const pathologyTab = document.getElementById('pathology-tab');
-            expect(pathologyTab).to.be.null;
+            expect(pathologyTab).toBeNull();
         });
     });
 });
