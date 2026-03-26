@@ -33,7 +33,7 @@ export const renderVerificationCorrections = (participant) => {
                 <div id="root root-margin">
                     <div class="col-lg">
                     <div id="alert_placeholder" class="dataCorrectionsAlert"></div>
-                        <div class="row form-row m-3">
+                        <div class="row m-3">
                             <div>                    
                                 <div style="position:relative; left:20px; top:2px;">
                                     <br />
@@ -41,7 +41,7 @@ export const renderVerificationCorrections = (participant) => {
                                     <p>- Current Verification Status: <b>${verificationStatusMapping[participant[fieldMapping.verifiedFlag]]}</b></p>
                                     <div class="dropdown dropright" id="verificationDropdownLookup1">
                                         - Update Verification Type:
-                                        <button class="btn btn-info dropdown-toggle" type="button" id="dropdownVerification" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" 
+                                        <button class="btn btn-info dropdown-toggle" type="button" id="dropdownVerification" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" 
                                         ${participant[fieldMapping.verifiedFlag] === fieldMapping.notYetVerified ? `disabled` : ``}> Select</button>
                                         <ul class="dropdown-menu" id="dropdownMenuButtonVerificationOptns" aria-labelledby="dropdownMenuButton1">
                                             <li><a class="dropdown-item" data-cid='select' id="slct">Select</a></li>
@@ -65,7 +65,7 @@ export const renderVerificationCorrections = (participant) => {
                                     <p>- Current Duplicate Type: <b>${keyToDuplicateType[participant['state'][fieldMapping.duplicateType]] || ``}</b></p>
                                     <div class="dropdown dropright" id="duplicateTypeDropdownLookup">
                                         - Update Duplicate Type:
-                                        <button class="btn btn-info dropdown-toggle" type="button" id="dropdownDuplicateType" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" 
+                                        <button class="btn btn-info dropdown-toggle" type="button" id="dropdownDuplicateType" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" 
                                             ${participant[fieldMapping.verifiedFlag] !== fieldMapping.duplicate ? `disabled`: ``}>Select</button>
                                         <ul class="dropdown-menu" id="dropdownMenuButtonDuplicateTypeOptns" aria-labelledby="dropdownMenuButton2">
                                             <li><a class="dropdown-item" data-cid='select' id="slct">Select</a></li>
@@ -84,7 +84,7 @@ export const renderVerificationCorrections = (participant) => {
                                     <p>- Current Update Recruit Type Response: <b>${updateRecruitmentType[participant['state'][fieldMapping.updateRecruitType]] || ``}</b></p>
                                     <div class="dropdown dropright" id="updateRecruitTypeDropdownLookup">
                                     - Update Recruit Type:
-                                    <button class="btn btn-info dropdown-toggle" type="button" id="dropdownUpdateRecruitType" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                    <button class="btn btn-info dropdown-toggle" type="button" id="dropdownUpdateRecruitType" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
                                         ${participant[fieldMapping.verifiedFlag] === fieldMapping.notYetVerified ? `disabled` : ``}>Select</button>
                                         <ul class="dropdown-menu" id="dropdownMenuButtonUpdateRecruitTypeOptns" aria-labelledby="dropdownMenuButton3">
                                             <li><a class="dropdown-item" data-cid='select' id="slct">Select</a></li>
@@ -106,7 +106,7 @@ export const renderVerificationCorrections = (participant) => {
                                         <button type="button" class="btn btn-danger" id="cancelChanges">Cancel</button>
                                     </div>
                                     <div style="margin-left: 3rem;">
-                                        <button type="button" data-toggle="modal" data-target="#modalShowSelectedData"
+                                        <button type="button" data-bs-toggle="modal" data-bs-target="#modalShowSelectedData"
                                             class="btn btn-primary next-btn" id="submitCorrection">Submit</button>
                                     </div>
                                 </div>
@@ -115,7 +115,7 @@ export const renderVerificationCorrections = (participant) => {
                     </div>
                 </div>`
           
-        template += ` <div class="modal fade" id="modalShowSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+        template += ` <div class="modal fade" id="modalShowSelectedData" data-bs-keyboard="false" tabindex="-1" role="dialog" data-bs-backdrop="static" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
             <div class="modal-content sub-div-shadow">
                 <div class="modal-header" id="modalHeader"></div>
@@ -194,7 +194,7 @@ export const viewOptionsSelected = (participant) => {
 const optionsHandler = (participant) => {
     const header = document.getElementById('modalHeader');
     const body = document.getElementById('modalBody');
-    header.innerHTML = `<h5>Options Selected</h5><button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`
+    header.innerHTML = `<h5>Options Selected</h5><button type="button" id="closeModal" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>`
     const selectedOptions = appState.getState().correctedOptions;
     cleanUpSelectedOptions(selectedOptions);
     const hasSelections = Boolean(selectedOptions && Object.keys(selectedOptions).length > 0);
@@ -203,7 +203,7 @@ const optionsHandler = (participant) => {
     let modalContent = `
             <span><b>Error: No corrections selected</b></span> <br />`;
     let footerButtons = `
-            <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank">OK</button>`;
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" target="_blank">OK</button>`;
 
     if (hasSelections && !validationResult.isValid) {
         modalContent = `
@@ -212,8 +212,8 @@ const optionsHandler = (participant) => {
         modalContent = `
             ${renderSelectedOptions(selectedOptions)}`;
         footerButtons = `
-            <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="confirmCorrection">Confirm</button>
-            <button type="button" class="btn btn-danger" data-dismiss="modal" target="_blank">Cancel</button>`;
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal" target="_blank" id="confirmCorrection">Confirm</button>
+            <button type="button" class="btn btn-danger" data-bs-dismiss="modal" target="_blank">Cancel</button>`;
     }
 
     body.innerHTML = `

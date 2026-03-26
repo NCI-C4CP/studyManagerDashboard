@@ -1,4 +1,3 @@
-import { expect } from 'chai';
 import { encryptString, decryptString } from '../src/crypto.js';
 import {
   setupTestEnvironment,
@@ -21,9 +20,9 @@ describe('crypto', () => {
       const plainText = 'sensitive-data-123';
       const payload = await encryptString(plainText, 'test-user-123');
 
-      expect(payload).to.be.a('string');
-      expect(payload).to.match(/^v1:/);
-      expect(payload.split(':')).to.have.length(3);
+      expect(payload).toBeTypeOf('string');
+      expect(payload).toMatch(/^v1:/);
+      expect(payload.split(':')).toHaveLength(3);
     });
 
     it('produces different ciphertext for same plaintext (nonce uniqueness)', async () => {
@@ -32,13 +31,13 @@ describe('crypto', () => {
       const payload2 = await encryptString(plainText, 'test-user-123');
 
       // Same plaintext, same UID, but different IVs should produce different payloads
-      expect(payload1).to.not.equal(payload2);
+      expect(payload1).not.toBe(payload2);
 
       // But both should decrypt to the same plaintext
       const decrypted1 = await decryptString(payload1, 'test-user-123');
       const decrypted2 = await decryptString(payload2, 'test-user-123');
-      expect(decrypted1).to.equal(plainText);
-      expect(decrypted2).to.equal(plainText);
+      expect(decrypted1).toBe(plainText);
+      expect(decrypted2).toBe(plainText);
     });
 
     it('encrypts various string types (empty, special chars, unicode, JSON)', async () => {
@@ -53,9 +52,9 @@ describe('crypto', () => {
         const payload = await encryptString(plainText, 'test-user-123');
         const decrypted = await decryptString(payload, 'test-user-123');
         if (plainText.startsWith('{')) {
-          expect(JSON.parse(decrypted)).to.deep.equal(JSON.parse(plainText));
+          expect(JSON.parse(decrypted)).toEqual(JSON.parse(plainText));
         } else {
-          expect(decrypted).to.equal(plainText);
+          expect(decrypted).toBe(plainText);
         }
       }
     });
@@ -63,16 +62,16 @@ describe('crypto', () => {
     it('throws error when UID is missing or empty', async () => {
       try {
         await encryptString('test', null);
-        expect.fail('Should have thrown an error for null UID');
+        throw new Error('Should have thrown an error for null UID');
       } catch (error) {
-        expect(error.message).to.include('uid is required');
+        expect(error.message).toContain('uid is required');
       }
 
       try {
         await encryptString('test', '');
-        expect.fail('Should have thrown an error for empty UID');
+        throw new Error('Should have thrown an error for empty UID');
       } catch (error) {
-        expect(error.message).to.include('uid is required');
+        expect(error.message).toContain('uid is required');
       }
     });
   });
@@ -82,47 +81,47 @@ describe('crypto', () => {
       const plainText = 'test-data-456';
       const payload = await encryptString(plainText, 'test-user-123');
       const decrypted = await decryptString(payload, 'test-user-123');
-      expect(decrypted).to.equal(plainText);
+      expect(decrypted).toBe(plainText);
     });
 
     it('throws error for empty or null payload', async () => {
       try {
         await decryptString('', 'test-user-123');
-        expect.fail('Should have thrown an error for empty payload');
+        throw new Error('Should have thrown an error for empty payload');
       } catch (error) {
-        expect(error.message).to.include('empty payload');
+        expect(error.message).toContain('empty payload');
       }
 
       try {
         await decryptString(null, 'test-user-123');
-        expect.fail('Should have thrown an error for null payload');
+        throw new Error('Should have thrown an error for null payload');
       } catch (error) {
-        expect(error.message).to.include('empty payload');
+        expect(error.message).toContain('empty payload');
       }
     });
 
     it('throws error for malformed payload', async () => {
       try {
         await decryptString('not-a-valid-payload', 'test-user-123');
-        expect.fail('Should have thrown an error for wrong format');
+        throw new Error('Should have thrown an error for wrong format');
       } catch (error) {
-        expect(error.message).to.include('malformed payload');
+        expect(error.message).toContain('malformed payload');
       }
 
       try {
         await decryptString('v1:only-one-part', 'test-user-123');
-        expect.fail('Should have thrown an error for missing parts');
+        throw new Error('Should have thrown an error for missing parts');
       } catch (error) {
-        expect(error.message).to.include('malformed payload');
+        expect(error.message).toContain('malformed payload');
       }
     });
 
     it('throws error for unsupported version', async () => {
       try {
         await decryptString('v2:iv:ciphertext', 'test-user-123');
-        expect.fail('Should have thrown an error');
+        throw new Error('Should have thrown an error');
       } catch (error) {
-        expect(error.message).to.include('unsupported version');
+        expect(error.message).toContain('unsupported version');
       }
     });
 
@@ -135,18 +134,18 @@ describe('crypto', () => {
       try {
         const tamperedIV = `v1:${parts[1].slice(0, -1)}:${parts[2]}`;
         await decryptString(tamperedIV, 'test-user-123');
-        expect.fail('Should have thrown an error for tampered IV');
+        throw new Error('Should have thrown an error for tampered IV');
       } catch (error) {
-        expect(error).to.be.instanceOf(Error);
+        expect(error).toBeInstanceOf(Error);
       }
 
       // Tamper with ciphertext
       try {
         const tamperedCT = `v1:${parts[1]}:${parts[2].slice(0, -1)}`;
         await decryptString(tamperedCT, 'test-user-123');
-        expect.fail('Should have thrown an error for tampered ciphertext');
+        throw new Error('Should have thrown an error for tampered ciphertext');
       } catch (error) {
-        expect(error).to.be.instanceOf(Error);
+        expect(error).toBeInstanceOf(Error);
       }
     });
 
@@ -155,16 +154,16 @@ describe('crypto', () => {
 
       try {
         await decryptString(payload, null);
-        expect.fail('Should have thrown an error for null UID');
+        throw new Error('Should have thrown an error for null UID');
       } catch (error) {
-        expect(error.message).to.include('uid is required');
+        expect(error.message).toContain('uid is required');
       }
 
       try {
         await decryptString(payload, '');
-        expect.fail('Should have thrown an error for empty UID');
+        throw new Error('Should have thrown an error for empty UID');
       } catch (error) {
-        expect(error.message).to.include('uid is required');
+        expect(error.message).toContain('uid is required');
       }
     });
   });
@@ -178,10 +177,10 @@ describe('crypto', () => {
       sessionStorage.setItem('testKey', payload);
       
       const retrieved = sessionStorage.getItem('testKey');
-      expect(retrieved).to.equal(payload);
+      expect(retrieved).toBe(payload);
       
       const decrypted = await decryptString(retrieved, uid);
-      expect(decrypted).to.equal(plainText);
+      expect(decrypted).toBe(plainText);
     });
 
     it('encrypts JSON data for sessionStorage', async () => {
@@ -196,7 +195,7 @@ describe('crypto', () => {
       const decrypted = await decryptString(retrieved, uid);
       const parsed = JSON.parse(decrypted);
       
-      expect(parsed).to.deep.equal(data);
+      expect(parsed).toEqual(data);
     });
 
     it('maintains data integrity across multiple encrypt/decrypt cycles', async () => {
@@ -207,7 +206,7 @@ describe('crypto', () => {
       let payload = await encryptString(plainText, uid);
       for (let i = 0; i < 5; i++) {
         const decrypted = await decryptString(payload, uid);
-        expect(decrypted).to.equal(plainText);
+        expect(decrypted).toBe(plainText);
         // Re-encrypt and continue
         payload = await encryptString(plainText, uid);
       }
@@ -220,9 +219,9 @@ describe('crypto', () => {
       const payload = await encryptString(plainText, 'test-user-123');
       
       // Verify plaintext is not visible in encrypted payload
-      expect(payload).to.not.include('secret');
-      expect(payload).to.not.include('password');
-      expect(payload).to.not.include('123');
+      expect(payload).not.toContain('secret');
+      expect(payload).not.toContain('password');
+      expect(payload).not.toContain('123');
     });
 
     it('key isolation: different UIDs cannot decrypt each other\'s data', async () => {
@@ -232,15 +231,15 @@ describe('crypto', () => {
       // Should fail to decrypt with different UID
       try {
         await decryptString(payload, 'user-2');
-        expect.fail('Should have thrown an error');
+        throw new Error('Should have thrown an error');
       } catch (error) {
         // Decryption fails with wrong key (may be DOMException)
-        expect(error).to.be.instanceOf(Error);
+        expect(error).toBeInstanceOf(Error);
       }
       
       // Should succeed with correct UID
       const decrypted = await decryptString(payload, 'user-1');
-      expect(decrypted).to.equal(plainText);
+      expect(decrypted).toBe(plainText);
     });
   });
 });

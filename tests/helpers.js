@@ -124,6 +124,44 @@ export const waitForAsyncTasks = (ms = 50) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
+ * Intercept addEventListener on the current JSDOM's EventTarget to capture
+ * promises returned by async event handlers (which are normally fire-and-forget).
+ * Solves the CI flake where teardownTestEnvironment() destroys `document`
+ * while an async click handler is still in flight.
+ *
+ * Called after setupTestEnvironment() (needs global.window) and before
+ * the test code registers its event listeners.
+ *
+ * @returns {{ allSettled: () => Promise<void>, restore: () => void }}
+ */
+export const trackAsyncEventHandlers = () => {
+  const promises = [];
+  const proto = global.window.EventTarget.prototype;
+  const origAddEventListener = proto.addEventListener;
+
+  proto.addEventListener = function (type, listener, options) {
+    const wrappedListener = function (...args) {
+      const result = listener.apply(this, args);
+      if (result && typeof result.then === 'function') {
+        // Swallow rejections — we only need to wait, not re-throw.
+        promises.push(result.catch(() => {}));
+      }
+      return result;
+    };
+    return origAddEventListener.call(this, type, wrappedListener, options);
+  };
+
+  return {
+    // Resolves once every captured async handler has settled.
+    allSettled: () => Promise.allSettled(promises),
+    // Restores the original addEventListener.
+    restore: () => {
+      proto.addEventListener = origAddEventListener;
+    },
+  };
+};
+
+/**
  * Waits for any UI-driven state persistence (e.g., column toggle updates) to finish.
  * Resets internal trackers afterwards so subsequent tests start clean.
  */

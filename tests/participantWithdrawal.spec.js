@@ -1,8 +1,12 @@
-import { expect } from 'chai';
 import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { renderParticipantWithdrawal } from '../src/participantWithdrawal.js';
 import { participantState } from '../src/stateManager.js';
+
+vi.mock('../src/navigationBar.js', async (importOriginal) => {
+    const actual = await importOriginal();
+    return { ...actual, updateNavBar: () => {} };
+});
 
 describe('participantWithdrawal', () => {
     let module;
@@ -35,9 +39,6 @@ describe('participantWithdrawal', () => {
             </div>
         `;
 
-        // Stub updateNavBar
-        const navBarModule = await import('../src/navigationBar.js');
-        navBarModule.updateNavBar = () => {};
 
         await loadModule();
     });
@@ -53,9 +54,9 @@ describe('participantWithdrawal', () => {
         await waitForAsyncTasks();
 
         const mainContent = document.getElementById('mainContent');
-        expect(mainContent.innerHTML).to.include('Refusal of Study Activites');
-        expect(mainContent.innerHTML).to.include('Refusal/Withdrawal Requested By');
-        expect(mainContent.innerHTML).to.include(participant.Connect_ID);
+        expect(mainContent.innerHTML).toContain('Refusal of Study Activities');
+        expect(mainContent.innerHTML).toContain('Refusal/Withdrawal Requested By');
+        expect(mainContent.innerHTML).toContain(participant.Connect_ID);
     });
 
     it('shows access denied for duplicate participant', async () => {
@@ -67,13 +68,13 @@ describe('participantWithdrawal', () => {
         await waitForAsyncTasks();
 
         const mainContent = document.getElementById('mainContent');
-        expect(mainContent.innerHTML).to.include('Access Denied');
-        expect(mainContent.innerHTML).to.include('Duplicate account');
-        expect(mainContent.innerHTML).to.not.include('Refusal of Study Activites');
+        expect(mainContent.innerHTML).toContain('Access Denied');
+        expect(mainContent.innerHTML).toContain('Duplicate account');
+        expect(mainContent.innerHTML).not.toContain('Refusal of Study Activities');
         
         // Check buttons
-        expect(document.getElementById('goToParticipantSummaryBtn')).to.exist;
-        expect(document.getElementById('goToParticipantDetailsBtn')).to.exist;
+        expect(document.getElementById('goToParticipantSummaryBtn')).not.toBeNull();
+        expect(document.getElementById('goToParticipantDetailsBtn')).not.toBeNull();
     });
 
     it('uses unique modal IDs to avoid conflicts with other tabs', async () => {
@@ -84,11 +85,11 @@ describe('participantWithdrawal', () => {
         await renderParticipantWithdrawal(participant);
         await waitForAsyncTasks();
 
-        expect(document.getElementById('withdrawalModalHeader')).to.exist;
-        expect(document.getElementById('withdrawalModalBody')).to.exist;
+        expect(document.getElementById('withdrawalModalHeader')).not.toBeNull();
+        expect(document.getElementById('withdrawalModalBody')).not.toBeNull();
         // Ensure we did not introduce or replace the generic modal header/body used by other flows
-        expect(document.getElementById('modalHeader')).to.equal(existingGenericHeader);
-        expect(document.getElementById('modalBody')).to.equal(existingGenericBody);
+        expect(document.getElementById('modalHeader')).toBe(existingGenericHeader);
+        expect(document.getElementById('modalBody')).toBe(existingGenericBody);
     });
 
     it('shows previous refusal status alert', async () => {
@@ -103,8 +104,8 @@ describe('participantWithdrawal', () => {
         await waitForAsyncTasks();
 
         const alertPlaceholder = document.getElementById('alert_placeholder');
-        expect(alertPlaceholder.innerHTML).to.include('Previously Selected Refusal Option(s)');
-        expect(alertPlaceholder.innerHTML).to.include('Initial Survey');
+        expect(alertPlaceholder.innerHTML).toContain('Previously Selected Refusal Option(s)');
+        expect(alertPlaceholder.innerHTML).toContain('Initial Survey');
     });
 
     it('shows suspended contact alert', async () => {
@@ -119,6 +120,6 @@ describe('participantWithdrawal', () => {
 
         const alertPlaceholder = document.getElementById('alert_placeholder');
         // Note: The exact text depends on getParticipantSuspendedDate implementation which formats the date
-        expect(alertPlaceholder.innerHTML).to.include('12/31/2099');
+        expect(alertPlaceholder.innerHTML).toContain('12/31/2099');
     });
 });

@@ -10,7 +10,7 @@ export const renderWithdrawalForm = () => {
     return `        
         <div class="row">
             <div class="col-md-6">
-                <h6><b><u>Refusal of Study Activites</u></b></h6>
+                <h6><b><u>Refusal of Study Activities</u></b></h6>
                 <span class="withdrawal-form-span"><i>Select all that apply</i></span>
                 <br />
                 <div class="withdrawal-form-div">
@@ -163,7 +163,7 @@ export const renderWithdrawalForm = () => {
                 <button type="button" class="btn btn-primary next-btn withdrawal-form-next-btn" id="nextFormPage">Next</button>
             </div>
             <div class="col-md-6">
-                <div class="row form-row">
+                <div class="row">
                     <span> <b>
                         <u> Refusal/Withdrawal Requested By: </u> </b>
                     </span>
@@ -201,13 +201,14 @@ export const renderWithdrawalForm = () => {
                         </div>
                     </div>
                 </div>
-                <div class="row form-row">
+                <div class="row">
                 <span> <b>
                     <u> SUPERVISOR USE ONLY​ </u><br />
                     <b> Suspend all contact with participant until: </b> <br />
-                    <div class="form-group row">
+                    <div class="row mb-3">
                     <label class="col-md-4 col-form-label">Month</label>
-                    <select id="suspendContactUntilMonth" class="form-control required-field col-md-4" data-error-required='Please select your month.'>
+                    <div class="col-md-4">
+                    <select id="suspendContactUntilMonth" class="form-select required-field" data-error-required='Please select your month.'>
                         <option class="option-dark-mode" value="">Select month</option>
                         <option class="option-dark-mode" value="01">1 - January</option>
                         <option class="option-dark-mode" value="02">2 - February</option>
@@ -222,20 +223,25 @@ export const renderWithdrawalForm = () => {
                         <option class="option-dark-mode" value="11">11 - November</option>
                         <option class="option-dark-mode" value="12">12 - December</option>
                     </select>
+                    </div>
                 </div>
-                <div class="form-group row">
+                <div class="row mb-3">
                     <label class="col-md-4 col-form-label">Day</label>
-                    <select class="form-control required-field col-md-4" data-error-required='Please select your day.' id="suspendContactUntilDay"></select>
+                    <div class="col-md-4">
+                    <select class="form-select required-field" data-error-required='Please select your day.' id="suspendContactUntilDay"></select>
+                    </div>
                 </div>
-                <div class="form-group row">
+                <div class="row mb-3">
                     <label class="col-md-4 col-form-label">Year</label>
-                    <input type="text" class="form-control required-field input-validation col-md-4" data-error-required='Please select your year.' data-validation-pattern="year" data-error-validation="Your year must contain four digits in the YYYY format." maxlength="4" id="suspendContactUntilYear" list="yearsOption" title="Year, must be in 1900s" placeholder="Enter year">
+                    <div class="col-md-4">
+                    <input type="text" class="form-control required-field input-validation" data-error-required='Please select your year.' data-validation-pattern="year" data-error-validation="Your year must contain four digits in the YYYY format." maxlength="4" id="suspendContactUntilYear" list="yearsOption" title="Year, must be in 1900s" placeholder="Enter year">
                     <datalist id="yearsOption"></datalist>
+                    </div>
                 </div>
                 </span>
             </div>
         </div>
-        <div class="modal fade" id="modalShowSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+        <div class="modal fade" id="modalShowSelectedData" data-bs-keyboard="false" tabindex="-1" role="dialog" data-bs-backdrop="static" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                 <div class="modal-content sub-div-shadow">
                     <div class="modal-header" id="withdrawalModalHeader"></div>
@@ -533,7 +539,7 @@ const optionsHandler = (suspendDate) => {
 
     let modalTemplate = '<div>';
 
-    modalHeader.innerHTML = `<h5>Options Selected</h5><button type="button" id="closeModal" class="modal-close-btn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>`;
+    modalHeader.innerHTML = `<h5>Options Selected</h5><button type="button" id="closeModal" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>`;
     
     refusalWithdrawalCheckboxes.forEach(checkbox => { 
         if (checkbox.checked) {  
@@ -564,24 +570,24 @@ const optionsHandler = (suspendDate) => {
     if (hasSuspendDate) modalTemplate += `<span>Suspend all contact on case until ${escapeHTML(suspendDate)}</span> <br />`
 
     if (canSkipRequestedBy || (hasSuspendDate && hasRequestedBySelection)) {
-        confirmSectionHtml = ` <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="proceedFormPage">Confirm</button>`;
+        confirmSectionHtml = ` <button type="button" class="btn btn-primary" data-bs-dismiss="modal" target="_blank" id="proceedFormPage">Confirm</button>`;
 
     } else if (!hasAnySelections && !hasSuspendDate) {
         confirmSectionHtml = `<span style="color: red;"><b>Make a selection before proceeding!</b></span> <br />
-             <button type="button" class="btn btn-secondary" data-dismiss="modal" target="_blank" id="proceedFormPage" disabled>Confirm</button>`;
+             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" target="_blank" id="proceedFormPage" disabled>Confirm</button>`;
 
     } else if (!hasRequestedBySelection) {
         confirmSectionHtml = `<span style="color: red;"><b>Select requested by before proceeding!</b></span> <br />
-             <button type="button" class="btn btn-secondary" data-dismiss="modal" target="_blank" id="proceedFormPage" disabled>Confirm</button>`;
+             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" target="_blank" id="proceedFormPage" disabled>Confirm</button>`;
 
     } else {
-        confirmSectionHtml = ` <button type="button" class="btn btn-primary" data-dismiss="modal" target="_blank" id="proceedFormPage">Confirm</button>`;
+        confirmSectionHtml = ` <button type="button" class="btn btn-primary" data-bs-dismiss="modal" target="_blank" id="proceedFormPage">Confirm</button>`;
     }
 
     modalTemplate += `
         <div style="display:inline-block; margin-top:20px;">
         ${confirmSectionHtml}
-            <button type="button" class="btn btn-danger" data-dismiss="modal" target="_blank">Cancel</button>
+            <button type="button" class="btn btn-danger" data-bs-dismiss="modal" target="_blank">Cancel</button>
         </div>
     </div>`
 
@@ -680,7 +686,7 @@ export const reasonForRefusalPage = (selectedRefusalWithdrawalCheckboxes, select
     let source = 'page1'
     let renderContent = document.getElementById('formMainPage');
     let template = `
-            <div class="modal fade" id="modalShowFinalSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+            <div class="modal fade" id="modalShowFinalSelectedData" data-bs-keyboard="false" tabindex="-1" role="dialog" data-bs-backdrop="static" aria-hidden="true">
                     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                         <div class="modal-content sub-div-shadow">
                             <div class="modal-header" id="withdrawalFinalModalHeader"></div>
@@ -704,14 +710,14 @@ export const reasonForRefusalPage = (selectedRefusalWithdrawalCheckboxes, select
         });
     })
     document.getElementById('submit').addEventListener('click', async () => {
-        await handleResponseSubmission(selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate)
+        await handleResponseSubmission(selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate);
     })
 }
 
 export const causeOfDeathPage = (selectedRefusalWithdrawalCheckboxes) => {
     const source = 'causeOfDeath'
     let renderContent = document.getElementById('formMainPage');
-    let template = ` <div class="modal fade" id="modalShowFinalSelectedData" data-keyboard="false" tabindex="-1" role="dialog" data-backdrop="static" aria-hidden="true">
+    let template = ` <div class="modal fade" id="modalShowFinalSelectedData" data-bs-keyboard="false" tabindex="-1" role="dialog" data-bs-backdrop="static" aria-hidden="true">
                     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                         <div class="modal-content sub-div-shadow">
                             <div class="modal-header" id="withdrawalFinalModalHeader"></div>
@@ -855,6 +861,8 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
         await uiState.setWithdrawalStatusFlags({ hasPriorSuspendedContact: false });
     }
 
+    const hasStatusSelection = selectedRefusalWithdrawalCheckboxes.length !== 0;
+
     if (hasPriorParticipationStatus) {
         const prevParticipantStatusScore =   { "No Refusal": 0,
                                             "Refused some activities": 1,  
@@ -864,11 +872,13 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
                                             "Destroy Data": 5,
                                             "Deceased": 6, }
         const participant = participantState.getParticipant();
-        let prevParticipantStatusSelection = fieldMapping[participant[fieldMapping.participationStatus]]
-        prevParticipantStatusSelection = prevParticipantStatusScore[prevParticipantStatusSelection]
-        highestStatus.push(parseInt(prevParticipantStatusSelection))
+        let prevParticipantStatusSelection = fieldMapping[participant[fieldMapping.participationStatus]];
 
-        if (suspendDate !== '//') sendRefusalData[fieldMapping.participationStatus] = fieldMapping.noRefusal
+        if (hasStatusSelection) {
+            prevParticipantStatusSelection = prevParticipantStatusScore[prevParticipantStatusSelection];
+            highestStatus.push((prevParticipantStatusSelection));
+        }
+
         await uiState.setWithdrawalStatusFlags({ hasPriorParticipationStatus: false });
     }
     
@@ -957,7 +967,6 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
     }
 
     sendRefusalData['token'] = token;
-
     return sendRefusalData;
 }
 

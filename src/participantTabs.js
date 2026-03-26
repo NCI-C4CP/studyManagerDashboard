@@ -103,7 +103,7 @@ export const renderTabContentContainers = (activeTabId = 'details') => {
                  role="tabpanel"
                  aria-labelledby="${tab.id}-tab">
                 <div id="${tab.id}-tab-content-inner" class="tab-content-inner">
-                    ${isActive ? '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>' : ''}
+                    ${isActive ? '<div class="text-center p-4"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>' : ''}
                 </div>
             </div>
         `;
@@ -150,7 +150,7 @@ export const loadTabContent = async (tabId, participant, reports = null) => {
     }
 
     try {
-        contentContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+        contentContainer.innerHTML = '<div class="text-center p-4"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>';
 
         let content = '';
         switch (tabId) {
@@ -280,7 +280,7 @@ export const initializeTabListeners = (participant, reports = null) => {
         const isEmpty = contentContainer.innerHTML.trim() === '';
 
         if (tabId === 'dataCorrections') {
-            contentContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+            contentContainer.innerHTML = '<div class="text-center p-4"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>';
             loadTabContent(tabId, participant, reports);
             return;
         }
@@ -300,7 +300,7 @@ export const initializeTabListeners = (participant, reports = null) => {
         }
 
         if (tabId === 'withdrawal') {
-            contentContainer.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+            contentContainer.innerHTML = '<div class="text-center p-4"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>';
             await loadTabContent(tabId, currentParticipant, reports);
             return;
         }

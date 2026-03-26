@@ -227,6 +227,7 @@ const campaignTypeMapping = {
     [fieldMapping.lowIncomeAreas]: 'Low Income Areas/Health Professional Shortage Areas',
     [fieldMapping.researchRegistry]: 'Research Registry',
     [fieldMapping.popUp]: 'Pop up',
+    [fieldMapping.urgentCareVisit]: 'Urgent Care Visit',
     [fieldMapping.noneOftheAbove]: 'None of the Above',
     [fieldMapping.other]: 'Other'
 };
