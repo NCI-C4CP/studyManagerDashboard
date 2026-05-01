@@ -526,7 +526,6 @@ const kitStatusCidToString = {
 };
 
 const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
-    console.log("🚀 ~ mouthwashSampleTemplate ~ participantModule:", participantModule)
     const refusedMouthwashOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedMouthwash] === fieldMapping.yes;
     let displayedFields;
     const shippedKitStatusDates = getKitShippedStatusDates(participantModule);
@@ -561,19 +560,14 @@ const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
         const homeMouthwashData = participantModule[fieldMapping.collectionDetails]?.[fieldMapping.baseline]?.[path] || {};
 
         const kitStatusCid = homeMouthwashData[fieldMapping.kitStatus];
-        let kitStatusStr = kitStatusCidToString[kitStatusCid];
-        console.log("🚀 ~ mouthwashSampleTemplate ~ kitStatusStr:", kitStatusStr);
-
-        
+        let kitStatusStr = kitStatusCidToString[kitStatusCid];        
 
         if(homeMouthwashData[fieldMapping.kitRequestEligible] && !kitStatusCid) {
             kitStatusStr = 'Invited';
         } else if(kitStatusStr) {
             kitStatusStr = 'Kit ' + kitStatusStr;
-            console.log("path", path)
             if (kitStatusCid === fieldMapping.kitStatusValues.shipped) {
                 const shippedDate = shippedKitStatusDates?.[path];
-                console.log(`🚀 ~ mouthwashSampleTemplate ~ shippedDate ${path}:`, shippedDate);
                 kitStatusStr += shippedDate ? `<br> ${formatUTCDate(shippedDate)}` : '';
             }
         } else {
@@ -703,7 +697,7 @@ const getTemplateRow = (icon, color, timeline, category, item, status, date, set
  * }
  */
 const getKitShippedStatusDates = (participant) => {
-    const shippedDateObj = {}
+    const shippedDateObj = {};
     const { 
         collectionDetails, 
         biospecimenBaselineCollection,
