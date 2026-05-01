@@ -297,16 +297,16 @@ export const baselineResearchMouthwashSample = (participant) => {
     return mouthwashSampleTemplate(participant, "Research Mouthwash");
 };
 
-export const baselineHomeMouthwashSample = (participant) => {
-    return mouthwashSampleTemplate(participant, "Home Mouthwash Initial", fieldMapping.bioKitMouthwash);
+export const baselineHomeMouthwashSample = (participant, shippedKitStatusDates) => {
+    return mouthwashSampleTemplate(participant, "Home Mouthwash Initial", fieldMapping.bioKitMouthwash, shippedKitStatusDates);
 };
 
-export const baselineMouthwashR1Sample = (participant) => {
-    return mouthwashSampleTemplate(participant, "Home Mouthwash R1", fieldMapping.bioKitMouthwashBL1);
+export const baselineMouthwashR1Sample = (participant, shippedKitStatusDates) => {
+    return mouthwashSampleTemplate(participant, "Home Mouthwash R1", fieldMapping.bioKitMouthwashBL1, shippedKitStatusDates);
 };
 
-export const baselineMouthwashR2Sample = (participant) => {
-    return mouthwashSampleTemplate(participant, "Home Mouthwash R2", fieldMapping.bioKitMouthwashBL2);
+export const baselineMouthwashR2Sample = (participant, shippedKitStatusDates) => {
+    return mouthwashSampleTemplate(participant, "Home Mouthwash R2", fieldMapping.bioKitMouthwashBL2, shippedKitStatusDates);
 };
 
 /**
@@ -525,7 +525,8 @@ const kitStatusCidToString = {
   375535639: "Received",
 };
 
-const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
+const mouthwashSampleTemplate = (participantModule, itemName, path = null, shippedKitStatusDates = null) => {
+    console.log("🚀 ~ mouthwashSampleTemplate ~ participantModule:", participantModule)
     const refusedMouthwashOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedMouthwash] === fieldMapping.yes;
     let displayedFields;
 
@@ -560,11 +561,20 @@ const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
 
         const kitStatusCid = homeMouthwashData[fieldMapping.kitStatus];
         let kitStatusStr = kitStatusCidToString[kitStatusCid];
+        console.log("🚀 ~ mouthwashSampleTemplate ~ kitStatusStr:", kitStatusStr);
+
+        
 
         if(homeMouthwashData[fieldMapping.kitRequestEligible] && !kitStatusCid) {
             kitStatusStr = 'Invited';
         } else if(kitStatusStr) {
             kitStatusStr = 'Kit ' + kitStatusStr;
+            console.log("path", path)
+            if (kitStatusCid === fieldMapping.kitStatusValues.shipped) {
+                const shippedDate = shippedKitStatusDates?.[path];
+                console.log(`🚀 ~ mouthwashSampleTemplate ~ shippedDate ${path}:`, shippedDate);
+                kitStatusStr += shippedDate ? `<br> ${formatUTCDate(shippedDate)}` : '';
+            }
         } else {
             kitStatusStr = 'N/A';
         }
