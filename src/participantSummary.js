@@ -44,71 +44,71 @@ export const renderSummaryTabContent = async (participant, reports) => {
     
     // get shipped kit status dates
 
-    
-    const getKitShippedStatusDates = (participant) => {
-        const shippedDateObj = {}
-        const { 
-            collectionDetails, 
-            biospecimenBaselineCollection,
-            bioKitMouthwash,
-            bioKitMouthwashBL1,
-            bioKitMouthwashBL2,
-            kitStatus,
-            kitStatusValues,
-            kitShippedTime
-        } = fieldMapping;
-        console.log("participant[collectionDetails]", participant[collectionDetails])
-        console.log("--------------")
-        console.log("participant[collectionDetails][biospecimenBaselineCollection]", participant[collectionDetails][biospecimenBaselineCollection])
-        console.log("--------------")
-        console.log("participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash]", participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash])
-        console.log("--------------")
-        console.log("participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus]", participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus])
-        console.log("--------------")
-        console.log("participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus][kitStatusValues.shipped]", participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus][kitStatusValues.shipped])
-        // 173836415.266600170.319972665.221592017 - Initial Kit Shipped check
-        if (participant[collectionDetails] && 
-            participant[collectionDetails][biospecimenBaselineCollection] && 
-            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash] &&
-            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus] &&
-            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus] === kitStatusValues.shipped
-        ) {
-                console.log("passed shipped kit status check")
-                shippedDateObj[bioKitMouthwash] = participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitShippedTime];
-        }
+    // DELETE LATER 
+    // const getKitShippedStatusDates = (participant) => {
+    //     const shippedDateObj = {}
+    //     const { 
+    //         collectionDetails, 
+    //         biospecimenBaselineCollection,
+    //         bioKitMouthwash,
+    //         bioKitMouthwashBL1,
+    //         bioKitMouthwashBL2,
+    //         kitStatus,
+    //         kitStatusValues,
+    //         kitShippedTime
+    //     } = fieldMapping;
+    //     console.log("participant[collectionDetails]", participant[collectionDetails])
+    //     console.log("--------------")
+    //     console.log("participant[collectionDetails][biospecimenBaselineCollection]", participant[collectionDetails][biospecimenBaselineCollection])
+    //     console.log("--------------")
+    //     console.log("participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash]", participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash])
+    //     console.log("--------------")
+    //     console.log("participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus]", participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus])
+    //     console.log("--------------")
+    //     console.log("participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus][kitStatusValues.shipped]", participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus][kitStatusValues.shipped])
+    //     // 173836415.266600170.319972665.221592017 - Initial Kit Shipped check
+    //     if (participant[collectionDetails] && 
+    //         participant[collectionDetails][biospecimenBaselineCollection] && 
+    //         participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash] &&
+    //         participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus] &&
+    //         participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus] === kitStatusValues.shipped
+    //     ) {
+    //             console.log("passed shipped kit status check")
+    //             shippedDateObj[bioKitMouthwash] = participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitShippedTime];
+    //     }
 
-        // 173836415.266600170.541483796.221592017 - R1 kit shipped check
-        // bioKitMouthwashBL1
-        console.log(participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1][kitStatus] === kitStatusValues.shipped, kitStatusValues.shipped)
-        if (
-            participant[collectionDetails] &&
-            participant[collectionDetails][biospecimenBaselineCollection] &&
-            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1] &&
-            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1][kitStatus] &&
-            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1][kitStatus] === kitStatusValues.shipped
-        ) {
-                console.log("passed R1 shipped kit status check!!!")
-                shippedDateObj[bioKitMouthwashBL1] = participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1][kitShippedTime];
-        }
+    //     // 173836415.266600170.541483796.221592017 - R1 kit shipped check
+    //     // bioKitMouthwashBL1
+    //     console.log(participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1][kitStatus] === kitStatusValues.shipped, kitStatusValues.shipped)
+    //     if (
+    //         participant[collectionDetails] &&
+    //         participant[collectionDetails][biospecimenBaselineCollection] &&
+    //         participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1] &&
+    //         participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1][kitStatus] &&
+    //         participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1][kitStatus] === kitStatusValues.shipped
+    //     ) {
+    //             console.log("passed R1 shipped kit status check!!!")
+    //             shippedDateObj[bioKitMouthwashBL1] = participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1][kitShippedTime];
+    //     }
 
-        // 173836415.266600170.541483796.221592017 - R2 kit shipped check
-        // bioKitMouthwashBL2
-        console.log(participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2][kitStatus] === kitStatusValues.shipped, kitStatusValues.shipped)
-        if (
-            participant[collectionDetails] &&
-            participant[collectionDetails][biospecimenBaselineCollection] &&
-            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2] &&
-            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2][kitStatus] &&
-            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2][kitStatus] === kitStatusValues.shipped
-        ) {
-                console.log("passed R2 shipped kit status check!!!")
-                // participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2]
-                shippedDateObj[bioKitMouthwashBL2] = participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2][kitShippedTime];
-        }
-        return shippedDateObj;
-    }
-    const shippedKitStatusDates = getKitShippedStatusDates(participant);
-    console.log("🚀 ~ renderSummaryTabContent ~ shippedKitStatusDates:", shippedKitStatusDates)
+    //     // 173836415.266600170.541483796.221592017 - R2 kit shipped check
+    //     // bioKitMouthwashBL2
+    //     console.log(participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2][kitStatus] === kitStatusValues.shipped, kitStatusValues.shipped)
+    //     if (
+    //         participant[collectionDetails] &&
+    //         participant[collectionDetails][biospecimenBaselineCollection] &&
+    //         participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2] &&
+    //         participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2][kitStatus] &&
+    //         participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2][kitStatus] === kitStatusValues.shipped
+    //     ) {
+    //             console.log("passed R2 shipped kit status check!!!")
+    //             // participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2]
+    //             shippedDateObj[bioKitMouthwashBL2] = participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2][kitShippedTime];
+    //     }
+    //     return shippedDateObj;
+    // }
+    // const shippedKitStatusDates = getKitShippedStatusDates(participant);
+    // console.log("🚀 ~ renderSummaryTabContent ~ shippedKitStatusDates:", shippedKitStatusDates)
 
 
     // Fetch reports if not provided
@@ -132,7 +132,7 @@ export const renderSummaryTabContent = async (participant, reports) => {
         }
     }
 
-    const content = renderSummaryContent(participant, summaryReports, shippedKitStatusDates);
+    const content = renderSummaryContent(participant, summaryReports);
 
     requestAnimationFrame(() => {
         downloadCopyHandler(participant);
@@ -147,10 +147,9 @@ export const renderSummaryTabContent = async (participant, reports) => {
  * Render the summary table content
  * @param {object} participant - The participant object
  * @param {object} reports - The reports object
- * @param {object} shippedKitStatusDates - The shipped kit status dates object
  * @returns {string} HTML string for summary content
  */
-const renderSummaryContent = (participant, reports, shippedKitStatusDates) => {
+const renderSummaryContent = (participant, reports) => {
     return `
         ${renderResetUserButton(participant?.state?.uid)}
         <div id="alert_placeholder" style="margin-top: 15px;"></div>
@@ -239,13 +238,13 @@ const renderSummaryContent = (participant, reports, shippedKitStatusDates) => {
                             ${baselineResearchMouthwashSample(participant)}
                         </tr>
                         <tr class="row-color-sample-light">
-                            ${baselineHomeMouthwashSample(participant, shippedKitStatusDates)}
+                            ${baselineHomeMouthwashSample(participant)}
                         </tr>
                         <tr class="row-color-sample-dark">
-                            ${baselineMouthwashR1Sample(participant, shippedKitStatusDates)}
+                            ${baselineMouthwashR1Sample(participant)}
                         </tr>
                         <tr class="row-color-sample-light">
-                            ${baselineMouthwashR2Sample(participant, shippedKitStatusDates)}
+                            ${baselineMouthwashR2Sample(participant)}
                         </tr>
                         <tr class="row-color-payment">
                             ${baselinePayment(participant)}

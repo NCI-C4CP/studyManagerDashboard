@@ -297,16 +297,16 @@ export const baselineResearchMouthwashSample = (participant) => {
     return mouthwashSampleTemplate(participant, "Research Mouthwash");
 };
 
-export const baselineHomeMouthwashSample = (participant, shippedKitStatusDates) => {
-    return mouthwashSampleTemplate(participant, "Home Mouthwash Initial", fieldMapping.bioKitMouthwash, shippedKitStatusDates);
+export const baselineHomeMouthwashSample = (participant) => {
+    return mouthwashSampleTemplate(participant, "Home Mouthwash Initial", fieldMapping.bioKitMouthwash);
 };
 
-export const baselineMouthwashR1Sample = (participant, shippedKitStatusDates) => {
-    return mouthwashSampleTemplate(participant, "Home Mouthwash R1", fieldMapping.bioKitMouthwashBL1, shippedKitStatusDates);
+export const baselineMouthwashR1Sample = (participant) => {
+    return mouthwashSampleTemplate(participant, "Home Mouthwash R1", fieldMapping.bioKitMouthwashBL1);
 };
 
-export const baselineMouthwashR2Sample = (participant, shippedKitStatusDates) => {
-    return mouthwashSampleTemplate(participant, "Home Mouthwash R2", fieldMapping.bioKitMouthwashBL2, shippedKitStatusDates);
+export const baselineMouthwashR2Sample = (participant) => {
+    return mouthwashSampleTemplate(participant, "Home Mouthwash R2", fieldMapping.bioKitMouthwashBL2);
 };
 
 /**
@@ -525,10 +525,11 @@ const kitStatusCidToString = {
   375535639: "Received",
 };
 
-const mouthwashSampleTemplate = (participantModule, itemName, path = null, shippedKitStatusDates = null) => {
+const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
     console.log("🚀 ~ mouthwashSampleTemplate ~ participantModule:", participantModule)
     const refusedMouthwashOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedMouthwash] === fieldMapping.yes;
     let displayedFields;
+    const shippedKitStatusDates = getKitShippedStatusDates(participantModule);
 
     // Research Mouthwash is part of a full specimen collection (it uses biospecimenCollectionDetail structure like blood/urine).
     if (itemName === "Research Mouthwash") {
@@ -689,3 +690,69 @@ const getTemplateRow = (icon, color, timeline, category, item, status, date, set
         <td>${extra}</td>
     `;
 }
+
+
+const getKitShippedStatusDates = (participant) => {
+        const shippedDateObj = {}
+        const { 
+            collectionDetails, 
+            biospecimenBaselineCollection,
+            bioKitMouthwash,
+            bioKitMouthwashBL1,
+            bioKitMouthwashBL2,
+            kitStatus,
+            kitStatusValues,
+            kitShippedTime
+        } = fieldMapping;
+        console.log("participant[collectionDetails]", participant[collectionDetails])
+        console.log("--------------")
+        console.log("participant[collectionDetails][biospecimenBaselineCollection]", participant[collectionDetails][biospecimenBaselineCollection])
+        console.log("--------------")
+        console.log("participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash]", participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash])
+        console.log("--------------")
+        console.log("participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus]", participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus])
+        console.log("--------------")
+        console.log("participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus][kitStatusValues.shipped]", participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus][kitStatusValues.shipped])
+        // 173836415.266600170.319972665.221592017 - Initial Kit Shipped check
+        if (participant[collectionDetails] && 
+            participant[collectionDetails][biospecimenBaselineCollection] && 
+            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash] &&
+            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus] &&
+            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitStatus] === kitStatusValues.shipped
+        ) {
+                console.log("passed shipped kit status check")
+                shippedDateObj[bioKitMouthwash] = participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwash][kitShippedTime];
+        }
+
+        // 173836415.266600170.541483796.221592017 - R1 kit shipped check
+        // bioKitMouthwashBL1
+        console.log(participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1][kitStatus] === kitStatusValues.shipped, kitStatusValues.shipped)
+        if (
+            participant[collectionDetails] &&
+            participant[collectionDetails][biospecimenBaselineCollection] &&
+            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1] &&
+            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1][kitStatus] &&
+            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1][kitStatus] === kitStatusValues.shipped
+        ) {
+                console.log("passed R1 shipped kit status check!!!")
+                shippedDateObj[bioKitMouthwashBL1] = participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL1][kitShippedTime];
+        }
+
+        // 173836415.266600170.541483796.221592017 - R2 kit shipped check
+        // bioKitMouthwashBL2
+        console.log(participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2][kitStatus] === kitStatusValues.shipped, kitStatusValues.shipped)
+        if (
+            participant[collectionDetails] &&
+            participant[collectionDetails][biospecimenBaselineCollection] &&
+            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2] &&
+            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2][kitStatus] &&
+            participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2][kitStatus] === kitStatusValues.shipped
+        ) {
+                console.log("passed R2 shipped kit status check!!!")
+                // participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2]
+                shippedDateObj[bioKitMouthwashBL2] = participant[collectionDetails][biospecimenBaselineCollection][bioKitMouthwashBL2][kitShippedTime];
+        }
+        return shippedDateObj;
+    }
+    // const shippedKitStatusDates = getKitShippedStatusDates(participant);
+    // console.log("🚀 ~ renderSummaryTabContent ~ shippedKitStatusDates:", shippedKitStatusDates)
