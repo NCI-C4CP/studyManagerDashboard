@@ -18,6 +18,7 @@ import {
   baselinePayment,
   baselinePhysActReport,
   dhq3Report,
+  getKitShippedStatusDates,
 } from '../src/participantSummaryRow.js';
 
 const formatDate = (iso) => {
@@ -720,6 +721,90 @@ describe('participantSummaryRow', () => {
       expect(refusalMatch.length).toBeGreaterThan(0);
     });
   });
+
+  describe('getKitShippedStatusDates', () => {
+    
+    it('returns an object with all kit rounds and their shipped dates', () => {
+      const mockParticipant = buildParticipant({
+        [fieldMapping.collectionDetails]: {
+          [fieldMapping.baseline]: {
+            [fieldMapping.bioKitMouthwash]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitShippedTime]: '2024-11-01T00:00:00.000Z',
+            },
+            [fieldMapping.bioKitMouthwashBL1]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitShippedTime]: '2024-11-05T00:00:00.000Z',
+            },
+            [fieldMapping.bioKitMouthwashBL2]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitShippedTime]: '2024-11-10T00:00:00.000Z',
+            },
+          },
+        },
+      });
+
+      expect(getKitShippedStatusDates(mockParticipant)).toEqual({
+        [fieldMapping.bioKitMouthwash]: '2024-11-01T00:00:00.000Z',
+        [fieldMapping.bioKitMouthwashBL1]: '2024-11-05T00:00:00.000Z',
+        [fieldMapping.bioKitMouthwashBL2]: '2024-11-10T00:00:00.000Z',
+      });
+    });
+
+    it('returns a single kit round with shipped date when only one kit is shipped', () => {
+      const mockParticipant = buildParticipant({
+        [fieldMapping.collectionDetails]: {
+          [fieldMapping.baseline]: {
+            [fieldMapping.bioKitMouthwash]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitShippedTime]: '2024-11-01T00:00:00.000Z',
+            },
+            [fieldMapping.bioKitMouthwashBL1]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.pending,
+            },
+            [fieldMapping.bioKitMouthwashBL2]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.pending,
+            },
+          },
+        },
+      });
+
+      expect(getKitShippedStatusDates(mockParticipant)).toEqual({
+        [fieldMapping.bioKitMouthwash]: '2024-11-01T00:00:00.000Z',
+      });
+    });
+
+    it('returns an empty object when no kit statuses are shipped', () => {
+      const mockParticipant = buildParticipant({
+        [fieldMapping.collectionDetails]: {
+          [fieldMapping.baseline]: {
+            [fieldMapping.bioKitMouthwash]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.received,
+              [fieldMapping.kitShippedTime]: '2024-11-01T00:00:00.000Z',
+            },
+            [fieldMapping.bioKitMouthwashBL1]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.pending,
+            },
+            [fieldMapping.bioKitMouthwashBL2]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.pending,
+            },
+          },
+        },
+      });
+      expect(getKitShippedStatusDates(mockParticipant)).toEqual({});
+  });
+
+  it('handles missing baseline collection details',() => {
+    const mockParticipant = buildParticipant({
+      [fieldMapping.collectionDetails]: {
+        [fieldMapping.baseline]: {
+          // Edge Case: No kit details provided
+        },
+      },
+    });
+    expect(getKitShippedStatusDates(mockParticipant)).toEqual({});
+  });
+});
 
   describe('edge cases and null/undefined handling', () => {
     it('handles null participant in verificationStatus', () => {

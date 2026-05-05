@@ -691,12 +691,12 @@ const getTemplateRow = (icon, color, timeline, category, item, status, date, set
  * @param {Object} participant - The current participant's data object
  * @returns {Object} An object containing the shipped dates for each bio kit round
  * Ex. returned object: {
- *   bioKitMouthwash: "2024-01-01T00:00:000Z",
- *   bioKitMouthwashBL1: "2025-02-01T00:00:000Z",
- *   bioKitMouthwashBL2: "2026-03-01T00:00:000Z"
+ *   bioKitMouthwash: "2024-01-01T00:00:00.000Z",
+ *   bioKitMouthwashBL1: "2025-02-01T00:00:00.000Z",
+ *   bioKitMouthwashBL2: "2026-03-01T00:00:00.000Z"
  * }
  */
-const getKitShippedStatusDates = (participant) => {
+export const getKitShippedStatusDates = (participant) => {
     const shippedDateObj = {};
     const { 
         collectionDetails, 
