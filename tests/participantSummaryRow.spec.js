@@ -339,6 +339,67 @@ describe('participantSummaryRow', () => {
       expect(row).toContain('Invalid timestamp format: not-a-date');
     });
 
+    it('renders home mouthwash initial kits with shipped status and shipped date', () => { 
+      const participant = buildParticipant({
+        [fieldMapping.collectionDetails]: {
+          [fieldMapping.baseline]: {
+            [fieldMapping.bioKitMouthwash]: {
+              [fieldMapping.kitType]: fieldMapping.kitTypeValues.homeMouthwash,
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitShippedTime]: '2024-04-01T00:00:00Z',
+            },
+          },
+        },
+      });
+
+      const row = baselineHomeMouthwashSample(participant);
+      expect(row).toContain('Home Mouthwash Initial');
+      expect(row).toContain('Not Collected');
+      expect(row).toContain('Kit Shipped)');
+      expect(row).toContain('04/01/2024');
+    });
+
+    it('renders home mouthwash replacement kit 1 with shipped status and shipped date', () => {
+      const participant = buildParticipant({
+        [fieldMapping.collectionDetails]: {
+          [fieldMapping.baseline]: {
+            [fieldMapping.bioKitMouthwashBL1]: {
+              [fieldMapping.kitType]: fieldMapping.kitTypeValues.homeMouthwash,
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitShippedTime]: '2024-05-01T00:00:00Z',
+            },
+          },
+        },
+      });
+
+      const row = baselineHomeMouthwashSample(participant);
+      expect(row).toContain('Home Mouthwash R1');
+      expect(row).toContain('Not Collected');
+      expect(row).toContain('Kit Shipped)');
+      expect(row).toContain('05/01/2024');
+    });
+
+    it('renders home mouthwash replacement kit 2 with shipped status and shipped date', () => { 
+      const participant = buildParticipant({
+        [fieldMapping.collectionDetails]: {
+          [fieldMapping.baseline]: {
+            [fieldMapping.bioKitMouthwashBL1]: {
+              [fieldMapping.kitType]: fieldMapping.kitTypeValues.homeMouthwash,
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitShippedTime]: '2024-05-01T00:00:00Z',
+            },
+          },
+        },
+      });
+
+      const row = baselineMouthwashR1Sample(participant);
+      expect(row).toContain('Home Mouthwash R2');
+      expect(row).toContain('Not Collected');
+      expect(row).toContain('Kit Shipped)');
+      expect(row).toContain('05/01/2024');
+
+    });
+
     it('renders home mouthwash initial kits with refusal state and kit status', () => {
       const participant = buildParticipant({
         [fieldMapping.refusalOptions]: {
@@ -794,7 +855,7 @@ describe('participantSummaryRow', () => {
       expect(getKitShippedStatusDates(mockParticipant)).toEqual({});
   });
 
-  it('handles missing baseline collection details',() => {
+  it('handles missing baseline collection details', () => {
     const mockParticipant = buildParticipant({
       [fieldMapping.collectionDetails]: {
         [fieldMapping.baseline]: {

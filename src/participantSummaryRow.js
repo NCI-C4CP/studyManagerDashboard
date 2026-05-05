@@ -568,7 +568,7 @@ const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
             kitStatusStr = 'Kit ' + kitStatusStr;
             if (kitStatusCid === fieldMapping.kitStatusValues.shipped) {
                 const shippedDate = shippedKitStatusDates?.[path];
-                kitStatusStr += shippedDate ? `<br> ${formatUTCDate(shippedDate)}` : '';
+                kitStatusStr += shippedDate ? `<br>${formatUTCDate(shippedDate)}` : '';
             }
         } else {
             kitStatusStr = 'N/A';
@@ -700,7 +700,7 @@ export const getKitShippedStatusDates = (participant) => {
     const shippedDateObj = {};
     const { 
         collectionDetails, 
-        biospecimenBaselineCollection,
+        baseline,
         bioKitMouthwash,
         bioKitMouthwashBL1,
         bioKitMouthwashBL2,
@@ -716,8 +716,8 @@ export const getKitShippedStatusDates = (participant) => {
     ];
 
     for (const round of bioKitRounds) {
-        if (participant[collectionDetails]?.[biospecimenBaselineCollection]?.[round]?.[kitStatus] === kitStatusValues.shipped) {
-            shippedDateObj[round] = participant[collectionDetails][biospecimenBaselineCollection][round][kitShippedTime];
+        if (participant[collectionDetails]?.[baseline]?.[round]?.[kitStatus] === kitStatusValues.shipped) {
+            shippedDateObj[round] = participant[collectionDetails][baseline][round][kitShippedTime];
         }
     }
     return shippedDateObj;
