@@ -355,7 +355,7 @@ describe('participantSummaryRow', () => {
       const row = baselineHomeMouthwashSample(participant);
       expect(row).toContain('Home Mouthwash Initial');
       expect(row).toContain('Not Collected');
-      expect(row).toContain('Kit Shipped)');
+      expect(row).toContain('Kit Shipped');
       expect(row).toContain('04/01/2024');
     });
 
@@ -372,10 +372,10 @@ describe('participantSummaryRow', () => {
         },
       });
 
-      const row = baselineHomeMouthwashSample(participant);
+      const row = baselineMouthwashR1Sample(participant);
       expect(row).toContain('Home Mouthwash R1');
       expect(row).toContain('Not Collected');
-      expect(row).toContain('Kit Shipped)');
+      expect(row).toContain('Kit Shipped');
       expect(row).toContain('05/01/2024');
     });
 
@@ -383,7 +383,7 @@ describe('participantSummaryRow', () => {
       const participant = buildParticipant({
         [fieldMapping.collectionDetails]: {
           [fieldMapping.baseline]: {
-            [fieldMapping.bioKitMouthwashBL1]: {
+            [fieldMapping.bioKitMouthwashBL2]: {
               [fieldMapping.kitType]: fieldMapping.kitTypeValues.homeMouthwash,
               [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
               [fieldMapping.kitShippedTime]: '2024-05-01T00:00:00Z',
@@ -392,10 +392,10 @@ describe('participantSummaryRow', () => {
         },
       });
 
-      const row = baselineMouthwashR1Sample(participant);
+      const row = baselineMouthwashR2Sample(participant);
       expect(row).toContain('Home Mouthwash R2');
       expect(row).toContain('Not Collected');
-      expect(row).toContain('Kit Shipped)');
+      expect(row).toContain('Kit Shipped');
       expect(row).toContain('05/01/2024');
 
     });
