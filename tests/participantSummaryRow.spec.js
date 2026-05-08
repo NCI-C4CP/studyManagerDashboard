@@ -784,13 +784,12 @@ describe('participantSummaryRow', () => {
   });
 
   describe('getKitShippedStatusDates', () => {
-    
-    it('returns an object with all kit rounds and their shipped dates', () => {
+    it('returns an object with only kit status of shipped and their shipped dates', () => {
       const mockParticipant = buildParticipant({
         [fieldMapping.collectionDetails]: {
           [fieldMapping.baseline]: {
             [fieldMapping.bioKitMouthwash]: {
-              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.received,
               [fieldMapping.kitShippedTime]: '2024-11-01T00:00:00.000Z',
             },
             [fieldMapping.bioKitMouthwashBL1]: {
@@ -798,17 +797,14 @@ describe('participantSummaryRow', () => {
               [fieldMapping.kitShippedTime]: '2024-11-05T00:00:00.000Z',
             },
             [fieldMapping.bioKitMouthwashBL2]: {
-              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
-              [fieldMapping.kitShippedTime]: '2024-11-10T00:00:00.000Z',
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.assigned,
             },
           },
         },
       });
 
       expect(getKitShippedStatusDates(mockParticipant)).toEqual({
-        [fieldMapping.bioKitMouthwash]: '2024-11-01T00:00:00.000Z',
         [fieldMapping.bioKitMouthwashBL1]: '2024-11-05T00:00:00.000Z',
-        [fieldMapping.bioKitMouthwashBL2]: '2024-11-10T00:00:00.000Z',
       });
     });
 
