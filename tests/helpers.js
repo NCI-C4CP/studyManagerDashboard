@@ -120,7 +120,7 @@ export const getFirebaseAuthStub = () => authStub;
  * @param {number} ms - Milliseconds to wait (default: 50)
  * @returns {Promise<void>}
  */
-export const waitForAsyncTasks = (ms = 50) => 
+export const waitForAsyncTasks = (ms = 50) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
