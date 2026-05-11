@@ -339,7 +339,7 @@ describe('participantSummaryRow', () => {
       expect(row).toContain('Invalid timestamp format: not-a-date');
     });
 
-    it('renders home mouthwash initial kits with shipped status and shipped date', () => { 
+    it('renders home mouthwash initial kit with shipped status and shipped date', () => {
       const participant = buildParticipant({
         [fieldMapping.collectionDetails]: {
           [fieldMapping.baseline]: {
@@ -784,7 +784,7 @@ describe('participantSummaryRow', () => {
   });
 
   describe('getKitShippedStatusDates', () => {
-    it('returns an object with only kit status of shipped and their shipped dates', () => {
+    it('returns an object containing only shipped kits and their shipped dates', () => {
       const mockParticipant = buildParticipant({
         [fieldMapping.collectionDetails]: {
           [fieldMapping.baseline]: {
