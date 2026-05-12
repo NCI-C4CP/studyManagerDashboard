@@ -364,7 +364,7 @@ const showUploadStatus = (filename, loaded, total) => {
     const percent = Math.round((loaded / total) * 100);
     span.textContent = `${filename}: ${percent}% (${formatBytes(loaded)}/${formatBytes(total)})`;
 
-    if (percent === 100) {
+    if (loaded === total) {
       span.style.color = "green";
       span.style.fontWeight = "bold";
     }
