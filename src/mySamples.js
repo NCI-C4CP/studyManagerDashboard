@@ -2,7 +2,6 @@ import { updateNavBar } from './navigationBar.js';
 import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner } from './utils.js';
 import { appState } from './stateManager.js';
 
-const converter = new showdown.Converter();
 const langObj = { en: 'English', es: 'Spanish' };
 const langArray = Object.keys(langObj).sort();
 
@@ -166,7 +165,7 @@ const handleFormSubmit = () => {
           return;
         }
 
-        data.update[lang] = converter.makeHtml(currContent);
+        data.update[lang] = currContent;
       }
     }
 
@@ -191,7 +190,7 @@ const handleContentPreview = () => {
     if (!textareaEle || !contentPreviewDiv || !refreshBtn) continue;
 
     refreshBtn.addEventListener('click', () => {
-      contentPreviewDiv.innerHTML = DOMPurify.sanitize(converter.makeHtml(`<div>${textareaEle.value}</div>`));
+      contentPreviewDiv.innerHTML = DOMPurify.sanitize(`<div>${textareaEle.value}</div>`);
     });
   }
 };
