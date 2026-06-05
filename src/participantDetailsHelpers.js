@@ -3,7 +3,7 @@ import { renderParticipantDetails } from './participantDetails.js';
 import { findParticipant } from './participantLookup.js';
 import { appState, participantState, roleState, userSession, markUnsaved, clearUnsaved, invalidateSearchResultsCache } from './stateManager.js';
 import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, escapeHTML } from './utils.js';
-import { getCountryConceptIdList, getCountryCode3List, getCountryNameByConceptId } from './countryMapping.js';
+import { getCountryConceptIdList, getCountryCode3List, getCountryNameByConceptId, getCountryNameByCode3 } from './countryMapping.js';
 
 export const allStates = {
     "Alabama":1,

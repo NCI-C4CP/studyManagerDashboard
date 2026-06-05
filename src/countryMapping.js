@@ -327,7 +327,7 @@ export const getCountryData = () => [...countryData];
 export const getCountryCode3List = () => countryData.map(c => c.code3);
 
 /**
- * Get list of all 3-character country codes
- * @returns {string[]} - Array of 3-character codes
+ * Get list of all concept ids
+ * @returns {number[]} - Array of numeric concept ids
  */
 export const getCountryConceptIdList = () => countryData.map(c => c.conceptId);
