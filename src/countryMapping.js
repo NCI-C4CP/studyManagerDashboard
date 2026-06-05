@@ -292,7 +292,7 @@ export const getConceptIdByCountryName = (countryName) => countryNameToConceptId
  * @param {number} conceptId - 9-digit concept ID
  * @returns {string|undefined} - Country name or undefined if not found
  */
-export const getCountryNameByConceptId = (conceptId) => conceptIdToCountryName.get(conceptId);
+export const getCountryNameByConceptId = (conceptId) => conceptIdToCountryName.get(parseInt(conceptId, 10));
 
 /**
  * Get country name by 3-character code
@@ -325,3 +325,9 @@ export const getCountryData = () => [...countryData];
  * @returns {string[]} - Array of 3-character codes
  */
 export const getCountryCode3List = () => countryData.map(c => c.code3);
+
+/**
+ * Get list of all 3-character country codes
+ * @returns {string[]} - Array of 3-character codes
+ */
+export const getCountryConceptIdList = () => countryData.map(c => c.conceptId);

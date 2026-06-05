@@ -3,7 +3,7 @@ import { renderParticipantDetails } from './participantDetails.js';
 import { findParticipant } from './participantLookup.js';
 import { appState, participantState, roleState, userSession, markUnsaved, clearUnsaved, invalidateSearchResultsCache } from './stateManager.js';
 import { baseAPI, getDataAttributes, getIdToken, hideAnimation, showAnimation, triggerNotificationBanner, escapeHTML } from './utils.js';
-import { getCountryCode3List, getCountryNameByCode3 } from './countryMapping.js';
+import { getCountryConceptIdList, getCountryCode3List, getCountryNameByConceptId } from './countryMapping.js';
 
 export const allStates = {
     "Alabama":1,
@@ -89,12 +89,14 @@ const fieldValues = {
     [fieldMapping.language.es]: 'Spanish',
 }
 
+const countryIds = getCountryConceptIdList();
 const countryCodes = getCountryCode3List();
 
 export const getFieldValues = (variableValue, conceptId) => {
     if (!variableValue || (conceptId === "Change Login Email" && variableValue.startsWith("noreply"))) return "";
     if (variableValue in fieldValues) return fieldValues[variableValue];
     if (countryCodes.includes(variableValue)) return getCountryNameByCode3(variableValue);
+    if (countryIds.includes(parseInt(variableValue, 10))) return getCountryNameByConceptId(variableValue);
 
     const formattedPhoneValue = variableValue ? formatPhoneNumber(variableValue.toString()) : "";
     const phoneFieldValues = {
@@ -1440,8 +1442,11 @@ const forceDataTypesForFirestore = (changedOption) => {
         fieldMapping.isPOBox,
         fieldMapping.isPOBoxAltAddress,
         fieldMapping.isIntlAddr,
+        fieldMapping.country,
         fieldMapping.physicalAddrIntl,
-        fieldMapping.isIntlAltAddress
+        fieldMapping.physicalCountry,
+        fieldMapping.isIntlAltAddress,
+        fieldMapping.altCountry
     ];
     
     const fieldsToString = [
