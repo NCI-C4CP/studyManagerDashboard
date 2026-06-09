@@ -489,7 +489,7 @@ const renderStateSelector = (participantValue, conceptId) => {
 
 const renderCountrySelector = (participantValue, conceptId) => {
     let options = '';
-    let countries = getCountryData();
+    const countries = getCountryData();
     for(const index in countries){
         if (countries[index].code3 !== 'usa') {
             options += `<option class="option-dark-mode" value="${countries[index].conceptId}">${countries[index].name}</option>`
