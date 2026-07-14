@@ -3,6 +3,7 @@ import { renderNavBarLinks, dashboardNavBarLinks, renderLogin, updateNavBar, upd
 import { renderTable, renderParticipantSearchResults, setupActiveColumns, renderFilters } from './src/participantCommons.js';
 import { renderParticipantDetails } from './src/participantDetails.js';
 import { renderRequestAKitConditions } from './src/requestAKitConditions.js';
+import { renderGenerateServiceAccountKeyPage } from './src/generateServiceAccountKey.js';
 import { renderEhrUploadPage } from "./src/ehrUpload.js";
 import { renderSiteMessages } from './src/siteMessages.js';
 import { createNotificationSchema, editNotificationSchema } from './src/storeNotifications.js';
@@ -277,6 +278,7 @@ export const router = async () => {
         else if (route === '#notifications/editSchema') return editNotificationSchema();
         else if (route === '#notifications/showDraftSchemas') return showDraftSchemas();
         else if (route === '#requestAKitConditions') return renderRequestAKitConditions();
+        else if (route === '#generateServiceAccountKey') return renderGenerateServiceAccountKeyPage();
         else if (route === '#ehrUpload') return renderEhrUploadPage();
         else if (route === '#mySamples') return renderMySamplesPage();
         else if (route === '#logout') return signOutAndClearSession();
