@@ -1,18 +1,3 @@
-/**
- * Generate Service Account Key
- * 
- * Provides a UI for authenticated site users to generate and download a GCP
- * service account key JSON file for their site's API integration. The backend
- * determines the appropriate service account from the user's siteDetails.saEmail.
- * 
- * Backend endpoint: POST ?api=generateServiceAccountKey
- * - 200: Success — response.data contains the key JSON (same format as GCP Console export)
- * - 400: Site has no service account configured
- * - 401: Not authenticated
- * - 405: Wrong HTTP method
- * - 500: IAM API error (details in response.message)
- */
-
 import { updateNavBar } from './navigationBar.js';
 import { getIdToken, baseAPI, showAnimation, hideAnimation, triggerNotificationBanner, showConfirmModal } from './utils.js';
 
