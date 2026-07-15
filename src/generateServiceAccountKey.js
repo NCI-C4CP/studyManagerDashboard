@@ -19,7 +19,8 @@
  */
 
 import { updateNavBar } from './navigationBar.js';
-import { getIdToken, baseAPI, showAnimation, hideAnimation, triggerNotificationBanner, showConfirmModal } from './utils.js';
+import { roleState } from './stateManager.js';
+import { getIdToken, baseAPI, showAnimation, hideAnimation, triggerNotificationBanner, showConfirmModal, escapeHTML } from './utils.js';
 
 /**
  * Triggers a browser download of a JSON object as a file.
@@ -118,12 +119,15 @@ const renderKeyList = (keys) => {
     if (!keys || keys.length === 0) {
         container.innerHTML = '<p class="text-muted">No active keys found for this site.</p>';
     } else {
-        const rows = keys.map(key => `
+        const rows = keys.map(key => {
+            const keyIdText = key.keyId ? `${key.keyId.substring(0, 12)}...` : 'N/A';
+            return `
             <tr>
-                <td><code>${key.keyId ? key.keyId.substring(0, 12) + '...' : 'N/A'}</code></td>
-                <td>${key.createdAt ? new Date(key.createdAt).toLocaleDateString() : 'Unknown'}</td>
-                <td>${formatExpiration(key)}</td>
-            </tr>`).join('');
+                <td><code>${escapeHTML(keyIdText)}</code></td>
+                <td>${key.createdAt ? escapeHTML(new Date(key.createdAt).toLocaleDateString()) : 'Unknown'}</td>
+                <td>${escapeHTML(formatExpiration(key))}</td>
+            </tr>`;
+        }).join('');
 
         container.innerHTML = `
             <table class="table table-sm table-bordered mt-3">
@@ -178,9 +182,12 @@ const handleGenerateKey = async () => {
             headers: { Authorization: 'Bearer ' + idToken },
         });
 
-        if (!response.ok && response.headers.get('content-type')?.indexOf('application/json') === -1) {
-            triggerNotificationBanner(`Server error (HTTP ${response.status}). Please try again later.`, 'danger');
-            return;
+        if (!response.ok) {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                triggerNotificationBanner(`Server error (HTTP ${response.status}). Please try again later.`, 'danger');
+                return;
+            }
         }
 
         const result = await response.json();
@@ -207,14 +214,21 @@ const handleGenerateKey = async () => {
 
 /**
  * Renders the API Key Generator page.
- * Visible to all users on the normal dashboard nav bar (isSiteManager, helpDesk,
- * coordinatingCenter). EHR-only uploaders use a separate nav and cannot access this page.
+ * Intended for site managers and coordinating center users.
  * Fetches and displays active keys on load, with a button to generate new ones.
  */
 export const renderGenerateServiceAccountKeyPage = async () => {
     updateNavBar('generateServiceAccountKeyBtn');
 
+    const { isSiteManager, coordinatingCenter } = roleState.getRoleFlags();
     const mainContent = document.getElementById('mainContent');
+    if (!mainContent) return;
+
+    if (!(isSiteManager || coordinatingCenter)) {
+        mainContent.innerHTML = '<div class="container-fluid"><div class="alert alert-danger" role="alert">You are not authorized to access the API Key Generator.</div></div>';
+        return;
+    }
+
     mainContent.innerHTML = `
         <div class="container-fluid">
             <div id="alert_placeholder"></div>

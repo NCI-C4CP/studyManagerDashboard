@@ -187,7 +187,8 @@ describe('router', () => {
   });
 
   describe('#generateServiceAccountKey route', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+      await roleState.setRoleFlags({ isSiteManager: true, helpDesk: false, coordinatingCenter: false, isEHRUploader: false });
       global.fetch = async () => ({
         ok: true,
         status: 200,

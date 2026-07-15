@@ -131,7 +131,7 @@ describe('navigationBar', () => {
         });
 
         it('does not show API Key Generator link for EHR uploaders', async () => {
-            await roleState.setRoleFlags({ isSiteManager: false, isEHRUploader: true });
+            await roleState.setRoleFlags({ isSiteManager: false, isEHRUploader: true, helpDesk: false, coordinatingCenter: false });
             const html = dashboardNavBarLinks();
             expect(html).not.toContain('href="#generateServiceAccountKey"');
         });
