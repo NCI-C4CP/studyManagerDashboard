@@ -110,5 +110,30 @@ describe('navigationBar', () => {
             const html = dashboardNavBarLinks();
             expect(html).not.toContain('id="notifications"');
         });
+
+        it('shows API Key Generator link for site managers', async () => {
+            await roleState.setRoleFlags({ isSiteManager: true, helpDesk: false, coordinatingCenter: false });
+            const html = dashboardNavBarLinks();
+            expect(html).toContain('href="#generateServiceAccountKey"');
+            expect(html).toContain('API Key Generator');
+        });
+
+        it('shows API Key Generator link for coordinating center', async () => {
+            await roleState.setRoleFlags({ isSiteManager: false, helpDesk: false, coordinatingCenter: true });
+            const html = dashboardNavBarLinks();
+            expect(html).toContain('href="#generateServiceAccountKey"');
+        });
+
+        it('hides API Key Generator link for helpDesk users', async () => {
+            await roleState.setRoleFlags({ isSiteManager: false, helpDesk: true, coordinatingCenter: false });
+            const html = dashboardNavBarLinks();
+            expect(html).not.toContain('href="#generateServiceAccountKey"');
+        });
+
+        it('does not show API Key Generator link for EHR uploaders', async () => {
+            await roleState.setRoleFlags({ isSiteManager: false, isEHRUploader: true });
+            const html = dashboardNavBarLinks();
+            expect(html).not.toContain('href="#generateServiceAccountKey"');
+        });
     });
 });

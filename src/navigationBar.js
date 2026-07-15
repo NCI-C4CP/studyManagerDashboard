@@ -57,9 +57,10 @@ export const dashboardNavBarLinks = () => {
             (`<li class="nav-item" id="manageRequestAKitConditionsBtn">
                 <a class="nav-item nav-link ws-nowrap" href="#requestAKitConditions" title="Manage Automated Kit Request Eligibility"><i class="fa-solid fa-gears"></i> CCC use only- Set Kit Eligibility</a>
             </li>`) : (``) }
-        <li class="nav-item" id="generateServiceAccountKeyBtn">
-            <a class="nav-item nav-link ws-nowrap" href="#generateServiceAccountKey" title="Generate Service Account Key"><i class="fa-solid fa-key"></i> Admin Use Only - API Key Generator</a>
-        </li>
+        ${(isSiteManager || coordinatingCenter) ?
+            (`<li class="nav-item" id="generateServiceAccountKeyBtn">
+                <a class="nav-item nav-link ws-nowrap" href="#generateServiceAccountKey" title="Generate Service Account Key"><i class="fa-solid fa-key"></i> Developer Use Only - API Key Generator</a>
+            </li>`) : (``) }
         <div class="w-100 d-none d-lg-block"></div>
         ${isSiteManager ?
         (`<li class="nav-item" id="siteMessageBtn">

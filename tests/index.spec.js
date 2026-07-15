@@ -186,4 +186,48 @@ describe('router', () => {
     });
   });
 
+  describe('#generateServiceAccountKey route', () => {
+    beforeEach(() => {
+      global.fetch = async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 200, data: { keys: [] } }),
+      });
+    });
+
+    afterEach(() => {
+      delete global.fetch;
+    });
+
+    it('renders the API Key Generator page', async () => {
+      window.location.hash = '#generateServiceAccountKey';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main).not.toBeNull();
+      expect(main.innerHTML).toContain('API Key Generator');
+      expect(main.innerHTML).toContain('generateKeyBtn');
+    });
+
+    it('displays active keys table when keys exist', async () => {
+      global.fetch = async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 200, data: { keys: [
+          { keyId: 'abc123def456', createdAt: '2026-07-01T00:00:00Z', expiresAt: '2026-10-01T00:00:00Z', isLegacy: false }
+        ] } }),
+      });
+
+      window.location.hash = '#generateServiceAccountKey';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main.innerHTML).toContain('abc123def456');
+    });
+  });
+
 });
