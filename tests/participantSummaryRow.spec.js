@@ -18,6 +18,7 @@ import {
   baselinePayment,
   baselinePhysActReport,
   dhq3Report,
+  getKitShippedStatusDates,
 } from '../src/participantSummaryRow.js';
 
 const formatDate = (iso) => {
@@ -336,6 +337,67 @@ describe('participantSummaryRow', () => {
 
       const row = baselineResearchMouthwashSample(participant);
       expect(row).toContain('Invalid timestamp format: not-a-date');
+    });
+
+    it('renders home mouthwash initial kit with shipped status and shipped date', () => {
+      const participant = buildParticipant({
+        [fieldMapping.collectionDetails]: {
+          [fieldMapping.baseline]: {
+            [fieldMapping.bioKitMouthwash]: {
+              [fieldMapping.kitType]: fieldMapping.kitTypeValues.homeMouthwash,
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitShippedTime]: '2024-04-01T00:00:00Z',
+            },
+          },
+        },
+      });
+
+      const row = baselineHomeMouthwashSample(participant);
+      expect(row).toContain('Home Mouthwash Initial');
+      expect(row).toContain('Not Collected');
+      expect(row).toContain('Kit Shipped');
+      expect(row).toContain('04/01/2024');
+    });
+
+    it('renders home mouthwash replacement kit 1 with shipped status and shipped date', () => {
+      const participant = buildParticipant({
+        [fieldMapping.collectionDetails]: {
+          [fieldMapping.baseline]: {
+            [fieldMapping.bioKitMouthwashBL1]: {
+              [fieldMapping.kitType]: fieldMapping.kitTypeValues.homeMouthwash,
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitShippedTime]: '2024-05-01T00:00:00Z',
+            },
+          },
+        },
+      });
+
+      const row = baselineMouthwashR1Sample(participant);
+      expect(row).toContain('Home Mouthwash R1');
+      expect(row).toContain('Not Collected');
+      expect(row).toContain('Kit Shipped');
+      expect(row).toContain('05/01/2024');
+    });
+
+    it('renders home mouthwash replacement kit 2 with shipped status and shipped date', () => { 
+      const participant = buildParticipant({
+        [fieldMapping.collectionDetails]: {
+          [fieldMapping.baseline]: {
+            [fieldMapping.bioKitMouthwashBL2]: {
+              [fieldMapping.kitType]: fieldMapping.kitTypeValues.homeMouthwash,
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitShippedTime]: '2024-05-01T00:00:00Z',
+            },
+          },
+        },
+      });
+
+      const row = baselineMouthwashR2Sample(participant);
+      expect(row).toContain('Home Mouthwash R2');
+      expect(row).toContain('Not Collected');
+      expect(row).toContain('Kit Shipped');
+      expect(row).toContain('05/01/2024');
+
     });
 
     it('renders home mouthwash initial kits with refusal state and kit status', () => {
@@ -720,6 +782,86 @@ describe('participantSummaryRow', () => {
       expect(refusalMatch.length).toBeGreaterThan(0);
     });
   });
+
+  describe('getKitShippedStatusDates', () => {
+    it('returns an object containing only shipped kits and their shipped dates', () => {
+      const mockParticipant = buildParticipant({
+        [fieldMapping.collectionDetails]: {
+          [fieldMapping.baseline]: {
+            [fieldMapping.bioKitMouthwash]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.received,
+              [fieldMapping.kitShippedTime]: '2024-11-01T00:00:00.000Z',
+            },
+            [fieldMapping.bioKitMouthwashBL1]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitShippedTime]: '2024-11-05T00:00:00.000Z',
+            },
+            [fieldMapping.bioKitMouthwashBL2]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.assigned,
+            },
+          },
+        },
+      });
+
+      expect(getKitShippedStatusDates(mockParticipant)).toEqual({
+        [fieldMapping.bioKitMouthwashBL1]: '2024-11-05T00:00:00.000Z',
+      });
+    });
+
+    it('returns a single kit round with shipped date when only one kit is shipped', () => {
+      const mockParticipant = buildParticipant({
+        [fieldMapping.collectionDetails]: {
+          [fieldMapping.baseline]: {
+            [fieldMapping.bioKitMouthwash]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.shipped,
+              [fieldMapping.kitShippedTime]: '2024-11-01T00:00:00.000Z',
+            },
+            [fieldMapping.bioKitMouthwashBL1]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.pending,
+            },
+            [fieldMapping.bioKitMouthwashBL2]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.pending,
+            },
+          },
+        },
+      });
+
+      expect(getKitShippedStatusDates(mockParticipant)).toEqual({
+        [fieldMapping.bioKitMouthwash]: '2024-11-01T00:00:00.000Z',
+      });
+    });
+
+    it('returns an empty object when no kit statuses are shipped', () => {
+      const mockParticipant = buildParticipant({
+        [fieldMapping.collectionDetails]: {
+          [fieldMapping.baseline]: {
+            [fieldMapping.bioKitMouthwash]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.received,
+              [fieldMapping.kitShippedTime]: '2024-11-01T00:00:00.000Z',
+            },
+            [fieldMapping.bioKitMouthwashBL1]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.pending,
+            },
+            [fieldMapping.bioKitMouthwashBL2]: {
+              [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.pending,
+            },
+          },
+        },
+      });
+      expect(getKitShippedStatusDates(mockParticipant)).toEqual({});
+  });
+
+  it('handles missing baseline collection details', () => {
+    const mockParticipant = buildParticipant({
+      [fieldMapping.collectionDetails]: {
+        [fieldMapping.baseline]: {
+          // Edge Case: No kit details provided
+        },
+      },
+    });
+    expect(getKitShippedStatusDates(mockParticipant)).toEqual({});
+  });
+});
 
   describe('edge cases and null/undefined handling', () => {
     it('handles null participant in verificationStatus', () => {

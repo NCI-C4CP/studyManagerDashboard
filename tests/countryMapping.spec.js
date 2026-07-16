@@ -6,6 +6,7 @@ import {
   getCountryList,
   getCountryData,
   getCountryCode3List,
+  getCountryConceptIdList,
 } from '../src/countryMapping.js';
 
 describe('countryMapping', () => {
@@ -110,6 +111,15 @@ describe('countryMapping', () => {
     it('returns names in alphabetical order', () => {
       const list = getCountryList();
       expect(list[0]).toBe('Afghanistan');
+    });
+  });
+
+  describe('getCountryConceptIdList', () => {
+    it('returns array of concept ids for countries', () => {
+      const list = getCountryConceptIdList();
+      expect(list).toBeInstanceOf(Array);
+      expect(list.length).toBe(270);
+      expect(list).toContain(333208328);
     });
   });
 

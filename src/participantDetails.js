@@ -6,7 +6,7 @@ import { getDataAttributes, urls, escapeHTML, renderShowMoreDataModal } from './
 import { appState, participantState, markUnsaved, clearUnsaved } from './stateManager.js';
 import { navigateBackToSearchResults } from './participantLookup.js';
 import { renderParticipantTabs, initializeTabListeners, loadTabContent, getTabIdFromHash, activateTab } from './participantTabs.js';
-import { getCountryCode3List, getCountryNameByCode3 } from './countryMapping.js';
+import { getCountryData } from './countryMapping.js';
 
 window.addEventListener('beforeunload',  (e) => {
     if (appState.getState().hasUnsavedChanges) { 
@@ -489,10 +489,10 @@ const renderStateSelector = (participantValue, conceptId) => {
 
 const renderCountrySelector = (participantValue, conceptId) => {
     let options = '';
-    let countryCodes = getCountryCode3List();
-    for(const index in countryCodes){
-        if (countryCodes[index] !== 'usa') {
-            options += `<option class="option-dark-mode" value="${countryCodes[index]}">${getCountryNameByCode3(countryCodes[index])}</option>`
+    const countries = getCountryData();
+    for(const index in countries){
+        if (countries[index].code3 !== 'usa') {
+            options += `<option class="option-dark-mode" value="${countries[index].conceptId}">${countries[index].name}</option>`
         }
     }
     return `

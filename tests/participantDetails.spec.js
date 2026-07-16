@@ -252,7 +252,7 @@ describe('participantDetails Integration', () => {
         // Click Save Changes
         const saveBtn = document.getElementById('updateMemberData');
         saveBtn.click();
-        await waitForAsyncTasks();
+        await waitForAsyncTasks(150);
 
         expect(fetchCalled).toBe(true);
         expect(fetchUrl).toContain('api=updateParticipantDataNotSite');

@@ -528,6 +528,7 @@ const kitStatusCidToString = {
 const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
     const refusedMouthwashOption = participantModule[fieldMapping.refusalOptions]?.[fieldMapping.refusedMouthwash] === fieldMapping.yes;
     let displayedFields;
+    const shippedKitStatusDates = getKitShippedStatusDates(participantModule);
 
     // Research Mouthwash is part of a full specimen collection (it uses biospecimenCollectionDetail structure like blood/urine).
     if (itemName === "Research Mouthwash") {
@@ -565,6 +566,10 @@ const mouthwashSampleTemplate = (participantModule, itemName, path = null) => {
             kitStatusStr = 'Invited';
         } else if(kitStatusStr) {
             kitStatusStr = 'Kit ' + kitStatusStr;
+            if (kitStatusCid === fieldMapping.kitStatusValues.shipped) {
+                const shippedDate = shippedKitStatusDates?.[path];
+                kitStatusStr += shippedDate ? `<br>${formatUTCDate(shippedDate)}` : '';
+            }
         } else {
             kitStatusStr = 'N/A';
         }
@@ -679,3 +684,41 @@ const getTemplateRow = (icon, color, timeline, category, item, status, date, set
         <td>${extra}</td>
     `;
 }
+
+/**
+ * Get the shipped status dates for each bio kit round.
+ * For each mouthwash kit round, if the kit status is 'shipped', add the shipped date to the returned object.
+ * @param {Object} participant - The current participant's data object
+ * @returns {Object} An object containing the shipped dates for each bio kit round
+ * Ex. returned object: {
+ *   bioKitMouthwash: "2024-01-01T00:00:00.000Z",
+ *   bioKitMouthwashBL1: "2025-02-01T00:00:00.000Z",
+ *   bioKitMouthwashBL2: "2026-03-01T00:00:00.000Z"
+ * }
+ */
+export const getKitShippedStatusDates = (participant) => {
+    const shippedDateObj = {};
+    const { 
+        collectionDetails, 
+        baseline,
+        bioKitMouthwash,
+        bioKitMouthwashBL1,
+        bioKitMouthwashBL2,
+        kitStatus,
+        kitStatusValues,
+        kitShippedTime
+    } = fieldMapping;
+
+    const bioKitRounds = [
+        bioKitMouthwash, 
+        bioKitMouthwashBL1, 
+        bioKitMouthwashBL2
+    ];
+
+    for (const round of bioKitRounds) {
+        if (participant[collectionDetails]?.[baseline]?.[round]?.[kitStatus] === kitStatusValues.shipped) {
+            shippedDateObj[round] = participant[collectionDetails][baseline][round][kitShippedTime];
+        }
+    }
+    return shippedDateObj;
+};
