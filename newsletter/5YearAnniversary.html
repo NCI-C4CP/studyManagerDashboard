@@ -24,7 +24,7 @@
             <td style="padding: 0 32px 10px;">
               <p
                 style="margin:0;color: #ffffff;font-size: 14px; font-weight: bold; letter-spacing: 0; text-align: right; ;">
-                View in <a class="dark-hyperlink" href="https://storage.googleapis.com/myconnect_dashboard_stage/newsletter/5YearAnniversary.html?firstName={{firstName}}"
+                View in <a class="dark-hyperlink" href="https://NCI-C4CP.github.io/studyManagerDashboard/newsletter/5YearAnniversary.html?firstName={{firstName}}"
                   target="_blank" style="color: #ffffff;">browser</a>
               </p>
             </td>
@@ -56,7 +56,7 @@
       <td style="padding: 0 12px 10px; text-align: center;">
         <div style="position: relative; display: block; width: 100%;">
           <a href="https://cancer.gov/connect-prevention-study/news" target="_blank"><img class="landingImg"
-              src="https://storage.googleapis.com/myconnect_dashboard_stage/assets/images/5-yr-anniversary-english.png"
+              src="https://github.com/NCI-C4CP/studyManagerDashboard/blob/dev/assets/images/5-yr-anniversary-english.png?raw=true"
               alt="Connect for Cancer Prevention Study - 5 Years of Making a Difference" width="100%" style="border:0; display: block; width: 100%; height: auto;"></a>
           <div style="
             position: absolute;
@@ -106,7 +106,7 @@
 							line-height: 24px; text-align: center; padding: 0 20px;">
               <p style="margin:0;">Connect for Cancer Prevention Study</p>
               <a href="https://www.cancer.gov/" style="color: white" target="_blank">National Cancer Institute</a> | <a
-                href="https://www.nih.gov" style="color: white" target="_blank">National Institutes of Health</a><a> |
+                href="https://www.nih.gov" style="color: white" target="_blank">National Institutes of Health</a> |
               </a><a href="https://www.hhs.gov/" style="color: white" target="_blank">U.S. Department of Health and
                 Human Services</a> | <a href="https://www.usa.gov/" style="color: white" target="_blank">USA.gov</a>
             </td>
@@ -136,7 +136,7 @@
     document.querySelectorAll('span[data-fname]').forEach((el) => {
       el.textContent = el.textContent.replace('{{firstName}}', firstName);
     });
-    document.querySelector('tr[data-only-in-email]').remove();
+    document.querySelector('tr[data-only-in-email]')?.remove();
   </script>
 
 </body>
