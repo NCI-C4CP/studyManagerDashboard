@@ -4,9 +4,10 @@ import fieldMapping from './fieldToConceptIdMapping.js';
 import { retrievePhysicalActivityReport } from './reportsUtils.js';
 import { consentHandler, hipaaHandler, userProfile, verificationStatus,
     baselineBOHSurvey, baselineMRESurvey, baselineSASSurvey, baselineLAWSurvey, baselineSSN, baselineCOVIDSurvey, baselineResearchBUMSurvey, baselineClinicalBloodUrineSurvey,
-    baselineHomeMouthwashSurvey, baselineMenstrualSurvey, baselinePromisSurvey, dhqSurvey, cancerScreeningHistorySurvey, baselineExperienceSurvey, baselinePreferenceSurvey,
+    baselineHomeMouthwashSurvey, baselineMenstrualSurvey, baselinePromisSurvey, dhqSurvey, dietScreenerSurvey, cancerScreeningHistorySurvey, baselineExperienceSurvey, baselinePreferenceSurvey,
     baselineBloodSample, baselineUrineSample, baselineResearchMouthwashSample, baselineHomeMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, 
-    baselinePayment, baselinePhysActReport, dhq3Report } from './participantSummaryRow.js';
+    baselinePayment, baselinePhysActReport, dhq3Report, 
+    dietScreenerSurvey} from './participantSummaryRow.js';
 import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, renderShowMoreDataModal, urls, triggerNotificationBanner } from './utils.js';
 import { participantState, reportsState, invalidateSearchResultsCache } from './stateManager.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
@@ -148,12 +149,15 @@ const renderSummaryContent = (participant, reports) => {
                             ${dhqSurvey(participant)}
                         </tr>
                         <tr class="row-color-survey-dark">
-                            ${cancerScreeningHistorySurvey(participant)}
+                            ${dietScreenerSurvey(participant)}
                         </tr>
                         <tr class="row-color-survey-light">
-                            ${baselineExperienceSurvey(participant)}
+                            ${cancerScreeningHistorySurvey(participant)}
                         </tr>
                         <tr class="row-color-survey-dark">
+                            ${baselineExperienceSurvey(participant)}
+                        </tr>
+                        <tr class="row-color-survey-light">
                             ${baselinePreferenceSurvey(participant)}
                         </tr>
                         <tr class="row-color-sample-dark">
@@ -268,12 +272,15 @@ export const render = (participant, reports) => {
                                     ${dhqSurvey(participant)}
                                 </tr>
                                 <tr class="row-color-survey-dark">
-                                    ${cancerScreeningHistorySurvey(participant)}
+                                    ${dietScreenerSurvey(participant)}
                                 </tr>
                                 <tr class="row-color-survey-light">
-                                    ${baselineExperienceSurvey(participant)}
+                                    ${cancerScreeningHistorySurvey(participant)}
                                 </tr>
                                 <tr class="row-color-survey-dark">
+                                    ${baselineExperienceSurvey(participant)}
+                                </tr>
+                                <tr class="row-color-survey-light">
                                     ${baselinePreferenceSurvey(participant)}
                                 </tr>
                                 <tr class="row-color-sample-dark">
