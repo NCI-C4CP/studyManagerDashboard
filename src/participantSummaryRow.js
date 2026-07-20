@@ -510,7 +510,7 @@ export const getSurveyStatus = (participant, surveyFlag) => {
                     itemStatus: "Not Eligible",
                     date: "N/A",
                 };
-            // Special case: DHQ survey and Diet Screener has the 'Not Yet Eligible' status as a fallback value.
+            // Special case: DHQ survey and Diet Screener have the 'Not Yet Eligible' status as a fallback value.
             }  else if ([fieldMapping.dhqSurveyStatus, fieldMapping.dietScreenerSurveyStatus].includes(surveyFlag)) {
                 return {
                     icon: ICONS.X,

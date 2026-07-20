@@ -147,6 +147,16 @@ describe('participantSummaryRow', () => {
       });
     });
 
+    it('falls back to Not Yet Eligible for Diet Screener', () => {
+      const status = getSurveyStatus({}, fieldMapping.dietScreenerSurveyStatus);
+      expect(status).toEqual({
+        icon: 'fa-solid fa-xmark fa-2x',
+        color: 'icon--error',
+        itemStatus: 'Not Yet Eligible',
+        date: 'N/A',
+      });
+    });
+
     it('returns N/A metadata for unknown survey states', () => {
       const participant = {
         [fieldMapping.sasStatusFlag]: 12345,
