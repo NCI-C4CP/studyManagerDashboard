@@ -154,6 +154,10 @@ export const surveyFlagToDateMapping = {
         startDate: fieldMapping.preferenceSurveyStartDate,
         completeDate: fieldMapping.preferenceSurveyCompletedDate,
     },
+    [fieldMapping.dietScreenerSurveyStatus]: {
+        startDate: fieldMapping.dietScreenerSurveyStartDate,
+        completeDate: fieldMapping.dietScreenerSurveyCompletedDate,
+    },
 };
 
 const ageRangeMapping = {
@@ -365,6 +369,7 @@ export function participantConceptIDToTextMapping(rawValue, conceptID, participa
         case fieldMapping.covidFlag:
         case fieldMapping.promisSurveyFlag:
         case fieldMapping.dhqSurveyStatus:
+        case fieldMapping.dietScreenerSurveyStatus:
         case fieldMapping.cancerScreeningHistorySurveyStatus:
         case fieldMapping.experienceSurvey:
         case fieldMapping.preferenceSurveyStatus: {
