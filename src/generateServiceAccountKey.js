@@ -20,7 +20,18 @@
 
 import { updateNavBar } from './navigationBar.js';
 import { roleState } from './stateManager.js';
-import { getIdToken, baseAPI, showAnimation, hideAnimation, triggerNotificationBanner, showConfirmModal, escapeHTML } from './utils.js';
+import { getIdToken, baseAPI, urls, showAnimation, hideAnimation, triggerNotificationBanner, showConfirmModal, escapeHTML } from './utils.js';
+
+/**
+ * Returns the current environment tier based on the host.
+ * @returns {string} 'prod', 'stage', or 'dev'
+ */
+const getTier = () => {
+    const host = location.host;
+    if (host === urls.prod) return 'prod';
+    if (host === urls.stage) return 'stage';
+    return 'dev';
+};
 
 /**
  * Triggers a browser download of a JSON object as a file.
@@ -41,14 +52,16 @@ const downloadJsonFile = (data, filename) => {
 
 /**
  * Builds the download filename from the service account's client_email field.
- * Format: {client_email_prefix}-key-{YYYY-MM-DD}.json
+ * Format: {client_email_prefix}-{tier}-key-{YYYY-MM-DD}.json
+ * Example: "connect-hp-prod-key-2026-07-21.json"
  * @param {string} clientEmail - e.g., "connect-hp@project.iam.gserviceaccount.com"
  * @returns {string} The formatted filename
  */
 const buildFilename = (clientEmail) => {
     const prefix = clientEmail ? clientEmail.split('@')[0] : 'service-account';
+    const tier = getTier();
     const date = new Date().toISOString().slice(0, 10);
-    return `${prefix}-key-${date}.json`;
+    return `${prefix}-${tier}-key-${date}.json`;
 };
 
 /**
