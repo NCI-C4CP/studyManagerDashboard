@@ -244,6 +244,21 @@ export const baselinePreferenceSurvey = (data) => {
     return getTemplateRow(icon, color, timeline, category, item, itemStatus, date, setting, refused, extra);
 };
 
+export const dietScreenerSurvey = (data) => {
+    const refusedAllFutureSurveys = data[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys];
+    const refusedAllFutureActivities = data[fieldMapping.refusedAllFutureActivities];
+    const refused = refusedAllFutureSurveys === fieldMapping.yes || refusedAllFutureActivities === fieldMapping.yes ? "Y" : "N";
+    let { icon, color, itemStatus, date } = getSurveyStatus(data, fieldMapping.dietScreenerSurveyStatus);
+
+    const timeline = "Follow-Up 6-mo";
+    const category = "Survey";
+    const item = "Diet Screener";
+    const setting = "N/A";
+    const extra = "N/A";
+
+    return getTemplateRow(icon, color, timeline, category, item, itemStatus, date, setting, refused, extra);
+};
+
 /**
  * SAMPLES 
  */
@@ -495,8 +510,8 @@ export const getSurveyStatus = (participant, surveyFlag) => {
                     itemStatus: "Not Eligible",
                     date: "N/A",
                 };
-            // Special case: DHQ survey has the 'Not Yet Eligible' status as a fallback value.
-            }  else if ([fieldMapping.dhqSurveyStatus].includes(surveyFlag)) {
+            // Special case: DHQ survey and Diet Screener have the 'Not Yet Eligible' status as a fallback value.
+            }  else if ([fieldMapping.dhqSurveyStatus, fieldMapping.dietScreenerSurveyStatus].includes(surveyFlag)) {
                 return {
                     icon: ICONS.X,
                     color: COLORS.RED,
