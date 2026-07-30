@@ -242,6 +242,10 @@ export default
     'dhqUsername': 148184166, 
     'dhqStudyID': 196723965,
 
+    'dietScreenerSurveyStatus': 301686481,
+    'dietScreenerSurveyStartDate': 824039046,
+    'dietScreenerSurveyCompletedDate': 676097165,
+
     "baselineEMR": 209454331,
     "baselineEMRflag": 101170406,
     "baselineEMRpushDate": 143523420,

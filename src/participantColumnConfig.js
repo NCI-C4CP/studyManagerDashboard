@@ -175,6 +175,7 @@ const baseBubbleCategories = [
       field(fieldMapping.covidFlag, 'Flag COV Surv'),
       field(fieldMapping.promisSurveyFlag, 'Flag 3-mo PROMIS Surv'),
       field(fieldMapping.dhqSurveyStatus, 'Flag 6-mo DHQ3 Surv'),
+      field(fieldMapping.dietScreenerSurveyStatus, 'Diet Screener Survey Flag'),
       field(fieldMapping.cancerScreeningHistorySurveyStatus, 'Flag 9-mo CSH Surv'),
       field(fieldMapping.experienceSurvey, 'Flag 2024 CES Surv'),
       field(fieldMapping.preferenceSurveyStatus, 'Flag 2026 ROI Pref Surv'),

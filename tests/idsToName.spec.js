@@ -62,6 +62,15 @@ describe('idsToName', () => {
       expect(label).toBe('Not Yet Eligible');
     });
 
+    it('returns Not Yet Eligible fallback for Diet Screener without state', () => {
+      const label = participantConceptIDToTextMapping(
+        undefined,
+        fieldMapping.dietScreenerSurveyStatus,
+        {},
+      );
+      expect(label).toBe('Not Yet Eligible');
+    });
+
     it('maps nested baseline payment flags from payment round data', () => {
       const participant = {
         [fieldMapping.paymentRound]: {
