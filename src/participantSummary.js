@@ -8,7 +8,7 @@ import { consentHandler, hipaaHandler, userProfile, verificationStatus,
     baselineBloodSample, baselineUrineSample, baselineResearchMouthwashSample, baselineHomeMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, 
     baselinePayment, baselinePhysActReport, dhq3Report, 
     dietScreenerSurvey} from './participantSummaryRow.js';
-import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, renderShowMoreDataModal, urls, triggerNotificationBanner } from './utils.js';
+import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, renderShowMoreDataModal, urls, triggerNotificationBanner, convertToISO8601 } from './utils.js';
 import { participantState, reportsState, invalidateSearchResultsCache } from './stateManager.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
 import { refreshParticipantHeaders } from './participantHeader.js';
@@ -26,6 +26,7 @@ export const renderParticipantSummary = (participant, reports) => {
         downloadCopyHandler(participant);
         downloadReportHandler(participant, reports);
         resetParticipantConfirm();
+        dataOverrideConfirm();
     }
 };
 
@@ -67,6 +68,7 @@ export const renderSummaryTabContent = async (participant, reports) => {
         downloadCopyHandler(participant);
         downloadReportHandler(participant, summaryReports);
         resetParticipantConfirm();
+        dataOverrideConfirm();
     });
 
     return content;
@@ -81,6 +83,7 @@ export const renderSummaryTabContent = async (participant, reports) => {
 const renderSummaryContent = (participant, reports) => {
     return `
         ${renderResetUserButton(participant?.state?.uid)}
+        ${renderUserDataOverrideButton(participant?.token)}
         <div id="alert_placeholder" style="margin-top: 15px;"></div>
         <div class="table-responsive">
             <span> <h4 style="text-align: center;">Participant Summary </h4> </span>
@@ -204,6 +207,7 @@ export const render = (participant, reports) => {
             <div id="root root-margin">
                 ${renderParticipantHeader(participant)}
                 ${renderResetUserButton(participant?.state?.uid)}
+                ${renderUserDataOverrideButton(participant?.token)}
                 <div id="alert_placeholder" style="margin-top: 15px;"></div>
                 <div class="table-responsive">
                     <span> <h4 style="text-align: center;">Participant Summary </h4> </span>
@@ -768,6 +772,36 @@ const renderResetUserButton = (participantUid) => {
     `;
 };
 
+const renderUserDataOverrideButton = (participantToken) => {
+    const isNonProdEnv = (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test')
+        || location.hostname === 'localhost'
+        || location.hostname === '127.0.0.1'
+        || [urls.dev, urls.stage].includes(location.host.toLowerCase());
+    if (!isNonProdEnv) return '';
+
+    return `
+        <button
+            type="button"
+            class="btn btn-danger"
+            data-bs-toggle="modal"
+            data-bs-target="#overridePtDataModal"
+            name="modalOverridePtData"
+            id="openDataOverrideDialog"
+            data-participanttoken="${participantToken}"
+        >
+            Override Select Participant Data
+        </button>
+        <div class="modal fade" id="overridePtDataModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header" id="overridePtDataHeader"></div>
+                    <div class="modal-body" id="overridePtDataBody"></div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 const getBootstrapModalInstance = (modalEl) => {
     if (!window.bootstrap?.Modal) return null;
     if (typeof bootstrap.Modal.getOrCreateInstance === 'function') {
@@ -945,6 +979,219 @@ export const refreshParticipantAfterReset = async (participant) => {
     window.location.hash = '#participantDetails/summary';
     await renderParticipantDetails(participant, {}, 'summary');
     triggerNotificationBanner('Success! Participant Reset.', 'success');
+}
+
+export const refreshParticipantAfterDataOverride = async (participant) => {
+    await participantState.setParticipant(participant);
+    refreshParticipantHeaders(participant);
+    if (typeof document !== 'undefined' && document.querySelectorAll('.participant-header').length === 0) {
+        const mainContent = document.getElementById('mainContent');
+        if (mainContent) {
+            mainContent.insertAdjacentHTML('afterbegin', renderParticipantHeader(participant));
+        }
+    }
+    reportsState.clearReports();
+    invalidateSearchResultsCache();
+
+    window.location.hash = '#participantDetails/summary';
+    await renderParticipantDetails(participant, {}, 'summary');
+    triggerNotificationBanner('Success! Participant Data Overridden.', 'success');
+}
+
+const showOverrideDataModal = () => {
+    const modalEl = document.getElementById('overridePtDataModal');
+    if (!modalEl) {
+        console.warn('Missing the data override modal, which should not happen');
+        return;
+    }
+
+    const modalInstance = getBootstrapModalInstance(modalEl);
+    if (modalInstance && typeof modalInstance.show === 'function') {
+        modalInstance.show();
+        return;
+    }
+
+    // Manual fallback
+    modalEl.classList.add('show');
+    modalEl.style.display = 'block';
+    modalEl.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop fade show';
+    backdrop.id = 'overridePtDataModal-backdrop';
+    document.body.appendChild(backdrop);
+    modalEl.dataset.dataOverrideBackdropId = backdrop.id;
+}
+
+const hideDataOverrideModal = () => {
+    const modalEl = document.getElementById('overridePtDataModal');
+    if (!modalEl) return;
+
+    const modalInstance = getBootstrapModalInstance(modalEl);
+    if (modalInstance && typeof modalInstance.hide === 'function') {
+        modalInstance.hide();
+        return;
+    }
+
+    // Manual fallback
+    modalEl.classList.remove('show');
+    modalEl.setAttribute('aria-hidden', 'true');
+    modalEl.style.display = 'none';
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('padding-right');
+
+    const backdropId = modalEl.dataset.dataOverrideBackdropId;
+    if (backdropId) {
+        const existing = document.getElementById(backdropId);
+        existing?.parentNode?.removeChild(existing);
+        delete modalEl.dataset.dataOverrideBackdropId;
+    }
+    // Clean up backdrops
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+};
+
+const forceCloseDataOverrideModal = () => {
+    hideDataOverrideModal();
+
+    const modalEl = document.getElementById('overridePtDataModal');
+    if (modalEl) {
+        modalEl.classList.remove('show');
+        modalEl.setAttribute('aria-hidden', 'true');
+        modalEl.style.display = 'none';
+        delete modalEl.dataset.dataOverrideBackdropId;
+    }
+
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('padding-right');
+};
+
+const dataOverrideConfirm = () => {
+    if (typeof document === 'undefined') return;
+    const openDataOverrideDialogBtn = document.getElementById('openDataOverrideDialog');
+    if(!openDataOverrideDialogBtn) return;
+
+    const dataOverrideTrigger = openDataOverrideDialogBtn.cloneNode(true);
+    openDataOverrideDialogBtn.parentNode.replaceChild(dataOverrideTrigger, openDataOverrideDialogBtn);
+        
+    dataOverrideTrigger.addEventListener('click', () => {
+        const data = getDataAttributes(dataOverrideTrigger);
+        const header = document.getElementById('overridePtDataHeader');
+        const body = document.getElementById('overridePtDataBody');  
+        if (!header || !body) {
+            console.warn('Header or body missing, which should not happen');
+            return;
+        }
+
+        const token = data.participanttoken;
+        header.innerHTML = `
+                <h5>Override Data</h5>
+                <button type="button" class="btn-close" id="closePtOverrideModal" data-bs-dismiss="modal" aria-label="Close"></button>`;
+        body.innerHTML = `<div>
+                Override the following data elements on this participant. This should be used for testing purposes only and may result in unexpected behavior.
+                <div class="d-flex">
+                    <p>- Set Date of Verification:</p>
+                        <input type="date" id="verificationDateInput" class="form-control"  max="9999-12-31" style="margin-left: 1rem; width:14rem;">
+                </div>
+                <div style="display:inline-block;">
+                        <button type="submit" class="btn btn-danger" data-bs-dismiss="modal" target="_blank" id="canceOverride">Cancel</button>
+                        &nbsp;
+                        <button type="button" class="btn btn-primary" id="dataOverrideBtn">Save</button>
+                    </div>
+        </div>`;
+
+        showOverrideDataModal();
+        const cancelOverrideBtn = document.getElementById('cancelOverride');
+        cancelOverrideBtn?.addEventListener('click', hideDataOverrideModal);
+
+        dataOverrideClickHandlers(token);
+    });
+}
+
+const dataOverrideClickHandlers = async (token) => {
+    const overridePtDataButton = document.getElementById('dataOverrideBtn');
+    if(!overridePtDataButton) {
+        return;
+    }
+    overridePtDataButton.addEventListener('click', async () => {
+        // Always hide the modal immediately
+        forceCloseDataOverrideModal();
+        try {
+            // Should be able to use the participantDataCorrection endpoint on connectFaas
+            const verificationDateInput = document.getElementById('verificationDateInput');
+            const json = await postPtOverrideData({
+                token: token,
+                [fieldMapping.verficationDate]: convertToISO8601(verificationDateInput.value, true)
+            });
+            forceCloseResetModal();
+            if(json.code === 200) {
+                await refreshParticipantFromDb(token);
+            } else if (json.code === 404) {
+                participantRefreshError('Unable to find participant.');
+            } else {
+                participantRefreshError(json.data);
+            }
+        } catch(error) {
+            console.error('error', error);
+            participantRefreshError('Unknown error.');
+        }
+    });
+}
+
+const postPtOverrideData = async (override) => {
+    const request = {
+        data: [{...override}]
+    }
+    try {
+        const idToken = await getIdToken();
+        const response = await fetch(`${baseAPI}/dashboard?api=participantDataCorrection`, {
+            method: "POST",
+            headers:{
+                Authorization: "Bearer " + idToken,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(request)
+        });
+
+        if (!response.ok) { 
+            const error = (response.status + ": " + (await response.json()).message);
+            throw new Error(error);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Error in postResetUserData:', error);
+        throw error;
+    }
+
+}
+
+const refreshParticipantFromDb = async (token) => {
+    try {
+        const idToken = await getIdToken();
+        const response = await fetch(`${baseAPI}/dashboard?api=getParticipants&type=individual&token=${token}`, {
+            method: "GET",
+            headers:{
+                Authorization: "Bearer " + idToken,
+                "Content-Type": "application/json"
+            }
+        });
+
+        if (!response.ok) { 
+            const error = (response.status + ": " + (await response.json()).message);
+            throw new Error(error);
+        }
+        
+        const json = await response.json();
+        const {data} = json;
+        const participant = data[0];
+        await refreshParticipantAfterDataOverride(participant);
+    } catch (error) {
+        console.error('Error in refreshParticipantFromDb:', error);
+        throw error;
+    }
+
 }
 
 const participantRefreshError = async (errorMsg) => {
