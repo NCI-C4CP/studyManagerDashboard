@@ -127,15 +127,6 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
         <input autocomplete="off" required class="col-md-8" type="text" id="category" placeholder="eg. consented" ${schemaData?.category? `value="${schemaData.category}"`: ""} ${readonlyCheck}>
     </div>
 
-    <div class="d-flex align-items-center mb-3">
-        <label class="col-form-label col-md-3">Notification Type</label>
-        <input type="checkbox" name="notification-checkbox" data-target-type="email" id="emailCheckBox" ${schemaData?.notificationType?.includes("email")? "checked": ""} ${readonlyCheck} style="height: 25px;">&nbsp;
-        <label class="me-3" for="emailCheckBox">Email</label>
-        <input type="checkbox" name="notification-checkbox" data-target-type="sms" id="smsCheckBox" ${schemaData?.notificationType?.includes("sms")? "checked": ""} ${readonlyCheck} style="height: 25px;">&nbsp;
-        <label class="me-3" for="smsCheckBox">SMS</label>
-        <input type="checkbox" disabled name="notification-checkbox" data-type="push" id="pushNotificationCheckBox" ${schemaData?.notificationType?.includes("push")? "checked": ""} style="height: 25px;">&nbsp;<label for="pushNotificationCheckBox">Push Notification</label>
-    </div>
-
     <div class="row">
         <label class="col-form-label col-md-3" for="condition-key">Schedule at (EST)</label>
         <div class="col-md-1 form-check">
@@ -151,6 +142,16 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
             </label>
         </div>
     </div>
+
+    <div class="d-flex align-items-center mb-3">
+        <label class="col-form-label col-md-3">Notification Type</label>
+        <input type="checkbox" name="notification-checkbox" data-target-type="email" id="emailCheckBox" ${schemaData?.notificationType?.includes("email")? "checked": ""} ${readonlyCheck} style="height: 25px;">&nbsp;
+        <label class="me-3" for="emailCheckBox">Email</label>
+        <input type="checkbox" name="notification-checkbox" data-target-type="sms" id="smsCheckBox" ${schemaData?.notificationType?.includes("sms")? "checked": ""} ${readonlyCheck} style="height: 25px;">&nbsp;
+        <label class="me-3" for="smsCheckBox">SMS</label>
+        <input type="checkbox" disabled name="notification-checkbox" data-type="push" id="pushNotificationCheckBox" ${schemaData?.notificationType?.includes("push")? "checked": ""} style="height: 25px;">&nbsp;<label for="pushNotificationCheckBox">Push Notification</label>
+    </div>
+
     <div id="emailDiv">${schemaData?.email ? getEmailDivHtml(schemaData.email, isReadOnly, true) : "" }</div>
     <div id="smsDiv">${schemaData?.sms ? getSmsDivHtml(schemaData.sms, isReadOnly, true) : "" }</div>
     <div id="pushDiv">${schemaData?.push?.subject ? getPushDivHtml(schemaData) : "" }</div>
@@ -176,10 +177,10 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
     </div>
     <div id="rawSqlQuerySection" class="${usesRawSql ? "" : "d-none"}">
         <div class="row mb-3">
-            <label class="col-form-label col-md-3" for="rawSqlQuery">Full SQL recipient query</label>
+            <label class="col-form-label col-md-3" for="rawSqlQuery">SQL query</label>
             <div class="col-md-8 p-0">
                 <textarea class="form-control font-monospace" id="rawSqlQuery" rows="10" placeholder="SELECT p.token, p.Connect_ID, ... FROM Connect.participants p ..." ${readonlyCheck}>${escapeHtml(schemaData?.rawSql ?? "")}</textarea>
-                <div class="form-text">This complete query is used to select notification recipients. Return <code>token</code>, <code>Connect_ID</code>, and concept-ID aliases for email (869588347), phone (388711124), can text (646873644), preferred language (255077064), first name (399159511), preferred name (153211406), sign-in mechanism (995036844), authentication phone (348474836), and authentication email (421823980).</div>
+                <div class="form-text">This full SQL query is used to select notification recipients. Return <code>token</code>, <code>Connect_ID</code>, and concept-ID aliases for email (869588347), phone (388711124), can text (646873644), preferred language (255077064), first name (399159511), preferred name (153211406), sign-in mechanism (995036844), authentication phone (348474836), and authentication email (421823980).</div>
             </div>
         </div>
     </div>
