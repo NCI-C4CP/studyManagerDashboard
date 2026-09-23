@@ -8,6 +8,13 @@ const langArray = ["english", "spanish"];
 let conceptsOptionsStr = "";
 let concepts = null;
 
+const escapeHtml = (value = "") => String(value)
+  .replaceAll("&", "&amp;")
+  .replaceAll("<", "&lt;")
+  .replaceAll(">", "&gt;")
+  .replaceAll('"', "&quot;")
+  .replaceAll("'", "&#039;");
+
 export const editNotificationSchema = async () => {
   const notificationData = appState.getState().notification || {};
   if (!notificationData.isEditing) {
@@ -67,6 +74,7 @@ const renderSchemaPage = async (schemaData = null) => {
   handleLangSelection("sms", schemaData);
   handleDeleteExistingConditions();
   handleAddCondition();
+  handleRecipientQueryMode();
   handleNotficationDivs(schemaData);
   handleFormSubmit();
   handleExitForm();
@@ -84,6 +92,7 @@ const getDryRunHtlmStr = () => `
 
 export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
   const readonlyCheck = isReadOnly ? "disabled" : "";
+  const usesRawSql = Boolean(schemaData?.rawSql);
   let conditionHtmlStrAll = "";
   let index = 0;
 
@@ -145,14 +154,37 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
     <div id="emailDiv">${schemaData?.email ? getEmailDivHtml(schemaData.email, isReadOnly, true) : "" }</div>
     <div id="smsDiv">${schemaData?.sms ? getSmsDivHtml(schemaData.sms, isReadOnly, true) : "" }</div>
     <div id="pushDiv">${schemaData?.push?.subject ? getPushDivHtml(schemaData) : "" }</div>
-    <div id="conditionsDiv" data-current-index="${index}">
-        ${conditionHtmlStrAll}
+    <div class="row mb-3">
+        <label class="col-form-label col-md-3">Recipient selection</label>
+        <div class="col-md-1 form-check">
+            <input class="form-check-input" type="radio" name="recipientQueryMode" id="conditionsQueryMode" value="conditions" ${usesRawSql ? "" : "checked"} ${readonlyCheck}>
+            <label class="form-check-label" for="conditionsQueryMode">Conditions</label>
+        </div>
+        <div class="col-md-2 form-check">
+            <input class="form-check-input" type="radio" name="recipientQueryMode" id="rawSqlQueryMode" value="rawSql" ${usesRawSql ? "checked" : ""} ${readonlyCheck}>
+            <label class="form-check-label" for="rawSqlQueryMode">Full SQL Query</label>
+        </div>
     </div>
-    <div class="mb-3">
-        <button type="button" class="btn btn-outline-primary" id="addOneCondition" ${readonlyCheck}>Add Condition</button>
-        <button type="button" class="btn btn-outline-secondary" id="addSqlCondition" ${readonlyCheck}>Add SQL Condition(s)</button>
+    <div id="conditionsQuerySection" class="${usesRawSql ? "d-none" : ""}">
+        <div id="conditionsDiv" data-current-index="${index}">
+            ${conditionHtmlStrAll}
+        </div>
+        <div class="mb-3">
+            <button type="button" class="btn btn-outline-primary" id="addOneCondition" ${readonlyCheck}>Add Condition</button>
+            <button type="button" class="btn btn-outline-secondary" id="addSqlCondition" ${readonlyCheck}>Add SQL Condition(s)</button>
+        </div>
+    </div>
+    <div id="rawSqlQuerySection" class="${usesRawSql ? "" : "d-none"}">
+        <div class="row mb-3">
+            <label class="col-form-label col-md-3" for="rawSqlQuery">Full SQL recipient query</label>
+            <div class="col-md-8 p-0">
+                <textarea class="form-control font-monospace" id="rawSqlQuery" rows="10" placeholder="SELECT p.token, p.Connect_ID, ... FROM Connect.participants p ..." ${readonlyCheck}>${escapeHtml(schemaData?.rawSql ?? "")}</textarea>
+                <div class="form-text">This complete query is used to select notification recipients. Return <code>token</code>, <code>Connect_ID</code>, and concept-ID aliases for email (869588347), phone (388711124), can text (646873644), preferred language (255077064), first name (399159511), preferred name (153211406), sign-in mechanism (995036844), authentication phone (348474836), and authentication email (421823980).</div>
+            </div>
+        </div>
     </div>
     
+    <div id="participantFieldsSection" class="${usesRawSql ? "d-none" : ""}">
     <div class="row mb-3">
         <label class="col-form-label col-md-3">Email Field Concept</label>
         <div class="email-concept col-md-8 p-0">
@@ -214,6 +246,7 @@ export const getSchemaHtmlStr = (schemaData = null, isReadOnly = false) => {
         <input class="col-md-2 me-2" id="stopDays" title="days" type="number" min="1" ${schemaData?.time?.stop ? `value="${schemaData.time.stop.day ?? 2}"` : `value="2"`} ${readonlyCheck}>
         <input class="col-md-2 me-2" id="stopHours" title="hours" type="number" min="0" max="23"  ${schemaData?.time?.stop ? `value="${schemaData.time.stop.hour ?? 0}"` : `value="0"`} ${readonlyCheck}>
         <input class="col-md-2" id="stopMinutes" title="minutes" type="number" min="0" max="59" ${schemaData?.time?.stop ? `value="${schemaData.time.stop.minute ?? 0}"` : `value="0"`} ${readonlyCheck}>
+    </div>
     </div>`;
 };
 
@@ -238,27 +271,30 @@ const handleFormSubmit = () => {
 
     schema["scheduleAt"] = Array.from(document.getElementsByName("scheduleAt")).filter((dt) => dt.checked)[0].value;
     schema["sendType"] = "scheduled";
-    schema["emailField"] = document.getElementById("emailConceptId").value;
-    schema["phoneField"] = document.getElementById("phoneConceptId").value;
-    schema["firstNameField"] = document.getElementById("firstNameConceptId").value;
-    const preferredNameValue = document.getElementById("preferredNameConceptId").value;
-    if (preferredNameValue) {
-      schema["preferredNameField"] = preferredNameValue;
-    }
+    const recipientQueryMode = document.querySelector("input[name=recipientQueryMode]:checked")?.value;
+    if (recipientQueryMode !== "rawSql") {
+      schema["emailField"] = document.getElementById("emailConceptId").value;
+      schema["phoneField"] = document.getElementById("phoneConceptId").value;
+      schema["firstNameField"] = document.getElementById("firstNameConceptId").value;
+      const preferredNameValue = document.getElementById("preferredNameConceptId").value;
+      if (preferredNameValue) {
+        schema["preferredNameField"] = preferredNameValue;
+      }
 
-    schema["primaryField"] = document.getElementById("primaryFieldConceptId").value;
-    schema["time"] = {
-      start: {
-        day: parseInt(document.getElementById("startDays").value),
-        hour: parseInt(document.getElementById("startHours").value),
-        minute: parseInt(document.getElementById("startMinutes").value),
-      },
-      stop: {
-        day: parseInt(document.getElementById("stopDays").value),
-        hour: parseInt(document.getElementById("stopHours").value),
-        minute: parseInt(document.getElementById("stopMinutes").value),
-      },
-    };
+      schema["primaryField"] = document.getElementById("primaryFieldConceptId").value;
+      schema["time"] = {
+        start: {
+          day: parseInt(document.getElementById("startDays").value),
+          hour: parseInt(document.getElementById("startHours").value),
+          minute: parseInt(document.getElementById("startMinutes").value),
+        },
+        stop: {
+          day: parseInt(document.getElementById("stopDays").value),
+          hour: parseInt(document.getElementById("stopHours").value),
+          minute: parseInt(document.getElementById("stopMinutes").value),
+        },
+      };
+    }
 
     const emailInputDivList = document.querySelectorAll("#emailDiv div[data-email-lang]");
     if (emailInputDivList.length > 0) {
@@ -273,9 +309,6 @@ const handleFormSubmit = () => {
           schema["email"][lang]["body"] = emailInputDiv.querySelector(`#${lang}EmailBody`).value.replace(/\n/g, "<br/>");
         }
       });
-
-      schema.email.subject = schema.email.english.subject;
-      schema.email.body = schema.email.english.body;
     }
 
     const smsInputDivList = document.querySelectorAll("#smsDiv div[data-sms-lang]");
@@ -286,8 +319,6 @@ const handleFormSubmit = () => {
         schema["sms"][lang] = {};
         schema["sms"][lang]["body"] = smsInputDiv.querySelector(`#${lang}SmsBody`).value;
       });
-      
-      schema.sms.body = schema.sms.english.body;
     }
 
     const pushSubjectEle = document.getElementById("pushSubject");
@@ -295,26 +326,30 @@ const handleFormSubmit = () => {
       schema["push"] = { subject: pushSubjectEle.value, body: document.getElementById("pushBody").value };
     }
 
-    let conditionArray = [];
-    const conditionRowArray = Array.from(document.querySelectorAll("#conditionsDiv div[data-condition-idx]"));
-    for (const conditionRow of conditionRowArray) {
-      if (conditionRow.dataset.conditionType === "sql") {
-        const sqlCondition = conditionRow.querySelector("textarea").value.trim();
-        if (sqlCondition.length > 0) conditionArray.push(sqlCondition);
-        continue;
-      }
+    if (recipientQueryMode === "rawSql") {
+      schema.rawSql = document.getElementById("rawSqlQuery").value.trim();
+    } else {
+      const conditionArray = [];
+      const conditionRowArray = Array.from(document.querySelectorAll("#conditionsDiv div[data-condition-idx]"));
+      for (const conditionRow of conditionRowArray) {
+        if (conditionRow.dataset.conditionType === "sql") {
+          const sqlCondition = conditionRow.querySelector("textarea").value.trim();
+          if (sqlCondition.length > 0) conditionArray.push(sqlCondition);
+          continue;
+        }
 
-      const conditionKey = conditionRow.querySelector("input[name=condition-key]").value.trim().split(/\s+/)[0];
-      const conditionOperator = conditionRow.querySelector("select[name=condition-operator]").value.trim().split(/\s+/)[0];
-      const conditionValueType = conditionRow.querySelector("select[name=value-type]").value.trim().split(/\s+/)[0];
-      const conditionValue = conditionRow.querySelector("input[name=condition-value]").value.trim().split(/\s+/)[0];
-      if (conditionValueType === "string") {
-        conditionArray.push([conditionKey, conditionOperator, conditionValue]);
-      } else if (conditionValueType === "number") {
-        conditionArray.push([conditionKey, conditionOperator, parseInt(conditionValue)]);
+        const conditionKey = conditionRow.querySelector("input[name=condition-key]").value.trim().split(/\s+/)[0];
+        const conditionOperator = conditionRow.querySelector("select[name=condition-operator]").value.trim().split(/\s+/)[0];
+        const conditionValueType = conditionRow.querySelector("select[name=value-type]").value.trim().split(/\s+/)[0];
+        const conditionValue = conditionRow.querySelector("input[name=condition-value]").value.trim().split(/\s+/)[0];
+        if (conditionValueType === "string") {
+          conditionArray.push([conditionKey, conditionOperator, conditionValue]);
+        } else if (conditionValueType === "number") {
+          conditionArray.push([conditionKey, conditionOperator, parseInt(conditionValue)]);
+        }
       }
+      schema.conditions = JSON.stringify(conditionArray);
     }
-    schema["conditions"] = JSON.stringify(conditionArray);
 
     const currSchemaId = await storeNotificationSchema(schema);
     if (!hasSchemaId && currSchemaId.length > 0) {
@@ -348,6 +383,34 @@ const handleAddCondition = () => {
       btn.hasClickListener = true;
     });
   }
+};
+
+const handleRecipientQueryMode = () => {
+  const conditionSection = document.getElementById("conditionsQuerySection");
+  const rawSqlSection = document.getElementById("rawSqlQuerySection");
+  const participantFieldsSection = document.getElementById("participantFieldsSection");
+  const rawSqlInput = document.getElementById("rawSqlQuery");
+  const modeInputs = document.querySelectorAll("input[name=recipientQueryMode]");
+  if (!conditionSection || !rawSqlSection || !participantFieldsSection || !rawSqlInput || modeInputs.length === 0) return;
+  const isReadOnly = modeInputs[0].disabled;
+
+  const updateMode = () => {
+    const usesRawSql = document.querySelector("input[name=recipientQueryMode]:checked")?.value === "rawSql";
+    conditionSection.classList.toggle("d-none", usesRawSql);
+    rawSqlSection.classList.toggle("d-none", !usesRawSql);
+    participantFieldsSection.classList.toggle("d-none", usesRawSql);
+    rawSqlInput.required = usesRawSql;
+    rawSqlInput.disabled = !usesRawSql || isReadOnly;
+    conditionSection.querySelectorAll("input, select, textarea, button").forEach((element) => {
+      element.disabled = usesRawSql || isReadOnly;
+    });
+    participantFieldsSection.querySelectorAll("input, select, textarea, button").forEach((element) => {
+      element.disabled = usesRawSql || isReadOnly;
+    });
+  };
+
+  modeInputs.forEach((modeInput) => modeInput.addEventListener("change", updateMode));
+  updateMode();
 };
 
 const handleDeleteExistingConditions = () => {
@@ -696,7 +759,7 @@ const handleDryRun = () => {
     });
 
     const resJson = await res.json();
-    const dataObj = resJson.data[0];
+    const dataObj = resJson.data;
     let strArray = [];
     ["email", "sms"].forEach((key) => {
       langArray.forEach((lang) => {
