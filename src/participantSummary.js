@@ -83,7 +83,7 @@ export const renderSummaryTabContent = async (participant, reports) => {
 const renderSummaryContent = (participant, reports) => {
     return `
         ${renderResetUserButton(participant?.state?.uid)}
-        ${renderUserDataOverrideButton(participant?.token)}
+        ${renderUserDataOverrideButton(participant)}
         <div id="alert_placeholder" style="margin-top: 15px;"></div>
         <div class="table-responsive">
             <span> <h4 style="text-align: center;">Participant Summary </h4> </span>
@@ -772,7 +772,7 @@ const renderResetUserButton = (participantUid) => {
     `;
 };
 
-const renderUserDataOverrideButton = (participantToken) => {
+const renderUserDataOverrideButton = (participant) => {
     const isNonProdEnv = (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test')
         || location.hostname === 'localhost'
         || location.hostname === '127.0.0.1'
@@ -787,9 +787,10 @@ const renderUserDataOverrideButton = (participantToken) => {
             data-bs-target="#overridePtDataModal"
             name="modalOverridePtData"
             id="openDataOverrideDialog"
-            data-participanttoken="${participantToken}"
+            data-participanttoken="${participant?.token}"
+            data-participantverifstatus=${participant?.[fieldMapping.verifiedFlag]}
         >
-            Override Select Participant Data
+            Update Select Test Participant Data
         </button>
         <div class="modal fade" id="overridePtDataModal" tabindex="-1" role="dialog" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" role="document">
@@ -1085,27 +1086,47 @@ const dataOverrideConfirm = () => {
         }
 
         const token = data.participanttoken;
+        const verificationStatus = `${data.participantverifstatus}`;
+        // If verification status is verified:
         header.innerHTML = `
-                <h5>Override Data</h5>
+                <h5>Update Test Data</h5>
                 <button type="button" class="btn-close" id="closePtOverrideModal" data-bs-dismiss="modal" aria-label="Close"></button>`;
-        body.innerHTML = `<div>
+        if(verificationStatus === `${fieldMapping.verified}`) {
+            body.innerHTML = `<div>
                 Override the following data elements on this participant. This should be used for testing purposes only and may result in unexpected behavior.
                 <div class="d-flex">
-                    <p>- Set Date of Verification:</p>
+                    <div class="input-group>
+                        <label class="form-label" for="verificationDateInput">Set Date of Verification:</label>
                         <input type="date" id="verificationDateInput" class="form-control"  max="9999-12-31" style="margin-left: 1rem; width:14rem;">
+                        <div>Note: setting date of verification will also update the date of consent and date of user profile submission to the same date.</div>
+                    </div>
                 </div>
                 <div style="display:inline-block;">
                         <button type="submit" class="btn btn-danger" data-bs-dismiss="modal" target="_blank" id="canceOverride">Cancel</button>
                         &nbsp;
                         <button type="button" class="btn btn-primary" id="dataOverrideBtn">Save</button>
                     </div>
-        </div>`;
+            </div>`;
+            dataOverrideClickHandlers(token);
+
+        } else {
+            // otherwise...
+            body.innerHTML = `<div>
+                Override the following data elements on this participant. This should be used for testing purposes only and may result in unexpected behavior.
+                <div class="d-flex">
+                    <span class="alert alert-danger">This tool should only be used to make corrections to participant data post-verification</span>
+                </div>
+                <div style="display:inline-block;">
+                        <button type="submit" class="btn btn-danger" data-bs-dismiss="modal" target="_blank" id="canceOverride">Cancel</button>
+                    </div>
+            </div>`;
+        }
+        
 
         showOverrideDataModal();
         const cancelOverrideBtn = document.getElementById('cancelOverride');
         cancelOverrideBtn?.addEventListener('click', hideDataOverrideModal);
 
-        dataOverrideClickHandlers(token);
     });
 }
 
@@ -1120,9 +1141,14 @@ const dataOverrideClickHandlers = async (token) => {
         try {
             // Should be able to use the participantDataCorrection endpoint on connectFaas
             const verificationDateInput = document.getElementById('verificationDateInput');
+            const newVerificationDate = convertToISO8601(verificationDateInput.value, true);
+            // Updating verification date must also override date of consent and date of user profile
+            // submission to match
             const json = await postPtOverrideData({
                 token: token,
-                [fieldMapping.verficationDate]: convertToISO8601(verificationDateInput.value, true)
+                [fieldMapping.verficationDate]: newVerificationDate,
+                [fieldMapping.userProfileDateTime]: newVerificationDate,
+                [fieldMapping.consentDate]: newVerificationDate
             });
             forceCloseResetModal();
             if(json.code === 200) {
