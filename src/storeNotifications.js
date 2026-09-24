@@ -328,7 +328,12 @@ const handleFormSubmit = () => {
     }
 
     if (recipientQueryMode === "rawSql") {
-      schema.rawSql = document.getElementById("rawSqlQuery").value.trim();
+      const rawSql = document.getElementById("rawSqlQuery").value.trim();
+      if (!rawSql) {
+        triggerNotificationBanner("SQL query cannot be empty.", "warning");
+        return;
+      }
+      schema.rawSql = rawSql;
     } else {
       const conditionArray = [];
       const conditionRowArray = Array.from(document.querySelectorAll("#conditionsDiv div[data-condition-idx]"));
