@@ -1091,7 +1091,7 @@ const dataOverrideConfirm = () => {
         header.innerHTML = `
                 <h5>Update Test Data</h5>
                 <button type="button" class="btn-close" id="closePtOverrideModal" data-bs-dismiss="modal" aria-label="Close"></button>`;
-        if(verificationStatus === `${fieldMapping.verified}`) {
+        if(verificationStatus !== `${fieldMapping.notYetVerified}`) {
             body.innerHTML = `<div>
                 Override the following data elements on this participant. This should be used for testing purposes only and may result in unexpected behavior.
                 <div class="d-flex">
