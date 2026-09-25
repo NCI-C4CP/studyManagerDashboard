@@ -1098,7 +1098,7 @@ const dataOverrideConfirm = () => {
                     <div class="input-group>
                         <label class="form-label" for="verificationDateInput">Set Date of Verification:</label>
                         <input type="date" id="verificationDateInput" class="form-control"  max="9999-12-31" style="margin-left: 1rem; width:14rem;">
-                        <div>Note: setting date of verification will also update the date of consent and date of user profile submission to the same date.</div>
+                        <div>Note: setting date of verification will also update the following timestamps to the same date: Consent submitted, HIPAA Authorization submitted, and User Profile submitted.</div>
                     </div>
                 </div>
                 <div style="display:inline-block;">
@@ -1142,13 +1142,14 @@ const dataOverrideClickHandlers = async (token) => {
             // Should be able to use the participantDataCorrection endpoint on connectFaas
             const verificationDateInput = document.getElementById('verificationDateInput');
             const newVerificationDate = convertToISO8601(verificationDateInput.value, true);
-            // Updating verification date must also override date of consent and date of user profile
-            // submission to match
+            // Updating verification date must also override date of consent, HIPAA consent,
+            //  and date of user profile submission to match
             const json = await postPtOverrideData({
                 token: token,
                 [fieldMapping.verficationDate]: newVerificationDate,
                 [fieldMapping.userProfileDateTime]: newVerificationDate,
-                [fieldMapping.consentDate]: newVerificationDate
+                [fieldMapping.consentDate]: newVerificationDate,
+                [fieldMapping.hipaaDate]: newVerificationDate
             });
             forceCloseResetModal();
             if(json.code === 200) {
