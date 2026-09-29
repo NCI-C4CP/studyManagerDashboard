@@ -233,12 +233,17 @@ const handleGenerateKey = async () => {
 export const renderGenerateServiceAccountKeyPage = async () => {
     updateNavBar('generateServiceAccountKeyBtn');
 
-    const { isSiteManager, coordinatingCenter } = roleState.getRoleFlags();
+    const { isSiteManager, coordinatingCenter, isDelegatedSiteUser, isServiceAccountManager, acronym } = roleState.getRoleFlags();
     const mainContent = document.getElementById('mainContent');
     if (!mainContent) return;
 
-    if (!(isSiteManager || coordinatingCenter)) {
+    if (!(isSiteManager || coordinatingCenter || isDelegatedSiteUser)) {
         mainContent.innerHTML = '<div class="container-fluid"><div class="alert alert-danger" role="alert">You are not authorized to access the API Key Generator.</div></div>';
+        return;
+    }
+
+    if (!isServiceAccountManager) {
+        mainContent.innerHTML = `<div class="container-fluid"><div class="alert alert-warning" role="alert">No service account is configured for ${escapeHTML(acronym || 'your site')}. Please contact the Connect Coordinating Center at <a href="mailto:ConnectCC@nih.gov">ConnectCC@nih.gov</a>.</div></div>`;
         return;
     }
 

@@ -188,7 +188,7 @@ describe('router', () => {
 
   describe('#generateServiceAccountKey route', () => {
     beforeEach(async () => {
-      await roleState.setRoleFlags({ isSiteManager: true, helpDesk: false, coordinatingCenter: false, isEHRUploader: false });
+      await roleState.setRoleFlags({ isSiteManager: true, helpDesk: false, coordinatingCenter: false, isEHRUploader: false, isServiceAccountManager: true });
       global.fetch = async () => ({
         ok: true,
         status: 200,
@@ -228,6 +228,66 @@ describe('router', () => {
 
       const main = document.getElementById('mainContent');
       expect(main.innerHTML).toContain('abc123def456');
+    });
+
+    it('renders the page for delegated site users', async () => {
+      await roleState.setRoleFlags({ isSiteManager: false, helpDesk: false, coordinatingCenter: false, isEHRUploader: false, isDelegatedSiteUser: true, isServiceAccountManager: true });
+
+      window.location.hash = '#generateServiceAccountKey';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main.innerHTML).toContain('API Key Generator');
+      expect(main.innerHTML).toContain('generateKeyBtn');
+    });
+
+    it('shows a contact message when the site has no service account configured', async () => {
+      await roleState.setRoleFlags({ isSiteManager: true, isServiceAccountManager: false, acronym: 'CGR' });
+
+      window.location.hash = '#generateServiceAccountKey';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main.innerHTML).toContain('No service account is configured for CGR');
+      expect(main.innerHTML).not.toContain('generateKeyBtn');
+    });
+  });
+
+  describe('delegated site user route lockdown', () => {
+    beforeEach(async () => {
+      await roleState.setRoleFlags({ isSiteManager: false, helpDesk: false, coordinatingCenter: false, isEHRUploader: false, isDelegatedSiteUser: true, isServiceAccountManager: true });
+      global.fetch = async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 200, data: { keys: [] } }),
+      });
+    });
+
+    afterEach(() => {
+      delete global.fetch;
+    });
+
+    it('redirects restricted routes to home', async () => {
+      window.location.hash = '#participants/all';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      expect(window.location.hash).toBe('#home');
+    });
+
+    it('shows the limited access message on home', async () => {
+      window.location.hash = '#home';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main.innerHTML).toContain('limited access to the Connect Study Manager Dashboard for API key management');
     });
   });
 

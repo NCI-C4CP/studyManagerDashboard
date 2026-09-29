@@ -113,11 +113,23 @@ export const urls = {
   'dev': 'nci-c4cp.github.io'
 }
 
+const localHostnames = ['localhost', '127.0.0.1'];
+
+// Set localStorage.localApiBaseUrl (eg. 'http://localhost:8080') to hit a functions-framework instance instead of dev.
+const getLocalApiBaseUrl = (host) => {
+  if (!localHostnames.includes(host.split(':')[0])) return null;
+  try {
+    return localStorage.getItem('localApiBaseUrl');
+  } catch {
+    return null;
+  }
+};
+
 export const resolveBaseAPI = (hostOverride) => {
   const host = hostOverride ?? (typeof location !== 'undefined' ? location.host : '');
   if (host === urls.prod) return 'https://api-myconnect.cancer.gov';
   if (host === urls.stage) return 'https://api-myconnect-stage.cancer.gov';
-  return 'https://us-central1-nih-nci-dceg-connect-dev.cloudfunctions.net';
+  return getLocalApiBaseUrl(host) || 'https://us-central1-nih-nci-dceg-connect-dev.cloudfunctions.net';
 };
 
 export const baseAPI = resolveBaseAPI();
