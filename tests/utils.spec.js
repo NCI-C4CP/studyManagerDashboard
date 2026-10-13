@@ -35,6 +35,20 @@ describe('utils', () => {
       // In test environment, location is not defined at module load time
       expect(baseAPI).toBe('https://us-central1-nih-nci-dceg-connect-dev.cloudfunctions.net');
     });
+
+    it('uses the localApiBaseUrl override on localhost', () => {
+      localStorage.setItem('localApiBaseUrl', 'http://localhost:8080');
+      expect(resolveBaseAPI('localhost:5500')).toBe('http://localhost:8080');
+      expect(resolveBaseAPI('127.0.0.1:5500')).toBe('http://localhost:8080');
+    });
+
+    it('ignores the localApiBaseUrl override on non-local hosts', () => {
+      localStorage.setItem('localApiBaseUrl', 'http://localhost:8080');
+      expect(resolveBaseAPI('dashboard-myconnect.cancer.gov'))
+        .toBe('https://api-myconnect.cancer.gov');
+      expect(resolveBaseAPI('nci-c4cp.github.io'))
+        .toBe('https://us-central1-nih-nci-dceg-connect-dev.cloudfunctions.net');
+    });
   });
 
   describe('escapeHTML', () => {
