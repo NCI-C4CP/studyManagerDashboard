@@ -263,7 +263,8 @@ export const renderMySamplesPage = async () => {
       const siteComparison = first.data.siteAcronym.localeCompare(second.data.siteAcronym);
       if (siteComparison !== 0) return siteComparison;
 
-      return activityTypeOrder[first.data.activityType] - activityTypeOrder[second.data.activityType];
+      return activityTypeOrder[first.data.activityType || 'Baseline']
+        - activityTypeOrder[second.data.activityType || 'Baseline'];
     });
 
   orderedData.forEach(({ data, idx }) => {

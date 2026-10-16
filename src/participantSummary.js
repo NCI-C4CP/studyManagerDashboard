@@ -533,6 +533,7 @@ const hipaaRevocation = (participant) => {
     ( participant[fieldMapping.signedHIPAARevoc] === fieldMapping.yes ?
         ( template += `<td><i class="fa-solid fa-check fa-2x icon--success"></i></td>
                         <td>Revocation</td>
+                        <td></td>
                         <td>Agreement</td>
                         <td>HIPAA Revoc Form</td>
                         <td>Signed</td>
@@ -543,6 +544,7 @@ const hipaaRevocation = (participant) => {
         ` ) : 
         ( template += `<td><i class="fa-solid fa-xmark fa-2x icon--error"></i></td>
                         <td>Revocation</td>
+                        <td></td>
                         <td>Agreement</td>
                         <td>HIPAA Revoc Form</td>
                         <td>Not Signed</td>
@@ -554,6 +556,7 @@ const hipaaRevocation = (participant) => {
      (
         template +=`<td><i class="fa-solid fa-xmark fa-2x icon--error"></i></td>
                     <td>Revocation</td>
+                    <td></td>
                     <td>Agreement</td>
                     <td>HIPAA Revoc Form</td>
                     <td>N/A</td>
@@ -572,6 +575,7 @@ const dataDestroy = (participant) => {
         ( participant[fieldMapping.signedDataDestroy] === fieldMapping.yes ?
             ( template += `<td><i class="fa-solid fa-check fa-2x icon--success"></i></td>
                             <td>Destruction</td>
+                            <td></td>
                             <td>Agreement</td>
                             <td>Data Destroy Form</td>
                             <td>Signed</td>
@@ -582,6 +586,7 @@ const dataDestroy = (participant) => {
             ` ) : 
         ( template += `<td><i class="fa-solid fa-xmark fa-2x icon--error"></i></td>
                         <td>Destruction</td>
+                        <td></td>
                         <td>Agreement</td>
                         <td>Data Destroy Form</td>
                         <td>Not Signed</td>
@@ -594,6 +599,7 @@ const dataDestroy = (participant) => {
     (
         template +=`<td><i class="fa-solid fa-xmark fa-2x icon--error"></i></td>
                     <td>Destruction</td>
+                    <td></td>
                     <td>Agreement</td>
                     <td>Data Destroy Form</td>
                     <td>N/A</td>

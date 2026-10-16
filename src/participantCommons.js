@@ -1,7 +1,6 @@
-import { renderParticipantDetails } from './participantDetails.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { getIdToken, showAnimation, hideAnimation, getParticipants, getParticipantByToken, sortByKey, renderSiteDropdown, triggerNotificationBanner } from './utils.js';
-import { searchState, buildPredefinedSearchMetadata, signOutAndClearSession, uiState } from './stateManager.js';
+import { participantState, searchState, buildPredefinedSearchMetadata, signOutAndClearSession, uiState } from './stateManager.js';
 import { nameToKeyObj, keyToShortNameObj, participantConceptIDToTextMapping } from './idsToName.js';
 import { bubbleCategories, bubbleFieldMap, defaultColumnKeys } from './participantColumnConfig.js';
 
@@ -726,8 +725,8 @@ const addEventShowMoreInfo = (data) => {
                 const participant = cachedParticipant[fieldMapping.verifiedFlag] === fieldMapping.verified
                     ? await getParticipantByToken(element.dataset.token)
                     : cachedParticipant;
-                window.history.replaceState(null, null, '#participantDetails');
-                await renderParticipantDetails(participant, {}, 'details');
+                await participantState.setParticipant(participant);
+                window.location.hash = '#participantDetails';
             } catch (error) {
                 console.error('Error loading selected participant:', error);
                 triggerNotificationBanner(

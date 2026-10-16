@@ -146,7 +146,7 @@ describe('participantSummaryRow', () => {
       expect(html).not.toContain('03/01/2026');
     });
 
-    it('reports a finalized collected tube as collected even without a finalization timestamp', () => {
+    it('uses collection data from a finalized collected tube without a finalization timestamp', () => {
       const followups = fieldMapping.followups;
       const html = followupSummaryRows({
         followups: [{
@@ -157,6 +157,7 @@ describe('participantSummaryRow', () => {
             [fieldMapping.tubeConcepts.blood[0]]: {
               [followups.biospecimenTubeCollected]: fieldMapping.yes,
             },
+            [followups.biospecimenCollectionTime]: '2026-03-15T12:00:00Z',
             [fieldMapping.collectionIsFinalized]: fieldMapping.yes,
             [fieldMapping.biospecimenFlag]: fieldMapping.biospecimenResearch,
           }],
@@ -165,7 +166,7 @@ describe('participantSummaryRow', () => {
         }],
       });
 
-      expect(html).toMatch(/<td>Blood<\/td>\s*<td>Collected<\/td>\s*<td>N\/A<\/td>/);
+      expect(html).toMatch(/<td>Blood<\/td>\s*<td>Collected<\/td>\s*<td>03\/15\/2026<\/td>\s*<td>Research<\/td>/);
     });
 
     it('renders standard sample and survey rows regardless of the round activity list', () => {
@@ -228,6 +229,63 @@ describe('participantSummaryRow', () => {
       });
 
       expect(html).toMatch(/<td>Blood<\/td>[\s\S]*<td>Y<\/td>/);
+    });
+
+    it('marks every follow-up sample refused when all future activities are refused', () => {
+      const followups = fieldMapping.followups;
+      const html = followupSummaryRows({
+        [fieldMapping.refusedAllFutureActivities]: fieldMapping.yes,
+        followups: [{
+          [followups.activityRound]: 'A1',
+          [followups.activityType]: followups.SSC,
+          [followups.eligibilityEndAt]: '2027-03-01T00:00:00Z',
+          biospecimen: [],
+          surveyTracking: [],
+          paymentTracking: [],
+        }],
+      });
+      const container = document.createElement('table');
+      container.innerHTML = `<tbody>${html}</tbody>`;
+
+      ['Blood', 'Urine', 'Research Mouthwash'].forEach(item => {
+        const row = [...container.querySelectorAll('tr')]
+          .find(element => element.cells[4]?.textContent === item);
+        expect(row.cells[8].textContent).toBe('Y');
+      });
+    });
+
+    it.each([
+      ['all future surveys', {
+        [fieldMapping.refusalOptions]: {
+          [fieldMapping.refusedFutureSurveys]: fieldMapping.yes,
+        },
+      }],
+      ['all future activities', {
+        [fieldMapping.refusedAllFutureActivities]: fieldMapping.yes,
+      }],
+    ])('marks every follow-up survey refused for %s', (_description, refusalData) => {
+      const followups = fieldMapping.followups;
+      const html = followupSummaryRows({
+        ...refusalData,
+        followups: [{
+          [followups.activityRound]: 'A1',
+          [followups.activityType]: followups.SSC,
+          [followups.eligibilityEndAt]: '2027-03-01T00:00:00Z',
+          biospecimen: [],
+          surveyTracking: [{
+            [followups.surveyType]: followups.menstrualCycleSurvey,
+          }],
+          paymentTracking: [],
+        }],
+      });
+      const container = document.createElement('table');
+      container.innerHTML = `<tbody>${html}</tbody>`;
+
+      ['Clinical Blood/Urine', 'Research B/U/M', 'Menstrual Cycle'].forEach(item => {
+        const row = [...container.querySelectorAll('tr')]
+          .find(element => element.cells[4]?.textContent === item);
+        expect(row.cells[8].textContent).toBe('Y');
+      });
     });
 
     it('reads the A1 collection refusal state from the participant record', () => {

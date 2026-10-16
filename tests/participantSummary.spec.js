@@ -151,6 +151,16 @@ describe('participantSummary', () => {
       expect(html).toContain('HIPAA_Revoc_V1.0_Eng');
       expect(html).toContain('downloadCopyHipaaRevoc');
       expect(html).toContain('icon--success');
+
+      const container = document.createElement('div');
+      container.innerHTML = html;
+      const row = [...container.querySelectorAll('tbody tr')]
+        .find(element => element.textContent.includes('HIPAA Revoc Form'));
+      expect(row.cells).toHaveLength(10);
+      expect(row.cells[1].textContent).toBe('Revocation');
+      expect(row.cells[2].textContent).toBe('');
+      expect(row.cells[3].textContent).toBe('Agreement');
+      expect(row.cells[4].textContent).toBe('HIPAA Revoc Form');
     });
 
     it('renders not signed HIPAA revocation with disabled link', async () => {
@@ -196,6 +206,16 @@ describe('participantSummary', () => {
       expect(html).toContain('Data_Destroy_V1.0_Eng');
       expect(html).toContain('downloadCopyDataDestroy');
       expect(html).toContain('icon--success');
+
+      const container = document.createElement('div');
+      container.innerHTML = html;
+      const row = [...container.querySelectorAll('tbody tr')]
+        .find(element => element.textContent.includes('Data Destroy Form'));
+      expect(row.cells).toHaveLength(10);
+      expect(row.cells[1].textContent).toBe('Destruction');
+      expect(row.cells[2].textContent).toBe('');
+      expect(row.cells[3].textContent).toBe('Agreement');
+      expect(row.cells[4].textContent).toBe('Data Destroy Form');
     });
 
     it('renders not signed data destruction with disabled link', async () => {

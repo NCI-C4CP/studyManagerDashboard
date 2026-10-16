@@ -779,9 +779,8 @@ describe('participantCommons - Bubble Filter Functionality', () => {
 
       await vi.waitFor(() => {
         expect(participantState.getParticipant()?.followups).toEqual(enrichedParticipant.followups);
-        expect(document.querySelector('.participant-tabs-container')).not.toBeNull();
+        expect(window.location.hash).toBe('#participantDetails');
       });
-      expect(window.location.hash).toBe('#participantDetails');
       expect(fetchSpy).toHaveBeenCalledWith(
         expect.stringContaining('api=getFilteredParticipants&token=token-123'),
         expect.any(Object),
@@ -803,7 +802,7 @@ describe('participantCommons - Bubble Filter Functionality', () => {
 
       await vi.waitFor(() => {
         expect(participantState.getParticipant()?.token).toBe('token-not-verified');
-        expect(document.querySelector('.participant-tabs-container')).not.toBeNull();
+        expect(window.location.hash).toBe('#participantDetails');
       });
       expect(fetchSpy).not.toHaveBeenCalled();
 

@@ -398,6 +398,8 @@ export const followupSummaryRows = (participant) => {
         mouthwash: mouthwashTubeConcepts,
     } = fieldMapping.tubeConcepts;
     const activityTypeLabels = { [SSC]: 'SSC', [ABC]: 'ABC' };
+    const areFollowupSurveysRefused = participant[fieldMapping.refusedAllFutureActivities] === fieldMapping.yes
+        || participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys] === fieldMapping.yes;
 
     const renderRow = (rowClass, values) => `
         <tr class="${rowClass}">
@@ -419,7 +421,8 @@ export const followupSummaryRows = (participant) => {
                 record[fieldMapping.collectionFinalizedTimestamp],
             )))
             .sort((first, second) => Date.parse(first[fieldMapping.collectionFinalizedTimestamp])
-                - Date.parse(second[fieldMapping.collectionFinalizedTimestamp]))[0];
+                - Date.parse(second[fieldMapping.collectionFinalizedTimestamp]))[0]
+            || finalizedCollections[0];
         const isCollected = finalizedCollections.length > 0;
         const collectionSetting = collection?.[fieldMapping.biospecimenFlag];
         let collectionDate = 'N/A';
@@ -436,7 +439,8 @@ export const followupSummaryRows = (participant) => {
         }
         const refusalOptions = participant[fieldMapping.refusalOptions];
         const currentRoundRefusal = fieldMapping.currentRoundCollection[activity[activityRound]]?.refusal;
-        const isRefused = refusalOptions?.[fieldMapping.refusedFutureSamples] === fieldMapping.yes
+        const isRefused = participant[fieldMapping.refusedAllFutureActivities] === fieldMapping.yes
+            || refusalOptions?.[fieldMapping.refusedFutureSamples] === fieldMapping.yes
             || (currentRoundRefusal && refusalOptions?.[currentRoundRefusal] === fieldMapping.yes);
         const eligibilityEnd = formatUTCDate(activity[eligibilityEndAt]);
 
@@ -482,7 +486,7 @@ export const followupSummaryRows = (participant) => {
             status,
             date,
             'N/A',
-            'N',
+            areFollowupSurveysRefused ? 'Y' : 'N',
             'N/A',
             typeLabel,
         ]);
