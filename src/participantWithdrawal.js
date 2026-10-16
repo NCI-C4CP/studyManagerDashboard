@@ -149,6 +149,11 @@ const getParticipantSelectedRefusals = (participant) => {
       strArray.push("Baseline Mouthwash (Saliva) Donation");
     if (refusalOptions[fieldMapping.refusedSpecimenSurveys] === fieldMapping.yes)
       strArray.push("Baseline Specimen Surveys");
+    Object.entries(fieldMapping.currentRoundCollection).forEach(([round, { refusal }]) => {
+      if (refusalOptions[refusal] === fieldMapping.yes) {
+        strArray.push(`${round} Round of Site Specimen Collection`);
+      }
+    });
     if (refusalOptions[fieldMapping.refusedFutureSamples] === fieldMapping.yes)
       strArray.push("All future specimens (willing to do surveys)");
     if (refusalOptions[fieldMapping.refusedQualityOfLifeSurvey] === fieldMapping.yes)

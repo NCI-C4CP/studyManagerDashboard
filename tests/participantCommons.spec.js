@@ -1,5 +1,5 @@
 import { renderTable, renderParticipantSearchResults, renderTablePage, setupActiveColumns, filterBySiteKey, getActiveColumns, waitForActiveColumnsUpdate, normalizeColumnValue } from '../src/participantCommons.js';
-import { searchState, buildPredefinedSearchMetadata, uiState } from '../src/stateManager.js';
+import { participantState, searchState, buildPredefinedSearchMetadata, uiState } from '../src/stateManager.js';
 import { bubbleCategories, bubbleFieldMap, defaultColumnKeys } from '../src/participantColumnConfig.js';
 import { setupTestEnvironment, teardownTestEnvironment, installFirebaseStub, createMockParticipant, createDOMFixture, cleanupDOMFixture, clearAllState } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
@@ -754,6 +754,60 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       const selectButton = firstRow.querySelector('.select-participant');
       expect(selectButton).not.toBeNull();
       expect(selectButton.dataset.token).toBe('token-123');
+    });
+
+    it('fetches enriched participant data before opening participant details', async () => {
+      const searchParticipant = createMockParticipant('test-1', {
+        token: 'token-123',
+        [fieldMapping.verifiedFlag]: fieldMapping.verified,
+      });
+      const enrichedParticipant = {
+        ...searchParticipant,
+        followups: [{
+          [fieldMapping.followups.activityRound]: 'A1',
+          [fieldMapping.followups.activityType]: fieldMapping.followups.SSC,
+        }],
+      };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({ code: 200, data: [enrichedParticipant] }),
+      });
+
+      mainContent.innerHTML = renderTable([searchParticipant], 'verified');
+      renderParticipantSearchResults([searchParticipant], 'verified');
+      document.querySelector('.select-participant').click();
+
+      await vi.waitFor(() => {
+        expect(participantState.getParticipant()?.followups).toEqual(enrichedParticipant.followups);
+        expect(document.querySelector('.participant-tabs-container')).not.toBeNull();
+      });
+      expect(window.location.hash).toBe('#participantDetails');
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('api=getFilteredParticipants&token=token-123'),
+        expect.any(Object),
+      );
+
+      fetchSpy.mockRestore();
+    });
+
+    it('uses cached data for a non-verified participant selected from all participants', async () => {
+      const searchParticipant = createMockParticipant('not-verified', {
+        token: 'token-not-verified',
+        [fieldMapping.verifiedFlag]: fieldMapping.notYetVerified,
+      });
+      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+      mainContent.innerHTML = renderTable([searchParticipant], 'all');
+      renderParticipantSearchResults([searchParticipant], 'all');
+      document.querySelector('.select-participant').click();
+
+      await vi.waitFor(() => {
+        expect(participantState.getParticipant()?.token).toBe('token-not-verified');
+        expect(document.querySelector('.participant-tabs-container')).not.toBeNull();
+      });
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      fetchSpy.mockRestore();
     });
 
     it('should handle empty data array', () => {

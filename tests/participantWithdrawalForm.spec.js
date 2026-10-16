@@ -7,6 +7,7 @@ import {
     validateDate
 } from '../src/participantWithdrawalForm.js';
 import { participantState, uiState } from '../src/stateManager.js';
+import { renderRefusalOptions } from '../src/participantWithdrawalRender.js';
 
 describe('participantWithdrawalForm Logic', () => {
     let firebaseStub;
@@ -26,6 +27,94 @@ describe('participantWithdrawalForm Logic', () => {
 
     afterEach(() => {
         cleanup();
+    });
+
+    describe('Baseline activity availability', () => {
+        const baselineOptionIds = [
+            'baselineBloodDonationCheck',
+            'baselineUrineDonationCheck',
+            'baselineMouthwashDonationCheck',
+            'baselineSpecimenSurveyCheck',
+        ];
+
+        it('disables and visually mutes Baseline activities for an eligible follow-up participant', async () => {
+            await participantState.setParticipant(createMockParticipant('followup-eligible', {
+                followup: {
+                    eligible: true,
+                    [fieldMapping.followups.activityRound]: 'A1',
+                },
+            }));
+
+            document.body.innerHTML = renderWithdrawalForm();
+
+            baselineOptionIds.forEach(id => {
+                expect(document.getElementById(id).disabled).toBe(true);
+            });
+            expect(document.getElementById('initialSurveyCheck').disabled).toBe(false);
+            baselineOptionIds.forEach(id => {
+                expect(document.querySelector(`label[for="${id}"].text-grayed-out`)).not.toBeNull();
+            });
+            expect(document.getElementById('refusedQualityOfLifeSurveyCheck').disabled).toBe(false);
+            expect(document.getElementById('withdrawConsentCheck').disabled).toBe(false);
+
+            const currentRoundOption = document.getElementById('currentRoundSiteSpecimenCollectionCheck');
+            expect(currentRoundOption).not.toBeNull();
+            expect(currentRoundOption.disabled).toBe(false);
+            expect(currentRoundOption.dataset.optionkey).toBe('496914746');
+            expect(currentRoundOption.nextElementSibling.textContent).toContain('Current Round of Site Specimen Collection (A1)');
+            const specimenOptionIds = Array.from(document.querySelectorAll('input[name="options"]'))
+                .map(option => option.id);
+            expect(specimenOptionIds.indexOf('currentRoundSiteSpecimenCollectionCheck'))
+                .toBeLessThan(specimenOptionIds.indexOf('allFutureSpecimensCheck'));
+        });
+
+        it('uses the currently eligible activity from the SMDB followups array', async () => {
+            await participantState.setParticipant(createMockParticipant('smdb-followups', {
+                followups: [{
+                    [fieldMapping.followups.activityRound]: 'A1',
+                    [fieldMapping.followups.eligibilityStartAt]: '2020-01-01T00:00:00Z',
+                    [fieldMapping.followups.eligibilityEndAt]: '2030-01-01T00:00:00Z',
+                }],
+            }));
+
+            document.body.innerHTML = renderWithdrawalForm();
+
+            baselineOptionIds.forEach(id => {
+                expect(document.getElementById(id).disabled).toBe(true);
+            });
+            expect(document.getElementById('initialSurveyCheck').disabled).toBe(false);
+            expect(document.getElementById('currentRoundSiteSpecimenCollectionCheck')
+                .nextElementSibling.textContent).toContain('Current Round of Site Specimen Collection (A1)');
+        });
+
+        it('keeps Baseline activities selectable when there is no eligible follow-up activity', async () => {
+            await participantState.setParticipant(createMockParticipant('baseline-participant', {
+                followup: { eligible: false },
+            }));
+
+            document.body.innerHTML = renderWithdrawalForm();
+
+            baselineOptionIds.forEach(id => {
+                expect(document.getElementById(id).disabled).toBe(false);
+            });
+            baselineOptionIds.forEach(id => {
+                expect(document.querySelector(`label[for="${id}"].text-grayed-out`)).toBeNull();
+            });
+            expect(document.getElementById('currentRoundSiteSpecimenCollectionCheck')).toBeNull();
+        });
+
+        it('does not render a current-round refusal without configured concept IDs', async () => {
+            await participantState.setParticipant(createMockParticipant('unmapped-round', {
+                followup: {
+                    eligible: true,
+                    [fieldMapping.followups.activityRound]: 'A2',
+                },
+            }));
+
+            document.body.innerHTML = renderWithdrawalForm();
+
+            expect(document.getElementById('currentRoundSiteSpecimenCollectionCheck')).toBeNull();
+        });
     });
 
     describe('Checkbox Logic (autoSelectOptions)', () => {
@@ -214,6 +303,42 @@ describe('participantWithdrawalForm Logic', () => {
             // "Refused some" is the default lower status (score 1)
             expect(result[fieldMapping.participationStatus]).toBe(fieldMapping.refusedSome);
             expect(result[fieldMapping.refBaselineBloodTimeStamp]).not.toBeNull();
+        });
+
+        it('saves both added withdrawal items in the participant update payload', async () => {
+            await participantState.setParticipant(createMockParticipant('followup-payload', {
+                token: 'followup-payload-token',
+                followup: {
+                    eligible: true,
+                    [fieldMapping.followups.activityRound]: 'A1',
+                },
+            }));
+
+            document.body.innerHTML = renderWithdrawalForm();
+            const currentRoundRefusal = document.getElementById('currentRoundSiteSpecimenCollectionCheck');
+
+            document.body.innerHTML = renderRefusalOptions();
+            const collectionLocationReason = document.getElementById('noLongerGeographicallyNearCollectionLocation');
+
+            const result = await processRefusalWithdrawalResponses(
+                [collectionLocationReason],
+                [currentRoundRefusal],
+                [mockRadio(fieldMapping.requestParticipant)],
+                'page1',
+                '//',
+            );
+
+            expect(result).toMatchObject({
+                token: 'followup-payload-token',
+                [fieldMapping.refusalOptions]: {
+                    [fieldMapping.currentRoundCollection.A1.refusal]: fieldMapping.yes,
+                },
+                [fieldMapping.noLongerGeographicallyNearCollectionLocation]: fieldMapping.yes,
+                [fieldMapping.participationStatus]: fieldMapping.refusedSome,
+            });
+            expect(result).not.toHaveProperty(String(fieldMapping.currentRoundCollection.A1.refusal));
+            expect(result[fieldMapping.currentRoundCollection.A1.refusedAt])
+                .toMatch(/^\d{4}-\d{2}-\d{2}T/);
         });
 
         it('handles suspend contact', async () => {

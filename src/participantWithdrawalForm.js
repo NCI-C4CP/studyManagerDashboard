@@ -7,6 +7,30 @@ import { refreshParticipantHeaders } from './participantHeader.js';
 
 export const renderWithdrawalForm = () => {
     const participant = participantState.getParticipant();
+    const currentTime = Date.now();
+    const currentFollowup = participant?.followups?.find((activity) => {
+        const eligibilityStart = Date.parse(activity[fieldMapping.followups.eligibilityStartAt]);
+        const eligibilityEnd = Date.parse(activity[fieldMapping.followups.eligibilityEndAt]);
+        return Number.isFinite(eligibilityStart)
+            && Number.isFinite(eligibilityEnd)
+            && eligibilityStart <= currentTime
+            && currentTime <= eligibilityEnd;
+    }) || (participant?.followup?.eligible ? participant.followup : null);
+    const baselineActivitiesDisabled = Boolean(currentFollowup);
+    const baselineCheckboxDisabledAttribute = baselineActivitiesDisabled ? 'disabled' : '';
+    const baselineDisabledLabelClass = baselineActivitiesDisabled ? 'text-grayed-out' : '';
+    const currentActivityRound = currentFollowup?.[fieldMapping.followups.activityRound];
+    const currentRoundSpecimenConcepts = fieldMapping.currentRoundCollection[currentActivityRound];
+    const currentRoundSpecimenOption = baselineActivitiesDisabled && currentRoundSpecimenConcepts
+        ? `
+                            <input class="form-check-input" name="options" type="checkbox"
+                            value="Current Round of Site Specimen Collection (${currentActivityRound})"
+                            data-optionkey=${currentRoundSpecimenConcepts.refusal} id="currentRoundSiteSpecimenCollectionCheck">
+                            <label class="form-check-label" for="currentRoundSiteSpecimenCollectionCheck">
+                                Current Round of Site Specimen Collection (${currentActivityRound})
+                            </label>
+                            <br />`
+        : '';
     return `        
         <div class="row">
             <div class="col-md-6">
@@ -30,22 +54,22 @@ export const renderWithdrawalForm = () => {
                             <span><i><b>Specimen Donations</b></i></span>
                             <br />
                             <input class="form-check-input" name="options" type="checkbox" value="Baseline Blood Donation" 
-                            data-optionkey=${fieldMapping.refusedBlood} id="baselineBloodDonationCheck">
-                            <label class="form-check-label" for="baselineBloodDonationCheck">
+                            data-optionkey=${fieldMapping.refusedBlood} id="baselineBloodDonationCheck" ${baselineCheckboxDisabledAttribute}>
+                            <label class="form-check-label ${baselineDisabledLabelClass}" for="baselineBloodDonationCheck">
                                 Baseline Blood Donation
                             </label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" name="options" type="checkbox" value="Baseline Urine Donation" 
-                            data-optionkey=${fieldMapping.refusedUrine} id="baselineUrineDonationCheck">
-                            <label class="form-check-label" for="baselineUrineDonationCheck">
+                            data-optionkey=${fieldMapping.refusedUrine} id="baselineUrineDonationCheck" ${baselineCheckboxDisabledAttribute}>
+                            <label class="form-check-label ${baselineDisabledLabelClass}" for="baselineUrineDonationCheck">
                                 Baseline Urine Donation
                             </label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" name="options" type="checkbox" value="Baseline Mouthwash (Saliva) Donation" 
-                            data-optionkey=${fieldMapping.refusedMouthwash} id="baselineMouthwashDonationCheck">
-                            <label class="form-check-label" for="baselineMouthwashDonationCheck">
+                            data-optionkey=${fieldMapping.refusedMouthwash} id="baselineMouthwashDonationCheck" ${baselineCheckboxDisabledAttribute}>
+                            <label class="form-check-label ${baselineDisabledLabelClass}" for="baselineMouthwashDonationCheck">
                                 Baseline Mouthwash (Saliva) Donation
                             </label>
                         </div>
@@ -54,8 +78,8 @@ export const renderWithdrawalForm = () => {
                             <span><i><b>Specimen Surveys</b></i></span>
                             <br />
                             <input class="form-check-input" name="options" type="checkbox" value="Baseline Specimen Surveys" 
-                            data-optionkey=${fieldMapping.refusedSpecimenSurveys} id="baselineSpecimenSurveyCheck">
-                            <label class="form-check-label" for="baselineSpecimenSurveyCheck">
+                            data-optionkey=${fieldMapping.refusedSpecimenSurveys} id="baselineSpecimenSurveyCheck" ${baselineCheckboxDisabledAttribute}>
+                            <label class="form-check-label ${baselineDisabledLabelClass}" for="baselineSpecimenSurveyCheck">
                                 Baseline Specimen Surveys
                             </label>
                         </div>
@@ -108,6 +132,7 @@ export const renderWithdrawalForm = () => {
                         <div class="form-check">
                             <span><i><b>Specimen Donations and Specimen Surveys</b></i></span>
                             <br />
+                            ${currentRoundSpecimenOption}
                             <input class="form-check-input" name="options" type="checkbox" value="All future specimens (willing to do surveys)" 
                             data-optionkey=${fieldMapping.refusedFutureSamples} id="allFutureSpecimensCheck">
                             <label class="form-check-label" for="allFutureSpecimensCheck">
@@ -786,8 +811,12 @@ const handleResponseSubmission = async (selectedRefusalWithdrawalCheckboxes, sel
 export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdrawal, selectedRefusalWithdrawalCheckboxes, selectedWhoRequestedRadios, source, suspendDate) => {
     let sendRefusalData = {};
     let highestStatus = [];
+    const currentRoundSpecimenConcepts = Object.values(fieldMapping.currentRoundCollection);
     sendRefusalData[fieldMapping.refusalOptions] = {};
     selectedRefusalWithdrawalCheckboxes.forEach(x => {
+        const selectedOption = parseInt(x.dataset.optionkey);
+        const selectedRoundSpecimenConcepts = currentRoundSpecimenConcepts
+            .find(({ refusal }) => refusal === selectedOption);
         if (parseInt(x.dataset.optionkey) === fieldMapping.refusedSurvey) {
             setRefusalTimeStamp(sendRefusalData, x.dataset.optionkey, fieldMapping.refBaselineSurveyTimeStamp);
         }
@@ -823,6 +852,13 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
         }
         else if (parseInt(x.dataset.optionkey) ===  fieldMapping.refusedCancerScreeningHistorySurvey) {
             setRefusalTimeStamp(sendRefusalData, x.dataset.optionkey, fieldMapping.refCancerScreeningHistorySurveyTimeStamp);
+        }
+        else if (selectedRoundSpecimenConcepts) {
+            setRefusalTimeStamp(
+                sendRefusalData,
+                x.dataset.optionkey,
+                selectedRoundSpecimenConcepts.refusedAt,
+            );
         }
         else {
             sendRefusalData[x.dataset.optionkey] = fieldMapping.yes
@@ -931,7 +967,7 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
     });
 
     const hasFollowUpRefusalsSelected = selectedRefusalWithdrawalCheckboxes.some(x => {
-        const optionKey = parseInt(x.dataset.optionkey);
+        const optionKey = x.dataset.optionkey;
         return [
             fieldMapping.refusedQualityOfLifeSurvey,
             fieldMapping.refusedAllFutureQualityOfLifeSurveys,
@@ -939,8 +975,9 @@ export const processRefusalWithdrawalResponses = async (selectedReasonsForWithdr
             fieldMapping.refusedAllFutureExperienceSurveys,
             fieldMapping.refusedCancerScreeningHistorySurvey,
             fieldMapping.refusedFutureSurveys,
-            fieldMapping.refusedFutureSamples
-        ].includes(optionKey);
+            fieldMapping.refusedFutureSamples,
+            ...currentRoundSpecimenConcepts.map(({ refusal }) => refusal),
+        ].map(String).includes(optionKey);
     });
 
     const hasAllRefusalsSelected = selectedRefusalWithdrawalCheckboxes.some(x => {

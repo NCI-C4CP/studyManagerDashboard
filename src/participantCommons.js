@@ -1,6 +1,6 @@
 import { renderParticipantDetails } from './participantDetails.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
-import { getIdToken, showAnimation, hideAnimation, getParticipants, sortByKey, renderSiteDropdown, triggerNotificationBanner } from './utils.js';
+import { getIdToken, showAnimation, hideAnimation, getParticipants, getParticipantByToken, sortByKey, renderSiteDropdown, triggerNotificationBanner } from './utils.js';
 import { searchState, buildPredefinedSearchMetadata, signOutAndClearSession, uiState } from './stateManager.js';
 import { nameToKeyObj, keyToShortNameObj, participantConceptIDToTextMapping } from './idsToName.js';
 import { bubbleCategories, bubbleFieldMap, defaultColumnKeys } from './participantColumnConfig.js';
@@ -717,11 +717,28 @@ const addEventShowMoreInfo = (data) => {
     const selectElements = document.getElementsByClassName('select-participant');
     Array.from(selectElements).forEach(element => {
         element.addEventListener('click', async () => {
-            const filteredData = data.filter(dt => dt.token === element.dataset.token);
-            let changedOption = {};
-            const loadDetailsPage = '#participantDetails'
-            location.replace(window.location.origin + window.location.pathname + loadDetailsPage); // updates url to participantDetails upon screen update
-            await renderParticipantDetails(filteredData[0], changedOption, 'details');
+            element.disabled = true;
+            showAnimation();
+            try {
+                const cachedParticipant = data.find(participant => participant.token === element.dataset.token);
+                if (!cachedParticipant) throw new Error('Selected participant was not found');
+
+                const participant = cachedParticipant[fieldMapping.verifiedFlag] === fieldMapping.verified
+                    ? await getParticipantByToken(element.dataset.token)
+                    : cachedParticipant;
+                window.history.replaceState(null, null, '#participantDetails');
+                await renderParticipantDetails(participant, {}, 'details');
+            } catch (error) {
+                console.error('Error loading selected participant:', error);
+                triggerNotificationBanner(
+                    'Unable to load participant details. Please try again.',
+                    'danger',
+                    4000,
+                );
+                element.disabled = false;
+            } finally {
+                hideAnimation();
+            }
         });
     });
 

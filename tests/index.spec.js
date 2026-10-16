@@ -165,8 +165,8 @@ describe('router', () => {
       await waitForAsyncTasks(50);
 
       const main = document.getElementById('mainContent');
-      expect(main.innerHTML).toContain('NCI');
-      expect(main.innerHTML).toContain('National Cancer Institute');
+      expect(main.innerHTML).toContain('Site: National Cancer Institute');
+      expect(main.innerHTML).toContain('Activity Type: Baseline');
     });
 
     it('renders empty state when no data is returned', async () => {
