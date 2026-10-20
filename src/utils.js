@@ -686,6 +686,37 @@ export const getParticipants = async () => {
     }
 }
 
+/**
+ * Fetch a single participant with the follow-up data attached.
+ * @param {string} participantToken Participant token.
+ * @returns {Promise<object>} Enriched participant data.
+ */
+export const getParticipantByToken = async (participantToken) => {
+    if (!participantToken) throw new Error('Participant token is required');
+
+    const idToken = await getIdToken();
+    const params = new URLSearchParams({
+        api: 'getFilteredParticipants',
+        token: participantToken,
+    });
+    const response = await fetch(`${baseAPI}/dashboard?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${idToken}`,
+        },
+    });
+    const responseObj = await response.json();
+
+    if (!response.ok || responseObj.code !== 200) {
+        throw new Error(responseObj.message || 'Unable to fetch participant data');
+    }
+    if (!Array.isArray(responseObj.data) || responseObj.data.length !== 1) {
+        throw new Error(`Found ${responseObj.data?.length || 0} participants. Expected one.`);
+    }
+
+    return responseObj.data[0];
+};
+
 // Ensure that the date is a valid ISO 8601 string
 export function timestampValidation(iso8601String) {
   if (iso8601String) {
