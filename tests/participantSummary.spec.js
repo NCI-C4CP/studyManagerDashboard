@@ -51,19 +51,15 @@ const buildSummaryParticipant = (overrides = {}) => createMockParticipant('summa
 });
 
 describe('participantSummary', () => {
-  let render;
-  let renderParticipantSummary;
   let retrieveDHQHEIReport;
   let renderSummaryTabContent;
   let asyncHandlerTracker;
 
   const ensureModuleLoaded = async () => {
-    if (render && renderParticipantSummary && retrieveDHQHEIReport && renderSummaryTabContent) return;
+    if (retrieveDHQHEIReport && renderSummaryTabContent) return;
     global.PDFLib = global.PDFLib ?? createPdfLibStub();
     const module = await import('../src/participantSummary.js');
     const resolved = module?.default ?? module;
-    render = resolved.render;
-    renderParticipantSummary = resolved.renderParticipantSummary;
     retrieveDHQHEIReport = resolved.retrieveDHQHEIReport;
     renderSummaryTabContent = resolved.renderSummaryTabContent;
   };
@@ -85,7 +81,7 @@ describe('participantSummary', () => {
     teardownTestEnvironment();
   });
 
-  it('renders summary table with optional revocation/destruction rows and ROI links', () => {
+  it('renders summary table with optional revocation/destruction rows and ROI links', async () => {
     const participant = buildSummaryParticipant({
       [fieldMapping.revokeHIPAA]: fieldMapping.yes,
       [fieldMapping.signedHIPAARevoc]: fieldMapping.yes,
@@ -102,23 +98,36 @@ describe('participantSummary', () => {
       },
     };
 
-    const html = render(participant, reports);
+    const html = await renderSummaryTabContent(participant, reports);
 
     expect(html).toContain('Participant Summary');
+    expect(html).toContain('>Round</th>');
+    expect(html).toContain('>Type</th>');
     expect(html).toContain('HIPAA Revoc Form');
     expect(html).toContain('Data Destroy Form');
     expect(html).toContain('downloadPhysActReport');
   });
 
-  it('renderParticipantSummary populates DOM and attaches download anchors', () => {
-    const participant = buildSummaryParticipant();
+  it('renders follow-up rows after all existing summary rows', async () => {
+    const participant = buildSummaryParticipant({
+      [fieldMapping.destroyData]: fieldMapping.yes,
+      [fieldMapping.signedDataDestroy]: fieldMapping.yes,
+      [fieldMapping.versionDataDestroy]: 'Data_Destroy_V1.0_Eng',
+      [fieldMapping.dateDataDestroy]: '2024-02-02T00:00:00Z',
+      followups: [{
+        [fieldMapping.followups.activityRound]: 'A1',
+        [fieldMapping.followups.activityType]: fieldMapping.followups.SSC,
+        [fieldMapping.followups.activityList]: ['Blood Collection'],
+        [fieldMapping.followups.eligibilityEndAt]: '2027-03-01T00:00:00Z',
+        collections: [],
+      }],
+    });
 
-    renderParticipantSummary(participant, {});
+    const html = await renderSummaryTabContent(participant, {});
+    const followupIndex = html.indexOf('<td>A1</td>');
 
-    const mainContent = document.getElementById('mainContent').innerHTML;
-    expect(mainContent).toContain('Participant Summary');
-    expect(document.getElementById('downloadCopy')).not.toBeNull();
-    expect(document.getElementById('navBarLinks').innerHTML).not.toBe('');
+    expect(followupIndex).toBeGreaterThan(html.indexOf('downloadPhysActReport'));
+    expect(followupIndex).toBeGreaterThan(html.indexOf('Data Destroy Form'));
   });
 
   it('retrieveDHQHEIReport short-circuits when submission criteria not met', async () => {
@@ -127,7 +136,7 @@ describe('participantSummary', () => {
   });
 
   describe('hipaaRevocation template states', () => {
-    it('renders signed HIPAA revocation with download link', () => {
+    it('renders signed HIPAA revocation with download link', async () => {
       const participant = buildSummaryParticipant({
         [fieldMapping.revokeHIPAA]: fieldMapping.yes,
         [fieldMapping.signedHIPAARevoc]: fieldMapping.yes,
@@ -135,16 +144,26 @@ describe('participantSummary', () => {
         [fieldMapping.dateHIPAARevoc]: '2024-02-01T00:00:00Z',
       });
 
-      const html = render(participant, {});
+      const html = await renderSummaryTabContent(participant, {});
 
       expect(html).toContain('HIPAA Revoc Form');
       expect(html).toContain('Signed</td>');
       expect(html).toContain('HIPAA_Revoc_V1.0_Eng');
       expect(html).toContain('downloadCopyHipaaRevoc');
       expect(html).toContain('icon--success');
+
+      const container = document.createElement('div');
+      container.innerHTML = html;
+      const row = [...container.querySelectorAll('tbody tr')]
+        .find(element => element.textContent.includes('HIPAA Revoc Form'));
+      expect(row.cells).toHaveLength(10);
+      expect(row.cells[1].textContent).toBe('Revocation');
+      expect(row.cells[2].textContent).toBe('');
+      expect(row.cells[3].textContent).toBe('Agreement');
+      expect(row.cells[4].textContent).toBe('HIPAA Revoc Form');
     });
 
-    it('renders not signed HIPAA revocation with disabled link', () => {
+    it('renders not signed HIPAA revocation with disabled link', async () => {
       const participant = buildSummaryParticipant({
         [fieldMapping.revokeHIPAA]: fieldMapping.yes,
         [fieldMapping.signedHIPAARevoc]: fieldMapping.no,
@@ -152,7 +171,7 @@ describe('participantSummary', () => {
         [fieldMapping.dateHIPAARevoc]: '2024-02-01T00:00:00Z',
       });
 
-      const html = render(participant, {});
+      const html = await renderSummaryTabContent(participant, {});
 
       expect(html).toContain('HIPAA Revoc Form');
       expect(html).toContain('Not Signed</td>');
@@ -160,19 +179,19 @@ describe('participantSummary', () => {
       expect(html).toContain('icon--error');
     });
 
-    it('does not render HIPAA revocation when not requested', () => {
+    it('does not render HIPAA revocation when not requested', async () => {
       const participant = buildSummaryParticipant({
         [fieldMapping.revokeHIPAA]: fieldMapping.no,
       });
 
-      const html = render(participant, {});
+      const html = await renderSummaryTabContent(participant, {});
 
       expect(html).not.toContain('HIPAA Revoc Form');
     });
   });
 
   describe('dataDestroy template states', () => {
-    it('renders signed data destruction with download link', () => {
+    it('renders signed data destruction with download link', async () => {
       const participant = buildSummaryParticipant({
         [fieldMapping.destroyData]: fieldMapping.yes,
         [fieldMapping.signedDataDestroy]: fieldMapping.yes,
@@ -180,16 +199,26 @@ describe('participantSummary', () => {
         [fieldMapping.dateDataDestroy]: '2024-02-02T00:00:00Z',
       });
 
-      const html = render(participant, {});
+      const html = await renderSummaryTabContent(participant, {});
 
       expect(html).toContain('Data Destroy Form');
       expect(html).toContain('Signed</td>');
       expect(html).toContain('Data_Destroy_V1.0_Eng');
       expect(html).toContain('downloadCopyDataDestroy');
       expect(html).toContain('icon--success');
+
+      const container = document.createElement('div');
+      container.innerHTML = html;
+      const row = [...container.querySelectorAll('tbody tr')]
+        .find(element => element.textContent.includes('Data Destroy Form'));
+      expect(row.cells).toHaveLength(10);
+      expect(row.cells[1].textContent).toBe('Destruction');
+      expect(row.cells[2].textContent).toBe('');
+      expect(row.cells[3].textContent).toBe('Agreement');
+      expect(row.cells[4].textContent).toBe('Data Destroy Form');
     });
 
-    it('renders not signed data destruction with disabled link', () => {
+    it('renders not signed data destruction with disabled link', async () => {
       const participant = buildSummaryParticipant({
         [fieldMapping.destroyData]: fieldMapping.yes,
         [fieldMapping.signedDataDestroy]: fieldMapping.no,
@@ -197,7 +226,7 @@ describe('participantSummary', () => {
         [fieldMapping.dateDataDestroy]: '2024-02-02T00:00:00Z',
       });
 
-      const html = render(participant, {});
+      const html = await renderSummaryTabContent(participant, {});
 
       expect(html).toContain('Data Destroy Form');
       expect(html).toContain('Not Signed</td>');
@@ -205,12 +234,12 @@ describe('participantSummary', () => {
       expect(html).toContain('icon--error');
     });
 
-    it('does not render data destruction when not requested', () => {
+    it('does not render data destruction when not requested', async () => {
       const participant = buildSummaryParticipant({
         [fieldMapping.destroyData]: fieldMapping.no,
       });
 
-      const html = render(participant, {});
+      const html = await renderSummaryTabContent(participant, {});
 
       expect(html).not.toContain('Data Destroy Form');
     });

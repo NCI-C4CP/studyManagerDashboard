@@ -108,6 +108,22 @@ describe('participantWithdrawal', () => {
         expect(alertPlaceholder.innerHTML).toContain('Initial Survey');
     });
 
+    it('shows the selected A1 site specimen collection refusal', async () => {
+        const participant = createMockParticipant('a1-refusal-uid', {
+            [fieldMapping.participationStatus]: fieldMapping.refusedSome,
+            [fieldMapping.refusalOptions]: {
+                [fieldMapping.currentRoundCollection.A1.refusal]: fieldMapping.yes,
+            },
+        });
+        await participantState.setParticipant(participant);
+        await renderParticipantWithdrawal(participant);
+        await waitForAsyncTasks();
+
+        const alertPlaceholder = document.getElementById('alert_placeholder');
+        expect(alertPlaceholder.innerHTML)
+            .toContain('A1 Round of Site Specimen Collection');
+    });
+
     it('shows suspended contact alert', async () => {
         const participant = createMockParticipant('suspended-uid', {
             [fieldMapping.participationStatus]: fieldMapping.noRefusal,
