@@ -2271,30 +2271,31 @@ const populateUserHistoryMap = (existingData, adminEmail, newSuffix) => {
         fieldMapping.doesAltAddressExist,
     ];
 
+    // UPHx values are always strings so each nested CID has a single type in BigQuery. '' = no prior value.
     keys.forEach((key) => {
-        existingData[key] != null && (userHistoryMap[key] = existingData[key]);
+        existingData[key] != null && (userHistoryMap[key] = String(existingData[key]));
     });
 
     if (existingData[fieldMapping.cellPhone]) {
-        userHistoryMap[fieldMapping.voicemailMobile] = existingData[fieldMapping.voicemailMobile] ?? fieldMapping.no;
-        userHistoryMap[fieldMapping.canWeText] = existingData[fieldMapping.canWeText] ?? fieldMapping.no;
+        userHistoryMap[fieldMapping.voicemailMobile] = String(existingData[fieldMapping.voicemailMobile] ?? fieldMapping.no);
+        userHistoryMap[fieldMapping.canWeText] = String(existingData[fieldMapping.canWeText] ?? fieldMapping.no);
     }
 
     if (existingData[fieldMapping.homePhone]) {
-        userHistoryMap[fieldMapping.voicemailHome] = existingData[fieldMapping.voicemailHome] ?? fieldMapping.no;
+        userHistoryMap[fieldMapping.voicemailHome] = String(existingData[fieldMapping.voicemailHome] ?? fieldMapping.no);
     }
 
     if (existingData[fieldMapping.otherPhone]) {
-        userHistoryMap[fieldMapping.voicemailOther] = existingData[fieldMapping.voicemailOther] ?? fieldMapping.no;
+        userHistoryMap[fieldMapping.voicemailOther] = String(existingData[fieldMapping.voicemailOther] ?? fieldMapping.no);
     }
 
     if (newSuffix && !existingData[fieldMapping.suffix]) {
-        userHistoryMap[fieldMapping.suffix] = fieldMapping.noneOfTheseApply;
+        userHistoryMap[fieldMapping.suffix] = String(fieldMapping.noneOfTheseApply);
     }
 
     if (Object.keys(userHistoryMap).length > 0) {
         userHistoryMap[fieldMapping.userProfileUpdateTimestamp] = new Date().toISOString();
-        userHistoryMap[fieldMapping.profileChangeRequestedBy] = adminEmail;
+        userHistoryMap[fieldMapping.profileChangeRequestedBy] = adminEmail ? `SMDB - ${adminEmail}` : 'SMDB';
         
         return userHistoryMap;
     } else {
