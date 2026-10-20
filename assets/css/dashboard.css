@@ -527,7 +527,7 @@ Responsive data corrections nav link display
 */
 :root {
     --color-success-508: #0F6D2A;  /* dark green */
-    --color-warning-508: #943200;  /* dark orange */
+    --color-warning-508: #E65100;  /* orange */
     --color-error-508:   #D32F2F;  /* red */
     --color-link-508:    #0A5AB8;  /* dark blue */
     --color-muted-508:   #4B5563;  /* dark gray for contrast compliance */

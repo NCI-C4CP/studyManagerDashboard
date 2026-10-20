@@ -1,4 +1,5 @@
 import { resolveBaseAPI, getParticipantByToken, triggerNotificationBanner, escapeHTML } from '../src/utils.js';
+import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import {
   installFirebaseStub,
   setupTestEnvironment,
@@ -58,7 +59,7 @@ describe('utils', () => {
     it('returns the enriched participant from the dashboard API', async () => {
       const participant = {
         token: 'participant-token',
-        followups: [{ 967514378: 'A1' }],
+        followups: [{ [fieldMapping.followups.activityRound]: 'A1' }],
       };
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,

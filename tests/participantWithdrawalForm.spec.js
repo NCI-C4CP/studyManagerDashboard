@@ -60,7 +60,8 @@ describe('participantWithdrawalForm Logic', () => {
             const currentRoundOption = document.getElementById('currentRoundSiteSpecimenCollectionCheck');
             expect(currentRoundOption).not.toBeNull();
             expect(currentRoundOption.disabled).toBe(false);
-            expect(currentRoundOption.dataset.optionkey).toBe('496914746');
+            expect(currentRoundOption.dataset.optionkey)
+                .toBe(String(fieldMapping.currentRoundCollection.A1.refusal));
             expect(currentRoundOption.nextElementSibling.textContent).toContain('Current Round of Site Specimen Collection (A1)');
             const specimenOptionIds = Array.from(document.querySelectorAll('input[name="options"]'))
                 .map(option => option.id);
