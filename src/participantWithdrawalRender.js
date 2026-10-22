@@ -174,6 +174,13 @@ export const renderRefusalOptions = () => {
                         </label>
                     </div>
                     <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="No longer geographically near a collection location" name="options"
+                        data-optionkey=${fieldMapping.noLongerGeographicallyNearCollectionLocation} id="noLongerGeographicallyNearCollectionLocation">
+                        <label class="form-check-label" for="noLongerGeographicallyNearCollectionLocation">
+                            No longer geographically near a collection location
+                        </label>
+                    </div>
+                    <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="Reason not given" name="options" 
                         data-optionkey=${fieldMapping.reasonNotGiven}  id="reasonNotGiven">
                         <label class="form-check-label" for="reasonNotGiven">

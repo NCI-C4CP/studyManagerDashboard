@@ -1,5 +1,6 @@
 import { setupTestEnvironment, teardownTestEnvironment, installFirebaseStub, createDOMFixture, cleanupDOMFixture, clearAllState, createMockParticipant, waitForAsyncTasks } from './helpers.js';
 import * as stateManagerModule from '../src/stateManager.js';
+import * as utilsModule from '../src/utils.js';
 import { setParticipantLookupNavRequest } from '../src/navigationBar.js';
 
 describe('router', () => {
@@ -126,6 +127,24 @@ describe('router', () => {
       const route = '#participantDetails/dataCorrections';
       expect(route.startsWith('#participantDetails')).toBe(true);
     });
+
+    it('restores the committed participant-details route when unsaved navigation is cancelled', async () => {
+      const originalHistory = global.history;
+      global.history = window.history;
+      const router = await loadRouter();
+      window.history.replaceState(null, null, '#participantDetails');
+      await router();
+
+      stateManager.appState.setState({ hasUnsavedChanges: true });
+      const confirmSpy = vi.spyOn(utilsModule, 'showConfirmModal').mockResolvedValue(false);
+
+      window.history.replaceState(null, null, '#home');
+      await router();
+
+      expect(window.location.hash).toBe('#participantDetails');
+      confirmSpy.mockRestore();
+      global.history = originalHistory;
+    });
   });
 
   describe('#mySamples route', () => {
@@ -165,8 +184,44 @@ describe('router', () => {
       await waitForAsyncTasks(50);
 
       const main = document.getElementById('mainContent');
-      expect(main.innerHTML).toContain('NCI');
-      expect(main.innerHTML).toContain('National Cancer Institute');
+      expect(main.innerHTML).toContain('Site: National Cancer Institute');
+      expect(main.innerHTML).toContain('Activity Type: Baseline');
+    });
+
+    it('sorts a legacy Baseline template before SSC for the same site', async () => {
+      global.fetch = async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          code: 200,
+          data: [{
+            id: 'site-ssc',
+            siteAcronym: 'NCI',
+            siteName: 'National Cancer Institute',
+            activityType: 'SSC',
+            saved: null,
+            published: { en: 'SSC', es: 'SSC' },
+          }, {
+            id: 'site-baseline',
+            siteAcronym: 'NCI',
+            siteName: 'National Cancer Institute',
+            saved: null,
+            published: { en: 'Baseline', es: 'Baseline' },
+          }],
+        }),
+      });
+
+      window.location.hash = '#mySamples';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const activityTypes = [...document.querySelectorAll('.card-title')]
+        .map(element => element.textContent.trim());
+      expect(activityTypes).toEqual([
+        'Activity Type: Baseline',
+        'Activity Type: SSC',
+      ]);
     });
 
     it('renders empty state when no data is returned', async () => {
@@ -188,7 +243,7 @@ describe('router', () => {
 
   describe('#generateServiceAccountKey route', () => {
     beforeEach(async () => {
-      await roleState.setRoleFlags({ isSiteManager: true, helpDesk: false, coordinatingCenter: false, isEHRUploader: false });
+      await roleState.setRoleFlags({ isSiteManager: true, helpDesk: false, coordinatingCenter: false, isEHRUploader: false, isServiceAccountManager: true });
       global.fetch = async () => ({
         ok: true,
         status: 200,
@@ -228,6 +283,66 @@ describe('router', () => {
 
       const main = document.getElementById('mainContent');
       expect(main.innerHTML).toContain('abc123def456');
+    });
+
+    it('renders the page for delegated site users', async () => {
+      await roleState.setRoleFlags({ isSiteManager: false, helpDesk: false, coordinatingCenter: false, isEHRUploader: false, isDelegatedSiteUser: true, isServiceAccountManager: true });
+
+      window.location.hash = '#generateServiceAccountKey';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main.innerHTML).toContain('API Key Generator');
+      expect(main.innerHTML).toContain('generateKeyBtn');
+    });
+
+    it('shows a contact message when the site has no service account configured', async () => {
+      await roleState.setRoleFlags({ isSiteManager: true, isServiceAccountManager: false, acronym: 'CGR' });
+
+      window.location.hash = '#generateServiceAccountKey';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main.innerHTML).toContain('No service account is configured for CGR');
+      expect(main.innerHTML).not.toContain('generateKeyBtn');
+    });
+  });
+
+  describe('delegated site user route lockdown', () => {
+    beforeEach(async () => {
+      await roleState.setRoleFlags({ isSiteManager: false, helpDesk: false, coordinatingCenter: false, isEHRUploader: false, isDelegatedSiteUser: true, isServiceAccountManager: true });
+      global.fetch = async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ code: 200, data: { keys: [] } }),
+      });
+    });
+
+    afterEach(() => {
+      delete global.fetch;
+    });
+
+    it('redirects restricted routes to home', async () => {
+      window.location.hash = '#participants/all';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      expect(window.location.hash).toBe('#home');
+    });
+
+    it('shows the limited access message on home', async () => {
+      window.location.hash = '#home';
+      const router = await loadRouter();
+      await router();
+      await waitForAsyncTasks(50);
+
+      const main = document.getElementById('mainContent');
+      expect(main.innerHTML).toContain('limited access to the Connect Study Manager Dashboard for API key management');
     });
   });
 
