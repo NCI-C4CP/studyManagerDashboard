@@ -169,6 +169,23 @@ describe('participantSummaryRow', () => {
       expect(html).toMatch(/<td>Blood<\/td>\s*<td>Collected<\/td>\s*<td>03\/15\/2026<\/td>\s*<td>Research<\/td>/);
     });
 
+    it('renders the eligibility end date without shifting its timezone offset', () => {
+      const followups = fieldMapping.followups;
+      const html = followupSummaryRows({
+        followups: [{
+          [followups.activityRound]: 'A1',
+          [followups.activityType]: followups.SSC,
+          [followups.eligibilityEndAt]: '2027-10-19T23:59:59-04:00',
+          biospecimen: [],
+          surveyTracking: [],
+          paymentTracking: [],
+        }],
+      });
+
+      expect(html).toContain('Eligibility End Date: 10/19/2027');
+      expect(html).not.toContain('Eligibility End Date: 10/20/2027');
+    });
+
     it('renders standard sample and survey rows regardless of the round activity list', () => {
       const followups = fieldMapping.followups;
       const html = followupSummaryRows({
@@ -189,7 +206,7 @@ describe('participantSummaryRow', () => {
       expect(html).toContain('<td>Research Mouthwash</td>');
       expect(html).toContain('<td>Clinical Blood/Urine</td>');
       expect(html).toContain('<td>Research B/U/M</td>');
-      expect(html).not.toContain('<td>Menstrual Cycle</td>');
+      expect(html).toContain('<td>Menstrual Cycle</td>');
       expect(html).toContain('<td>Incentive</td>');
     });
 

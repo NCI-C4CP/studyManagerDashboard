@@ -22,6 +22,19 @@ const COLORS = {
 };
 
 /**
+ * Formats the calendar date encoded in an ISO datetime without converting its timezone.
+ *
+ * @param {string} isoDateTime ISO datetime.
+ * @returns {string} Date formatted as MM/DD/YYYY, or N/A for a missing/invalid value.
+ */
+const formatISOCalendarDate = (isoDateTime) => {
+    const match = typeof isoDateTime === 'string'
+        ? isoDateTime.match(/^(\d{4})-(\d{2})-(\d{2})T/)
+        : null;
+    return match ? `${match[2]}/${match[3]}/${match[1]}` : 'N/A';
+};
+
+/**
  * ENROLLMENT / AGREEMENT
  */
 
@@ -442,7 +455,7 @@ export const followupSummaryRows = (participant) => {
         const isRefused = participant[fieldMapping.refusedAllFutureActivities] === fieldMapping.yes
             || refusalOptions?.[fieldMapping.refusedFutureSamples] === fieldMapping.yes
             || (currentRoundRefusal && refusalOptions?.[currentRoundRefusal] === fieldMapping.yes);
-        const eligibilityEnd = formatUTCDate(activity[eligibilityEndAt]);
+        const eligibilityEnd = formatISOCalendarDate(activity[eligibilityEndAt]);
 
         return renderRow(rowClass, [
             isCollected ? ICONS.CHECKMARK : ICONS.X,
@@ -522,18 +535,13 @@ export const followupSummaryRows = (participant) => {
         const rowClass = roundNumber % 2 === 0
             ? 'row-color-followup-light'
             : 'row-color-followup-dark';
-        const hasMenstrualCycleSurvey = activity.surveyTracking?.some(
-            survey => survey[surveyType] === menstrualCycleSurvey,
-        );
         return [
             sampleRow(activity, typeLabel, bloodTubeConcepts, blood, 'Blood', rowClass),
             sampleRow(activity, typeLabel, urineTubeConcepts, urine, 'Urine', rowClass),
             sampleRow(activity, typeLabel, mouthwashTubeConcepts, mouthwash, 'Research Mouthwash', rowClass),
             surveyRow(activity, typeLabel, bloodUrineSurvey, 'Clinical Blood/Urine', rowClass),
             surveyRow(activity, typeLabel, bloodUrineMouthwashSurvey, 'Research B/U/M', rowClass),
-            hasMenstrualCycleSurvey
-                ? surveyRow(activity, typeLabel, menstrualCycleSurvey, 'Menstrual Cycle', rowClass)
-                : '',
+            surveyRow(activity, typeLabel, menstrualCycleSurvey, 'Menstrual Cycle', rowClass),
             paymentRow(activity, typeLabel, rowClass),
         ].join('');
     }).join('');
