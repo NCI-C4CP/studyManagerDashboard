@@ -377,9 +377,9 @@ describe('participantDetailsHelpers', () => {
             const entry = history[1];
             expect(entry[fieldMapping.prefName]).toBe('Old Pref');
             expect(entry[fieldMapping.cellPhone]).toBe('5551234567');
-            expect(entry[fieldMapping.voicemailMobile]).toBe(fieldMapping.no);
-            expect(entry[fieldMapping.canWeText]).toBe(fieldMapping.yes);
-            expect(entry[fieldMapping.profileChangeRequestedBy]).toBe('admin@example.com');
+            expect(entry[fieldMapping.voicemailMobile]).toBe(String(fieldMapping.no));
+            expect(entry[fieldMapping.canWeText]).toBe(String(fieldMapping.yes));
+            expect(entry[fieldMapping.profileChangeRequestedBy]).toBe('SMDB - admin@example.com');
             expect(Number.isNaN(Date.parse(entry[fieldMapping.userProfileUpdateTimestamp]))).toBe(false);
         });
 
@@ -416,7 +416,7 @@ describe('participantDetailsHelpers', () => {
             );
 
             expect(history).toHaveLength(1);
-            expect(history[0][fieldMapping.suffix]).toBe(fieldMapping.noneOfTheseApply);
+            expect(history[0][fieldMapping.suffix]).toBe(String(fieldMapping.noneOfTheseApply));
         });
 
         it('returns existing history unchanged when there are no tracked history fields', () => {
@@ -476,13 +476,13 @@ describe('participantDetailsHelpers', () => {
 
             expect(history).toHaveLength(1);
             const entry = history[0];
-            expect(entry[fieldMapping.isIntlAddr]).toBe(fieldMapping.yes);
+            expect(entry[fieldMapping.isIntlAddr]).toBe(String(fieldMapping.yes));
             expect(entry[fieldMapping.address3]).toBe('Mailing Line 3');
             expect(entry[fieldMapping.country]).toBe('USA');
-            expect(entry[fieldMapping.physicalAddrIntl]).toBe(fieldMapping.yes);
+            expect(entry[fieldMapping.physicalAddrIntl]).toBe(String(fieldMapping.yes));
             expect(entry[fieldMapping.physicalAddress3]).toBe('Physical Line 3');
             expect(entry[fieldMapping.physicalCountry]).toBe('USA');
-            expect(entry[fieldMapping.isIntlAltAddress]).toBe(fieldMapping.yes);
+            expect(entry[fieldMapping.isIntlAltAddress]).toBe(String(fieldMapping.yes));
             expect(entry[fieldMapping.altAddress3]).toBe('Alt Line 3');
             expect(entry[fieldMapping.altCountry]).toBe('USA');
         });
@@ -502,9 +502,64 @@ describe('participantDetailsHelpers', () => {
 
             expect(history).toHaveLength(1);
             const entry = history[0];
-            expect(entry[fieldMapping.isMailingAddressUSPSUnvalidated]).toBe(fieldMapping.yes);
-            expect(entry[fieldMapping.isPhysicalAddressUSPSUnvalidated]).toBe(fieldMapping.no);
-            expect(entry[fieldMapping.isAltAddressUSPSUnvalidated]).toBe(fieldMapping.yes);
+            expect(entry[fieldMapping.isMailingAddressUSPSUnvalidated]).toBe(String(fieldMapping.yes));
+            expect(entry[fieldMapping.isPhysicalAddressUSPSUnvalidated]).toBe(String(fieldMapping.no));
+            expect(entry[fieldMapping.isAltAddressUSPSUnvalidated]).toBe(String(fieldMapping.yes));
+        });
+
+        it('stores every history value as a string', () => {
+            const existingDataToUpdate = {
+                [fieldMapping.isIntlAddr]: fieldMapping.yes,
+                [fieldMapping.physicalCountry]: 826,
+                [fieldMapping.isPOBox]: fieldMapping.no,
+                [fieldMapping.doesAltAddressExist]: fieldMapping.no,
+                [fieldMapping.address2]: '',
+                [fieldMapping.city]: 'Boston',
+            };
+
+            const [entry] = module.updateUserHistory(existingDataToUpdate, [], 'admin@example.com');
+
+            expect(entry[fieldMapping.physicalCountry]).toBe('826');
+            expect(entry[fieldMapping.isPOBox]).toBe(String(fieldMapping.no));
+            expect(entry[fieldMapping.doesAltAddressExist]).toBe(String(fieldMapping.no));
+            expect(entry[fieldMapping.address2]).toBe('');
+            Object.values(entry).forEach((value) => expect(typeof value).toBe('string'));
+        });
+
+        it('does not stringify null or undefined prior values', () => {
+            const existingDataToUpdate = {
+                [fieldMapping.city]: 'Boston',
+                [fieldMapping.address2]: null,
+                [fieldMapping.physicalCountry]: undefined,
+            };
+
+            const [entry] = module.updateUserHistory(existingDataToUpdate, [], 'admin@example.com');
+
+            expect(entry).not.toHaveProperty(String(fieldMapping.address2));
+            expect(entry).not.toHaveProperty(String(fieldMapping.physicalCountry));
+            expect(Object.values(entry)).not.toContain('null');
+            expect(Object.values(entry)).not.toContain('undefined');
+        });
+
+        it('preserves leading zeros in zip codes', () => {
+            const [entry] = module.updateUserHistory({ [fieldMapping.zip]: '02134' }, [], 'admin@example.com');
+
+            expect(entry[fieldMapping.zip]).toBe('02134');
+        });
+
+        it('records SMDB without a trailing email when the admin email is unavailable', () => {
+            const [entry] = module.updateUserHistory({ [fieldMapping.city]: 'Boston' }, [], undefined);
+
+            expect(entry[fieldMapping.profileChangeRequestedBy]).toBe('SMDB');
+        });
+
+        it('defaults missing phone permissions to the string form of no', () => {
+            const existingDataToUpdate = { [fieldMapping.cellPhone]: '5551234567' };
+
+            const [entry] = module.updateUserHistory(existingDataToUpdate, [], 'admin@example.com');
+
+            expect(entry[fieldMapping.voicemailMobile]).toBe(String(fieldMapping.no));
+            expect(entry[fieldMapping.canWeText]).toBe(String(fieldMapping.no));
         });
     });
 
@@ -556,7 +611,7 @@ describe('participantDetailsHelpers', () => {
                 expect(history).toHaveLength(2);
                 const latestEntry = history[1];
                 expect(latestEntry[fieldMapping.cellPhone]).toBe('5551234567');
-                expect(latestEntry[fieldMapping.profileChangeRequestedBy]).toBe('admin@example.com');
+                expect(latestEntry[fieldMapping.profileChangeRequestedBy]).toBe('SMDB - admin@example.com');
                 expect(Number.isNaN(Date.parse(latestEntry[fieldMapping.userProfileUpdateTimestamp]))).toBe(false);
             } finally {
                 global.fetch = originalFetch;

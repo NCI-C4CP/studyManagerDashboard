@@ -17,6 +17,9 @@ const ROLE_DEFAULTS = Object.freeze({
     helpDesk: false,
     isSiteManager: false,
     isEHRUploader: false,
+    isServiceAccountManager: false,
+    isDelegatedSiteUser: false,
+    acronym: '',
 });
 
 const WITHDRAWAL_DEFAULTS = Object.freeze({
@@ -251,7 +254,12 @@ const validateStats = (candidate = {}) => {
 };
 
 const validateRoleFlags = (candidate = {}) => {
-    return validateBooleanFlags(ROLE_DEFAULTS, candidate);
+    const { acronym, ...booleanDefaults } = ROLE_DEFAULTS;
+    const inputData = candidate && typeof candidate === 'object' ? candidate : {};
+    return {
+        ...validateBooleanFlags(booleanDefaults, inputData),
+        acronym: typeof inputData.acronym === 'string' ? inputData.acronym : '',
+    };
 };
 
 const validateWithdrawalFlags = (candidate = {}) => {
