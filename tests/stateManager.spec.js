@@ -157,6 +157,9 @@ describe('stateManager', () => {
         helpDesk: false,
         isSiteManager: false,
         isEHRUploader: false,
+        isServiceAccountManager: false,
+        isDelegatedSiteUser: false,
+        acronym: '',
       });
     });
 
@@ -169,6 +172,9 @@ describe('stateManager', () => {
         helpDesk: true,
         isSiteManager: false,
         isEHRUploader: false,
+        isServiceAccountManager: false,
+        isDelegatedSiteUser: false,
+        acronym: '',
       });
       
       roleState.clear();
@@ -194,6 +200,9 @@ describe('stateManager', () => {
         helpDesk: false,
         isSiteManager: false,
         isEHRUploader: false,
+        isServiceAccountManager: false,
+        isDelegatedSiteUser: false,
+        acronym: '',
       });
     });
 
@@ -209,6 +218,9 @@ describe('stateManager', () => {
         helpDesk: false,
         isSiteManager: false,
         isEHRUploader: false,
+        isServiceAccountManager: false,
+        isDelegatedSiteUser: false,
+        acronym: '',
       });
     });
 
@@ -881,6 +893,9 @@ describe('stateManager', () => {
         helpDesk: false,
         isSiteManager: false,
         isEHRUploader: false,
+        isServiceAccountManager: false,
+        isDelegatedSiteUser: false,
+        acronym: '',
       });
       const stats = statsState.getStats();
       expect(stats && typeof stats === 'object').toBe(true);
@@ -924,6 +939,9 @@ describe('stateManager', () => {
         helpDesk: false,
         isSiteManager: false,
         isEHRUploader: false,
+        isServiceAccountManager: false,
+        isDelegatedSiteUser: false,
+        acronym: '',
       });
       expect(uiState.isSiteDropdownVisible()).toBe(false);
       expect(uiState.getWithdrawalStatusFlags()).toEqual({

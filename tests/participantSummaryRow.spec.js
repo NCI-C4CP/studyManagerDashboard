@@ -19,6 +19,7 @@ import {
   baselinePhysActReport,
   dhq3Report,
   getKitShippedStatusDates,
+  followupSummaryRows,
 } from '../src/participantSummaryRow.js';
 
 const formatDate = (iso) => {
@@ -35,6 +36,296 @@ const buildParticipant = (overrides = {}) => ({
 });
 
 describe('participantSummaryRow', () => {
+  describe('followupSummaryRows', () => {
+    it('renders sample, survey, and payment rows from round-specific tracking data', () => {
+      const followups = fieldMapping.followups;
+      const participant = {
+        followups: [{
+          [followups.activityRound]: 'A1',
+          [followups.activityType]: followups.SSC,
+          [followups.activityList]: [
+            'Blood Collection',
+            'Urine Collection',
+            'Mouthwash Collection',
+            'Blood/Urine/Mouthwash Survey',
+            'Blood Urine Survey',
+            'Payment',
+          ],
+          [followups.eligibilityEndAt]: '2027-03-01T00:00:00Z',
+          biospecimen: [{
+            [fieldMapping.tubeConcepts.blood[0]]: {
+              [followups.biospecimenTubeCollected]: fieldMapping.yes,
+            },
+            [followups.biospecimenCollectionTime]: '2026-03-15T12:00:00Z',
+            [fieldMapping.collectionFinalizedTimestamp]: '2026-03-16T12:00:00Z',
+            [fieldMapping.collectionIsFinalized]: fieldMapping.yes,
+            [fieldMapping.biospecimenFlag]: fieldMapping.biospecimenResearch,
+          }],
+          surveyTracking: [{
+            [followups.surveyType]: followups.bloodUrineMouthwashSurvey,
+            [followups.surveyStatus]: fieldMapping.surveyStatus.completed,
+            [followups.surveySubmittedAt]: '2026-03-16T12:00:00Z',
+          }, {
+            [followups.surveyType]: 151522362,
+            [followups.surveyStatus]: fieldMapping.surveyStatus.completed,
+            [followups.surveySubmittedAt]: '2026-03-18T12:00:00Z',
+          }],
+          paymentTracking: [{
+            [fieldMapping.eligiblePaymentRoundTimestamp]: '2026-03-15T12:00:00Z',
+            [fieldMapping.paymentIssued]: fieldMapping.yes,
+            [fieldMapping.datePaymentIssued]: '2026-03-17T12:00:00Z',
+            [fieldMapping.paymentChosen]: 'Amazon',
+          }],
+        }],
+      };
+
+      const html = followupSummaryRows(participant);
+
+      expect(html).toContain('<td>A1</td>');
+      expect(html).toContain('<td>SSC</td>');
+      expect(html).toContain('class="row-color-followup-dark"');
+      expect(html).toContain('<td>Blood</td>');
+      expect(html).toContain('<td>Collected</td>');
+      expect(html).toContain('<td>Urine</td>');
+      expect(html).toContain('<td>Not Collected</td>');
+      expect(html).toContain('<td>Research B/U/M</td>');
+      expect(html).toContain('<td>Submitted</td>');
+      expect(html).toContain('<td>Menstrual Cycle</td>');
+      expect(html).toMatch(/<td>Menstrual Cycle<\/td>\s*<td>Submitted<\/td>\s*<td>03\/18\/2026<\/td>/);
+      expect(html).toContain('Eligibility End Date: 03/01/2027');
+      expect(html).toContain('Issued on 03/17/2026');
+    });
+
+    it('uses the earliest finalized specimen record and the scenario-specific date source', () => {
+      const followups = fieldMapping.followups;
+      const collectedTube = { [followups.biospecimenTubeCollected]: fieldMapping.yes };
+      const html = followupSummaryRows({
+        followups: [{
+          [followups.activityRound]: 'A1',
+          [followups.activityType]: followups.SSC,
+          [followups.eligibilityEndAt]: '2027-03-01T00:00:00Z',
+          biospecimen: [{
+            [fieldMapping.tubeConcepts.blood[0]]: collectedTube,
+            [followups.biospecimenCollectionTime]: '2026-03-20T12:00:00Z',
+            [fieldMapping.collectionFinalizedTimestamp]: '2026-03-21T12:00:00Z',
+            [fieldMapping.collectionIsFinalized]: fieldMapping.yes,
+            [fieldMapping.biospecimenFlag]: fieldMapping.biospecimenClinical,
+          }, {
+            [fieldMapping.tubeConcepts.blood[0]]: collectedTube,
+            [followups.biospecimenCollectionTime]: '2026-03-10T12:00:00Z',
+            [fieldMapping.collectionFinalizedTimestamp]: '2026-03-11T12:00:00Z',
+            [fieldMapping.collectionIsFinalized]: fieldMapping.yes,
+            [fieldMapping.biospecimenFlag]: fieldMapping.biospecimenResearch,
+          }, {
+            [fieldMapping.tubeConcepts.blood[0]]: collectedTube,
+            [followups.biospecimenCollectionTime]: '2026-03-01T12:00:00Z',
+            [fieldMapping.collectionFinalizedTimestamp]: '2026-03-02T12:00:00Z',
+            [fieldMapping.collectionIsFinalized]: fieldMapping.no,
+            [fieldMapping.biospecimenFlag]: fieldMapping.biospecimenResearch,
+          }, {
+            [fieldMapping.tubeConcepts.urine[0]]: collectedTube,
+            [followups.biospecimenCollectionTime]: '2026-03-12T12:00:00Z',
+            [fieldMapping.collectionFinalizedTimestamp]: '2026-03-13T12:00:00Z',
+            [fieldMapping.collectionIsFinalized]: fieldMapping.yes,
+            [fieldMapping.biospecimenFlag]: fieldMapping.biospecimenClinical,
+          }],
+          collectionsTracking: [{
+            [followups.collectionType]: followups.urine,
+            [followups.sampleCollectedAt]: '2026-03-14T12:00:00Z',
+          }, {
+            [followups.collectionType]: followups.urine,
+            [followups.sampleCollectedAt]: '2026-03-09T12:00:00Z',
+          }],
+          surveyTracking: [],
+          paymentTracking: [],
+        }],
+      });
+
+      expect(html).toMatch(/<td>Blood<\/td>\s*<td>Collected<\/td>\s*<td>03\/10\/2026<\/td>\s*<td>Research<\/td>/);
+      expect(html).toMatch(/<td>Urine<\/td>\s*<td>Collected<\/td>\s*<td>03\/09\/2026<\/td>\s*<td>Clinical<\/td>/);
+      expect(html).not.toContain('03/01/2026');
+    });
+
+    it('uses collection data from a finalized collected tube without a finalization timestamp', () => {
+      const followups = fieldMapping.followups;
+      const html = followupSummaryRows({
+        followups: [{
+          [followups.activityRound]: 'A1',
+          [followups.activityType]: followups.SSC,
+          [followups.eligibilityEndAt]: '2027-03-01T00:00:00Z',
+          biospecimen: [{
+            [fieldMapping.tubeConcepts.blood[0]]: {
+              [followups.biospecimenTubeCollected]: fieldMapping.yes,
+            },
+            [followups.biospecimenCollectionTime]: '2026-03-15T12:00:00Z',
+            [fieldMapping.collectionIsFinalized]: fieldMapping.yes,
+            [fieldMapping.biospecimenFlag]: fieldMapping.biospecimenResearch,
+          }],
+          surveyTracking: [],
+          paymentTracking: [],
+        }],
+      });
+
+      expect(html).toMatch(/<td>Blood<\/td>\s*<td>Collected<\/td>\s*<td>03\/15\/2026<\/td>\s*<td>Research<\/td>/);
+    });
+
+    it('renders the eligibility end date without shifting its timezone offset', () => {
+      const followups = fieldMapping.followups;
+      const html = followupSummaryRows({
+        followups: [{
+          [followups.activityRound]: 'A1',
+          [followups.activityType]: followups.SSC,
+          [followups.eligibilityEndAt]: '2027-10-19T23:59:59-04:00',
+          biospecimen: [],
+          surveyTracking: [],
+          paymentTracking: [],
+        }],
+      });
+
+      expect(html).toContain('Eligibility End Date: 10/19/2027');
+      expect(html).not.toContain('Eligibility End Date: 10/20/2027');
+    });
+
+    it('renders standard sample and survey rows regardless of the round activity list', () => {
+      const followups = fieldMapping.followups;
+      const html = followupSummaryRows({
+        followups: [{
+          [followups.activityRound]: 'A2',
+          [followups.activityType]: followups.ABC,
+          [followups.activityList]: ['Blood Collection'],
+          [followups.eligibilityEndAt]: '2028-03-01T00:00:00Z',
+          biospecimen: [],
+          surveyTracking: [],
+          paymentTracking: [],
+        }],
+      });
+
+      expect(html).toContain('<td>ABC</td>');
+      expect(html).toContain('<td>Blood</td>');
+      expect(html).toContain('<td>Urine</td>');
+      expect(html).toContain('<td>Research Mouthwash</td>');
+      expect(html).toContain('<td>Clinical Blood/Urine</td>');
+      expect(html).toContain('<td>Research B/U/M</td>');
+      expect(html).toContain('<td>Menstrual Cycle</td>');
+      expect(html).toContain('<td>Incentive</td>');
+    });
+
+    it('uses background colors based on activity-round parity', () => {
+      const followups = fieldMapping.followups;
+      const activity = round => ({
+        [followups.activityRound]: round,
+        [followups.activityType]: followups.SSC,
+        [followups.activityList]: ['Blood Collection'],
+        [followups.eligibilityEndAt]: '2028-03-01T00:00:00Z',
+        biospecimen: [],
+      });
+
+      const html = followupSummaryRows({
+        followups: [activity('A2'), activity('A3')],
+      });
+
+      expect(html).toMatch(/row-color-followup-light[\s\S]*?<td>A2<\/td>/);
+      expect(html).toMatch(/row-color-followup-dark[\s\S]*?<td>A3<\/td>/);
+    });
+
+    it('reads follow-up sample refusal state from the participant record', () => {
+      const followups = fieldMapping.followups;
+      const html = followupSummaryRows({
+        [fieldMapping.refusalOptions]: {
+          [fieldMapping.refusedFutureSamples]: fieldMapping.yes,
+        },
+        followups: [{
+          [followups.activityRound]: 'A1',
+          [followups.activityType]: followups.SSC,
+          [followups.activityList]: ['Blood Collection'],
+          [followups.eligibilityEndAt]: '2027-03-01T00:00:00Z',
+          biospecimen: [],
+          surveyTracking: [],
+          paymentTracking: [],
+        }],
+      });
+
+      expect(html).toMatch(/<td>Blood<\/td>[\s\S]*<td>Y<\/td>/);
+    });
+
+    it('marks every follow-up sample refused when all future activities are refused', () => {
+      const followups = fieldMapping.followups;
+      const html = followupSummaryRows({
+        [fieldMapping.refusedAllFutureActivities]: fieldMapping.yes,
+        followups: [{
+          [followups.activityRound]: 'A1',
+          [followups.activityType]: followups.SSC,
+          [followups.eligibilityEndAt]: '2027-03-01T00:00:00Z',
+          biospecimen: [],
+          surveyTracking: [],
+          paymentTracking: [],
+        }],
+      });
+      const container = document.createElement('table');
+      container.innerHTML = `<tbody>${html}</tbody>`;
+
+      ['Blood', 'Urine', 'Research Mouthwash'].forEach(item => {
+        const row = [...container.querySelectorAll('tr')]
+          .find(element => element.cells[4]?.textContent === item);
+        expect(row.cells[8].textContent).toBe('Y');
+      });
+    });
+
+    it.each([
+      ['all future surveys', {
+        [fieldMapping.refusalOptions]: {
+          [fieldMapping.refusedFutureSurveys]: fieldMapping.yes,
+        },
+      }],
+      ['all future activities', {
+        [fieldMapping.refusedAllFutureActivities]: fieldMapping.yes,
+      }],
+    ])('marks every follow-up survey refused for %s', (_description, refusalData) => {
+      const followups = fieldMapping.followups;
+      const html = followupSummaryRows({
+        ...refusalData,
+        followups: [{
+          [followups.activityRound]: 'A1',
+          [followups.activityType]: followups.SSC,
+          [followups.eligibilityEndAt]: '2027-03-01T00:00:00Z',
+          biospecimen: [],
+          surveyTracking: [{
+            [followups.surveyType]: followups.menstrualCycleSurvey,
+          }],
+          paymentTracking: [],
+        }],
+      });
+      const container = document.createElement('table');
+      container.innerHTML = `<tbody>${html}</tbody>`;
+
+      ['Clinical Blood/Urine', 'Research B/U/M', 'Menstrual Cycle'].forEach(item => {
+        const row = [...container.querySelectorAll('tr')]
+          .find(element => element.cells[4]?.textContent === item);
+        expect(row.cells[8].textContent).toBe('Y');
+      });
+    });
+
+    it('reads the A1 collection refusal state from the participant record', () => {
+      const followups = fieldMapping.followups;
+      const html = followupSummaryRows({
+        [fieldMapping.refusalOptions]: {
+          [fieldMapping.currentRoundCollection.A1.refusal]: fieldMapping.yes,
+        },
+        followups: [{
+          [followups.activityRound]: 'A1',
+          [followups.activityType]: followups.SSC,
+          [followups.activityList]: ['Blood Collection'],
+          [followups.eligibilityEndAt]: '2027-03-01T00:00:00Z',
+          biospecimen: [],
+          surveyTracking: [],
+          paymentTracking: [],
+        }],
+      });
+
+      expect(html).toMatch(/<td>Blood<\/td>[\s\S]*<td>Y<\/td>/);
+    });
+  });
+
   describe('getSurveyStatus', () => {
     it('returns submitted metadata with formatted completion date', () => {
       const participant = {
