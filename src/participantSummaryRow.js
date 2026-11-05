@@ -22,6 +22,19 @@ const COLORS = {
 };
 
 /**
+ * Formats the calendar date encoded in an ISO datetime without converting its timezone.
+ *
+ * @param {string} isoDateTime ISO datetime.
+ * @returns {string} Date formatted as MM/DD/YYYY, or N/A for a missing/invalid value.
+ */
+const formatISOCalendarDate = (isoDateTime) => {
+    const match = typeof isoDateTime === 'string'
+        ? isoDateTime.match(/^(\d{4})-(\d{2})-(\d{2})T/)
+        : null;
+    return match ? `${match[2]}/${match[3]}/${match[1]}` : 'N/A';
+};
+
+/**
  * ENROLLMENT / AGREEMENT
  */
 
@@ -364,6 +377,177 @@ export const baselinePayment = (participantModule) => {
 }
 
 /**
+ * Builds participant-summary rows for every eligiblefollow-up activity round.
+ *
+ * @param {object} participant Participant data enriched with a followups array.
+ * @returns {string} Follow-up table rows.
+ */
+export const followupSummaryRows = (participant) => {
+    const followups = participant?.followups || [];
+    const {
+        activityRound,
+        activityType,
+        SSC,
+        ABC,
+        eligibilityEndAt,
+        collectionType,
+        blood,
+        urine,
+        mouthwash,
+        sampleCollectedAt,
+        biospecimenCollectionTime,
+        biospecimenTubeCollected,
+        surveyType,
+        bloodUrineMouthwashSurvey,
+        bloodUrineSurvey,
+        menstrualCycleSurvey,
+        surveyStatus,
+        surveyStartedAt,
+        surveySubmittedAt,
+    } = fieldMapping.followups;
+    const {
+        blood: bloodTubeConcepts,
+        urine: urineTubeConcepts,
+        mouthwash: mouthwashTubeConcepts,
+    } = fieldMapping.tubeConcepts;
+    const activityTypeLabels = { [SSC]: 'SSC', [ABC]: 'ABC' };
+    const areFollowupSurveysRefused = participant[fieldMapping.refusedAllFutureActivities] === fieldMapping.yes
+        || participant[fieldMapping.refusalOptions]?.[fieldMapping.refusedFutureSurveys] === fieldMapping.yes;
+
+    const renderRow = (rowClass, values) => `
+        <tr class="${rowClass}">
+            ${getTemplateRow(...values)}
+        </tr>`;
+    const collectionSettingLabels = {
+        [fieldMapping.biospecimenResearch]: 'Research',
+        [fieldMapping.biospecimenClinical]: 'Clinical',
+        [fieldMapping.biospecimenHome]: 'Home',
+    };
+    const sampleRow = (activity, typeLabel, tubeConcepts, sampleType, item, rowClass) => {
+        const finalizedCollections = activity.biospecimen
+            ?.filter(record => record[fieldMapping.collectionIsFinalized] === fieldMapping.yes
+                && tubeConcepts.some(tubeConcept =>
+                    record[tubeConcept]?.[biospecimenTubeCollected] === fieldMapping.yes,
+                )) || [];
+        const collection = finalizedCollections
+            .filter(record => Number.isFinite(Date.parse(
+                record[fieldMapping.collectionFinalizedTimestamp],
+            )))
+            .sort((first, second) => Date.parse(first[fieldMapping.collectionFinalizedTimestamp])
+                - Date.parse(second[fieldMapping.collectionFinalizedTimestamp]))[0]
+            || finalizedCollections[0];
+        const isCollected = finalizedCollections.length > 0;
+        const collectionSetting = collection?.[fieldMapping.biospecimenFlag];
+        let collectionDate = 'N/A';
+        if (collectionSetting === fieldMapping.biospecimenResearch) {
+            collectionDate = formatUTCDate(collection[biospecimenCollectionTime]);
+        } else if (collectionSetting === fieldMapping.biospecimenClinical
+            && sampleType !== mouthwash) {
+            const trackingRecord = activity.collectionsTracking
+                ?.filter(record => record[collectionType] === sampleType
+                    && Number.isFinite(Date.parse(record[sampleCollectedAt])))
+                .sort((first, second) => Date.parse(first[sampleCollectedAt])
+                    - Date.parse(second[sampleCollectedAt]))[0];
+            collectionDate = trackingRecord ? formatUTCDate(trackingRecord[sampleCollectedAt]) : 'N/A';
+        }
+        const refusalOptions = participant[fieldMapping.refusalOptions];
+        const currentRoundRefusal = fieldMapping.currentRoundCollection[activity[activityRound]]?.refusal;
+        const isRefused = participant[fieldMapping.refusedAllFutureActivities] === fieldMapping.yes
+            || refusalOptions?.[fieldMapping.refusedFutureSamples] === fieldMapping.yes
+            || (currentRoundRefusal && refusalOptions?.[currentRoundRefusal] === fieldMapping.yes);
+        const eligibilityEnd = formatISOCalendarDate(activity[eligibilityEndAt]);
+
+        return renderRow(rowClass, [
+            isCollected ? ICONS.CHECKMARK : ICONS.X,
+            isCollected ? COLORS.GREEN : COLORS.RED,
+            activity[activityRound],
+            'Sample',
+            item,
+            isCollected ? 'Collected' : 'Not Collected',
+            isCollected ? collectionDate : 'N/A',
+            isCollected ? collectionSettingLabels[collectionSetting] || 'N/A' : 'N/A',
+            isRefused ? 'Y' : 'N',
+            `Eligibility End Date: ${eligibilityEnd}`,
+            typeLabel,
+        ]);
+    };
+    const surveyRow = (activity, typeLabel, surveyConcept, item, rowClass) => {
+        const survey = activity.surveyTracking?.find(record => record[surveyType] === surveyConcept);
+        let icon = ICONS.X;
+        let color = COLORS.RED;
+        let status = 'Not Started';
+        let date = 'N/A';
+
+        if (survey?.[surveyStatus] === fieldMapping.surveyStatus.completed) {
+            icon = ICONS.CHECKMARK;
+            color = COLORS.GREEN;
+            status = 'Submitted';
+            date = formatUTCDate(survey[surveySubmittedAt]);
+        } else if (survey?.[surveyStatus] === fieldMapping.surveyStatus.started) {
+            icon = ICONS.HASHTAG;
+            color = COLORS.ORANGE;
+            status = 'Started';
+            date = formatUTCDate(survey[surveyStartedAt]);
+        }
+
+        return renderRow(rowClass, [
+            icon,
+            color,
+            activity[activityRound],
+            'Survey',
+            item,
+            status,
+            date,
+            'N/A',
+            areFollowupSurveysRefused ? 'Y' : 'N',
+            'N/A',
+            typeLabel,
+        ]);
+    };
+    const paymentRow = (activity, typeLabel, rowClass) => {
+        const payment = activity.paymentTracking?.[0] || {};
+        const isEligible = Boolean(payment[fieldMapping.eligiblePaymentRoundTimestamp]);
+        let extra = 'N/A';
+        if (payment[fieldMapping.paymentIssued] === fieldMapping.yes) {
+            extra = `Issued on ${formatUTCDate(payment[fieldMapping.datePaymentIssued])}`;
+        } else if (payment[fieldMapping.refusedBaselinePayment] === fieldMapping.yes) {
+            extra = `Declined on ${formatUTCDate(payment[fieldMapping.refusedBaselinePaymentDate])}`;
+        }
+
+        return renderRow(rowClass, [
+            isEligible ? ICONS.CHECKMARK : ICONS.X,
+            isEligible ? COLORS.GREEN : COLORS.RED,
+            activity[activityRound],
+            'Payment',
+            'Incentive',
+            isEligible ? 'Eligible' : 'Not Eligible',
+            isEligible ? formatUTCDate(payment[fieldMapping.eligiblePaymentRoundTimestamp]) : 'N/A',
+            payment[fieldMapping.paymentChosen] || 'N/A',
+            payment[fieldMapping.refusedBaselinePayment] === fieldMapping.yes ? 'Y' : 'N',
+            extra,
+            typeLabel,
+        ]);
+    };
+
+    return followups.map(activity => {
+        const typeLabel = activityTypeLabels[activity[activityType]] || '';
+        const roundNumber = Number.parseInt(activity[activityRound]?.slice(1), 10);
+        const rowClass = roundNumber % 2 === 0
+            ? 'row-color-followup-light'
+            : 'row-color-followup-dark';
+        return [
+            sampleRow(activity, typeLabel, bloodTubeConcepts, blood, 'Blood', rowClass),
+            sampleRow(activity, typeLabel, urineTubeConcepts, urine, 'Urine', rowClass),
+            sampleRow(activity, typeLabel, mouthwashTubeConcepts, mouthwash, 'Research Mouthwash', rowClass),
+            surveyRow(activity, typeLabel, bloodUrineSurvey, 'Clinical Blood/Urine', rowClass),
+            surveyRow(activity, typeLabel, bloodUrineMouthwashSurvey, 'Research B/U/M', rowClass),
+            surveyRow(activity, typeLabel, menstrualCycleSurvey, 'Menstrual Cycle', rowClass),
+            paymentRow(activity, typeLabel, rowClass),
+        ].join('');
+    }).join('');
+};
+
+/**
  * ROI / REPORTS
  */
 
@@ -686,10 +870,11 @@ const formatMouthwashCollectionDate = (isoDateTime) => {
     }
 };
 
-const getTemplateRow = (icon, color, timeline, category, item, status, date, setting, refused, extra) => {
+const getTemplateRow = (icon, color, round, category, item, status, date, setting, refused, extra, type = '') => {
     return `
         <td><i class="${icon} ${color}"></i></td>
-        <td>${timeline}</td>
+        <td>${round}</td>
+        <td>${type}</td>
         <td>${category}</td>
         <td>${item}</td>
         <td>${status}</td>

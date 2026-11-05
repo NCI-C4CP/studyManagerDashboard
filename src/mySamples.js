@@ -107,7 +107,7 @@ const renderContent = (contentData, isReadOnly = false) => {
 
 /**
  * Renders the full edit or view form for a selected My Samples record.
- * @param {{ siteName: string, siteAcronym: string, saved: Object|null, published: Object, id: string }} selectedData - The selected site's My Samples data.
+ * @param {{ siteName: string, siteAcronym: string, activityType: string, saved: Object|null, published: Object, id: string }} selectedData - The selected site's My Samples data.
  * @param {'edit'|'view'} type - Whether to render in edit or read-only view mode.
  * @returns {string} HTML string for the selected data.
  */
@@ -256,14 +256,26 @@ export const renderMySamplesPage = async () => {
     wrappedHtml = '<h5>My Samples Data Not Found</h5>';
   }
 
-  dataArray.forEach((data, idx) => {
+  const activityTypeOrder = { Baseline: 0, SSC: 1 };
+  const orderedData = dataArray
+    .map((data, idx) => ({ data, idx }))
+    .sort((first, second) => {
+      const siteComparison = first.data.siteAcronym.localeCompare(second.data.siteAcronym);
+      if (siteComparison !== 0) return siteComparison;
+
+      return activityTypeOrder[first.data.activityType || 'Baseline']
+        - activityTypeOrder[second.data.activityType || 'Baseline'];
+    });
+
+  orderedData.forEach(({ data, idx }) => {
+    const activityType = data.activityType || 'Baseline';
     wrappedHtml += `
-      <div class="card contentRow" data-idx=${idx}>
+      <div class="card contentRow" data-idx=${idx} data-activity-type="${activityType}">
           <div class="card-header">
-              Site: ${data.siteAcronym}
+              Site: ${data.siteName}
           </div>
           <div class="card-body">
-              <h5 class="card-title">${data.siteName} </h5>
+              <h6 class="card-title">Activity Type: ${activityType}</h6>
               <button type="button" class="btn btn-primary" title="View published content" id="viewContent" data-action="view" data-bs-toggle="modal" data-bs-target="#modalShowContent">View</button>
               <button type="button" class="btn btn-success" id="editContent" data-action="edit">${data.saved ? 'Edit Draft' : 'Edit'}</button>
           </div>

@@ -25,7 +25,7 @@ export const renderNavBarLinks = () => {
 }
 
 export const dashboardNavBarLinks = () => {
-    const { isSiteManager, isEHRUploader, helpDesk, coordinatingCenter } = roleState.getRoleFlags();
+    const { isSiteManager, isEHRUploader, isDelegatedSiteUser, helpDesk, coordinatingCenter } = roleState.getRoleFlags();
     
     // Set up navbar collapse after DOM is updated
     requestAnimationFrame(() => {
@@ -100,6 +100,24 @@ export const dashboardNavBarLinks = () => {
             <a class="nav-item nav-link ws-nowrap" href="#logout" title="Log Out"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</a>
         </li>
         `;
+
+    // External teams (eg. CGR via NIH SSO) only manage their own service account key.
+    const delegatedSiteUserNavBar = `
+        <li class="nav-item">
+            <a class="nav-item nav-link ws-nowrap" href="#home" title="Home" id="dashboardBtn"><i class="fa-solid fa-home"></i> Home</a>
+        </li>
+        <li class="nav-item" id="generateServiceAccountKeyBtn">
+            <a class="nav-item nav-link ws-nowrap" href="#generateServiceAccountKey" title="Generate Service Account Key"><i class="fa-solid fa-key"></i> Developer Use Only - API Key Generator</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-item nav-link ws-nowrap" href="#logout" title="Log Out"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</a>
+        </li>
+        `;
+
+    if (isDelegatedSiteUser) {
+        return delegatedSiteUserNavBar;
+    }
+
     if (isEHRUploader) {
         return ehrUploaderNavBar;
     }

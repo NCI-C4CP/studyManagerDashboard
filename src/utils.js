@@ -113,11 +113,23 @@ export const urls = {
   'dev': 'nci-c4cp.github.io'
 }
 
+const localHostnames = ['localhost', '127.0.0.1'];
+
+// Set localStorage.localApiBaseUrl (eg. 'http://localhost:8080') to hit a functions-framework instance instead of dev.
+const getLocalApiBaseUrl = (host) => {
+  if (!localHostnames.includes(host.split(':')[0])) return null;
+  try {
+    return localStorage.getItem('localApiBaseUrl');
+  } catch {
+    return null;
+  }
+};
+
 export const resolveBaseAPI = (hostOverride) => {
   const host = hostOverride ?? (typeof location !== 'undefined' ? location.host : '');
   if (host === urls.prod) return 'https://api-myconnect.cancer.gov';
   if (host === urls.stage) return 'https://api-myconnect-stage.cancer.gov';
-  return 'https://us-central1-nih-nci-dceg-connect-dev.cloudfunctions.net';
+  return getLocalApiBaseUrl(host) || 'https://us-central1-nih-nci-dceg-connect-dev.cloudfunctions.net';
 };
 
 export const baseAPI = resolveBaseAPI();
@@ -673,6 +685,37 @@ export const getParticipants = async () => {
         return error;
     }
 }
+
+/**
+ * Fetch a single participant with the follow-up data attached.
+ * @param {string} participantToken Participant token.
+ * @returns {Promise<object>} Enriched participant data.
+ */
+export const getParticipantByToken = async (participantToken) => {
+    if (!participantToken) throw new Error('Participant token is required');
+
+    const idToken = await getIdToken();
+    const params = new URLSearchParams({
+        api: 'getFilteredParticipants',
+        token: participantToken,
+    });
+    const response = await fetch(`${baseAPI}/dashboard?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${idToken}`,
+        },
+    });
+    const responseObj = await response.json();
+
+    if (!response.ok || responseObj.code !== 200) {
+        throw new Error(responseObj.message || 'Unable to fetch participant data');
+    }
+    if (!Array.isArray(responseObj.data) || responseObj.data.length !== 1) {
+        throw new Error(`Found ${responseObj.data?.length || 0} participants. Expected one.`);
+    }
+
+    return responseObj.data[0];
+};
 
 // Ensure that the date is a valid ISO 8601 string
 export function timestampValidation(iso8601String) {

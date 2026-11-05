@@ -1,4 +1,5 @@
-import { resolveBaseAPI, baseAPI, triggerNotificationBanner, escapeHTML } from '../src/utils.js';
+import { resolveBaseAPI, getParticipantByToken, triggerNotificationBanner, escapeHTML } from '../src/utils.js';
+import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import {
   installFirebaseStub,
   setupTestEnvironment,
@@ -31,9 +32,18 @@ describe('utils', () => {
         .toBe('https://us-central1-nih-nci-dceg-connect-dev.cloudfunctions.net');
     });
 
-    it('exports baseAPI using dev endpoint when location is undefined', () => {
-      // In test environment, location is not defined at module load time
-      expect(baseAPI).toBe('https://us-central1-nih-nci-dceg-connect-dev.cloudfunctions.net');
+    it('uses the localApiBaseUrl override on localhost', () => {
+      localStorage.setItem('localApiBaseUrl', 'http://localhost:8080');
+      expect(resolveBaseAPI('localhost:5500')).toBe('http://localhost:8080');
+      expect(resolveBaseAPI('127.0.0.1:5500')).toBe('http://localhost:8080');
+    });
+
+    it('ignores the localApiBaseUrl override on non-local hosts', () => {
+      localStorage.setItem('localApiBaseUrl', 'http://localhost:8080');
+      expect(resolveBaseAPI('dashboard-myconnect.cancer.gov'))
+        .toBe('https://api-myconnect.cancer.gov');
+      expect(resolveBaseAPI('nci-c4cp.github.io'))
+        .toBe('https://us-central1-nih-nci-dceg-connect-dev.cloudfunctions.net');
     });
   });
 
@@ -42,6 +52,30 @@ describe('utils', () => {
       const input = '<script>alert("xss")</script> & "quote"';
       const expected = '&lt;script&gt;alert("xss")&lt;/script&gt; &amp; "quote"';
       expect(escapeHTML(input)).toBe(expected);
+    });
+  });
+
+  describe('getParticipantByToken', () => {
+    it('returns the enriched participant from the dashboard API', async () => {
+      const participant = {
+        token: 'participant-token',
+        followups: [{ [fieldMapping.followups.activityRound]: 'A1' }],
+      };
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({ code: 200, data: [participant] }),
+      });
+
+      await expect(getParticipantByToken('participant-token')).resolves.toEqual(participant);
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining('api=getFilteredParticipants&token=participant-token'),
+        expect.objectContaining({
+          method: 'GET',
+          headers: { Authorization: 'Bearer fake-id-token' },
+        }),
+      );
+
+      fetchSpy.mockRestore();
     });
   });
 

@@ -144,6 +144,8 @@ export default
     "allBaselineSurveysCompleted": 100767870,
 
     "biospecimenFlag": 650516960,
+    "collectionIsFinalized": 410912345,
+    "collectionFinalizedTimestamp": 556788178,
     "biospecimenResearch": 534621077,
     "biospecimenClinical": 664882224,
     "biospecimenHome": 103209024,
@@ -395,6 +397,12 @@ export default
     'refusedSpecimenSurveys': 217367618,
     'refusedFutureSurveys': 867203506,
     'refusedFutureSamples': 352996056,
+    currentRoundCollection: {
+        A1: {
+            refusal: 496914746,
+            refusedAt: 143315155,
+        },
+    },
     'refusedQualityOfLifeSurvey': 936015433,
     'refusedAllFutureQualityOfLifeSurveys': 688142378,
     'refusedExperienceSurvey': 101763809,
@@ -432,6 +440,7 @@ export default
     'participantIncarcerated': 404289911,
     'otherReasons': 734828170,
     'otherReasonsSpecify': 715390138,
+    'noLongerGeographicallyNearCollectionLocation': 996747233,
     'reasonNotGiven': 538619788,
     'concernedInfoOnline': 637147033,
     tooManyTechnicalProblems: 440351122,
@@ -566,7 +575,6 @@ export default
     'refExperienceSurveyTimeStamp': 688172931,
     'refAllFutureExperienceSurveysTimeStamp': 182718292,
     'refCancerScreeningHistorySurveyTimeStamp': 957406695,
-
     // remaining withdrawal
     'contactSuspended': 726389747,
 
@@ -613,6 +621,49 @@ export default
         received: 375535639
     },
     kitRequestEligible: 638781731,
+
+    tubeConcepts: {
+        blood: [
+            299553921,
+            703954371,
+            838567176,
+            454453939,
+            652357376,
+            376960806,
+            232343615,
+            589588440,
+            958646668,
+            677469051,
+            683613884,
+            505347689,
+        ],
+        urine: [973670172],
+        mouthwash: [143615646],
+    },
+
+    followups: {
+        activityRound: 967514378,
+        activityList: 194745239,
+        activityType: 442362533,
+        SSC: 539798325,
+        ABC: 803285201,
+        eligibilityStartAt: 319593357,
+        eligibilityEndAt: 235879399,
+        collectionType: 129830997,
+        blood: 481758733,
+        urine: 343685348,
+        mouthwash: 390351864,
+        sampleCollectedAt: 325261848,
+        biospecimenCollectionTime: 678166505,
+        biospecimenTubeCollected: 593843561,
+        surveyType: 140587960,
+        bloodUrineMouthwashSurvey: 174688753,
+        bloodUrineSurvey: 575830126,
+        menstrualCycleSurvey: 151522362,
+        surveyStatus: 191617794,
+        surveyStartedAt: 895237475,
+        surveySubmittedAt: 608273260,
+    },
 
     surveyStatus: {
         notStarted: 972455046,

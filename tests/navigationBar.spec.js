@@ -135,5 +135,18 @@ describe('navigationBar', () => {
             const html = dashboardNavBarLinks();
             expect(html).not.toContain('href="#generateServiceAccountKey"');
         });
+
+        it('shows only home, API Key Generator, and logout for delegated site users', async () => {
+            await roleState.setRoleFlags({ isSiteManager: false, isEHRUploader: false, helpDesk: false, coordinatingCenter: false, isDelegatedSiteUser: true });
+            const html = dashboardNavBarLinks();
+            expect(html).toContain('href="#home"');
+            expect(html).toContain('href="#generateServiceAccountKey"');
+            expect(html).toContain('href="#logout"');
+            expect(html).not.toContain('href="#participantLookup"');
+            expect(html).not.toContain('href="#participants/all"');
+            expect(html).not.toContain('href="#ehrUpload"');
+            expect(html).not.toContain('href="#siteMessages"');
+            expect(html).not.toContain('id="notifications"');
+        });
     });
 });

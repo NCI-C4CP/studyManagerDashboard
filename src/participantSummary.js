@@ -1,4 +1,3 @@
-import { updateNavBar } from './navigationBar.js';
 import { renderParticipantHeader } from './participantHeader.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { retrievePhysicalActivityReport } from './reportsUtils.js';
@@ -7,8 +6,8 @@ import { consentHandler, hipaaHandler, userProfile, verificationStatus,
     baselineHomeMouthwashSurvey, baselineMenstrualSurvey, baselinePromisSurvey, dhqSurvey, cancerScreeningHistorySurvey, baselineExperienceSurvey, baselinePreferenceSurvey,
     baselineBloodSample, baselineUrineSample, baselineResearchMouthwashSample, baselineHomeMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, 
     baselinePayment, baselinePhysActReport, dhq3Report, 
-    dietScreenerSurvey} from './participantSummaryRow.js';
-import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, renderShowMoreDataModal, urls, triggerNotificationBanner, convertToISO8601 } from './utils.js';
+    dietScreenerSurvey, followupSummaryRows} from './participantSummaryRow.js';
+import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, urls, triggerNotificationBanner, convertToISO8601 } from './utils.js';
 import { participantState, reportsState, invalidateSearchResultsCache } from './stateManager.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
 import { refreshParticipantHeaders } from './participantHeader.js';
@@ -17,18 +16,6 @@ import { renderParticipantDetails } from './participantDetails.js';
 const { PDFDocument, StandardFonts, rgb } = PDFLib;
 
 document.body.scrollTop = document.documentElement.scrollTop = 0;
-
-export const renderParticipantSummary = (participant, reports) => {
-    updateNavBar('participantSummaryBtn');
-
-    if (participant !== null) {
-        document.querySelector("#mainContent").innerHTML = render(participant, reports);
-        downloadCopyHandler(participant);
-        downloadReportHandler(participant, reports);
-        resetParticipantConfirm();
-        dataOverrideConfirm();
-    }
-};
 
 /**
  * Render participant summary content for use in a tab
@@ -92,7 +79,8 @@ const renderSummaryContent = (participant, reports) => {
                     <thead class="table-dark sticky-row">
                         <tr>
                             <th class="sticky-row" scope="col">Icon</th>
-                            <th class="sticky-row" scope="col">Timeline</th>
+                            <th class="sticky-row" scope="col">Round</th>
+                            <th class="sticky-row" scope="col">Type</th>
                             <th class="sticky-row" scope="col">Category</th>
                             <th class="sticky-row" scope="col">Item</th>
                             <th class="sticky-row" scope="col">Status</th>
@@ -194,137 +182,12 @@ const renderSummaryContent = (participant, reports) => {
                             (`<tr class="row-color-enrollment-dark"> ${hipaaRevocation(participant)} </tr>`) : (``)}
                         ${participant[fieldMapping.destroyData] === fieldMapping.yes ?
                             (`<tr class="row-color-enrollment-dark"> ${dataDestroy(participant)} </tr>`): (``)}
+                        ${followupSummaryRows(participant)}
                     </tbody>
                 </table>
             </div>
         </div>
     `;
-};
-
-export const render = (participant, reports) => {
-    return `
-        <div class="container-fluid">
-            <div id="root root-margin">
-                ${renderParticipantHeader(participant)}
-                ${renderResetUserButton(participant?.state?.uid)}
-                ${renderUserDataOverrideButton(participant?.token)}
-                <div id="alert_placeholder" style="margin-top: 15px;"></div>
-                <div class="table-responsive">
-                    <span> <h4 style="text-align: center;">Participant Summary </h4> </span>
-                    <div class="sticky-header">
-                        <table class="table table-striped">
-                            <thead class="table-dark sticky-row"> 
-                                <tr>
-                                    <th class="sticky-row" scope="col">Icon</th>
-                                    <th class="sticky-row" scope="col">Timeline</th>
-                                    <th class="sticky-row" scope="col">Category</th>
-                                    <th class="sticky-row" scope="col">Item</th>
-                                    <th class="sticky-row" scope="col">Status</th>
-                                    <th class="sticky-row" scope="col">Date</th>
-                                    <th class="sticky-row" scope="col">Setting</th>
-                                    <th class="sticky-row" scope="col">Refused</th>
-                                    <th class="sticky-row" scope="col">Extra</th>
-                                </tr>
-                            </thead>   
-                            <tbody>
-                                <tr class="row-color-enrollment-dark">
-                                    ${consentHandler(participant)}
-                                </tr>
-                                <tr class="row-color-enrollment-light">
-                                    ${hipaaHandler(participant)}
-                                </tr>
-                                <tr class="row-color-enrollment-dark">
-                                    ${userProfile(participant)}
-                                </tr>
-                                <tr class="row-color-enrollment-light">
-                                    ${verificationStatus(participant)}
-                                </tr>
-                                <tr class="row-color-survey-dark">
-                                    ${baselineBOHSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-light">
-                                    ${baselineMRESurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-dark">
-                                    ${baselineSASSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-light">
-                                    ${baselineLAWSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-dark">
-                                    ${baselineSSN(participant)}
-                                </tr>
-                                <tr class="row-color-survey-light">
-                                    ${baselineCOVIDSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-dark">
-                                    ${baselineResearchBUMSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-light">
-                                    ${baselineClinicalBloodUrineSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-dark">
-                                    ${baselineHomeMouthwashSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-light">
-                                    ${baselineMenstrualSurvey(participant)} 
-                                </tr>   
-                                <tr class="row-color-survey-dark">
-                                    ${baselinePromisSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-light">
-                                    ${dhqSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-dark">
-                                    ${dietScreenerSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-light">
-                                    ${cancerScreeningHistorySurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-dark">
-                                    ${baselineExperienceSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-survey-light">
-                                    ${baselinePreferenceSurvey(participant)}
-                                </tr>
-                                <tr class="row-color-sample-dark">
-                                    ${baselineBloodSample(participant)}
-                                </tr>                           
-                                <tr class="row-color-sample-light">
-                                    ${baselineUrineSample(participant)}
-                                </tr>
-                                <tr class="row-color-sample-dark">
-                                    ${baselineResearchMouthwashSample(participant)}
-                                </tr>
-                                <tr class="row-color-sample-light">
-                                    ${baselineHomeMouthwashSample(participant)}
-                                </tr>
-                                <tr class="row-color-sample-dark">
-                                    ${baselineMouthwashR1Sample(participant)}
-                                </tr>
-                                <tr class="row-color-sample-light">
-                                    ${baselineMouthwashR2Sample(participant)}
-                                </tr>
-                                <tr class="row-color-payment">
-                                    ${baselinePayment(participant)}
-                                </tr>
-                                <tr class="row-color-roi-dark">
-                                    ${baselinePhysActReport(participant, reports)}
-                                </tr>
-                                <tr class="row-color-roi-light">
-                                    ${dhq3Report(participant, reports)}
-                                </tr>
-                                ${participant[fieldMapping.revokeHIPAA] === fieldMapping.yes ? 
-                                    (`<tr class="row-color-enrollment-dark"> ${hipaaRevocation(participant)} </tr>`) : (``)}
-                                ${participant[fieldMapping.destroyData] === fieldMapping.yes ? 
-                                    (`<tr class="row-color-enrollment-dark"> ${dataDestroy(participant)} </tr>`): (``)}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            ${renderShowMoreDataModal()}
-        </div>`;
 };
 
 const downloadCopyHandler = (participant) => {
@@ -670,6 +533,7 @@ const hipaaRevocation = (participant) => {
     ( participant[fieldMapping.signedHIPAARevoc] === fieldMapping.yes ?
         ( template += `<td><i class="fa-solid fa-check fa-2x icon--success"></i></td>
                         <td>Revocation</td>
+                        <td></td>
                         <td>Agreement</td>
                         <td>HIPAA Revoc Form</td>
                         <td>Signed</td>
@@ -680,6 +544,7 @@ const hipaaRevocation = (participant) => {
         ` ) : 
         ( template += `<td><i class="fa-solid fa-xmark fa-2x icon--error"></i></td>
                         <td>Revocation</td>
+                        <td></td>
                         <td>Agreement</td>
                         <td>HIPAA Revoc Form</td>
                         <td>Not Signed</td>
@@ -691,6 +556,7 @@ const hipaaRevocation = (participant) => {
      (
         template +=`<td><i class="fa-solid fa-xmark fa-2x icon--error"></i></td>
                     <td>Revocation</td>
+                    <td></td>
                     <td>Agreement</td>
                     <td>HIPAA Revoc Form</td>
                     <td>N/A</td>
@@ -709,6 +575,7 @@ const dataDestroy = (participant) => {
         ( participant[fieldMapping.signedDataDestroy] === fieldMapping.yes ?
             ( template += `<td><i class="fa-solid fa-check fa-2x icon--success"></i></td>
                             <td>Destruction</td>
+                            <td></td>
                             <td>Agreement</td>
                             <td>Data Destroy Form</td>
                             <td>Signed</td>
@@ -719,6 +586,7 @@ const dataDestroy = (participant) => {
             ` ) : 
         ( template += `<td><i class="fa-solid fa-xmark fa-2x icon--error"></i></td>
                         <td>Destruction</td>
+                        <td></td>
                         <td>Agreement</td>
                         <td>Data Destroy Form</td>
                         <td>Not Signed</td>
@@ -731,6 +599,7 @@ const dataDestroy = (participant) => {
     (
         template +=`<td><i class="fa-solid fa-xmark fa-2x icon--error"></i></td>
                     <td>Destruction</td>
+                    <td></td>
                     <td>Agreement</td>
                     <td>Data Destroy Form</td>
                     <td>N/A</td>

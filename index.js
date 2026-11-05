@@ -201,10 +201,13 @@ export const router = async () => {
             return;
         }
 
-        const { isEHRUploader } = roleState.getRoleFlags();
+        const { isEHRUploader, isDelegatedSiteUser } = roleState.getRoleFlags();
         const validRoutesForEHRUploader = ["#", "#home", "#ehrUpload", "#logout"];
+        const validRoutesForDelegatedSiteUser = ["#", "#home", "#generateServiceAccountKey", "#logout"];
         // Send to home for invalid routes
-        if (route === '#login' || (isEHRUploader && !validRoutesForEHRUploader.includes(route))) {
+        if (route === '#login'
+            || (isEHRUploader && !validRoutesForEHRUploader.includes(route))
+            || (isDelegatedSiteUser && !validRoutesForDelegatedSiteUser.includes(route))) {
             markNavigationSucceeded();
             window.location.hash = '#home';
             return;
@@ -373,11 +376,20 @@ const renderDashboard = async () => {
     const mainContent = document.getElementById('mainContent');
     mainContent.innerHTML = renderActivityCheck();
     if (location.host !== urls.prod) mainContent.innerHTML += headsupBanner();
-    const { isEHRUploader } = roleState.getRoleFlags();
+    const { isEHRUploader, isDelegatedSiteUser } = roleState.getRoleFlags();
     if (isEHRUploader) {
         mainContent.innerHTML += `
             <div class="alert alert-info" role="alert" style="margin: 40px auto; max-width: 800px; text-align: center;">
                 You have limited access to the Connect Study Manager Dashboard for Data Uploaders. Please navigate to the upload page in the tabs above for your specific use case. Do not share any Connect data or PII outside of this dashboard. If you have any questions or issues, please email the Connect Coordinating Center at <a href="mailto:ConnectCC@nih.gov">ConnectCC@nih.gov</a>.
+            </div>`;
+
+        return;
+    }
+
+    if (isDelegatedSiteUser) {
+        mainContent.innerHTML += `
+            <div class="alert alert-info" role="alert" style="margin: 40px auto; max-width: 800px; text-align: center;">
+                You have limited access to the Connect Study Manager Dashboard for API key management. Please use the API Key Generator in the tabs above to create keys for your team's service account. Do not share generated keys or any Connect data outside of your authorized team. If you have any questions or issues, please email the Connect Coordinating Center at <a href="mailto:ConnectCC@nih.gov">ConnectCC@nih.gov</a>.
             </div>`;
 
         return;
@@ -582,7 +594,7 @@ const authorizeUser = async () => {
 };
 
 // Authorized user should have one of the SSO roles
-const ssoRoles = ["isSiteManager", "isEHRUploader", "helpDesk"];
+const ssoRoles = ["isSiteManager", "isEHRUploader", "helpDesk", "isDelegatedSiteUser"];
 
 /**
  * Check if user has valid authorization roles. If not, attempt to authorize user and update refreshed roles to state manager.
