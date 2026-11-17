@@ -40,8 +40,9 @@ export const renderParticipantDetails = async (participant, changedOption = {}, 
     initLoginMechanism(participant);
     await participantState.setParticipant(participant);
 
-    // Determine which tab to show (from parameter or URL hash)
-    const activeTabId = tabId || getTabIdFromHash(window.location.hash);
+    // Validate the requested tab against the current user's visible tabs.
+    const requestedHash = tabId ? `#participantDetails/${tabId}` : window.location.hash;
+    const activeTabId = getTabIdFromHash(requestedHash);
 
     // Render the page with tabs
     document.getElementById('mainContent').innerHTML = renderParticipantDetailsPage(participant, changedOption, activeTabId);
@@ -51,25 +52,6 @@ export const renderParticipantDetails = async (participant, changedOption = {}, 
     await new Promise(resolve => requestAnimationFrame(resolve));
     await loadDetailsTabContent(participant, changedOption);
     initializeTabListeners(participant);
-
-    // Highlight the active tab, setTimeout delay avoids race conditions
-    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-        setTimeout(() => {
-            if (typeof document === 'undefined') return;
-            const activeTabLink = document.getElementById(`${activeTabId}-tab`);
-            if (activeTabLink) {
-                // Remove active class from all tabs, then set the active tab
-                document.querySelectorAll('.participant-tabs .nav-link').forEach(el => el.classList.remove('active'));
-                activeTabLink.classList.add('active');
-            }
-            
-            const activeTabPane = document.getElementById(`${activeTabId}-content`);
-            if (activeTabPane) {
-                document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('show', 'active'));
-                activeTabPane.classList.add('show', 'active');
-            }
-        }, 0);
-    }
 
     // Load the active tab if it's not 'details' and activate it
     if (activeTabId !== 'details') {
@@ -204,12 +186,14 @@ export const renderDetailsTabContentOnly = (participant, changedOption = {}) => 
         const fieldHasChanges = Object.prototype.hasOwnProperty.call(changedOption, conceptId);
         let rowBackgroundColor = row.isHeading ? '#f5f5f5' : null;
         if (fieldHasChanges) rowBackgroundColor = '#FFFACA';
+        // Bootstrap paints table cells using this variable, covering a row-only background.
+        const rowBackgroundStyle = rowBackgroundColor ? `--bs-table-bg: ${rowBackgroundColor};` : '';
 
         const buttonToRender = (row.isHeading || shouldHideButton) ? '' : getButtonToRender(variableLabel, conceptId, disableButton, isParticipantDataDestroyed, isParticipantDuplicate, isParticipantCannotBeVerified);
         const saveChangesMessage = fieldHasChanges ? `<br><br><i>Please save changes<br>before exiting the page</i>` : '';
 
         template += `
-            <tr class="detailedRow" style="text-align: left; background-color: ${rowBackgroundColor}" id="${conceptId}row">
+            <tr class="detailedRow" style="text-align: left; ${rowBackgroundStyle}" id="${conceptId}row">
                 <th scope="row">
                     <div class="mb-3">
                         <label class="form-label">

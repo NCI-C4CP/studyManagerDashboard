@@ -3,57 +3,43 @@ import {
     teardownTestEnvironment,
     installFirebaseStub,
     createMockParticipant,
-    waitForAsyncTasks,
     clearAllState,
-    trackAsyncEventHandlers
+    expectConsole,
+    jsonResponse,
+    mockApi,
+    trackAsyncEventHandlers,
 } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 
-vi.setConfig({ testTimeout: 10000 });
-
 describe('Tab Integration Tests', () => {
-    let firebaseStub;
     let participant;
     let renderParticipantDetails;
-    let activateTab;
-    let getTabIdFromHash;
     let roleState;
     let participantState;
     let asyncHandlerTracker;
+    let fetchMock;
 
     const loadModules = async () => {
-        if (renderParticipantDetails && activateTab && getTabIdFromHash) return;
-        const detailsModule = await import('../src/participantDetails.js');
-        const tabsModule = await import('../src/participantTabs.js');
-        const stateModule = await import('../src/stateManager.js');
-        const tabs = tabsModule?.default ?? tabsModule;
-        const state = stateModule?.default ?? stateModule;
-        renderParticipantDetails = (detailsModule?.default ?? detailsModule).renderParticipantDetails;
-        activateTab = tabs.activateTab;
-        getTabIdFromHash = tabs.getTabIdFromHash;
-        roleState = state.roleState;
-        participantState = state.participantState;
+        if (renderParticipantDetails) return;
+        ({ renderParticipantDetails } = await import('../src/participantDetails.js'));
+        ({ roleState, participantState } = await import('../src/stateManager.js'));
     };
 
     beforeEach(async () => {
         setupTestEnvironment();
-        asyncHandlerTracker = trackAsyncEventHandlers();
-
-        // Mock fetch globally
-        global.fetch = async () => ({
-            ok: true,
-            status: 200,
-            json: async () => ({ code: 200, data: [] }),
-        });
-
-        firebaseStub = installFirebaseStub({ uid: 'test-user' });
+        installFirebaseStub();
         await clearAllState();
-        
         await loadModules();
+
+        asyncHandlerTracker = trackAsyncEventHandlers();
+        fetchMock = mockApi({
+            'GET retrievePhysicalActivityReport': () => jsonResponse({ code: 200, data: [] }),
+            'GET getParticipantNotification': () => jsonResponse({ code: 200, data: [] }),
+        });
 
         participant = createMockParticipant('test-123', {
             token: 'abc-123',
-            'Connect_ID': '12345678',
+            Connect_ID: '12345678',
             [fieldMapping.verifiedFlag]: fieldMapping.verified,
             [fieldMapping.consentFlag]: fieldMapping.yes,
             [fieldMapping.consentVersion]: 'HP_consent_V0.02_Eng',
@@ -62,342 +48,200 @@ describe('Tab Integration Tests', () => {
         });
 
         await participantState.setParticipant(participant);
-        roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
+        await roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
 
         document.body.innerHTML = `
             <div id="mainContent"></div>
             <div id="navBarLinks"></div>
         `;
-
-        // Make mainContent globally available as renderParticipantDetails expects it
-        global.mainContent = document.getElementById('mainContent');
-
-        // Mock jQuery and Bootstrap for tab activation
-        global.$ = (selector) => ({
-            tab: (action) => {
-                if (typeof selector === 'string') {
-                    const el = document.querySelector(selector);
-                    if (el && action === 'show') {
-                        el.classList.add('active');
-                        // Trigger shown.bs.tab event using window.Event
-                        const event = new window.Event('shown.bs.tab', { bubbles: true });
-                        el.dispatchEvent(event);
-                    }
-                }
-            }
-        });
-        global.$.fn = { tab: true };
     });
 
     afterEach(async () => {
-        if (asyncHandlerTracker) {
+        try {
             await asyncHandlerTracker.allSettled();
+        } finally {
             asyncHandlerTracker.restore();
-            asyncHandlerTracker = null;
+            participantState.clearParticipant();
+            teardownTestEnvironment();
         }
-        delete global.fetch;
-        await participantState.clearParticipant();
-        delete global.$;
-        delete global.mainContent;
-        teardownTestEnvironment();
     });
 
+    const renderDetails = (tabId = 'details') => renderParticipantDetails(participant, {}, tabId);
+
+    const clickTab = (tabId) => document.getElementById(`${tabId}-tab`).click();
+    const tabContent = (tabId) => document.getElementById(`${tabId}-tab-content-inner`);
+    const waitForTabContent = (tabId, text) => vi.waitFor(() => {
+        expect(tabContent(tabId).textContent).toContain(text);
+    });
+
+    const expectActiveTab = (tabId) => {
+        expect(document.querySelector('.participant-tabs .nav-link.active')?.id).toBe(`${tabId}-tab`);
+        expect(document.querySelector('.participant-tab-content .tab-pane.show.active')?.id).toBe(`${tabId}-content`);
+    };
+
     describe('Complete tab workflows', () => {
-        it('completes workflow: load participant → view tabs → switch tabs', async () => {
-            // Navigate to participant details with default tab
-            await renderParticipantDetails(participant, {}, 'details');
-            await waitForAsyncTasks(50);
+        it('loads participant details and switches to messages', async () => {
+            await renderDetails();
 
-            let main = document.getElementById('mainContent');
-            expect(main.innerHTML).toContain('participant-tabs');
-            expect(main.innerHTML).toContain('details-tab');
-
-            // Verify all visible tabs are rendered
-            const detailsTab = document.getElementById('details-tab');
-            const summaryTab = document.getElementById('summary-tab');
-            const messagesTab = document.getElementById('messages-tab');
-
-            expect(detailsTab).not.toBeNull();
-            expect(summaryTab).not.toBeNull();
-            expect(messagesTab).not.toBeNull();
-
-            // Verify details tab content is loaded
-            const detailsContent = document.getElementById('details-tab-content-inner');
-            expect(detailsContent).not.toBeNull();
-            // Check for form content
-            expect(detailsContent.innerHTML).toContain('Participant Details');
-        });
-
-        it('maintains tab state when navigating back with browser button', async () => {
-            // Navigate to summary tab
-            window.location.hash = '#participantDetails/summary';
-            await renderParticipantDetails(participant, {}, 'summary');
-            await waitForAsyncTasks(50);
-
-            expect(window.location.hash).toContain('summary');
-
-            // Verify summary tab is active
-            const main = document.getElementById('mainContent');
-            expect(main.innerHTML).toContain('participant-tabs');
-
-            // Navigate back to details
-            window.location.hash = '#participantDetails/details';
-            await renderParticipantDetails(participant, {}, 'details');
-            await waitForAsyncTasks(50);
-
-            expect(window.location.hash).toContain('details');
-        });
-
-        it('handles rapid tab switching without errors', async () => {
-            await renderParticipantDetails(participant, {}, 'details');
-            await waitForAsyncTasks(50);
-
-            // Rapidly switch tabs
-            const errors = [];
-            const originalError = console.error;
-            console.error = (...args) => errors.push(args.join(' '));
-
-            try {
-                activateTab('summary');
-                await waitForAsyncTasks(10);
-                activateTab('messages');
-                await waitForAsyncTasks(10);
-                activateTab('details');
-                await waitForAsyncTasks(10);
-                activateTab('summary');
-                await waitForAsyncTasks(50);
-
-                // Should not have thrown any errors
-                expect(errors.length).toBe(0);
-            } finally {
-                console.error = originalError;
+            for (const tabId of ['details', 'summary', 'messages']) {
+                expect(document.getElementById(`${tabId}-tab`)).not.toBeNull();
             }
+            expectActiveTab('details');
+            expect(tabContent('details').textContent).toContain('Participant Details');
 
-            const main = document.getElementById('mainContent');
-            expect(main).not.toBeNull();
+            clickTab('messages');
+            await waitForTabContent('messages', 'No Messages');
+            expectActiveTab('messages');
         });
 
-        it('loads content only once per tab (caching)', async () => {
-            await renderParticipantDetails(participant, {}, 'details');
-            await waitForAsyncTasks(50);
+        it('switches back to details after viewing summary', async () => {
+            await renderDetails('summary');
+            expectActiveTab('summary');
+            expect(tabContent('summary').textContent).toContain('Participant Summary');
 
-            // Click summary tab
-            const summaryTab = document.getElementById('summary-tab');
-            expect(summaryTab).not.toBeNull();
-
-            summaryTab.click();
+            clickTab('details');
             await asyncHandlerTracker.allSettled();
-            await waitForAsyncTasks(200);
+            expectActiveTab('details');
+            expect(tabContent('details').textContent).toContain('Participant Details');
+        });
 
-            const summaryContent = document.getElementById('summary-tab-content-inner');
-            expect(summaryContent.innerHTML).toContain('Participant Summary');
+        it('keeps the last tab selected when tabs are clicked in quick succession', async () => {
+            await renderDetails();
 
-            // Store content
-            const firstContent = summaryContent.innerHTML;
+            clickTab('messages');
+            clickTab('summary');
+            await waitForTabContent('messages', 'No Messages');
+            await waitForTabContent('summary', 'Participant Summary');
 
-            // Click away and back to summary
-            const detailsTab = document.getElementById('details-tab');
-            detailsTab.click();
+            expectActiveTab('summary');
+            expect(window.location.hash).toBe('#participantDetails/summary');
+        });
+
+        it('reuses loaded summary content when switching away and back', async () => {
+            await renderDetails();
+
+            clickTab('summary');
+            await waitForTabContent('summary', 'Participant Summary');
+            const summaryTable = tabContent('summary').querySelector('table');
+            expect(summaryTable).not.toBeNull();
+
+            clickTab('messages');
+            await waitForTabContent('messages', 'No Messages');
+            clickTab('summary');
             await asyncHandlerTracker.allSettled();
 
-            summaryTab.click();
-            await asyncHandlerTracker.allSettled();
-
-            // Content should be the same (cached, not reloaded)
-            expect(summaryContent.innerHTML).toBe(firstContent);
+            expectActiveTab('summary');
+            expect(tabContent('summary').querySelector('table')).toBe(summaryTable);
+            const reportCalls = fetchMock.mock.calls.filter(([url]) =>
+                new URL(url).searchParams.get('api') === 'retrievePhysicalActivityReport',
+            );
+            expect(reportCalls).toHaveLength(1);
         });
 
         it('respects role-based tab visibility in full workflow', async () => {
-            // Set role to non-parent
-            roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
+            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
+            await renderDetails();
 
-            await renderParticipantDetails(participant, {}, 'details');
-            await waitForAsyncTasks(50);
-
-            // Withdrawal tab should not be visible
-            const withdrawalTab = document.getElementById('withdrawal-tab');
-            expect(withdrawalTab).toBeNull();
-
-            // Details, summary, messages should be visible
-            expect(document.getElementById('details-tab')).not.toBeNull();
-            expect(document.getElementById('summary-tab')).not.toBeNull();
-            expect(document.getElementById('messages-tab')).not.toBeNull();
+            expect(document.getElementById('withdrawal-tab')).toBeNull();
+            for (const tabId of ['details', 'summary', 'messages']) {
+                expect(document.getElementById(`${tabId}-tab`)).not.toBeNull();
+            }
         });
 
-        it('handles deep linking to specific tab', async () => {
-            // Navigate to summary tab via hash
-            window.location.hash = '#participantDetails/summary';
-
-            const tabId = getTabIdFromHash(window.location.hash);
-            expect(tabId).toBe('summary');
-
-            await renderParticipantDetails(participant, {}, tabId);
-            await waitForAsyncTasks(50);
-
-            // Verify summary tab is rendered
-            const main = document.getElementById('mainContent');
-            expect(main.innerHTML).toContain('summary-tab');
-        });
-
-        it('prevents unauthorized tab access via URL', async () => {
-            // Non-parent user accessing withdrawal tab
-            roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
-
-            window.location.hash = '#participantDetails/withdrawal';
-            const tabId = getTabIdFromHash(window.location.hash);
-
-            // Should default to 'details' instead of 'withdrawal'
-            expect(tabId).toBe('details');
-        });
     });
 
     describe('Edge cases and error handling', () => {
         it('handles missing participant gracefully', async () => {
-            await participantState.clearParticipant();
-
-            const errors = [];
-            const originalError = console.error;
-            console.error = (...args) => errors.push(args.join(' '));
-
-            try {
-                await renderParticipantDetails(null, {}, 'details');
-                await waitForAsyncTasks(50);
-
-                // Should have handled gracefully
-                const main = document.getElementById('mainContent');
-                expect(main).not.toBeNull();
-            } finally {
-                console.error = originalError;
-            }
+            participantState.clearParticipant();
+            await renderParticipantDetails(null, {}, 'details');
+            expect(document.getElementById('mainContent').textContent).toContain('No participant data available');
         });
 
-        it('handles switching tabs during content load', async () => {
-            await renderParticipantDetails(participant, {}, 'details');
-            await waitForAsyncTasks(50);
+        it('finishes loading a background tab without changing the active tab', async () => {
+            const reportResponse = Promise.withResolvers();
+            const retrieveReport = vi.fn(() => reportResponse.promise);
+            mockApi({ 'GET retrievePhysicalActivityReport': retrieveReport });
+            await renderDetails();
 
-            // Start loading summary
-            const summaryTab = document.getElementById('summary-tab');
-            summaryTab.click();
+            clickTab('summary');
+            try {
+                await vi.waitFor(() => expect(retrieveReport).toHaveBeenCalledOnce());
+                expect(tabContent('summary').querySelector('.fa-spinner')).not.toBeNull();
 
-            // Switch to messages before summary finishes
-            await waitForAsyncTasks(10);
-            const messagesTab = document.getElementById('messages-tab');
-            messagesTab.click();
+                clickTab('messages');
+                await waitForTabContent('messages', 'No Messages');
+                expectActiveTab('messages');
+            } finally {
+                reportResponse.resolve(jsonResponse({ code: 200, data: [] }));
+                await waitForTabContent('summary', 'Participant Summary');
+            }
 
-            await asyncHandlerTracker.allSettled();
-
-            // Both should complete without errors
-            const summaryContent = document.getElementById('summary-tab-content-inner');
-            const messagesContent = document.getElementById('messages-tab-content-inner');
-
-            expect(summaryContent.innerHTML).not.toBe('');
-            expect(messagesContent.innerHTML).not.toBe('');
+            expectActiveTab('messages');
+            expect(window.location.hash).toBe('#participantDetails/messages');
         });
 
         it('handles network errors during content load gracefully', async () => {
-            await renderParticipantDetails(participant, {}, 'details');
-            await waitForAsyncTasks(50);
+            expectConsole('error', /Error loading tab content for .*messages.*Network error/);
+            mockApi({
+                'GET getParticipantNotification': () => Promise.reject(new Error('Network error')),
+            });
 
-            // Mock fetch to fail
-            const originalFetch = global.fetch;
-            global.fetch = () => Promise.reject(new Error('Network error'));
-
-            // Use messages tab which is more likely to propagate error than summary
-            const messagesTab = document.getElementById('messages-tab');
-            messagesTab.click();
-            await asyncHandlerTracker.allSettled();
-            await waitForAsyncTasks(200);
-
-            const messagesContent = document.getElementById('messages-tab-content-inner');
-            // Should show error message instead of crashing
-            expect(messagesContent.innerHTML).toContain('Error Loading Content');
-
-            global.fetch = originalFetch;
+            await renderDetails();
+            clickTab('messages');
+            await waitForTabContent('messages', 'Error Loading Content');
+            expect(tabContent('messages').textContent).toContain('Network error');
+            expectActiveTab('messages');
         });
 
-        it('handles tab activation when tab element is missing', () => {
-            // Activate non-existent tab
-            expect(() => activateTab('nonexistent')).not.toThrow();
-        });
-
-        it('handles hash changes for invalid tab IDs', () => {
-            window.location.hash = '#participantDetails/invalidTabId';
-            const tabId = getTabIdFromHash(window.location.hash);
-
-            // Default to 'details'
-            expect(tabId).toBe('details');
-        });
     });
 
     describe('Browser navigation integration', () => {
-        it('updates URL hash when switching tabs', async () => {
-            await renderParticipantDetails(participant, {}, 'details');
-            await waitForAsyncTasks(50);
+        it('updates the URL to the selected tab without adding a history entry', async () => {
+            window.history.replaceState(null, '', '#participantDetails/details');
+            const initialLength = window.history.length;
+            await renderDetails();
 
-            // Initial hash state
-            window.location.hash = '#participantDetails/details';
+            clickTab('summary');
+            await waitForTabContent('summary', 'Participant Summary');
 
-            // Switch to summary tab
-            const summaryTab = document.getElementById('summary-tab');
-            summaryTab.click();
-            await asyncHandlerTracker.allSettled();
-
-            // Hash should update (via updateHashForTab in event handler)
-            expect(window.location.hash).toContain('participantDetails');
+            expect(window.location.hash).toBe('#participantDetails/summary');
+            expect(window.history.length).toBe(initialLength);
         });
 
-        it('supports forward/back navigation between tabs', async () => {
-            // Navigate through tabs
-            await renderParticipantDetails(participant, {}, 'details');
-            await waitForAsyncTasks(50);
+        it('keeps the selected tab in the participant history entry', async () => {
+            window.history.replaceState(null, '', '#participantLookup');
+            window.history.pushState(null, '', '#participantDetails/details');
+            await renderDetails();
+            clickTab('summary');
+            await waitForTabContent('summary', 'Participant Summary');
 
-            window.location.hash = '#participantDetails/summary';
-            await waitForAsyncTasks(20);
+            const waitForNavigation = () => new Promise(resolve => {
+                window.addEventListener('hashchange', resolve, { once: true });
+            });
 
-            window.location.hash = '#participantDetails/messages';
-            await waitForAsyncTasks(20);
+            const navigatedBack = waitForNavigation();
+            window.history.back();
+            await navigatedBack;
+            expect(window.location.hash).toBe('#participantLookup');
 
-            // Go back to summary
-            window.location.hash = '#participantDetails/summary';
-            const tabId = getTabIdFromHash(window.location.hash);
-            expect(tabId).toBe('summary');
-
-            // Go back to details
-            window.location.hash = '#participantDetails/details';
-            const tabId2 = getTabIdFromHash(window.location.hash);
-            expect(tabId2).toBe('details');
+            const navigatedForward = waitForNavigation();
+            window.history.forward();
+            await navigatedForward;
+            expect(window.location.hash).toBe('#participantDetails/summary');
         });
     });
 
     describe('Role-based access scenarios', () => {
-        it('allows helpDesk users to access dataCorrections tab', async () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
-
-            await renderParticipantDetails(participant, {}, 'details');
-            await waitForAsyncTasks(50);
-
-            const dataCorrectionsTab = document.getElementById('dataCorrections-tab');
-            expect(dataCorrectionsTab).not.toBeNull();
-        });
-
         it('allows coordinatingCenter users to access kitRequests tab', async () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: true });
-
-            await renderParticipantDetails(participant, {}, 'details');
-            await waitForAsyncTasks(50);
-
-            const kitRequestsTab = document.getElementById('kitRequests-tab');
-            expect(kitRequestsTab).not.toBeNull();
+            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: true });
+            await renderDetails();
+            expect(document.getElementById('kitRequests-tab')).not.toBeNull();
         });
 
         it('hides pathology tab from helpDesk users', async () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
-
-            await renderParticipantDetails(participant, {}, 'details');
-            await waitForAsyncTasks(50);
-
-            const pathologyTab = document.getElementById('pathology-tab');
-            expect(pathologyTab).toBeNull();
+            await roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
+            await renderDetails();
+            expect(document.getElementById('pathology-tab')).toBeNull();
         });
     });
 });

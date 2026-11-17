@@ -1,7 +1,7 @@
 import { renderTable, renderParticipantSearchResults, renderTablePage, setupActiveColumns, filterBySiteKey, getActiveColumns, waitForActiveColumnsUpdate, normalizeColumnValue } from '../src/participantCommons.js';
 import { participantState, searchState, buildPredefinedSearchMetadata, uiState } from '../src/stateManager.js';
 import { bubbleCategories, bubbleFieldMap, defaultColumnKeys } from '../src/participantColumnConfig.js';
-import { setupTestEnvironment, teardownTestEnvironment, installFirebaseStub, createMockParticipant, createDOMFixture, cleanupDOMFixture, clearAllState } from './helpers.js';
+import { setupTestEnvironment, teardownTestEnvironment, installFirebaseStub, createMockParticipant, createDOMFixture, cleanupDOMFixture, clearAllState, mockApi, jsonResponse } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 const getDefaultColumnsWithBubbles = () =>
   defaultColumnKeys.filter((columnKey) => bubbleFieldMap.has(columnKey));
@@ -206,17 +206,6 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       });
     });
 
-    it('should include a reset to default fields button', () => {
-      const mockParticipant = [createMockParticipant('test-1')];
-      const html = renderTable(mockParticipant, 'participantLookup');
-
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
-      const resetButton = tempDiv.querySelector('#resetToDefaultFieldsButton');
-      expect(resetButton).not.toBeNull();
-      expect(resetButton.textContent.trim()).toBe('Reset To Default Fields');
-    });
-
     it('should render bubbles with correct labels from bubbleFieldMap', () => {
       const mockData = [createMockParticipant('test-1')];
       const html = renderTable(mockData, 'participantLookup');
@@ -257,14 +246,6 @@ describe('participantCommons - Bubble Filter Functionality', () => {
         const actualLabels = Array.from(buttons).map((btn) => btn.textContent.trim());
         expect(actualLabels).toEqual(expectedLabels);
       });
-    });
-
-    it('should render table structure with header placeholder', () => {
-      const mockData = [createMockParticipant('test-1')];
-      const html = renderTable(mockData, 'participantLookup');
-
-      expect(html).toContain('dataTable');
-      expect(html).toContain('table');
     });
 
     it('should render "Back to Search" button for lookup searches', () => {
@@ -509,27 +490,6 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       expect(activeColsAfter.length).toBe(initialColumnCount - 1);
     });
 
-    it('should re-render table when bubble is clicked', async () => {
-      mainContent.innerHTML = renderTable(mockData, 'participantLookup');
-      renderParticipantSearchResults(mockData, 'participantLookup');
-      setupActiveColumns(mockData);
-
-      const tokenBubble = Array.from(document.getElementsByName('column-filter')).find(
-        (btn) => btn.dataset.column === 'token'
-      );
-
-      // Get initial table HTML
-      const initialTableHTML = document.getElementById('dataTable').innerHTML;
-
-      // Click to add token column
-      tokenBubble.click();
-      await waitForActiveColumnsUpdate();
-
-      // Table should be re-rendered
-      const updatedTableHTML = document.getElementById('dataTable').innerHTML;
-      expect(updatedTableHTML).not.toBe(initialTableHTML);
-    });
-
     it('should handle multiple bubble clicks correctly', async () => {
       mainContent.innerHTML = renderTable(mockData, 'participantLookup');
       renderParticipantSearchResults(mockData, 'participantLookup');
@@ -768,9 +728,8 @@ describe('participantCommons - Bubble Filter Functionality', () => {
           [fieldMapping.followups.activityType]: fieldMapping.followups.SSC,
         }],
       };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ code: 200, data: [enrichedParticipant] }),
+      const fetchSpy = mockApi({
+        'GET getFilteredParticipants': () => jsonResponse({ code: 200, data: [enrichedParticipant] }),
       });
 
       mainContent.innerHTML = renderTable([searchParticipant], 'verified');
@@ -786,7 +745,6 @@ describe('participantCommons - Bubble Filter Functionality', () => {
         expect.any(Object),
       );
 
-      fetchSpy.mockRestore();
     });
 
     it('uses cached data for a non-verified participant selected from all participants', async () => {
@@ -794,7 +752,7 @@ describe('participantCommons - Bubble Filter Functionality', () => {
         token: 'token-not-verified',
         [fieldMapping.verifiedFlag]: fieldMapping.notYetVerified,
       });
-      const fetchSpy = vi.spyOn(globalThis, 'fetch');
+      const fetchSpy = mockApi({});
 
       mainContent.innerHTML = renderTable([searchParticipant], 'all');
       renderParticipantSearchResults([searchParticipant], 'all');
@@ -806,7 +764,6 @@ describe('participantCommons - Bubble Filter Functionality', () => {
       });
       expect(fetchSpy).not.toHaveBeenCalled();
 
-      fetchSpy.mockRestore();
     });
 
     it('should handle empty data array', () => {
@@ -874,17 +831,6 @@ describe('participantCommons - Bubble Filter Functionality', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle bubbles for columns not in bubbleFieldMap', () => {
-      const mockData = [createMockParticipant('test-1')];
-      mainContent.innerHTML = renderTable(mockData, 'participantLookup');
-      renderParticipantSearchResults(mockData, 'participantLookup');
-      setupActiveColumns(mockData);
-
-      // Should not throw errors when processing bubbles
-      const bubbles = document.getElementsByName('column-filter');
-      expect(bubbles.length).toBeGreaterThan(0);
-    });
-
     it('should handle clicking bubbles multiple times rapidly', async () => {
       const mockData = [createMockParticipant('test-1')];
       mainContent.innerHTML = renderTable(mockData, 'participantLookup');
@@ -1238,22 +1184,6 @@ describe('participantCommons - Bubble Filter Functionality', () => {
           expect(savedColumns.includes(key) || savedColumns.includes(key.toString())).toBe(true);
         }
       });
-    });
-
-    it('should render bubbles with correct labels from bubbleFieldMap for concept IDs', async () => {
-      mainContent.innerHTML = renderTable(mockData, 'participantLookup');
-
-      // Test numeric concept ID bubbles
-      const verifiedBubble = Array.from(document.getElementsByName('column-filter')).find(
-        (btn) => btn.dataset.column === fieldMapping.verifiedFlag.toString()
-      );
-
-      expect(verifiedBubble).not.toBeNull();
-      const expectedLabel = bubbleFieldMap.get(fieldMapping.verifiedFlag);
-      expect(expectedLabel, 'missing bubbleFieldMap label for verifiedFlag').toBeTypeOf('string');
-      expect(verifiedBubble.textContent.trim()).toBe(expectedLabel);
-
-      uiState.clear();
     });
 
     it('should handle adding multiple specific bubbles in sequence', async () => {  

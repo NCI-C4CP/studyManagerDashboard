@@ -1,14 +1,12 @@
-import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
+import { setupTestSuite, createMockParticipant, mockApi, jsonResponse } from './helpers.js';
 import { renderMessagesTabContent, getParticipantMessage } from '../src/participantMessages.js';
 import { baseAPI } from '../src/utils.js';
 
 describe('participantMessages', () => {
-    let firebaseStub;
     let cleanup;
 
     beforeEach(async () => {
         const suite = await setupTestSuite();
-        firebaseStub = suite.firebaseStub;
         cleanup = suite.cleanup;
     });
 
@@ -25,16 +23,9 @@ describe('participantMessages', () => {
         it('renders "No Messages" when API returns empty list', async () => {
             const participant = createMockParticipant();
             
-            // Mock fetch to return empty list
-            global.fetch = async (url) => {
-                if (url.includes('getParticipantNotification')) {
-                    return {
-                        ok: true,
-                        json: async () => ({ code: 200, data: [] })
-                    };
-                }
-                return { ok: false };
-            };
+            mockApi({
+                'GET getParticipantNotification': jsonResponse({ code: 200, data: [] }),
+            });
 
             const html = await renderMessagesTabContent(participant);
             expect(html).toContain('No Messages');
@@ -56,15 +47,9 @@ describe('participantMessages', () => {
                 }
             ];
 
-            global.fetch = async (url) => {
-                if (url.includes('getParticipantNotification')) {
-                    return {
-                        ok: true,
-                        json: async () => ({ code: 200, data: mockMessages })
-                    };
-                }
-                return { ok: false };
-            };
+            mockApi({
+                'GET getParticipantNotification': jsonResponse({ code: 200, data: mockMessages }),
+            });
 
             const html = await renderMessagesTabContent(participant);
             expect(html).toContain('Email (Welcome to Connect)');
@@ -86,15 +71,9 @@ describe('participantMessages', () => {
                 }
             ];
 
-            global.fetch = async (url) => {
-                if (url.includes('getParticipantNotification')) {
-                    return {
-                        ok: true,
-                        json: async () => ({ code: 200, data: mockMessages })
-                    };
-                }
-                return { ok: false };
-            };
+            mockApi({
+                'GET getParticipantNotification': jsonResponse({ code: 200, data: mockMessages }),
+            });
 
             const html = await renderMessagesTabContent(participant);
             expect(html).toContain('SMS Message');
@@ -114,15 +93,9 @@ describe('participantMessages', () => {
                 }
             ];
 
-            global.fetch = async (url) => {
-                if (url.includes('getParticipantNotification')) {
-                    return {
-                        ok: true,
-                        json: async () => ({ code: 200, data: mockMessages })
-                    };
-                }
-                return { ok: false };
-            };
+            mockApi({
+                'GET getParticipantNotification': jsonResponse({ code: 200, data: mockMessages }),
+            });
 
             const html = await renderMessagesTabContent(participant);
             expect(html).toContain('<p>Content</p>');
@@ -135,23 +108,16 @@ describe('participantMessages', () => {
         it('calls correct API endpoint with token', async () => {
             const token = 'test-token-123';
             const idToken = 'mock-id-token';
-            let capturedUrl = '';
-            let capturedHeaders = {};
-
-            global.fetch = async (url, options) => {
-                capturedUrl = url;
-                capturedHeaders = options.headers;
-                return {
-                    ok: true,
-                    json: async () => ({ success: true })
-                };
-            };
+            const fetchMock = mockApi({
+                'GET getParticipantNotification': jsonResponse({ success: true }),
+            });
 
             await getParticipantMessage(token, idToken);
 
-            expect(capturedUrl).toContain(`${baseAPI}/dashboard?api=getParticipantNotification`);
-            expect(capturedUrl).toContain(`token=${token}`);
-            expect(capturedHeaders.Authorization).toBe('Bearer ' + idToken);
+            const [url, options] = fetchMock.mock.lastCall;
+            expect(url).toContain(`${baseAPI}/dashboard?api=getParticipantNotification`);
+            expect(url).toContain(`token=${token}`);
+            expect(options.headers.Authorization).toBe('Bearer ' + idToken);
         });
     });
 });

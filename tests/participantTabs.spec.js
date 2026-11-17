@@ -3,12 +3,14 @@ import {
     teardownTestEnvironment,
     installFirebaseStub,
     createMockParticipant,
-    waitForAsyncTasks,
-    clearAllState
+    clearAllState,
+    mockApi,
+    jsonResponse,
+    expectConsole,
+    trackAsyncEventHandlers
 } from './helpers.js';
 
 describe('participantTabs', () => {
-    let firebaseStub;
     let getVisibleTabs;
     let renderTabNavigation;
     let renderTabContentContainers;
@@ -18,6 +20,8 @@ describe('participantTabs', () => {
     let activateTab;
     let initializeTabListeners;
     let roleState;
+    let appState;
+    let asyncHandlerTracker;
     let participantState;
     let fieldMapping;
 
@@ -28,6 +32,7 @@ describe('participantTabs', () => {
         const tabs = module?.default ?? module;
         const state = stateModule?.default ?? stateModule;
         roleState = state.roleState;
+        appState = state.appState;
         participantState = state.participantState;
         fieldMapping = (await import('../src/fieldToConceptIdMapping.js')).default;
         getVisibleTabs = tabs.getVisibleTabs;
@@ -42,28 +47,26 @@ describe('participantTabs', () => {
 
     beforeEach(async () => {
         setupTestEnvironment();
-        firebaseStub = installFirebaseStub({ uid: 'test-user' });
-        
-        // Mock fetch
-        global.fetch = async () => ({
-            ok: true,
-            status: 200,
-            json: async () => ({ code: 200, data: [] }),
-        });
+        installFirebaseStub();
+        asyncHandlerTracker = trackAsyncEventHandlers();
 
         await clearAllState();
         await loadModule();
     });
 
-    afterEach(() => {
-        delete global.fetch;
-        teardownTestEnvironment();
+    afterEach(async () => {
+        try {
+            await asyncHandlerTracker.allSettled();
+        } finally {
+            asyncHandlerTracker.restore();
+            teardownTestEnvironment();
+        }
     });
 
     describe('getVisibleTabs', () => {
-        it('shows correct tabs for parent users', () => {
+        it('shows correct tabs for parent users', async () => {
             // Parent sees: Details, Summary, Withdrawal, Messages, Pathology (if not helpDesk)
-            roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
+            await roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
             const tabs = getVisibleTabs();
             const tabIds = tabs.map(t => t.id);
             expect(tabIds).toContain('withdrawal');
@@ -74,49 +77,49 @@ describe('participantTabs', () => {
             expect(tabs.length).toBeGreaterThanOrEqual(5);
         });
 
-        it('hides withdrawal tab from non-parent users', () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
+        it('hides withdrawal tab from non-parent users', async () => {
+            await roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
             const tabs = getVisibleTabs();
             expect(tabs.map(t => t.id)).not.toContain('withdrawal');
         });
 
-        it('hides pathology tab from helpDesk users', () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
+        it('hides pathology tab from helpDesk users', async () => {
+            await roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
             const tabs = getVisibleTabs();
             expect(tabs.map(t => t.id)).not.toContain('pathology');
         });
 
-        it('shows dataCorrections and kitRequests to helpDesk users', () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
+        it('shows dataCorrections and kitRequests to helpDesk users', async () => {
+            await roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
             const tabs = getVisibleTabs();
             expect(tabs.map(t => t.id)).toContain('dataCorrections');
             expect(tabs.map(t => t.id)).toContain('kitRequests');
         });
 
-        it('shows dataCorrections and kitRequests to coordinatingCenter users', () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: true });
+        it('shows dataCorrections and kitRequests to coordinatingCenter users', async () => {
+            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: true });
             const tabs = getVisibleTabs();
             expect(tabs.map(t => t.id)).toContain('dataCorrections');
             expect(tabs.map(t => t.id)).toContain('kitRequests');
         });
 
-        it('hides dataCorrections and kitRequests from regular users', () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
+        it('hides dataCorrections and kitRequests from regular users', async () => {
+            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
             const tabs = getVisibleTabs();
             expect(tabs.map(t => t.id)).not.toContain('dataCorrections');
             expect(tabs.map(t => t.id)).not.toContain('kitRequests');
         });
 
-        it('always shows details, summary, and messages tabs', () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
+        it('always shows details, summary, and messages tabs', async () => {
+            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
             const tabs = getVisibleTabs();
             expect(tabs.map(t => t.id)).toEqual(expect.arrayContaining(['details', 'summary', 'messages']));
         });
     });
 
     describe('renderTabNavigation', () => {
-        beforeEach(() => {
-            roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
+        beforeEach(async () => {
+            await roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
         });
 
         it('renders Bootstrap tab navigation with correct structure', () => {
@@ -134,8 +137,8 @@ describe('participantTabs', () => {
             expect(html).toContain('aria-selected="true"');
         });
 
-        it('renders only visible tabs based on role', () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
+        it('renders only visible tabs based on role', async () => {
+            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
             const html = renderTabNavigation('details');
             expect(html).not.toContain('id="withdrawal-tab"');
             expect(html).toContain('id="details-tab"');
@@ -156,8 +159,8 @@ describe('participantTabs', () => {
     });
 
     describe('renderTabContentContainers', () => {
-        beforeEach(() => {
-            roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
+        beforeEach(async () => {
+            await roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
         });
 
         it('renders tab content containers with correct structure', () => {
@@ -178,15 +181,15 @@ describe('participantTabs', () => {
             expect(html).toContain('fa-spinner');
         });
 
-        it('renders only visible tab containers based on role', () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
+        it('renders only visible tab containers based on role', async () => {
+            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
             const html = renderTabContentContainers('details');
             expect(html).not.toContain('id="withdrawal-content"');
             expect(html).toContain('id="details-content"');
         });
 
         it('keeps dataCorrections tab active when deep-linking into a tool', async () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
+            await roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
             window.location.hash = '#participantDetails/dataCorrections/verificationCorrectionsTool';
 
             const navHtml = renderTabNavigation('dataCorrections');
@@ -202,7 +205,7 @@ describe('participantTabs', () => {
         });
 
         it('resets dataCorrections content to selector when reselecting the tab', async () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
+            await roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
 
             // First load a specific tool
             window.location.hash = '#participantDetails/dataCorrections/verificationCorrectionsTool';
@@ -235,24 +238,23 @@ describe('participantTabs', () => {
         });
 
         it('shows loading spinner before content loads', async () => {
-            const originalFetch = global.fetch;
-            global.fetch = async () => {
-                await new Promise(resolve => setTimeout(resolve, 50));
-                return {
-                    ok: true,
-                    status: 200,
-                    json: async () => ({ code: 200, data: [] }),
-                };
-            };
+            const response = Promise.withResolvers();
+            mockApi({
+                'GET retrievePhysicalActivityReport': () => response.promise,
+            });
 
             document.body.innerHTML = '<div id="summary-tab-content-inner"></div>';
-            const promise = loadTabContent('summary', participant);
-            await waitForAsyncTasks(10); // Wait for initial render (spinner) but less than fetch delay
+            const loading = loadTabContent('summary', participant);
             const container = document.getElementById('summary-tab-content-inner');
-            expect(container.innerHTML).toContain('fa-spinner');
-            await promise;
-            
-            global.fetch = originalFetch;
+            try {
+                expect(container.querySelector('.fa-spinner')).not.toBeNull();
+            } finally {
+                response.resolve(jsonResponse({ code: 200, data: [] }));
+                await loading;
+            }
+
+            expect(container.querySelector('.fa-spinner')).toBeNull();
+            expect(container.textContent).toContain('Participant Summary');
         });
 
         it('loads details tab content', async () => {
@@ -263,64 +265,48 @@ describe('participantTabs', () => {
         });
 
         it('re-renders details tab when clicked to reflect updated participant state', async () => {
-            document.body.innerHTML = `
-                <div id="mainContent"></div>
-                <div id="navBarLinks"></div>
-                <div id="details-tab-content-inner"></div>
-                <a id="details-tab" class="nav-link active"></a>
-                <a id="summary-tab" class="nav-link"></a>
-            `;
-
+            document.body.innerHTML = renderTabNavigation() + renderTabContentContainers();
             await participantState.setParticipant(participant);
+            initializeTabListeners(participant);
 
-            // Simulate tab click handler manually invoking loadTabContent then re-render details
-            await loadTabContent('details', participant);
-            const updated = { ...participant, [fieldMapping.verifiedFlag]: fieldMapping.verified };
+            const updated = { ...participant, [fieldMapping.lName]: 'Updated name' };
             await participantState.setParticipant(updated);
+            const renderParticipantDetails = vi.fn();
+            appState.setState({ changedOption: {} });
+            global.__dynamicImportForParticipantTabs = async () => ({ renderParticipantDetails });
 
-            // Click summary then details to trigger re-render via participantTabs handler
-            document.getElementById('summary-tab').click();
-            document.getElementById('details-tab').click();
-            await loadTabContent('details', participantState.getParticipant());
+            try {
+                document.getElementById('details-tab').click();
+                await asyncHandlerTracker.allSettled();
 
-            const container = document.getElementById('details-tab-content-inner');
-            expect(container.innerHTML).toContain('participant-details-content');
+                expect(renderParticipantDetails).toHaveBeenCalledExactlyOnceWith(
+                    updated, {}, 'details', { preserveScrollPosition: true },
+                );
+            } finally {
+                delete global.__dynamicImportForParticipantTabs;
+            }
         });
 
         it('loads summary tab content', async () => {
             document.body.innerHTML = '<div id="summary-tab-content-inner"></div>';
-            await loadTabContent('summary', participant, null);
-            await waitForAsyncTasks(50);
+            await loadTabContent('summary', participant, {});
             const container = document.getElementById('summary-tab-content-inner');
             expect(container.innerHTML).toContain('Participant Summary');
         });
 
         it('loads messages tab content', async () => {
             document.body.innerHTML = '<div id="messages-tab-content-inner"></div>';
+            mockApi({
+                'GET getParticipantNotification': () => jsonResponse({ code: 200, data: [] }),
+            });
             await loadTabContent('messages', participant);
-            await waitForAsyncTasks(50);
             const container = document.getElementById('messages-tab-content-inner');
             expect(container.innerHTML).toContain('Participant Messages');
         });
 
-        it('handles errors gracefully with error message', async () => {
-            document.body.innerHTML = '<div id="summary-tab-content-inner"></div>';
-            // Pass null participant to trigger error in summary rendering
-            await loadTabContent('summary', null);
-            const container = document.getElementById('summary-tab-content-inner');
-            expect(container.innerHTML).toContain('No participant data available');
-        });
-
         it('logs error when container not found', async () => {
-            const errors = [];
-            const originalError = console.error;
-            console.error = (...args) => errors.push(args.join(' '));
-
-            document.body.innerHTML = ''; // No container
+            expectConsole('error', /Tab content container not found for tab: details/);
             await loadTabContent('details', participant);
-
-            expect(errors.some(e => e.includes('Tab content container not found'))).toBe(true);
-            console.error = originalError;
         });
 
         it('shows error message for unknown tab ID', async () => {
@@ -332,8 +318,8 @@ describe('participantTabs', () => {
     });
 
     describe('getTabIdFromHash', () => {
-        beforeEach(() => {
-            roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
+        beforeEach(async () => {
+            await roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
         });
 
         it('extracts tab ID from hash', () => {
@@ -348,14 +334,14 @@ describe('participantTabs', () => {
             expect(getTabIdFromHash('')).toBe('details');
         });
 
-        it('defaults to details for unauthorized tab access', () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
+        it('defaults to details for unauthorized tab access', async () => {
+            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
             expect(getTabIdFromHash('#participantDetails/withdrawal')).toBe('details');
             expect(getTabIdFromHash('#participantDetails/dataCorrections')).toBe('details');
         });
 
-        it('allows access to authorized tabs', () => {
-            roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
+        it('allows access to authorized tabs', async () => {
+            await roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false });
             expect(getTabIdFromHash('#participantDetails/dataCorrections')).toBe('dataCorrections');
             expect(getTabIdFromHash('#participantDetails/kitRequests')).toBe('kitRequests');
         });
@@ -367,8 +353,10 @@ describe('participantTabs', () => {
 
     describe('updateHashForTab', () => {
         it('updates URL hash with history entry by default', () => {
+            const initialLength = window.history.length;
             updateHashForTab('summary');
             expect(window.location.hash).toBe('#participantDetails/summary');
+            expect(window.history.length).toBe(initialLength + 1);
         });
 
         it('updates URL hash for different tabs', () => {
@@ -380,17 +368,13 @@ describe('participantTabs', () => {
         });
 
         it('updates URL hash without history entry when updateHistory is false', () => {
-            window.location.hash = '#participantDetails/details';
-            
-            // Mock replaceState to verify call
-            let replaceStateCalled = false;
-            const originalReplaceState = window.history.replaceState;
-            window.history.replaceState = () => { replaceStateCalled = true; };
-            
+            window.history.replaceState(null, '', '#participantDetails/details');
+            const initialLength = window.history.length;
+
             updateHashForTab('summary', false);
-            
-            expect(replaceStateCalled).toBe(true);
-            window.history.replaceState = originalReplaceState;
+
+            expect(window.location.hash).toBe('#participantDetails/summary');
+            expect(window.history.length).toBe(initialLength);
         });
     });
 
@@ -440,9 +424,9 @@ describe('participantTabs', () => {
     describe('initializeTabListeners', () => {
         let participant;
 
-        beforeEach(() => {
+        beforeEach(async () => {
             participant = createMockParticipant('test-123');
-            roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
+            await roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
 
             // Stub dynamic import hook to prevent renderParticipantDetails from firing
             // during tab click tests (it would replace the DOM and cause unhandled rejections)
@@ -476,64 +460,39 @@ describe('participantTabs', () => {
             delete global.__dynamicImportForParticipantTabs;
         });
 
-        it('initializes without errors when all tabs are present', () => {
-            expect(() => initializeTabListeners(participant)).not.toThrow();
-        });
-
         it('attaches event listeners to all visible tabs', async () => {
             // Test event delegation by simulating a click
             initializeTabListeners(participant);
 
             const detailsTab = document.getElementById('details-tab');
             detailsTab.click();
-            await waitForAsyncTasks();
+            await asyncHandlerTracker.allSettled();
 
             // Verify active class
             expect(detailsTab.classList.contains('active')).toBe(true);
         });
 
         it('handles missing tab elements gracefully', () => {
-            const warnings = [];
-            const originalWarn = console.warn;
-            console.warn = (...args) => warnings.push(args.join(' '));
-
             document.body.innerHTML = '<div id="details-tab-content-inner"></div>';
+            expectConsole('warn', /Tab navigation list not found/);
 
             expect(() => initializeTabListeners(participant)).not.toThrow();
-
-            console.warn = originalWarn;
         });
 
         it('restores pending changes when navigating back to details tab', async () => {
-            const stateManagerModule = await import('../src/stateManager.js');
-            const { participantState, appState } = stateManagerModule?.default ?? stateManagerModule;
+            const pendingChanges = { prefName: 'PendingPref' };
             await participantState.setParticipant(participant);
-            appState.setState({ changedOption: { prefName: 'PendingPref' } });
-
-            let calledWithPending = false;
-            // stub dynamic import hook on window for this test
-            const originalHook = global.__dynamicImportForParticipantTabs;
-            global.__dynamicImportForParticipantTabs = async (path) => {
-                if (path === './participantDetails.js') {
-                    return {
-                        renderParticipantDetails: (_p, pendingChanges) => {
-                            calledWithPending = pendingChanges?.prefName === 'PendingPref';
-                        }
-                    };
-                }
-                return import(path);
-            };
+            appState.setState({ changedOption: pendingChanges });
+            const renderParticipantDetails = vi.fn();
+            global.__dynamicImportForParticipantTabs = async () => ({ renderParticipantDetails });
 
             initializeTabListeners(participant);
+            document.getElementById('details-tab').click();
+            await asyncHandlerTracker.allSettled();
 
-            const detailsTab = document.getElementById('details-tab');
-            detailsTab.click();
-
-            await new Promise((resolve) => setTimeout(resolve, 0));
-
-            expect(calledWithPending).toBe(true);
-
-            global.__dynamicImportForParticipantTabs = originalHook;
+            expect(renderParticipantDetails).toHaveBeenCalledExactlyOnceWith(
+                participant, pendingChanges, 'details', { preserveScrollPosition: true },
+            );
         });
     });
 
@@ -552,9 +511,9 @@ describe('participantTabs', () => {
             expect(summaryContainer.innerHTML).toContain('No participant data available');
         });
 
-        it('handles rapid tab ID extraction from different hash formats', () => {
+        it('handles rapid tab ID extraction from different hash formats', async () => {
             // Test with parent role to ensure withdrawal tab is accessible
-            roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
+            await roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
 
             const testCases = [
                 ['#participantDetails/summary', 'summary'],

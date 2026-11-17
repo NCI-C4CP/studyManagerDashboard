@@ -4,7 +4,7 @@ import { findParticipant } from '../participantLookup.js';
 import { baseAPI, getIdToken, hideAnimation, showAnimation } from '../utils.js';
 import { participantState, invalidateSearchResultsCache } from '../stateManager.js';
 import { setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
-import { triggerNotificationBanner } from '../utils.js';
+import { triggerNotificationBanner, reloadParticipantWithFollowups, notifyParticipantUpdate } from '../utils.js';
 import { refreshParticipantHeaders } from '../participantHeader.js';
 import { renderParticipantDetails } from '../participantDetails.js';
 
@@ -214,15 +214,16 @@ const submitSurveyStatusReset = () => {
                     const response = await resetParticipantSurvey(selectedSurvey);
                     
                     if (response.code === 200 || response.data) {
-                        await participantState.setParticipant(response.data);
+                        const participant = await reloadParticipantWithFollowups(response.data);
+                        await participantState.setParticipant(participant);
                         invalidateSearchResultsCache();
-                        refreshParticipantHeaders(response.data);
-                        updateSurveyStatusTextContent(response.data, selectedSurvey, response.code);
+                        refreshParticipantHeaders(participant);
+                        updateSurveyStatusTextContent(participant, selectedSurvey, response.code);
                         if (window.location.hash.includes('#participantDetails')) {
-                            await renderParticipantDetails(response.data, {}, 'details');
+                            await renderParticipantDetails(participant, {}, 'details');
                         }
                         displayAlreadyResetNote();
-                        triggerNotificationBanner("Survey has been successfully reset!", "success", 10000);
+                        notifyParticipantUpdate(participant, 'Survey has been successfully reset!', 10000);
                         disableSubmitButton();
                     }
                 }   catch (error) { 

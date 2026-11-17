@@ -21,6 +21,7 @@ describe('navigationBar', () => {
         // Install Firebase stub as stateManager/crypto likely depends on it
         installFirebaseStub({ uid: 'test-user' });
         await loadModule();
+        roleState.clear();
     });
 
     afterEach(() => {
@@ -36,7 +37,7 @@ describe('navigationBar', () => {
     });
 
     describe('dashboardNavBarLinks', () => {
-        it('returns standard links for all users', async () => {
+        it('renders standard links and hides restricted links for regular users', async () => {
             await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
             const html = dashboardNavBarLinks();
             
@@ -44,39 +45,37 @@ describe('navigationBar', () => {
             expect(html).toContain('href="#participants/all"');
             expect(html).toContain('href="#participantLookup"');
             expect(html).toContain('href="#logout"');
-        });
-
-        it('includes the responsive spacer div', async () => {
-            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
-            const html = dashboardNavBarLinks();
+            expect(html).toContain('href="#ehrUpload"');
             expect(html).toContain('<div class="w-100 d-none d-lg-block"></div>');
+            expect(html).not.toContain('href="#requestAKitConditions"');
+            expect(html).not.toContain('id="notifications"');
         });
 
-        it('shows Kit Eligibility for coordinating center', async () => {
+        it('shows Kit Eligibility, Notifications, and API Key Generator for coordinating center', async () => {
             await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: true });
             const html = dashboardNavBarLinks();
             expect(html).toContain('href="#requestAKitConditions"');
+            expect(html).toContain('id="notifications"');
+            expect(html).toContain('href="#generateServiceAccountKey"');
         });
 
-        it('hides Kit Eligibility for regular users', async () => {
-            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false });
-            const html = dashboardNavBarLinks();
-            expect(html).not.toContain('href="#requestAKitConditions"');
-        });
-
-        it('shows Site Messages for site managers', async () => {
+        it('shows Site Messages and API Key Generator for site managers', async () => {
             await roleState.setRoleFlags({ isSiteManager: true });
             const html = dashboardNavBarLinks();
             expect(html).toContain('href="#siteMessages"');
+            expect(html).toContain('href="#generateServiceAccountKey"');
+            expect(html).toContain('API Key Generator');
         });
 
-        it('hides Site Messages for help desk', async () => {
+        it('hides Site Messages, EHR Upload, and API Key Generator for help desk', async () => {
             await roleState.setRoleFlags({ isSiteManager: false, helpDesk: true });
             const html = dashboardNavBarLinks();
             expect(html).not.toContain('href="#siteMessages"');
+            expect(html).not.toContain('href="#ehrUpload"');
+            expect(html).not.toContain('href="#generateServiceAccountKey"');
         });
 
-        it('check links for EHR uploader', async () => {
+        it('renders EHR uploader links and hides unrelated tools', async () => {
             await roleState.setRoleFlags({ isSiteManager: false, isEHRUploader: true });
             const html = dashboardNavBarLinks();
             expect(html).toContain('href="#home"');
@@ -85,54 +84,6 @@ describe('navigationBar', () => {
             expect(html).not.toContain('href="#requestAKitConditions"');
             expect(html).not.toContain('href="#siteMessages"');
             expect(html).not.toContain('id="notifications"');
-        });
-
-        it('shows EHR Upload for regular users', async () => {
-            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false, isEHRUploader: false });
-            const html = dashboardNavBarLinks();
-            expect(html).toContain('href="#ehrUpload"');
-        });
-
-        it('hides EHR Upload for helpDesk users', async () => {
-            await roleState.setRoleFlags({ isParent: false, helpDesk: true, coordinatingCenter: false, isEHRUploader: false });
-            const html = dashboardNavBarLinks();
-            expect(html).not.toContain('href="#ehrUpload"');
-        });
-
-        it('shows Notifications for coordinating center', async () => {
-            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: true, isEHRUploader: false });
-            const html = dashboardNavBarLinks();
-            expect(html).toContain('id="notifications"');
-        });
-
-        it('hides Notifications for regular users', async () => {
-            await roleState.setRoleFlags({ isParent: false, helpDesk: false, coordinatingCenter: false, isEHRUploader: false });
-            const html = dashboardNavBarLinks();
-            expect(html).not.toContain('id="notifications"');
-        });
-
-        it('shows API Key Generator link for site managers', async () => {
-            await roleState.setRoleFlags({ isSiteManager: true, helpDesk: false, coordinatingCenter: false });
-            const html = dashboardNavBarLinks();
-            expect(html).toContain('href="#generateServiceAccountKey"');
-            expect(html).toContain('API Key Generator');
-        });
-
-        it('shows API Key Generator link for coordinating center', async () => {
-            await roleState.setRoleFlags({ isSiteManager: false, helpDesk: false, coordinatingCenter: true });
-            const html = dashboardNavBarLinks();
-            expect(html).toContain('href="#generateServiceAccountKey"');
-        });
-
-        it('hides API Key Generator link for helpDesk users', async () => {
-            await roleState.setRoleFlags({ isSiteManager: false, helpDesk: true, coordinatingCenter: false });
-            const html = dashboardNavBarLinks();
-            expect(html).not.toContain('href="#generateServiceAccountKey"');
-        });
-
-        it('does not show API Key Generator link for EHR uploaders', async () => {
-            await roleState.setRoleFlags({ isSiteManager: false, isEHRUploader: true, helpDesk: false, coordinatingCenter: false });
-            const html = dashboardNavBarLinks();
             expect(html).not.toContain('href="#generateServiceAccountKey"');
         });
 

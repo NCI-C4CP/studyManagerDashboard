@@ -1,4 +1,4 @@
-import { setupTestEnvironment, teardownTestEnvironment, installFirebaseStub, createDOMFixture, cleanupDOMFixture, clearAllState, createMockParticipant, waitForAsyncTasks } from './helpers.js';
+import { setupTestEnvironment, teardownTestEnvironment, installFirebaseStub, createDOMFixture, cleanupDOMFixture, clearAllState, createMockParticipant, mockApi, jsonResponse, expectConsole } from './helpers.js';
 import * as stateManagerModule from '../src/stateManager.js';
 import * as utilsModule from '../src/utils.js';
 import { setParticipantLookupNavRequest } from '../src/navigationBar.js';
@@ -10,16 +10,21 @@ describe('router', () => {
   const stateManager = stateManagerModule?.default ?? stateManagerModule;
   const { searchState, participantState, roleState } = stateManager;
 
-  const loadRouter = async () => {
-    const module = await import('../index.js');
-    const resolved = module?.default ?? module;
-    return resolved.router;
+  const routeTo = async (hash) => {
+    const { router } = await import('../index.js');
+    // These tests invoke the router directly, so browser events should not invoke it too.
+    window.onload = null;
+    window.onhashchange = null;
+    window.history.replaceState(null, null, hash);
+    await router();
   };
 
   beforeEach(async () => {
     setupTestEnvironment();
     firebaseStub = installFirebaseStub({ uid: 'test-user' });
     await clearAllState();
+    await roleState.setRoleFlags({ isSiteManager: true });
+    setParticipantLookupNavRequest(false);
     mainContent = createDOMFixture('mainContent');
     navBarLinks = createDOMFixture('navBarLinks');
   });
@@ -42,14 +47,12 @@ describe('router', () => {
     const participants = [createMockParticipant('lookup-1', { token: 'abc-123' })];
     await searchState.setSearchResults(metadata, participants);
 
-    window.location.hash = '#participantLookup';
-    const router = await loadRouter();
-    await router();
-    await waitForAsyncTasks(20);
+    await routeTo('#participantLookup');
 
-    const cached = searchState.getSearchResults();
-    expect(cached).not.toBeNull();
-    expect(cached.length).toBe(1);
+    const rows = mainContent.querySelectorAll('#dataTable tbody tr');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].querySelector('.select-participant')?.dataset.token).toBe(participants[0].token);
+    expect(mainContent.querySelector('#search')).toBeNull();
   });
 
   it('shows fresh lookup form when nav intent is set', async () => {
@@ -64,157 +67,167 @@ describe('router', () => {
     await searchState.setSearchResults(metadata, participants);
 
     setParticipantLookupNavRequest(true);
-    window.location.hash = '#participantLookup';
-    const router = await loadRouter();
-    await router();
-    await waitForAsyncTasks(20);
+    await routeTo('#participantLookup');
 
-    const main = document.getElementById('mainContent');
-    expect(main).not.toBeNull();
+    expect(mainContent.querySelector('#search')).not.toBeNull();
+    expect(mainContent.querySelector('#searchId')).not.toBeNull();
+    expect(mainContent.querySelector('#dataTable')).toBeNull();
+    expect(searchState.getSearchResults()).toBeNull();
   });
 
   it('redirects unauthenticated users to login route', async () => {
     firebaseStub.setUid(null);
-    window.location.hash = '#home';
-
-    const router = await loadRouter();
-    await router();
-    await waitForAsyncTasks(20);
+    await routeTo('#home');
 
     expect(window.location.hash).toBe('#login');
   });
 
+  it('signs out after an authorization denial before rendering a protected route', async () => {
+    roleState.clear();
+    expectConsole('error', 'Authorization request failed: 401');
+    expectConsole('error', 'User is not authorized to access dashboard. Signing out...');
+    const fetchMock = mockApi({
+      'GET validateSiteUsers': () => jsonResponse({ code: 401 }, { status: 401 }),
+    });
+
+    await routeTo('#participantLookup');
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(firebaseStub.currentUser).toBeNull();
+    expect(mainContent.childElementCount).toBe(0);
+  });
+
   describe('participant details routing', () => {
-    let participant;
+    const expectActiveParticipantTab = (tabId) => {
+      const activeTabs = [...mainContent.querySelectorAll('.participant-tabs .nav-link.active')];
+      const activePanes = [...mainContent.querySelectorAll('.participant-tab-content > .tab-pane.active')];
+      expect(activeTabs.map(({ id }) => id)).toEqual([`${tabId}-tab`]);
+      expect(activeTabs[0].getAttribute('aria-selected')).toBe('true');
+      expect(activePanes.map(({ id }) => id)).toEqual([`${tabId}-content`]);
+    };
 
     beforeEach(async () => {
-      participant = createMockParticipant('test-123', { token: 'abc-123' });
+      const participant = createMockParticipant('test-123', { token: 'abc-123' });
       await participantState.setParticipant(participant);
-      roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
+      await roleState.setRoleFlags({ isParent: true, helpDesk: false, coordinatingCenter: false });
+    });
 
-      // Mock fetch (prevent actual API calls)
-      global.fetch = async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({ code: 200, data: [] }),
+    afterEach(() => {
+      participantState.clearParticipant();
+    });
+
+    it('renders Details for the participant route without a tab', async () => {
+      await routeTo('#participantDetails');
+
+      expectActiveParticipantTab('details');
+      expect(mainContent.querySelector('#details-content .detailsTable')).not.toBeNull();
+    });
+
+    it('renders Summary when opened directly', async () => {
+      mockApi({
+        'GET retrievePhysicalActivityReport': jsonResponse({ code: 200, data: [] }),
       });
+      await routeTo('#participantDetails/summary');
+
+      expectActiveParticipantTab('summary');
+      expect(mainContent.querySelector('#summary-content').textContent).toContain('Participant Summary');
     });
 
-    afterEach(async () => {
-      await participantState.clearParticipant();
-      delete global.fetch;
+    it('renders the Withdrawal form for a parent user', async () => {
+      await routeTo('#participantDetails/withdrawal');
+
+      expectActiveParticipantTab('withdrawal');
+      expect(mainContent.querySelector('#withdrawal-content #formMainPage')).not.toBeNull();
     });
 
-    it('recognizes participant details routes', () => {
-      // Test that the router logic identifies participant details routes
-      const detailsRoute = '#participantDetails';
-      const summaryRoute = '#participantDetails/summary';
-      const withdrawalRoute = '#participantDetails/withdrawal';
+    it('renders Data Corrections for a help desk user', async () => {
+      await roleState.setRoleFlags({ isSiteManager: false, isParent: false, helpDesk: true });
+      await routeTo('#participantDetails/dataCorrections');
 
-      expect(detailsRoute.startsWith('#participantDetails')).toBe(true);
-      expect(summaryRoute.startsWith('#participantDetails')).toBe(true);
-      expect(withdrawalRoute.startsWith('#participantDetails')).toBe(true);
+      expectActiveParticipantTab('dataCorrections');
+      expect(mainContent.querySelector('#dataCorrections-content #dataCorrectionsToolContainer')).not.toBeNull();
     });
 
-    it('extracts tab IDs from participant details routes', () => {
-      expect('#participantDetails/summary'.split('/')[1]).toBe('summary');
-      expect('#participantDetails/withdrawal'.split('/')[1]).toBe('withdrawal');
-      expect('#participantDetails/messages'.split('/')[1]).toBe('messages');
-      expect('#participantDetails'.split('/')[1]).toBeUndefined();
+    it('falls back to Details for an unknown tab', async () => {
+      await routeTo('#participantDetails/unknown');
+
+      expectActiveParticipantTab('details');
+      expect(mainContent.querySelector('#details-content .detailsTable')).not.toBeNull();
     });
 
-    it('identifies data corrections route as participant-dependent', () => {
-      const route = '#participantDetails/dataCorrections';
-      expect(route.startsWith('#participantDetails')).toBe(true);
+    it.each(['withdrawal', 'dataCorrections'])('falls back to Details when the user cannot open %s', async (tabId) => {
+      await roleState.setRoleFlags({ isParent: false });
+      await routeTo(`#participantDetails/${tabId}`);
+
+      expectActiveParticipantTab('details');
+      expect(mainContent.querySelector(`#${tabId}-tab`)).toBeNull();
+      expect(mainContent.querySelector(`#${tabId}-content`)).toBeNull();
     });
 
     it('restores the committed participant-details route when unsaved navigation is cancelled', async () => {
-      const originalHistory = global.history;
-      global.history = window.history;
-      const router = await loadRouter();
-      window.history.replaceState(null, null, '#participantDetails');
-      await router();
+      vi.stubGlobal('history', window.history);
+      await routeTo('#participantDetails');
+      expect(mainContent.querySelector('.participant-tabs')).not.toBeNull();
 
       stateManager.appState.setState({ hasUnsavedChanges: true });
       const confirmSpy = vi.spyOn(utilsModule, 'showConfirmModal').mockResolvedValue(false);
 
-      window.history.replaceState(null, null, '#home');
-      await router();
+      await routeTo('#home');
 
       expect(window.location.hash).toBe('#participantDetails');
-      confirmSpy.mockRestore();
-      global.history = originalHistory;
+      expect(confirmSpy).toHaveBeenCalledOnce();
     });
   });
 
   describe('#mySamples route', () => {
+    const mockSampleRecords = (records) => mockApi({
+      'GET getAllMySamples': () => jsonResponse({ code: 200, data: records }),
+    });
+
     beforeEach(() => {
-      global.showdown = { Converter: function () { this.makeHtml = (str) => str; } };
-      global.DOMPurify = { sanitize: (str) => str };
-      global.fetch = async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({ code: 200, data: [{ id: 'site-1', siteAcronym: 'NCI', siteName: 'National Cancer Institute', saved: null, published: { en: 'Hello', es: 'Hola' } }] }),
-      });
+      mockSampleRecords([{
+        id: 'site-1',
+        siteAcronym: 'NCI',
+        siteName: 'National Cancer Institute',
+        saved: null,
+        published: { en: 'Hello', es: 'Hola' },
+      }]);
     });
 
     afterEach(() => {
-      delete global.showdown;
-      delete global.DOMPurify;
-      delete global.fetch;
-      const { appState } = stateManagerModule?.default ?? stateManagerModule;
-      appState.setState((state) => ({ ...state, mySamples: null }));
+      stateManager.appState.setState({ mySamples: null });
     });
 
     it('renders My Samples page for #mySamples route', async () => {
-      window.location.hash = '#mySamples';
-      const router = await loadRouter();
-      await router();
-      await waitForAsyncTasks(50);
+      await routeTo('#mySamples');
 
-      const main = document.getElementById('mainContent');
-      expect(main).not.toBeNull();
-      expect(main.innerHTML).toContain('My Samples');
+      expect(mainContent.innerHTML).toContain('My Samples');
     });
 
     it('renders site cards when data is returned', async () => {
-      window.location.hash = '#mySamples';
-      const router = await loadRouter();
-      await router();
-      await waitForAsyncTasks(50);
+      await routeTo('#mySamples');
 
-      const main = document.getElementById('mainContent');
-      expect(main.innerHTML).toContain('Site: National Cancer Institute');
-      expect(main.innerHTML).toContain('Activity Type: Baseline');
+      expect(mainContent.innerHTML).toContain('Site: National Cancer Institute');
+      expect(mainContent.innerHTML).toContain('Activity Type: Baseline');
     });
 
     it('sorts a legacy Baseline template before SSC for the same site', async () => {
-      global.fetch = async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          code: 200,
-          data: [{
-            id: 'site-ssc',
-            siteAcronym: 'NCI',
-            siteName: 'National Cancer Institute',
-            activityType: 'SSC',
-            saved: null,
-            published: { en: 'SSC', es: 'SSC' },
-          }, {
-            id: 'site-baseline',
-            siteAcronym: 'NCI',
-            siteName: 'National Cancer Institute',
-            saved: null,
-            published: { en: 'Baseline', es: 'Baseline' },
-          }],
-        }),
-      });
+      mockSampleRecords([{
+        id: 'site-ssc',
+        siteAcronym: 'NCI',
+        siteName: 'National Cancer Institute',
+        activityType: 'SSC',
+        saved: null,
+        published: { en: 'SSC', es: 'SSC' },
+      }, {
+        id: 'site-baseline',
+        siteAcronym: 'NCI',
+        siteName: 'National Cancer Institute',
+        saved: null,
+        published: { en: 'Baseline', es: 'Baseline' },
+      }]);
 
-      window.location.hash = '#mySamples';
-      const router = await loadRouter();
-      await router();
-      await waitForAsyncTasks(50);
+      await routeTo('#mySamples');
 
       const activityTypes = [...document.querySelectorAll('.card-title')]
         .map(element => element.textContent.trim());
@@ -225,124 +238,75 @@ describe('router', () => {
     });
 
     it('renders empty state when no data is returned', async () => {
-      global.fetch = async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({ code: 200, data: [] }),
-      });
+      mockSampleRecords([]);
 
-      window.location.hash = '#mySamples';
-      const router = await loadRouter();
-      await router();
-      await waitForAsyncTasks(50);
+      await routeTo('#mySamples');
 
-      const main = document.getElementById('mainContent');
-      expect(main.innerHTML).toContain('My Samples Data Not Found');
+      expect(mainContent.innerHTML).toContain('My Samples Data Not Found');
     });
   });
 
   describe('#generateServiceAccountKey route', () => {
     beforeEach(async () => {
       await roleState.setRoleFlags({ isSiteManager: true, helpDesk: false, coordinatingCenter: false, isEHRUploader: false, isServiceAccountManager: true });
-      global.fetch = async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({ code: 200, data: { keys: [] } }),
+      mockApi({
+        'GET listServiceAccountKeys': () => jsonResponse({ code: 200, data: { keys: [] } }),
       });
     });
 
-    afterEach(() => {
-      delete global.fetch;
-    });
-
     it('renders the API Key Generator page', async () => {
-      window.location.hash = '#generateServiceAccountKey';
-      const router = await loadRouter();
-      await router();
-      await waitForAsyncTasks(50);
+      await routeTo('#generateServiceAccountKey');
 
-      const main = document.getElementById('mainContent');
-      expect(main).not.toBeNull();
-      expect(main.innerHTML).toContain('API Key Generator');
-      expect(main.innerHTML).toContain('generateKeyBtn');
+      expect(mainContent.innerHTML).toContain('API Key Generator');
+      expect(mainContent.innerHTML).toContain('generateKeyBtn');
     });
 
     it('displays active keys table when keys exist', async () => {
-      global.fetch = async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({ code: 200, data: { keys: [
+      mockApi({
+        'GET listServiceAccountKeys': () => jsonResponse({ code: 200, data: { keys: [
           { keyId: 'abc123def456', createdAt: '2026-07-01T00:00:00Z', expiresAt: '2026-10-01T00:00:00Z', isLegacy: false }
         ] } }),
       });
 
-      window.location.hash = '#generateServiceAccountKey';
-      const router = await loadRouter();
-      await router();
-      await waitForAsyncTasks(50);
+      await routeTo('#generateServiceAccountKey');
 
-      const main = document.getElementById('mainContent');
-      expect(main.innerHTML).toContain('abc123def456');
+      expect(mainContent.innerHTML).toContain('abc123def456');
     });
 
     it('renders the page for delegated site users', async () => {
       await roleState.setRoleFlags({ isSiteManager: false, helpDesk: false, coordinatingCenter: false, isEHRUploader: false, isDelegatedSiteUser: true, isServiceAccountManager: true });
 
-      window.location.hash = '#generateServiceAccountKey';
-      const router = await loadRouter();
-      await router();
-      await waitForAsyncTasks(50);
+      await routeTo('#generateServiceAccountKey');
 
-      const main = document.getElementById('mainContent');
-      expect(main.innerHTML).toContain('API Key Generator');
-      expect(main.innerHTML).toContain('generateKeyBtn');
+      expect(mainContent.innerHTML).toContain('API Key Generator');
+      expect(mainContent.innerHTML).toContain('generateKeyBtn');
     });
 
     it('shows a contact message when the site has no service account configured', async () => {
       await roleState.setRoleFlags({ isSiteManager: true, isServiceAccountManager: false, acronym: 'CGR' });
 
-      window.location.hash = '#generateServiceAccountKey';
-      const router = await loadRouter();
-      await router();
-      await waitForAsyncTasks(50);
+      await routeTo('#generateServiceAccountKey');
 
-      const main = document.getElementById('mainContent');
-      expect(main.innerHTML).toContain('No service account is configured for CGR');
-      expect(main.innerHTML).not.toContain('generateKeyBtn');
+      expect(mainContent.innerHTML).toContain('No service account is configured for CGR');
+      expect(mainContent.innerHTML).not.toContain('generateKeyBtn');
     });
   });
 
   describe('delegated site user route lockdown', () => {
     beforeEach(async () => {
       await roleState.setRoleFlags({ isSiteManager: false, helpDesk: false, coordinatingCenter: false, isEHRUploader: false, isDelegatedSiteUser: true, isServiceAccountManager: true });
-      global.fetch = async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({ code: 200, data: { keys: [] } }),
-      });
-    });
-
-    afterEach(() => {
-      delete global.fetch;
     });
 
     it('redirects restricted routes to home', async () => {
-      window.location.hash = '#participants/all';
-      const router = await loadRouter();
-      await router();
-      await waitForAsyncTasks(50);
+      await routeTo('#participants/all');
 
       expect(window.location.hash).toBe('#home');
     });
 
     it('shows the limited access message on home', async () => {
-      window.location.hash = '#home';
-      const router = await loadRouter();
-      await router();
-      await waitForAsyncTasks(50);
+      await routeTo('#home');
 
-      const main = document.getElementById('mainContent');
-      expect(main.innerHTML).toContain('limited access to the Connect Study Manager Dashboard for API key management');
+      expect(mainContent.innerHTML).toContain('limited access to the Connect Study Manager Dashboard for API key management');
     });
   });
 

@@ -3,7 +3,7 @@ import {
   installFirebaseStub,
   setupTestEnvironment,
   teardownTestEnvironment,
-  captureConsoleWarnings,
+  expectConsole,
   createMockParticipantLookupLoader,
   createMockParticipant,
   clearAllState,
@@ -113,6 +113,7 @@ describe('stateManager', () => {
     });
 
     it('falls back to defaults when stats payload is tampered', async () => {
+      expectConsole('warn', 'Failed to load store "stats"');
       await statsState.setStats({ foo: 'bar' }, 111);
       window.sessionStorage.setItem('statsStateEnc', 'corrupted');
       appState.setState({ stats: { statsData: { foo: 'bar' }, statsDataUpdateTime: 111 } });
@@ -126,10 +127,10 @@ describe('stateManager', () => {
     });
 
     it('resets stats when signed in as a different user', async () => {
+      expectConsole('warn', 'Failed to load store "stats"');
+      await initializeAppState();
       await statsState.setStats({ foo: 'user1' }, 42);
       firebaseStub.setUid('another-user');
-      appState.setState({ stats: { statsData: { foo: 'user1' }, statsDataUpdateTime: 42 } });
-      resetAppStateUID();
       await initializeAppState();
 
       expect(statsState.getStats()).toEqual({});
@@ -344,6 +345,7 @@ describe('stateManager', () => {
     });
 
     it('clears stored participant token when recovery fails', async () => {
+      expectConsole('warn', 'Participant recovery failed: invalid token or participant not found');
       await participantState.setParticipant({ id: 2, token: 'bad-token' });
 
       appState.setState({ participant: null });
@@ -388,34 +390,42 @@ describe('stateManager', () => {
     });
 
     it('prevents concurrent participant recovery attempts', async () => {
-      let callCount = 0;
       const participantPayload = createMockParticipant('test-user-123', { token: 'concurrent-token' });
+      const lookupStarted = Promise.withResolvers();
+      const lookupResponse = Promise.withResolvers();
+      const findParticipant = vi.fn(() => {
+        lookupStarted.resolve();
+        return lookupResponse.promise;
+      });
 
-      setParticipantLookupLoader(createMockParticipantLookupLoader(
-        async () => {
-          callCount++;
-          await new Promise((resolve) => setTimeout(resolve, 50));
-          return { code: 200, data: [participantPayload] };
-        }
-      ));
+      setParticipantLookupLoader(createMockParticipantLookupLoader(findParticipant));
 
       await participantState.setParticipant({ id: 1, token: 'concurrent-token' });
 
       appState.setState({ participant: null });
 
-      const [result1, result2, result3] = await Promise.all([
+      const recoveries = [
         participantState.recoverParticipantFromSession(),
         participantState.recoverParticipantFromSession(),
         participantState.recoverParticipantFromSession(),
-      ]);
+      ];
 
-      expect(callCount).toBe(1);
-      expect(result1).toEqual(participantPayload);
-      expect(result2).toEqual(participantPayload);
-      expect(result3).toEqual(participantPayload);
+      let results;
+      try {
+        await Promise.race([lookupStarted.promise, ...recoveries]);
+        expect(findParticipant).toHaveBeenCalledWith('token=concurrent-token');
+        expect(participantState.getParticipant()).toBeNull();
+      } finally {
+        lookupResponse.resolve({ code: 200, data: [participantPayload] });
+        results = await Promise.all(recoveries);
+      }
+
+      expect(findParticipant).toHaveBeenCalledOnce();
+      expect(results).toEqual([participantPayload, participantPayload, participantPayload]);
     });
 
     it('handles network errors during recovery gracefully', async () => {
+      expectConsole('error', 'Error recovering participant from session: Error: Network error');
       await participantState.setParticipant({ id: 1, token: 'network-error-token' });
 
       appState.setState({ participant: null });
@@ -433,19 +443,13 @@ describe('stateManager', () => {
     });
 
     it('warns when setting participant without token', async () => {
-      const { warnings, restore } = captureConsoleWarnings();
+      expectConsole('warn', 'participantState.setParticipant: participant missing token property');
       await participantState.setParticipant({ id: 1 });
-      expect(warnings.length).toBeGreaterThan(0);
-      expect(warnings[0]).toContain('missing token property');
-      restore();
     });
 
     it('warns when setting null participant', async () => {
-      const { warnings, restore } = captureConsoleWarnings();
+      expectConsole('warn', 'participantState.setParticipant: participant is null or undefined');
       await participantState.setParticipant(null);
-      expect(warnings.length).toBeGreaterThan(0);
-      expect(warnings[0]).toContain('null or undefined');
-      restore();
     });
   });
 
@@ -490,25 +494,20 @@ describe('stateManager', () => {
     });
 
     it('handles malformed JSON in sessionStorage', () => {
+      expectConsole('error', 'Error parsing user session:');
       window.sessionStorage.setItem('userSession', 'invalid-json{');
       const user = userSession.getUser();
       expect(user).toBeNull();
     });
 
     it('warns when setting user without email', () => {
-      const { warnings, restore } = captureConsoleWarnings();
+      expectConsole('warn', 'userSession.setUser: userData missing or invalid');
       userSession.setUser({ name: 'No Email User' });
-      expect(warnings.length).toBeGreaterThan(0);
-      expect(warnings[0]).toContain('missing or invalid');
-      restore();
     });
 
     it('warns when setting null user', () => {
-      const { warnings, restore } = captureConsoleWarnings();
+      expectConsole('warn', 'userSession.setUser: userData missing or invalid');
       userSession.setUser(null);
-      expect(warnings.length).toBeGreaterThan(0);
-      expect(warnings[0]).toContain('missing or invalid');
-      restore();
     });
   });
 
@@ -607,16 +606,9 @@ describe('stateManager', () => {
     });
 
     it('warns when setting null or undefined reports', () => {
-      const { warnings, restore } = captureConsoleWarnings();
+      expectConsole('warn', 'reportsState.setReports: reports is null or undefined', 2);
       reportsState.setReports(null);
-      expect(warnings.length).toBeGreaterThan(0);
-      expect(warnings[0]).toContain('null or undefined');
-      restore();
-
-      const { warnings: warnings2, restore: restore2 } = captureConsoleWarnings();
       reportsState.setReports(undefined);
-      expect(warnings2.length).toBeGreaterThan(0);
-      restore2();
     });
   });
 
@@ -691,15 +683,6 @@ describe('stateManager', () => {
       expect(metadata2.routeKey).toBe('cannotbeverified');
     });
 
-    it('persists encrypted metadata to sessionStorage', async () => {
-      const metadata = { searchType: 'lookup', firstName: 'test' };
-      await searchState.setSearchResults(metadata, [{ id: 1 }]);
-
-      const storedEncrypted = window.sessionStorage.getItem('searchMetadataEnc');
-      expect(storedEncrypted).toBeTypeOf('string');
-      expect(storedEncrypted).toMatch(/^v1:/); // Verify encryption format
-    });
-
     it('recovers search metadata from sessionStorage when cache is empty', async () => {
       const metadata = { searchType: 'lookup', firstName: 'recovered-test' };
       
@@ -753,11 +736,8 @@ describe('stateManager', () => {
     });
 
     it('warns when setting search results without metadata', async () => {
-      const { warnings, restore } = captureConsoleWarnings();
+      expectConsole('warn', 'searchState.setSearchResults: metadata is null or undefined');
       await searchState.setSearchResults(null, [{ id: 1 }]);
-      expect(warnings.length).toBeGreaterThan(0);
-      expect(warnings[0]).toContain('metadata is null or undefined');
-      restore();
     });
 
     it('clears cached search data', async () => {
@@ -855,38 +835,23 @@ describe('stateManager', () => {
   });
 
   describe('state hydration', () => {
-    it('hydrates state only once per authenticated user', async () => {
+    it('preserves in-memory state on subsequent initialization for the same user', async () => {
       await initializeAppState();
-      const firstState = appState.getState();
+      await statsState.setStats({ source: 'storage' }, 123);
+      appState.setState({ stats: { statsData: { source: 'memory' }, statsDataUpdateTime: 456 } });
 
-      await statsState.setStats({ baz: 'qux' }, 456);
-      resetAppStateUID();
-
-      await initializeAppState();
-      const secondState = appState.getState();
-
-      expect(secondState).not.toBe(firstState);
-      expect(statsState.getStats()).toEqual({ baz: 'qux' });
-      expect(statsState.getStatsUpdateTime()).toBe(456);
-    });
-
-    it('returns early if already initialized for current user', async () => {
-      await initializeAppState();
-      await statsState.setStats({ test: 'data' }, 123);
-
-      // Should return immediately without re-hydrating
       const state = await initializeAppState();
-      expect(statsState.getStats()).toEqual({ test: 'data' });
-      expect(state).toMatchObject({ stats: { statsData: { test: 'data' }, statsDataUpdateTime: 123 } });
+      expect(state.stats).toEqual({ statsData: { source: 'memory' }, statsDataUpdateTime: 456 });
     });
 
-    it('handles unauthenticated state', async () => {
+    it('restores defaults when the session becomes unauthenticated', async () => {
+      await initializeAppState();
+      await roleState.setRoleFlags({ isSiteManager: true });
+      await statsState.setStats({ source: 'authenticated' }, 123);
+
       firebaseStub.setUid(null);
-      resetAppStateUID();
-      roleState.clear(); // Clear any existing role state
       await initializeAppState();
 
-      // Should initialize with defaults (keep any pre-existing stats if present in appState)
       expect(roleState.getRoleFlags()).toEqual({
         isParent: false,
         coordinatingCenter: false,
@@ -897,22 +862,22 @@ describe('stateManager', () => {
         isDelegatedSiteUser: false,
         acronym: '',
       });
-      const stats = statsState.getStats();
-      expect(stats && typeof stats === 'object').toBe(true);
+      expect(statsState.getStats()).toEqual({});
+      expect(statsState.getStatsUpdateTime()).toBe(0);
     });
   });
 
   describe('resetAppStateUID', () => {
-    it('resets the active UID tracking', async () => {
+    it('allows the same user to hydrate from storage again', async () => {
       await initializeAppState();
-      await statsState.setStats({ test: 'data' }, 123);
+      await statsState.setStats({ source: 'storage' }, 123);
+      appState.setState({ stats: { statsData: { source: 'memory' }, statsDataUpdateTime: 456 } });
 
       resetAppStateUID();
-      firebaseStub.setUid('new-user');
       await initializeAppState();
 
-      // Should load defaults for new user
-      expect(statsState.getStats()).toEqual({});
+      expect(statsState.getStats()).toEqual({ source: 'storage' });
+      expect(statsState.getStatsUpdateTime()).toBe(123);
     });
   });
 

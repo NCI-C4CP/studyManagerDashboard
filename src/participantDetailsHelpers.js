@@ -1522,7 +1522,7 @@ const highlightNewPhonePermissions = (changedOption) => {
                     button.style.display = 'block';
 
                     // Add yellow background and warning text
-                    noteField.parentNode.parentNode.style.backgroundColor = "yellow";
+                    noteField.parentNode.parentNode.style.setProperty('--bs-table-bg', 'yellow');
                     noteField.style.display = "block";
                     noteField.innerHTML = `<i style="color:red;"><u>IMPORTANT:</u><br>*Please confirm participant's contact permission*</i>`;
                 }

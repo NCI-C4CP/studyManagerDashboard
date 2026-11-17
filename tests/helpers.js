@@ -1,38 +1,48 @@
-import { JSDOM } from 'jsdom';
 import { webcrypto } from 'node:crypto';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
+export { mockApi, jsonResponse } from './network.js';
+export { expectConsole } from './console.js';
 
-let dom = null;
 let authStub = null;
 let signOutHandler = () => {};
+const fixtureTimers = new Set();
+const fixtureFrames = new Set();
+let restoreAnimationFrame;
 
 /**
  * Sets up the test environment with JSDOM and necessary polyfills
  * Must be called in beforeEach hooks
  */
 export const setupTestEnvironment = () => {
-  if (dom) {
-    dom.window.close();
-  }
-
-  dom = new JSDOM('<!doctype html><html><body></body></html>', {
-    url: 'https://example.com/',
-  });
-
-  const { window } = dom;
-  global.window = window;
-  global.document = window.document;
-  global.navigator = window.navigator;
-  global.location = window.location;
-  global.sessionStorage = window.sessionStorage;
-  global.localStorage = window.localStorage;
-
-  if (!window.requestAnimationFrame) {
-    window.requestAnimationFrame = (callback) => setTimeout(callback, 16);
-    window.cancelAnimationFrame = (id) => clearTimeout(id);
-  }
-  global.requestAnimationFrame = window.requestAnimationFrame.bind(window);
-  global.cancelAnimationFrame = window.cancelAnimationFrame.bind(window);
+  // Vitest owns the browser environment. Keep history, window and document
+  // attached to that same environment instead of creating a second JSDOM.
+  teardownTestEnvironment();
+  document.body.replaceChildren();
+  sessionStorage.clear();
+  localStorage.clear();
+  window.history.replaceState(null, '', '/');
+  window.onload = null;
+  window.onhashchange = null;
+  const originalRequest = window.requestAnimationFrame;
+  const originalCancel = window.cancelAnimationFrame;
+  window.requestAnimationFrame = (callback) => {
+    const id = originalRequest.call(window, (timestamp) => {
+      fixtureFrames.delete(id);
+      callback(timestamp);
+    });
+    fixtureFrames.add(id);
+    return id;
+  };
+  window.cancelAnimationFrame = (id) => {
+    fixtureFrames.delete(id);
+    originalCancel.call(window, id);
+  };
+  restoreAnimationFrame = () => {
+    for (const id of fixtureFrames) originalCancel.call(window, id);
+    fixtureFrames.clear();
+    window.requestAnimationFrame = originalRequest;
+    window.cancelAnimationFrame = originalCancel;
+  };
 
   if (!globalThis.crypto) {
     globalThis.crypto = webcrypto;
@@ -50,18 +60,13 @@ export const setupTestEnvironment = () => {
  * Must be called in afterEach hooks
  */
 export const teardownTestEnvironment = () => {
-  if (dom) {
-    dom.window.close();
-    dom = null;
-  }
-  delete global.window;
-  delete global.document;
-  delete global.navigator;
-  delete global.location;
-  delete global.sessionStorage;
-  delete global.localStorage;
-  delete global.requestAnimationFrame;
-  delete global.cancelAnimationFrame;
+  restoreAnimationFrame?.();
+  restoreAnimationFrame = undefined;
+  for (const timer of fixtureTimers) clearTimeout(timer);
+  fixtureTimers.clear();
+  window.onload = null;
+  window.onhashchange = null;
+  document.body.replaceChildren();
   authStub = null;
   signOutHandler = () => {};
 };
@@ -90,11 +95,15 @@ export const installFirebaseStub = ({ uid = 'test-user', onSignOut } = {}) => {
     },
     setPersistence: async () => {},
     onAuthStateChanged: (callback) => {
-      const unsubscribe = () => {};
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        fixtureTimers.delete(timer);
         callback(currentUid ? { uid: currentUid, getIdToken: async () => 'fake-id-token' } : null);
       }, 0);
-      return unsubscribe;
+      fixtureTimers.add(timer);
+      return () => {
+        clearTimeout(timer);
+        fixtureTimers.delete(timer);
+      };
     },
   };
 
@@ -135,28 +144,52 @@ export const waitForAsyncTasks = (ms = 50) =>
  * @returns {{ allSettled: () => Promise<void>, restore: () => void }}
  */
 export const trackAsyncEventHandlers = () => {
-  const promises = [];
+  const pending = new Set();
+  const errors = [];
+  const registrations = [];
   const proto = global.window.EventTarget.prototype;
   const origAddEventListener = proto.addEventListener;
+  const origRemoveEventListener = proto.removeEventListener;
+  const captureOf = (options) => typeof options === 'boolean' ? options : !!options?.capture;
 
   proto.addEventListener = function (type, listener, options) {
+    if (!listener) return origAddEventListener.call(this, type, listener, options);
+    const capture = captureOf(options);
+    const existing = registrations.find((entry) =>
+      entry.target === this && entry.type === type && entry.listener === listener && entry.capture === capture);
+    if (existing) return origAddEventListener.call(this, type, existing.wrappedListener, options);
     const wrappedListener = function (...args) {
-      const result = listener.apply(this, args);
+      const result = typeof listener === 'function' ? listener.apply(this, args) : listener.handleEvent(...args);
       if (result && typeof result.then === 'function') {
-        // Swallow rejections — we only need to wait, not re-throw.
-        promises.push(result.catch(() => {}));
+        const tracked = Promise.resolve(result).catch((error) => errors.push(error)).finally(() => pending.delete(tracked));
+        pending.add(tracked);
       }
       return result;
     };
+    registrations.push({ target: this, type, listener, wrappedListener, capture });
     return origAddEventListener.call(this, type, wrappedListener, options);
+  };
+  proto.removeEventListener = function (type, listener, options) {
+    const entry = registrations.find((item) => item.target === this && item.type === type &&
+      item.listener === listener && item.capture === captureOf(options));
+    return origRemoveEventListener.call(this, type, entry?.wrappedListener ?? listener, options);
   };
 
   return {
-    // Resolves once every captured async handler has settled.
-    allSettled: () => Promise.allSettled(promises),
-    // Restores the original addEventListener.
+    // Handlers can dispatch more events while awaiting work. Drain all of them.
+    allSettled: async () => {
+      while (pending.size) await Promise.all([...pending]);
+      if (errors.length) {
+        const [error] = errors.splice(0);
+        throw error;
+      }
+    },
     restore: () => {
       proto.addEventListener = origAddEventListener;
+      proto.removeEventListener = origRemoveEventListener;
+      for (const entry of registrations) {
+        origRemoveEventListener.call(entry.target, entry.type, entry.wrappedListener, entry.capture);
+      }
     },
   };
 };
@@ -391,13 +424,7 @@ export const clearAllState = async (options = {}) => {
     setParticipantLookupLoader?.();
   }
   
-  // Small delay to ensure all async operations complete
-  await waitForAsyncTasks(5);
-  try {
-    await flushActiveColumnsUpdates();
-  } catch (error) {
-    // During cleanup we only care about resetting trackers; swallow failures to avoid masking test results.
-  }
+  await flushActiveColumnsUpdates();
   await resetActiveColumnsUpdateTracking();
 };
 

@@ -1,4 +1,4 @@
-import { setupTestSuite, createMockParticipant, waitForAsyncTasks, trackAsyncEventHandlers } from './helpers.js';
+import { setupTestSuite, createMockParticipant, trackAsyncEventHandlers, mockApi, jsonResponse, expectConsole } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { setupSurveyResetToolPage, resetParticipantSurvey } from '../src/dataCorrectionsTool/surveyResetTool.js';
 import { participantState } from '../src/stateManager.js';
@@ -6,13 +6,11 @@ import { baseAPI } from '../src/utils.js';
 
 describe('surveyResetTool', () => {
     let cleanup;
-    let firebaseStub;
     let asyncHandlerTracker;
 
     beforeEach(async () => {
         const suite = await setupTestSuite();
         cleanup = suite.cleanup;
-        firebaseStub = suite.firebaseStub;
         asyncHandlerTracker = trackAsyncEventHandlers();
 
         document.body.innerHTML = `
@@ -23,19 +21,19 @@ describe('surveyResetTool', () => {
     });
 
     afterEach(async () => {
-        if (asyncHandlerTracker) {
-            await asyncHandlerTracker.allSettled();
-            asyncHandlerTracker.restore();
+        try {
+            await asyncHandlerTracker?.allSettled();
+        } finally {
+            asyncHandlerTracker?.restore();
             asyncHandlerTracker = null;
+            cleanup();
         }
-        cleanup();
     });
 
     describe('setupSurveyResetToolPage', () => {
-        it('renders the survey reset tool interface', async () => {
+        it('renders the survey reset tool interface', () => {
             const participant = createMockParticipant();
             setupSurveyResetToolPage(participant);
-            await waitForAsyncTasks();
 
             const content = document.getElementById('mainContent').innerHTML;
             expect(content).toContain('Survey Status Reset Tool');
@@ -47,18 +45,26 @@ describe('surveyResetTool', () => {
     describe('Interaction', () => {
         it('selects SSN survey and fetches current status', async () => {
             const participant = createMockParticipant('test-uid', {
-                [fieldMapping.ssnStatusFlag]: fieldMapping.started,
-                Connect_ID: 'CONN001'
+                [fieldMapping.ssnStatusFlag]: fieldMapping.surveyStatus.started,
+                Connect_ID: 'CONN001',
             });
-            await participantState.setParticipant(participant);
+            const fetchedParticipant = { ...participant, [fieldMapping.ssnStatusFlag]: fieldMapping.surveyStatus.completed };
+            const fetchSpy = mockApi({
+                'GET getFilteredParticipants': () => jsonResponse({ code: 200, data: [fetchedParticipant] }),
+            });
             setupSurveyResetToolPage(participant);
-            await waitForAsyncTasks();
-            
-            // Note: We can't easily mock the module import here without complex setup or rewire.
-            // We can verify UI state change if we simulate the click. Rely on the fact that the click handler calls the logic.
-            
+
             const ssnOption = document.querySelector(`[data-survey="${fieldMapping.ssnStatusFlag}"]`);
-            expect(ssnOption).not.toBeNull();
+            ssnOption.click();
+            await asyncHandlerTracker.allSettled();
+
+            expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
+                `${baseAPI}/dashboard?api=getFilteredParticipants&connectId=${participant.Connect_ID}`,
+                expect.objectContaining({ method: 'GET' }),
+            );
+            expect(participantState.getParticipant()).toEqual(fetchedParticipant);
+            expect(document.getElementById('surveyStatusText').textContent).toContain('Completed');
+            expect(document.getElementById('submitButton').disabled).toBe(false);
         });
 
         it('disables submit and shows note when survey is already not started', async () => {
@@ -68,18 +74,9 @@ describe('surveyResetTool', () => {
             });
             await participantState.setParticipant(participant);
 
-            global.fetch = async (url) => {
-                if (url.includes('getFilteredParticipants')) {
-                    return {
-                        ok: true,
-                        json: async () => ({ code: 200, data: [participant] }),
-                    };
-                }
-                return { ok: true, json: async () => ({}) };
-            };
+            mockApi({ 'GET getFilteredParticipants': () => jsonResponse({ code: 200, data: [participant] }) });
 
             setupSurveyResetToolPage(participant);
-            await waitForAsyncTasks();
 
             document.querySelector(`[data-survey=\"${fieldMapping.ssnStatusFlag}\"]`).click();
             await asyncHandlerTracker.allSettled();
@@ -88,33 +85,32 @@ describe('surveyResetTool', () => {
             expect(document.getElementById('isSurveyAlreadyResetNote').innerHTML).toContain('no survey data to be reset');
         });
 
-        it('enables submit and resets status after confirmation', async () => {
+        it.each([false, true])('resets status after confirmation when reload failure is %s', async (reloadFails) => {
             const participant = createMockParticipant('test-uid', {
-                [fieldMapping.ssnStatusFlag]: fieldMapping.completed,
+                [fieldMapping.ssnStatusFlag]: fieldMapping.surveyStatus.completed,
                 Connect_ID: 'CONN003'
             });
             await participantState.setParticipant(participant);
 
-            const fetchCalls = [];
-            global.fetch = async (url, options) => {
-                fetchCalls.push({ url, options });
-                if (url.includes('getFilteredParticipants')) {
-                    return {
-                        ok: true,
-                        json: async () => ({ code: 200, data: [participant] }),
-                    };
-                }
-                if (url.includes('resetParticipantSurvey')) {
-                    return {
-                        ok: true,
-                        json: async () => ({ code: 200, data: { ...participant, [fieldMapping.ssnStatusFlag]: fieldMapping.notStarted } }),
-                    };
-                }
-                return { ok: true, json: async () => ({}) };
-            };
+            // The reset response is a bare participant document. The follow-up data only comes from a reload.
+            const followups = [{ [fieldMapping.followups.activityRound]: 'A1' }];
+            const resetParticipant = { ...participant, [fieldMapping.ssnStatusFlag]: fieldMapping.notStarted };
+            if (reloadFails) {
+                expectConsole('error', 'Unable to reload follow-up data. Using the action response. Error: Lookup unavailable');
+            }
+            const fetchSpy = mockApi({
+                'GET getFilteredParticipants': (url) => {
+                    const query = new URL(url).searchParams;
+                    if (query.has('token') && reloadFails) {
+                        return jsonResponse({ message: 'Lookup unavailable' }, { status: 503 });
+                    }
+                    const record = query.has('token') ? { ...resetParticipant, followups } : participant;
+                    return jsonResponse({ code: 200, data: [record] });
+                },
+                'POST resetParticipantSurvey': () => jsonResponse({ code: 200, data: resetParticipant }),
+            });
 
             setupSurveyResetToolPage(participant);
-            await waitForAsyncTasks();
 
             document.querySelector(`[data-survey=\"${fieldMapping.ssnStatusFlag}\"]`).click();
             await asyncHandlerTracker.allSettled();
@@ -126,11 +122,37 @@ describe('surveyResetTool', () => {
             document.getElementById('confirmResetButton').click();
             await asyncHandlerTracker.allSettled();
 
-            const resetCall = fetchCalls.find(call => call.url.includes('resetParticipantSurvey'));
-            expect(resetCall).not.toBeNull();
+            expect(fetchSpy).toHaveBeenCalledTimes(3);
+            expect(fetchSpy).toHaveBeenNthCalledWith(
+                1,
+                `${baseAPI}/dashboard?api=getFilteredParticipants&connectId=${participant.Connect_ID}`,
+                expect.objectContaining({ method: 'GET' }),
+            );
+            expect(fetchSpy).toHaveBeenNthCalledWith(
+                2,
+                `${baseAPI}/dashboard?api=resetParticipantSurvey`,
+                expect.objectContaining({
+                    method: 'POST',
+                    body: JSON.stringify({ connectId: participant.Connect_ID, survey: fieldMapping.ssnStatusFlag }),
+                }),
+            );
+            expect(fetchSpy).toHaveBeenNthCalledWith(
+                3,
+                `${baseAPI}/dashboard?api=getFilteredParticipants&token=${participant.token}`,
+                expect.objectContaining({ method: 'GET' }),
+            );
 
             const statusText = document.getElementById('surveyStatusText').textContent;
             expect(statusText).toContain('Not Started');
+            expect(participantState.getParticipant()).toEqual(reloadFails ? resetParticipant : { ...resetParticipant, followups });
+            expect(document.getElementById('submitButton').disabled).toBe(true);
+            if (reloadFails) {
+                expect(document.querySelector('.alert-warning')?.textContent).toContain('Saved. Reopen the participant to refresh follow-up data.');
+                expect(document.querySelector('.alert-success')).toBeNull();
+            } else {
+                expect(document.querySelector('.alert-success')?.textContent).toContain('Survey has been successfully reset!');
+            }
+            expect(document.querySelector('.alert-danger')).toBeNull();
         });
     });
 
@@ -141,26 +163,22 @@ describe('surveyResetTool', () => {
             });
             await participantState.setParticipant(participant);
 
-            let capturedUrl;
-            let capturedBody;
-
-            global.fetch = async (url, options) => {
-                capturedUrl = url;
-                capturedBody = JSON.parse(options.body);
-                return {
-                    ok: true,
-                    json: async () => ({ 
-                        code: 200, 
-                        data: { ...participant, [fieldMapping.ssnStatusFlag]: fieldMapping.notStarted } 
-                    })
-                };
-            };
+            const fetchSpy = mockApi({
+                'POST resetParticipantSurvey': () => jsonResponse({
+                    code: 200,
+                    data: { ...participant, [fieldMapping.ssnStatusFlag]: fieldMapping.notStarted },
+                }),
+            });
 
             const response = await resetParticipantSurvey(fieldMapping.ssnStatusFlag);
 
-            expect(capturedUrl).toContain(`${baseAPI}/dashboard?api=resetParticipantSurvey`);
-            expect(capturedBody.connectId).toBe('CONN001');
-            expect(capturedBody.survey).toBe(fieldMapping.ssnStatusFlag);
+            expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
+                `${baseAPI}/dashboard?api=resetParticipantSurvey`,
+                expect.objectContaining({
+                    method: 'POST',
+                    body: JSON.stringify({ connectId: 'CONN001', survey: fieldMapping.ssnStatusFlag }),
+                }),
+            );
             expect(response.code).toBe(200);
         });
 
@@ -168,18 +186,10 @@ describe('surveyResetTool', () => {
             const participant = createMockParticipant();
             await participantState.setParticipant(participant);
 
-            global.fetch = async () => ({
-                ok: false,
-                status: 500,
-                json: async () => ({ message: 'Server Error' })
-            });
+            mockApi({ 'POST resetParticipantSurvey': () => jsonResponse({ message: 'Server Error' }, { status: 500 }) });
+            expectConsole('error', /Failed to reset participant survey:\s+Error: 500 Error: Server Error/);
 
-            try {
-                await resetParticipantSurvey(fieldMapping.ssnStatusFlag);
-                throw new Error('Should have thrown an error');
-            } catch (error) {
-                expect(error.message).toContain('500 Error: Server Error');
-            }
+            await expect(resetParticipantSurvey(fieldMapping.ssnStatusFlag)).rejects.toThrow('500 Error: Server Error');
         });
     });
 });

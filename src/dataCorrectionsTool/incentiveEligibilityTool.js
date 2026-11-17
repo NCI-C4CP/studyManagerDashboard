@@ -1,7 +1,7 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
 import { updateNavBar } from '../navigationBar.js';
 import { setActiveDataCorrectionsTab } from './dataCorrectionsHelpers.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner, formatUTCDate, convertToISO8601 } from '../utils.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, triggerNotificationBanner, formatUTCDate, convertToISO8601, reloadParticipantWithFollowups, notifyParticipantUpdate } from '../utils.js';
 import { participantState, invalidateSearchResultsCache } from '../stateManager.js';
 import { findParticipant } from '../participantLookup.js';
 import { refreshParticipantHeaders } from '../participantHeader.js';
@@ -301,10 +301,9 @@ const handleConfirmClick = async (participant) => {
     if (confirmUpdateEligibilityButton) {
         try {
             const updateResponse = await updateParticipantIncentiveEligibility(participant, participantPaymentRound, selectedDateValue);
-            const currentParticipantData = updateResponse.data;
 
-            if (updateResponse.code === 200) { 
-                triggerNotificationBanner("Participant incentive eligibility status updated successfully!", "success" ,14000);
+            if (updateResponse.code === 200) {
+                const currentParticipantData = await reloadParticipantWithFollowups(updateResponse.data);
                 await participantState.setParticipant(currentParticipantData);
                 invalidateSearchResultsCache();
                 refreshParticipantHeaders(currentParticipantData);
@@ -312,6 +311,7 @@ const handleConfirmClick = async (participant) => {
                 document.getElementById('isIncentiveEligibleNote').innerHTML = `<span><i class="fa-solid fa-square-check fa-lg" style="color: #4CAF50; background: white;"></i> This participant is already incentive eligible. The eligibility status cannot be updated.</span>`;
                 document.getElementById('dateOfEligibilityText').textContent = `Date of Eligibility: ${formatUTCDate(currentParticipantData?.[paymentRound]?.[baseline]?.[eligiblePaymentRoundTimestamp])}`; // TODO: Add flexibility for other payment rounds
                 removeSetDateOfEligibilityContent();
+                notifyParticipantUpdate(currentParticipantData, 'Participant incentive eligibility status updated successfully!', 14000);
             }
         } catch (error) { 
             console.error("Failed to update participant incentive eligibility: ", error);
