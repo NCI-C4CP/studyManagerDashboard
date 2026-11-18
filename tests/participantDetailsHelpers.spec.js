@@ -1,4 +1,4 @@
-import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, installFirebaseStub, waitForAsyncTasks, trackAsyncEventHandlers } from './helpers.js';
+import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, installFirebaseStub, trackAsyncEventHandlers, mockApi, jsonResponse } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 
 describe('participantDetailsHelpers', () => {
@@ -31,12 +31,13 @@ describe('participantDetailsHelpers', () => {
     afterEach(async () => {
         // Wait for in-flight async event handlers (e.g. the submitClickHandler's
         // async click callback) to avoid document not found errors on teardown.
-        if (asyncHandlerTracker) {
-            await asyncHandlerTracker.allSettled();
-            asyncHandlerTracker.restore();
+        try {
+            await asyncHandlerTracker?.allSettled();
+        } finally {
+            asyncHandlerTracker?.restore();
             asyncHandlerTracker = null;
+            teardownTestEnvironment();
         }
-        teardownTestEnvironment();
     });
 
     describe('formatPhoneNumber', () => {
@@ -563,14 +564,24 @@ describe('participantDetailsHelpers', () => {
         });
     });
 
-    describe('profile update integration', () => {
-        const setupSubmitDom = () => {
-            document.body.innerHTML = `
-                <div id="mainContent"></div>
-                <button class="updateMemberData" id="updateMemberData">Save</button>
-            `;
-        };
+    const submitProfileChange = async (participant, changedOption) => {
+        document.body.innerHTML = `
+            <div id="mainContent"></div>
+            <button class="updateMemberData" id="updateMemberData">Save</button>
+        `;
+        const fetchMock = mockApi({
+            'POST updateParticipantDataNotSite': jsonResponse({}),
+        });
+        asyncHandlerTracker = trackAsyncEventHandlers();
+        await module.submitClickHandler(participant, changedOption);
+        document.getElementById('updateMemberData').click();
+        await asyncHandlerTracker.allSettled();
 
+        expect(fetchMock).toHaveBeenCalledOnce();
+        return JSON.parse(fetchMock.mock.lastCall[1].body);
+    };
+
+    describe('profile update integration', () => {
         it('writes history entries in the update payload for verified participants', async () => {
             const participant = createMockParticipant('test-uid', {
                 [fieldMapping.cellPhone]: '5551234567',
@@ -589,33 +600,13 @@ describe('participantDetailsHelpers', () => {
             const stateManager = stateManagerModule?.default ?? stateManagerModule;
             stateManager.userSession.setUser({ email: 'admin@example.com' });
 
-            setupSubmitDom();
-
-            const originalFetch = global.fetch;
-            const payloads = [];
-            global.fetch = async (url, options) => {
-                payloads.push(JSON.parse(options.body));
-                return { ok: true, json: async () => ({}) };
-            };
-
-            try {
-                asyncHandlerTracker = trackAsyncEventHandlers();
-                const changedOption = { [fieldMapping.cellPhone]: '5550000000' };
-                await module.submitClickHandler(participant, changedOption);
-                document.getElementById('updateMemberData').click();
-                await asyncHandlerTracker.allSettled();
-
-                expect(payloads).toSatisfy(v => v.length > 0);
-                const payload = payloads[payloads.length - 1];
-                const history = payload[fieldMapping.userProfileHistory];
-                expect(history).toHaveLength(2);
-                const latestEntry = history[1];
-                expect(latestEntry[fieldMapping.cellPhone]).toBe('5551234567');
-                expect(latestEntry[fieldMapping.profileChangeRequestedBy]).toBe('SMDB - admin@example.com');
-                expect(Number.isNaN(Date.parse(latestEntry[fieldMapping.userProfileUpdateTimestamp]))).toBe(false);
-            } finally {
-                global.fetch = originalFetch;
-            }
+            const payload = await submitProfileChange(participant, { [fieldMapping.cellPhone]: '5550000000' });
+            const history = payload[fieldMapping.userProfileHistory];
+            expect(history).toHaveLength(2);
+            const latestEntry = history[1];
+            expect(latestEntry[fieldMapping.cellPhone]).toBe('5551234567');
+            expect(latestEntry[fieldMapping.profileChangeRequestedBy]).toBe('SMDB - admin@example.com');
+            expect(Number.isNaN(Date.parse(latestEntry[fieldMapping.userProfileUpdateTimestamp]))).toBe(false);
         });
 
         it('skips history updates for non-verified participants', async () => {
@@ -629,28 +620,8 @@ describe('participantDetailsHelpers', () => {
             const stateManager = stateManagerModule?.default ?? stateManagerModule;
             stateManager.userSession.setUser({ email: 'admin@example.com' });
 
-            setupSubmitDom();
-
-            const originalFetch = global.fetch;
-            const payloads = [];
-            global.fetch = async (url, options) => {
-                payloads.push(JSON.parse(options.body));
-                return { ok: true, json: async () => ({}) };
-            };
-
-            try {
-                asyncHandlerTracker = trackAsyncEventHandlers();
-                const changedOption = { [fieldMapping.cellPhone]: '5550000000' };
-                await module.submitClickHandler(participant, changedOption);
-                document.getElementById('updateMemberData').click();
-                await asyncHandlerTracker.allSettled();
-
-                expect(payloads).toSatisfy(v => v.length > 0);
-                const payload = payloads[payloads.length - 1];
-                expect(payload).not.toHaveProperty(String(fieldMapping.userProfileHistory));
-            } finally {
-                global.fetch = originalFetch;
-            }
+            const payload = await submitProfileChange(participant, { [fieldMapping.cellPhone]: '5550000000' });
+            expect(payload).not.toHaveProperty(String(fieldMapping.userProfileHistory));
         });
 
         it('syncs query.allPhoneNo when primary phone values change', async () => {
@@ -666,27 +637,8 @@ describe('participantDetailsHelpers', () => {
             const stateManager = stateManagerModule?.default ?? stateManagerModule;
             stateManager.userSession.setUser({ email: 'admin@example.com' });
 
-            setupSubmitDom();
-
-            const originalFetch = global.fetch;
-            const payloads = [];
-            global.fetch = async (url, options) => {
-                payloads.push(JSON.parse(options.body));
-                return { ok: true, json: async () => ({}) };
-            };
-
-            try {
-                asyncHandlerTracker = trackAsyncEventHandlers();
-                const changedOption = { [fieldMapping.cellPhone]: '5550000000' };
-                await module.submitClickHandler(participant, changedOption);
-                document.getElementById('updateMemberData').click();
-                await asyncHandlerTracker.allSettled();
-
-                const payload = payloads[payloads.length - 1];
-                expect(payload['query.allPhoneNo']).toEqual(['5550000000', '2223334444']);
-            } finally {
-                global.fetch = originalFetch;
-            }
+            const payload = await submitProfileChange(participant, { [fieldMapping.cellPhone]: '5550000000' });
+            expect(payload['query.allPhoneNo']).toEqual(['5550000000', '2223334444']);
         });
 
         it('syncs query.allEmails while excluding noreply addresses', async () => {
@@ -703,27 +655,8 @@ describe('participantDetailsHelpers', () => {
             const stateManager = stateManagerModule?.default ?? stateManagerModule;
             stateManager.userSession.setUser({ email: 'admin@example.com' });
 
-            setupSubmitDom();
-
-            const originalFetch = global.fetch;
-            const payloads = [];
-            global.fetch = async (url, options) => {
-                payloads.push(JSON.parse(options.body));
-                return { ok: true, json: async () => ({}) };
-            };
-
-            try {
-                asyncHandlerTracker = trackAsyncEventHandlers();
-                const changedOption = { [fieldMapping.accountEmail]: 'New@Example.com' };
-                await module.submitClickHandler(participant, changedOption);
-                document.getElementById('updateMemberData').click();
-                await asyncHandlerTracker.allSettled();
-
-                const payload = payloads[payloads.length - 1];
-                expect(payload['query.allEmails']).toEqual(['new@example.com', 'second@example.com']);
-            } finally {
-                global.fetch = originalFetch;
-            }
+            const payload = await submitProfileChange(participant, { [fieldMapping.accountEmail]: 'New@Example.com' });
+            expect(payload['query.allEmails']).toEqual(['new@example.com', 'second@example.com']);
         });
     });
 
@@ -733,44 +666,8 @@ describe('participantDetailsHelpers', () => {
             const participant = createMockParticipant('test-uid');
             participant[fieldMapping.verifiedFlag] = fieldMapping.verified;
 
-            document.body.innerHTML = `
-                <div id="mainContent"></div>
-                <button class="updateMemberData" id="updateMemberData">Save</button>
-            `;
-
-            const originalFetch = global.fetch;
-            const calls = [];
-            global.fetch = async (url, options) => {
-                // Capture payload posted by postUserDataUpdate()
-                if (options?.body) {
-                    try {
-                        calls.push(JSON.parse(options.body));
-                    } catch {
-                        calls.push(options.body);
-                    }
-                }
-                return {
-                    ok: true,
-                    json: async () => ({}),
-                };
-            };
-
-            try {
-                asyncHandlerTracker = trackAsyncEventHandlers();
-                // Changed option: only toggle isIntlAltAddress to "no"
-                const changedOption = { [fieldMapping.isIntlAltAddress]: fieldMapping.no };
-                await module.submitClickHandler(participant, changedOption);
-
-                // Click to trigger handler
-                document.getElementById('updateMemberData').click();
-                await asyncHandlerTracker.allSettled();
-
-                expect(calls).toSatisfy(v => v.length > 0);
-                const payload = calls[calls.length - 1];
-                expect(payload[fieldMapping.doesAltAddressExist]).toBe(fieldMapping.no);
-            } finally {
-                global.fetch = originalFetch;
-            }
+            const payload = await submitProfileChange(participant, { [fieldMapping.isIntlAltAddress]: fieldMapping.no });
+            expect(payload[fieldMapping.doesAltAddressExist]).toBe(fieldMapping.no);
         });
     });
 });

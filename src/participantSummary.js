@@ -1,4 +1,3 @@
-import { renderParticipantHeader } from './participantHeader.js';
 import fieldMapping from './fieldToConceptIdMapping.js';
 import { retrievePhysicalActivityReport } from './reportsUtils.js';
 import { consentHandler, hipaaHandler, userProfile, verificationStatus,
@@ -7,10 +6,9 @@ import { consentHandler, hipaaHandler, userProfile, verificationStatus,
     baselineBloodSample, baselineUrineSample, baselineResearchMouthwashSample, baselineHomeMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, 
     baselinePayment, baselinePhysActReport, dhq3Report, 
     dietScreenerSurvey, followupSummaryRows} from './participantSummaryRow.js';
-import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, urls, triggerNotificationBanner, convertToISO8601 } from './utils.js';
-import { participantState, reportsState, invalidateSearchResultsCache } from './stateManager.js';
+import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, urls, triggerNotificationBanner, convertToISO8601, getParticipantByToken, reloadParticipantWithFollowups, notifyParticipantUpdate } from './utils.js';
+import { reportsState, invalidateSearchResultsCache } from './stateManager.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
-import { refreshParticipantHeaders } from './participantHeader.js';
 import { renderParticipantDetails } from './participantDetails.js';
 
 const { PDFDocument, StandardFonts, rgb } = PDFLib;
@@ -761,7 +759,10 @@ const resetClickHandlers = async (participantUid) => {
             const json = await postResetUserData(participantUid);
             forceCloseResetModal();
             if(json.code === 200) {
-                await refreshParticipantAfterReset(json.data.data);
+                reportsState.clearReports();
+                invalidateSearchResultsCache();
+                const participant = await reloadParticipantWithFollowups(json.data.data);
+                await renderUpdatedParticipantSummary(participant, 'Success! Participant Reset.');
 
             } else if (json.code === 404) {
                 participantRefreshError('Unable to find participant.');
@@ -834,38 +835,10 @@ const postResetUserData = async (uid) => {
     }
 }
 
-export const refreshParticipantAfterReset = async (participant) => {
-    await participantState.setParticipant(participant);
-    refreshParticipantHeaders(participant);
-    if (typeof document !== 'undefined' && document.querySelectorAll('.participant-header').length === 0) {
-        const mainContent = document.getElementById('mainContent');
-        if (mainContent) {
-            mainContent.insertAdjacentHTML('afterbegin', renderParticipantHeader(participant));
-        }
-    }
-    reportsState.clearReports();
-    invalidateSearchResultsCache();
-
+const renderUpdatedParticipantSummary = async (participant, successMessage) => {
     window.location.hash = '#participantDetails/summary';
     await renderParticipantDetails(participant, {}, 'summary');
-    triggerNotificationBanner('Success! Participant Reset.', 'success');
-}
-
-export const refreshParticipantAfterDataOverride = async (participant) => {
-    await participantState.setParticipant(participant);
-    refreshParticipantHeaders(participant);
-    if (typeof document !== 'undefined' && document.querySelectorAll('.participant-header').length === 0) {
-        const mainContent = document.getElementById('mainContent');
-        if (mainContent) {
-            mainContent.insertAdjacentHTML('afterbegin', renderParticipantHeader(participant));
-        }
-    }
-    reportsState.clearReports();
-    invalidateSearchResultsCache();
-
-    window.location.hash = '#participantDetails/summary';
-    await renderParticipantDetails(participant, {}, 'summary');
-    triggerNotificationBanner('Success! Participant Data Overridden.', 'success');
+    notifyParticipantUpdate(participant, successMessage);
 }
 
 const showOverrideDataModal = () => {
@@ -1022,7 +995,9 @@ const dataOverrideClickHandlers = async (token) => {
             });
             forceCloseResetModal();
             if(json.code === 200) {
-                await refreshParticipantFromDb(token);
+                invalidateSearchResultsCache();
+                reportsState.clearReports();
+                await refreshParticipantAfterDateOverride(token);
             } else if (json.code === 404) {
                 participantRefreshError('Unable to find participant.');
             } else {
@@ -1063,31 +1038,17 @@ const postPtOverrideData = async (override) => {
 
 }
 
-const refreshParticipantFromDb = async (token) => {
+const refreshParticipantAfterDateOverride = async (token) => {
+    let participant;
     try {
-        const idToken = await getIdToken();
-        const response = await fetch(`${baseAPI}/dashboard?api=getParticipants&type=individual&token=${token}`, {
-            method: "GET",
-            headers:{
-                Authorization: "Bearer " + idToken,
-                "Content-Type": "application/json"
-            }
-        });
-
-        if (!response.ok) { 
-            const error = (response.status + ": " + (await response.json()).message);
-            throw new Error(error);
-        }
-        
-        const json = await response.json();
-        const {data} = json;
-        const participant = data[0];
-        await refreshParticipantAfterDataOverride(participant);
+        // getParticipantByToken includes follow-up data; getParticipants&type=individual does not.
+        participant = await getParticipantByToken(token);
     } catch (error) {
-        console.error('Error in refreshParticipantFromDb:', error);
-        throw error;
+        console.error('Error in refreshParticipantAfterDateOverride:', error);
+        triggerNotificationBanner('Date override saved, but the displayed participant information may be out of date. Reopen the participant to refresh it.', 'warning');
+        return;
     }
-
+    await renderUpdatedParticipantSummary(participant, 'Success! Participant Data Overridden.');
 }
 
 const participantRefreshError = async (errorMsg) => {

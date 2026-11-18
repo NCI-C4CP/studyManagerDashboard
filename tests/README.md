@@ -23,6 +23,10 @@ We use **Vitest** as our test framework. Tests run in a Node.js environment with
 ## Running Tests
 
 ```bash
+# Match CI with Node.js 24 and the lockfile (currently Vitest 4.1.12)
+npm ci
+npm exec vitest -- --version
+
 # Run all tests
 npm test
 
@@ -38,13 +42,15 @@ npx vitest run --reporter=verbose
 
 ### Understanding Test Output
 
-**Expected Console Messages**: You will see error/warning messages during test runs. These are **intentional** and part of tests that verify error handling works correctly:
+Unexpected `console.warn` and `console.error` calls fail the test, including errors caught by application code. Tests that deliberately exercise errors must register the expected message with `expectConsole` or capture and assert it with a local spy. For example:
 
 - `Failed to load store "stats" Error: decryptString: malformed payload` - Testing tampered encryption handling
 - `Participant recovery failed: invalid token` - Testing invalid token handling
 - `Error parsing user session: SyntaxError` - Testing malformed JSON handling
 
-These messages indicate the code is **correctly catching and handling errors**. If all tests pass, code is working as expected.
+Assert the resulting fallback state or error UI as well as the message. A passing test only proves the behavior its assertions exercise.
+
+CI runs the full suite once with `npm test`, using the dependencies installed by `npm ci`.
 
 ## File Naming Convention
 
@@ -130,6 +136,10 @@ describe('myModule', () => {
 
 ### Async Utilities
 
+Await application promises or use `vi.waitFor` against an observable result. Avoid fixed delays for network responses, tab loading, and DOM updates. `trackAsyncEventHandlers()` can await promises returned by event listeners, drains nested async events, and propagates handler rejections. Restore the tracker in `finally` during teardown. It cannot await work that an event handler starts without returning or awaiting it, so those flows still need observable completion assertions.
+
+Vitest owns the single JSDOM instance. The setup helper clears its DOM, storage, and URL. Teardown cancels fixture animation frames and auth callbacks. Tests must finish the behavior they assert before teardown and remove any persistent window listeners they add.
+
 ```javascript
 import { participantState } from '../src/stateManager.js';
 
@@ -143,18 +153,36 @@ it('waits for async encryption', async () => {
 ### Console Capture
 
 ```javascript
-import { captureConsoleWarnings } from './helpers.js';
+import { expectConsole } from './helpers.js';
 
 it('warns when setting invalid data', () => {
-  const { warnings, restore } = captureConsoleWarnings();
-
+  expectConsole('warn', /invalid data/);
   someFunction(invalidData);
-
-  expect(warnings.length).toBeGreaterThan(0);
-  expect(warnings[0]).toContain('invalid');
-  restore();
+  expect(resultingState()).toEqual(defaultState);
 });
 ```
+
+`expectConsole` defaults to exactly one matching call. Pass a third argument for another count. It fails if the message never appears, appears too many times, or another warning/error is logged.
+
+### HTTP Fixtures
+
+The default fetch stub blocks every request. Register each endpoint and HTTP method explicitly. Fixtures reset between tests, and calls to `mockApi` within a test merge or override individual endpoints.
+
+```javascript
+import { mockApi, jsonResponse } from './helpers.js';
+
+const fetchMock = mockApi({
+  'GET getFilteredParticipants': () => jsonResponse({ code: 200, data: [participant] }),
+  'POST updateParticipantData': () => jsonResponse({ code: 200 }),
+});
+
+// Real Response objects keep `ok`, `status`, and `json()` consistent.
+mockApi({
+  'GET getFilteredParticipants': () => jsonResponse({ code: 401 }, { status: 401 }),
+});
+```
+
+Keys use the `api` query parameter, or the exact URL for requests without one.
 
 ### Mock Factories
 

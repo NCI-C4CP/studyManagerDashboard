@@ -1,9 +1,8 @@
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
-import { urls } from '../src/utils.js';
+import { baseAPI, urls } from '../src/utils.js';
 import { renderParticipantHeader } from '../src/participantHeader.js';
-import { participantState } from '../src/stateManager.js';
-import { refreshParticipantAfterReset } from '../src/participantSummary.js';
-import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, waitForAsyncTasks, installFirebaseStub, trackAsyncEventHandlers } from './helpers.js';
+import { participantState, reportsState, searchState } from '../src/stateManager.js';
+import { setupTestEnvironment, teardownTestEnvironment, createMockParticipant, installFirebaseStub, trackAsyncEventHandlers, mockApi, jsonResponse, expectConsole } from './helpers.js';
 
 const createPdfLibStub = () => {
   const stubPage = {
@@ -50,10 +49,13 @@ const buildSummaryParticipant = (overrides = {}) => createMockParticipant('summa
   ...overrides,
 });
 
+const waitForFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
+
 describe('participantSummary', () => {
   let retrieveDHQHEIReport;
   let renderSummaryTabContent;
   let asyncHandlerTracker;
+  let fetchSpy;
 
   const ensureModuleLoaded = async () => {
     if (retrieveDHQHEIReport && renderSummaryTabContent) return;
@@ -67,18 +69,21 @@ describe('participantSummary', () => {
   beforeEach(async () => {
     setupTestEnvironment();
     installFirebaseStub({ uid: 'test-user' });
+    participantState.clearParticipant();
+    fetchSpy = mockApi({ 'GET retrievePhysicalActivityReport': () => jsonResponse({ code: 200, data: [] }) });
     document.body.innerHTML = '<div id="navBarLinks"></div><div id="mainContent"></div>';
     await ensureModuleLoaded();
   });
 
   afterEach(async () => {
-    if (asyncHandlerTracker) {
-      await asyncHandlerTracker.allSettled();
-      asyncHandlerTracker.restore();
+    try {
+      await asyncHandlerTracker?.allSettled();
+    } finally {
+      asyncHandlerTracker?.restore();
       asyncHandlerTracker = null;
+      participantState.clearParticipant();
+      teardownTestEnvironment();
     }
-    await waitForAsyncTasks();
-    teardownTestEnvironment();
   });
 
   it('renders summary table with optional revocation/destruction rows and ROI links', async () => {
@@ -128,11 +133,6 @@ describe('participantSummary', () => {
 
     expect(followupIndex).toBeGreaterThan(html.indexOf('downloadPhysActReport'));
     expect(followupIndex).toBeGreaterThan(html.indexOf('Data Destroy Form'));
-  });
-
-  it('retrieveDHQHEIReport short-circuits when submission criteria not met', async () => {
-    const result = await retrieveDHQHEIReport(fieldMapping.started, null, null);
-    expect(result).toBeNull();
   });
 
   describe('hipaaRevocation template states', () => {
@@ -247,53 +247,69 @@ describe('participantSummary', () => {
 
   describe('retrieveDHQHEIReport input validation', () => {
     it('returns null when studyID is missing', async () => {
+      expectConsole('error', 'DHQ3 Retrieval criteria not met:');
       const result = await retrieveDHQHEIReport(fieldMapping.submitted, null, 'user456');
       expect(result).toBeNull();
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it('returns null when respondentUsername is missing', async () => {
+      expectConsole('error', 'DHQ3 Retrieval criteria not met:');
       const result = await retrieveDHQHEIReport(fieldMapping.submitted, 'study_123', null);
       expect(result).toBeNull();
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
 
     it('returns null when dhqSurveyStatus is not submitted', async () => {
+      expectConsole('error', 'DHQ3 Retrieval criteria not met:');
       const result = await retrieveDHQHEIReport(fieldMapping.started, 'study_123', 'user456');
       expect(result).toBeNull();
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
 
-    it('validates that submission status is checked first', async () => {
+    it('does not request a report for an ineligible participant', async () => {
+      expectConsole('error', 'DHQ3 Retrieval criteria not met:');
       const result = await retrieveDHQHEIReport(fieldMapping.notYetEligible, 'study_123', 'user456');
       expect(result).toBeNull();
+      expect(fetchSpy).not.toHaveBeenCalled();
     });
   });
 
   describe('renderSummaryTabContent', () => {
-    it('renders summary table structure', async () => {
+    it('renders summary content when the report request fails', async () => {
       const participant = buildSummaryParticipant();
+      mockApi({
+        'GET retrievePhysicalActivityReport': () => jsonResponse({ message: 'Authorization failed!' }, { status: 401 }),
+      });
+      expectConsole('error', 'Error in retrievePhysicalActivityReport: Error: 401: Authorization failed!');
+      expectConsole('error', 'Error fetching reports: Error: 401: Authorization failed!');
+
       const html = await renderSummaryTabContent(participant);
 
       expect(html).toContain('Participant Summary');
+      expect(html).toContain('<table');
+      expect(html).not.toContain('id="downloadPhysActReport"');
+      expect(reportsState.getReports()).toBeNull();
     });
 
-    it('renders summary content without provided reports', async () => {
+    it('fetches and caches a report when reports are not provided', async () => {
       const participant = buildSummaryParticipant();
-      const html = await renderSummaryTabContent(participant, null);
-
-      expect(html).toContain('Participant Summary');
-      expect(html).toContain('table');
-    });
-
-    it('renders summary content with provided reports', async () => {
-      const participant = buildSummaryParticipant();
-      const reports = {
-        physActReport: {
-          [`d_${fieldMapping.reports.physicalActivity.reportTS}`]: '2024-03-01T00:00:00Z',
-        },
+      const report = {
+        [`d_${fieldMapping.reports.physicalActivity.reportTS}`]: '2024-03-01T00:00:00Z',
       };
-      const html = await renderSummaryTabContent(participant, reports);
+      mockApi({
+        'GET retrievePhysicalActivityReport': () => jsonResponse({ code: 200, data: [report] }),
+      });
+      const html = await renderSummaryTabContent(participant, null);
+      const cachedHtml = await renderSummaryTabContent(participant);
 
-      expect(html).toContain('Participant Summary');
-      expect(html).toContain('downloadPhysActReport');
+      expect(html).toContain('id="downloadPhysActReport"');
+      expect(cachedHtml).toContain('id="downloadPhysActReport"');
+      expect(fetchSpy).toHaveBeenCalledExactlyOnceWith(
+        `${baseAPI}/dashboard?api=retrievePhysicalActivityReport&uid=summary-uid`,
+        expect.objectContaining({ method: 'GET' }),
+      );
+      expect(reportsState.getReports()).toEqual({ physActReport: report });
     });
 
     it('handles missing participant gracefully', async () => {
@@ -336,7 +352,6 @@ describe('participantSummary', () => {
 
   describe('reset participant modal isolation', () => {
     beforeEach(() => {
-      process.env.NODE_ENV = 'test';
       asyncHandlerTracker = trackAsyncEventHandlers();
       // Minimal edit modal skeleton to verify it is untouched by reset flow
       document.body.innerHTML = `
@@ -344,14 +359,6 @@ describe('participantSummary', () => {
         <div id="mainContent"></div>
         <div id="modalShowMoreData"><div id="modalHeader">edit-modal-header</div><div id="modalBody"></div></div>
       `;
-      global.bootstrap = {
-        Modal: class {
-          constructor(el) { this.el = el; }
-          show() { this.el.dataset.shown = '1'; }
-          hide() { this.el.dataset.hidden = '1'; }
-          static getInstance() { return null; }
-        }
-      };
     });
 
     it('populates only the reset modal and leaves the edit modal intact', async () => {
@@ -360,7 +367,7 @@ describe('participantSummary', () => {
       expect(html).toContain('openResetDialog');
       document.getElementById('mainContent').innerHTML = html;
 
-      await waitForAsyncTasks();
+      await waitForFrame();
 
       const resetBtn = document.getElementById('openResetDialog');
       expect(resetBtn).not.toBeNull();
@@ -380,15 +387,12 @@ describe('participantSummary', () => {
       expect(editModalHeader.textContent).toBe('edit-modal-header');
     });
 
-    it('shows and hides reset modal via bootstrap and fallback path', async () => {
+    it('shows and hides the reset modal without Bootstrap', async () => {
       const participant = buildSummaryParticipant();
       const html = await renderSummaryTabContent(participant);
       // Simulate the page-level header plus the summary tab content
       document.getElementById('mainContent').innerHTML = `${renderParticipantHeader(participant)}${html}`;
-      await waitForAsyncTasks();
-
-      // Force manual fallback path (no bootstrap present)
-      delete global.bootstrap;
+      await waitForFrame();
 
       const resetBtn = document.getElementById('openResetDialog');
       expect(resetBtn).not.toBeNull();
@@ -401,9 +405,9 @@ describe('participantSummary', () => {
       const confirmBtn = document.getElementById('resetUserBtn');
       expect(confirmBtn).not.toBeNull();
 
-      global.fetch = async () => ({
-        ok: true,
-        json: async () => ({ code: 200, data: { data: participant } })
+      mockApi({
+        'POST resetUser': () => jsonResponse({ code: 200, data: { data: participant } }),
+        'GET getFilteredParticipants': () => jsonResponse({ code: 200, data: [{ ...participant, followups: [] }] }),
       });
 
       confirmBtn.click();
@@ -414,68 +418,193 @@ describe('participantSummary', () => {
       expect(document.querySelector('.modal-backdrop')).toBeNull();
     });
 
-    it('refreshes the participant header after a successful reset', async () => {
+    it.each([
+      { mode: 'fresh', outcome: 'reloads fresh follow-up rows' },
+      { mode: 'empty', outcome: 'accepts a confirmed empty follow-up lookup' },
+      { mode: 'http-error', outcome: 'drops stale follow-up rows when the reload fails' },
+      { mode: 'unavailable', outcome: 'warns when follow-up enrichment fails' },
+    ])('refreshes the participant header and $outcome after a successful reset', async ({ mode }) => {
+      const reloadFails = mode === 'http-error';
+      const unavailable = reloadFails || mode === 'unavailable';
+      const activity = {
+        [fieldMapping.followups.activityRound]: 'A1',
+        [fieldMapping.followups.activityType]: fieldMapping.followups.SSC,
+      };
       const participant = buildSummaryParticipant({
         Connect_ID: 'OLD-CONNECT',
-        [fieldMapping.verficationDate]: '2024-01-04T00:00:00Z',
+        followups: [{
+          ...activity,
+          surveyTracking: [{
+            [fieldMapping.followups.surveyType]: fieldMapping.followups.bloodUrineMouthwashSurvey,
+            [fieldMapping.followups.surveyStatus]: fieldMapping.surveyStatus.completed,
+            [fieldMapping.followups.surveySubmittedAt]: '2024-06-01T00:00:00Z',
+          }],
+        }],
       });
-      const updatedParticipant = {
-        ...participant,
+      // The action returns a bare document; only the subsequent GET has fresh follow-up rows.
+      const updatedParticipant = buildSummaryParticipant({
         Connect_ID: 'NEW-CONNECT',
         [fieldMapping.verficationDate]: '2025-02-02T00:00:00Z',
-      };
+      });
+      const followups = mode === 'fresh' ? [{ ...activity, surveyTracking: [] }] : [];
+      const reloadedParticipant = mode === 'unavailable'
+        ? updatedParticipant
+        : { ...updatedParticipant, followups };
 
-      const originalFetch = global.fetch;
-      global.fetch = async (req) => {
-        const url = typeof req === 'string' ? req : req?.url || '';
-        if (url.includes('resetUser')) {
-          return { ok: true, json: async () => ({ code: 200, data: { data: updatedParticipant } }) };
-        }
-        return { ok: true, json: async () => ({ code: 200, data: {} }) };
-      };
+      if (reloadFails) {
+        expectConsole('error', 'Unable to reload follow-up data. Using the action response. Error: Follow-up reload unavailable');
+      }
+      mockApi({
+        'POST resetUser': () => jsonResponse({ code: 200, data: { data: updatedParticipant } }),
+        'GET getFilteredParticipants': () => reloadFails
+          ? jsonResponse({ message: 'Follow-up reload unavailable' }, { status: 503 })
+          : jsonResponse({ code: 200, data: [reloadedParticipant] }),
+      });
+      const followupSurveyRow = () => [...document.querySelectorAll('.row-color-followup-dark')]
+        .find(row => row.textContent.includes('Research B/U/M'));
 
-      const html = await renderSummaryTabContent(participant);
-      document.getElementById('mainContent').innerHTML = html;
-      await waitForAsyncTasks();
+      await participantState.setParticipant(participant);
+      await searchState.setSearchResults({ searchType: 'lookup', token: participant.token }, [participant]);
+      reportsState.setReports({ physActReport: { [`d_${fieldMapping.reports.physicalActivity.reportTS}`]: '2024-03-01T00:00:00Z' } });
+      document.getElementById('mainContent').innerHTML = await renderSummaryTabContent(participant);
+      await waitForFrame();
+      expect(followupSurveyRow()?.textContent).toContain('Submitted');
 
-      const resetBtn = document.getElementById('openResetDialog');
-      expect(resetBtn).not.toBeNull();
-      resetBtn.click();
+      document.getElementById('openResetDialog').click();
+      document.getElementById('resetUserBtn').click();
       await asyncHandlerTracker.allSettled();
 
-      const confirmBtn = document.getElementById('resetUserBtn');
-      expect(confirmBtn).not.toBeNull();
-      confirmBtn.click();
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `${baseAPI}/dashboard?api=resetUser`,
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ uid: participant.state.uid, saveToDb: 'true' }),
+        }),
+      );
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `${baseAPI}/dashboard?api=getFilteredParticipants&token=${updatedParticipant.token}`,
+        expect.objectContaining({ method: 'GET' }),
+      );
+      expect(participantState.getParticipant()).toMatchObject(updatedParticipant);
+      expect(participantState.getParticipant().followups).toEqual(unavailable ? undefined : followups);
+      expect(searchState.getSearchResults()).toBeNull();
+      expect(reportsState.getReports()).toEqual({});
+      expect(window.location.hash).toBe('#participantDetails/summary');
+      expect(document.querySelector('#summary-tab')?.getAttribute('aria-selected')).toBe('true');
+      expect(document.querySelector('.participant-header')?.textContent).toContain('NEW-CONNECT');
+      if (mode !== 'fresh') {
+        expect(followupSurveyRow()).toBeUndefined();
+      } else {
+        expect(followupSurveyRow()?.textContent).toContain('Not Started');
+        expect(followupSurveyRow()?.textContent).not.toContain('Submitted');
+      }
+      if (unavailable) {
+        expect(document.querySelector('.alert-warning')?.textContent).toContain('Saved. Reopen the participant to refresh follow-up data.');
+        expect(document.querySelector('.alert-success')).toBeNull();
+      } else {
+        expect(document.querySelector('.alert-success')?.textContent).toContain('Success! Participant Reset.');
+        expect(document.querySelector('.alert-warning')).toBeNull();
+      }
+      expect(document.querySelector('.alert-danger')).toBeNull();
+    });
+
+    // The override endpoint returns no participant, so reload through the enriched lookup.
+    it.each(['loaded', 'http-error', 'unavailable'])('handles a saved test data override with %s follow-up data', async (mode) => {
+      const participant = buildSummaryParticipant();
+      const followups = [{
+        [fieldMapping.followups.activityRound]: 'A2',
+        [fieldMapping.followups.activityType]: fieldMapping.followups.SSC,
+      }];
+      const verificationDate = '2024-06-01T04:00:00.000Z';
+      const correction = {
+        token: participant.token,
+        [fieldMapping.verficationDate]: verificationDate,
+        [fieldMapping.userProfileDateTime]: verificationDate,
+        [fieldMapping.consentDate]: verificationDate,
+        [fieldMapping.hipaaDate]: verificationDate,
+      };
+      const updatedParticipant = {
+        ...participant, ...correction,
+        ...(mode === 'loaded' ? { followups } : {}),
+      };
+      await participantState.setParticipant(participant);
+      await searchState.setSearchResults({ searchType: 'lookup', token: participant.token }, [participant]);
+      reportsState.setReports({ physActReport: { [`d_${fieldMapping.reports.physicalActivity.reportTS}`]: '2024-03-01T00:00:00Z' } });
+      if (mode === 'http-error') {
+        expectConsole('error', 'Error in refreshParticipantAfterDateOverride: Error: Lookup unavailable');
+      }
+      mockApi({
+        'POST participantDataCorrection': () => jsonResponse({ code: 200 }),
+        'GET getFilteredParticipants': () => mode === 'http-error'
+          ? jsonResponse({ message: 'Lookup unavailable' }, { status: 503 })
+          : jsonResponse({ code: 200, data: [updatedParticipant] }),
+      });
+
+      document.getElementById('mainContent').innerHTML = await renderSummaryTabContent(participant);
+      await waitForFrame();
+      expect(document.querySelector('.row-color-followup-light')).toBeNull();
+
+      document.getElementById('openDataOverrideDialog').click();
+      document.getElementById('verificationDateInput').value = '2024-06-01';
+      document.getElementById('dataOverrideBtn').click();
       await asyncHandlerTracker.allSettled();
-      await refreshParticipantAfterReset(updatedParticipant);
 
-      const mainContentHtml = document.getElementById('mainContent').innerHTML;
-      const stateParticipant = participantState.getParticipant();
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `${baseAPI}/dashboard?api=participantDataCorrection`,
+        expect.objectContaining({ method: 'POST', body: JSON.stringify({ data: [correction] }) }),
+      );
+      expect(fetchSpy).toHaveBeenCalledWith(
+        `${baseAPI}/dashboard?api=getFilteredParticipants&token=${participant.token}`,
+        expect.objectContaining({ method: 'GET' }),
+      );
+      expect(searchState.getSearchResults()).toBeNull();
+      expect(reportsState.getReports()).toEqual(mode === 'http-error' ? null : {});
+      expect(participantState.getParticipant()).toMatchObject(mode === 'http-error' ? participant : updatedParticipant);
+      if (mode !== 'http-error') {
+        expect(window.location.hash).toBe('#participantDetails/summary');
+        expect(document.querySelector('#summary-tab')?.getAttribute('aria-selected')).toBe('true');
+        expect(document.querySelector('.participant-header')?.textContent).toContain(participant.Connect_ID);
+      }
+      if (mode === 'loaded') {
+        expect(document.querySelector('.row-color-followup-light')?.textContent).toContain('A2');
+        expect(document.querySelector('.alert-success')?.textContent).toContain('Success! Participant Data Overridden.');
+      } else {
+        expect(document.querySelector('.row-color-followup-light')).toBeNull();
+        const warningMessage = mode === 'http-error'
+          ? 'Date override saved, but the displayed participant information may be out of date. Reopen the participant to refresh it.'
+          : 'Saved. Reopen the participant to refresh follow-up data.';
+        expect(document.querySelector('.alert-warning')?.textContent).toContain(warningMessage);
+        expect(document.querySelector('.alert-success')).toBeNull();
+      }
+      expect(document.querySelector('.alert-danger')).toBeNull();
+    });
+    it('reports a failed test data write without attempting a participant reload', async () => {
+      const participant = buildSummaryParticipant();
+      await participantState.setParticipant(participant);
+      await searchState.setSearchResults({ searchType: 'lookup', token: participant.token }, [participant]);
+      const cachedReports = { physActReport: { [`d_${fieldMapping.reports.physicalActivity.reportTS}`]: '2024-03-01T00:00:00Z' } };
+      reportsState.setReports(cachedReports);
+      mockApi({
+        'POST participantDataCorrection': () => jsonResponse({ message: 'Write failed' }, { status: 500 }),
+      });
+      expectConsole('error', 'Error in postResetUserData: Error: 500: Write failed');
+      expectConsole('error', 'error Error: 500: Write failed');
+      document.getElementById('mainContent').innerHTML = await renderSummaryTabContent(participant);
+      await waitForFrame();
 
-      expect(stateParticipant.Connect_ID).toBe('NEW-CONNECT');
-      expect(mainContentHtml).toContain('NEW-CONNECT');
-      expect(mainContentHtml).toContain('Connect_ID');
+      document.getElementById('openDataOverrideDialog').click();
+      document.getElementById('verificationDateInput').value = '2024-06-01';
+      document.getElementById('dataOverrideBtn').click();
+      await asyncHandlerTracker.allSettled();
 
-      global.fetch = originalFetch;
+      expect(participantState.getParticipant()).toMatchObject(participant);
+      expect(searchState.getSearchResults()).not.toBeNull();
+      expect(reportsState.getReports()).toEqual(cachedReports);
+      expect(fetchSpy.mock.calls.some(([url]) => url.includes('api=getFilteredParticipants'))).toBe(false);
+      expect(document.querySelector('.alert-danger')?.textContent).toContain('Error resetting participant');
+      expect(document.querySelector('.alert-warning')).toBeNull();
+      expect(document.querySelector('.alert-success')).toBeNull();
     });
   });
 
-  it('refreshParticipantAfterReset updates participant state', async () => {
-    const participant = buildSummaryParticipant({
-      [fieldMapping.verifiedFlag]: fieldMapping.duplicate,
-      state: { uid: 'reset-uid', [fieldMapping.duplicateType]: fieldMapping.activeSignedAsPassive }
-    });
-
-    const refreshedParticipant = {
-      ...participant,
-      [fieldMapping.verifiedFlag]: fieldMapping.verified,
-      state: { uid: 'reset-uid', [fieldMapping.duplicateType]: null },
-    };
-
-    await refreshParticipantAfterReset(refreshedParticipant);
-
-    const current = participantState.getParticipant();
-    expect(current[fieldMapping.verifiedFlag]).toBe(fieldMapping.verified);
-    expect(window.location.hash).toBe('#participantDetails/summary');
-  });
 });

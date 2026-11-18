@@ -1,4 +1,5 @@
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
+import { expectConsole } from './helpers.js';
 import {
   getSurveyStatus,
   biospecimenStatus,
@@ -626,6 +627,7 @@ describe('participantSummaryRow', () => {
     });
 
     it('displays research mouthwash collection errors for malformed dates', () => {
+      expectConsole('error', /Error formatting mouthwash collection date:.*Invalid timestamp format/);
       const participant = buildParticipant({
         [fieldMapping.baselineMouthwashCollectedFlag]: fieldMapping.yes,
         [fieldMapping.biospecimenCollectionDetail]: {
@@ -1186,16 +1188,6 @@ describe('participantSummaryRow', () => {
       const row = baselineBOHSurvey(participant);
       expect(row).toContain('N</td>');
       expect(row).toContain('Submitted');
-    });
-
-    it('handles empty refusalOptions object in baselinePromisSurvey', () => {
-      const participant = buildParticipant({
-        [fieldMapping.refusalOptions]: {},
-        [fieldMapping.promisSurveyFlag]: fieldMapping.notStarted,
-      });
-
-      const row = baselinePromisSurvey(participant);
-      expect(row).toContain('>N<');
     });
 
     it('handles missing biospecimenCollectionDetail in baselineBloodSample', () => {

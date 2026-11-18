@@ -249,7 +249,7 @@ export const updateNavBar = (activeElementId) => {
     if (!navBarLinks) return;
 
     navBarLinks.innerHTML = dashboardNavBarLinks();
-    removeActiveClass('nav-link', 'active');
+    navBarLinks.querySelectorAll('.nav-link.active').forEach(link => link.classList.remove('active')); // Keep the tab highlihted, olny change the nav bar highlight
     const activeElement = document.getElementById(activeElementId);
     activeElement?.classList.add('active');
 }

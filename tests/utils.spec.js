@@ -4,6 +4,8 @@ import {
   installFirebaseStub,
   setupTestEnvironment,
   teardownTestEnvironment,
+  mockApi,
+  jsonResponse,
 } from './helpers.js';
 
 describe('utils', () => {
@@ -61,9 +63,8 @@ describe('utils', () => {
         token: 'participant-token',
         followups: [{ [fieldMapping.followups.activityRound]: 'A1' }],
       };
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
-        ok: true,
-        json: async () => ({ code: 200, data: [participant] }),
+      const fetchSpy = mockApi({
+        'GET getFilteredParticipants': () => jsonResponse({ code: 200, data: [participant] }),
       });
 
       await expect(getParticipantByToken('participant-token')).resolves.toEqual(participant);
@@ -75,7 +76,6 @@ describe('utils', () => {
         }),
       );
 
-      fetchSpy.mockRestore();
     });
   });
 

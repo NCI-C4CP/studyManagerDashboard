@@ -1,6 +1,6 @@
 import fieldMapping from '../fieldToConceptIdMapping.js';
 import { updateNavBar } from '../navigationBar.js';
-import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner, formatUTCDate, convertToISO8601, escapeHTML } from '../utils.js';
+import { showAnimation, hideAnimation, baseAPI, getIdToken, getDataAttributes, triggerNotificationBanner, formatUTCDate, convertToISO8601, escapeHTML, notifyParticipantUpdate } from '../utils.js';
 import { verificationStatusMapping, keyToDuplicateType, recruitmentType, updateRecruitmentType } from '../idsToName.js';
 import { appState, participantState, invalidateSearchResultsCache } from '../stateManager.js';
 import { findParticipant } from '../participantLookup.js';
@@ -301,15 +301,21 @@ export const verificationCorrectionsClickHandler = async (selectedOptions) => {
             hideAnimation();
 
             if (response.status === 200) {
+                invalidateSearchResultsCache();
                 const query = `token=${selectedOptions.token}`;
                 const reloadedParticipant = await findParticipant(query);
-                const updatedParticipant = reloadedParticipant.data[0];
+                const { code, data } = reloadedParticipant ?? {};
+                if (code !== 200 || !Array.isArray(data) || data.length !== 1 || !data[0]) {
+                    triggerNotificationBanner('Correction saved, but participant data could not be refreshed. Please reload the participant.', 'warning');
+                    return;
+                }
+                const [updatedParticipant] = data;
                 await participantState.setParticipant(updatedParticipant);
-                invalidateSearchResultsCache();
-                reloadVerificationToolPage(updatedParticipant, 'Correction(s) updated.', 'success');
+                reloadVerificationToolPage(updatedParticipant);
                 if (window.location.hash.includes('#participantDetails')) {
                     await renderParticipantDetails(updatedParticipant, {}, 'details');
                 }
+                notifyParticipantUpdate(updatedParticipant, 'Correction(s) updated.');
             }
             else { 
                 triggerNotificationBanner('Error: No corrections were made.', 'warning')
