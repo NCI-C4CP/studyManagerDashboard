@@ -570,7 +570,10 @@ describe('participantSummary', () => {
         expect(document.querySelector('.alert-success')?.textContent).toContain('Success! Participant Data Overridden.');
       } else {
         expect(document.querySelector('.row-color-followup-light')).toBeNull();
-        expect(document.querySelector('.alert-warning')?.textContent).toContain('Saved. Reopen the participant to refresh follow-up data.');
+        const warningMessage = mode === 'http-error'
+          ? 'Date override saved, but the displayed participant information may be out of date. Reopen the participant to refresh it.'
+          : 'Saved. Reopen the participant to refresh follow-up data.';
+        expect(document.querySelector('.alert-warning')?.textContent).toContain(warningMessage);
         expect(document.querySelector('.alert-success')).toBeNull();
       }
       expect(document.querySelector('.alert-danger')).toBeNull();

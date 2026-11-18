@@ -6,7 +6,7 @@ import { consentHandler, hipaaHandler, userProfile, verificationStatus,
     baselineBloodSample, baselineUrineSample, baselineResearchMouthwashSample, baselineHomeMouthwashSample, baselineMouthwashR1Sample, baselineMouthwashR2Sample, 
     baselinePayment, baselinePhysActReport, dhq3Report, 
     dietScreenerSurvey, followupSummaryRows} from './participantSummaryRow.js';
-import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, urls, triggerNotificationBanner, convertToISO8601, getParticipantByToken, reloadParticipantWithFollowups, notifyParticipantUpdate, PARTICIPANT_REFRESH_WARNING } from './utils.js';
+import { baseAPI, formatUTCDate, getIdToken, hideAnimation, conceptToSiteMapping, pdfCoordinatesMap, showAnimation, translateDate, getDataAttributes, urls, triggerNotificationBanner, convertToISO8601, getParticipantByToken, reloadParticipantWithFollowups, notifyParticipantUpdate } from './utils.js';
 import { reportsState, invalidateSearchResultsCache } from './stateManager.js';
 import { renderPhysicalActivityReportPDF } from '../reports/physicalActivity/physicalActivity.js';
 import { renderParticipantDetails } from './participantDetails.js';
@@ -1045,7 +1045,7 @@ const refreshParticipantAfterDateOverride = async (token) => {
         participant = await getParticipantByToken(token);
     } catch (error) {
         console.error('Error in refreshParticipantAfterDateOverride:', error);
-        triggerNotificationBanner(PARTICIPANT_REFRESH_WARNING, 'warning');
+        triggerNotificationBanner('Date override saved, but the displayed participant information may be out of date. Reopen the participant to refresh it.', 'warning');
         return;
     }
     await renderUpdatedParticipantSummary(participant, 'Success! Participant Data Overridden.');
