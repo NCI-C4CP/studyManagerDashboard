@@ -1,15 +1,12 @@
-import { setupTestSuite, waitForAsyncTasks } from './helpers.js';
+import { setupTestSuite, mockApi, jsonResponse } from './helpers.js';
 import { renderRequestAKitConditions, processRequestAKitConditions, storeRequestAKitConditions } from '../src/requestAKitConditions.js';
-import { baseAPI } from '../src/utils.js';
 
 describe('requestAKitConditions', () => {
     let cleanup;
-    let firebaseStub;
 
     beforeEach(async () => {
         const suite = await setupTestSuite();
         cleanup = suite.cleanup;
-        firebaseStub = suite.firebaseStub;
 
         document.body.innerHTML = `
             <div id="mainContent"></div>
@@ -24,28 +21,12 @@ describe('requestAKitConditions', () => {
 
     describe('renderRequestAKitConditions', () => {
         it('renders conditions interface', async () => {
-            // Mock fetch for concepts and current kit conditions
-            global.fetch = async (url) => {
-                if (url.includes('varToConcept.json')) {
-                    return {
-                        ok: true,
-                        json: async () => ({ "Key1": "123456789" })
-                    };
-                }
-                if (url.includes('retrieveRequestAKitConditions')) {
-                    return {
-                        ok: true,
-                        json: async () => ({ 
-                            data: { 
-                                conditions: '[]',
-                                sorts: '[]',
-                                limit: 10
-                            } 
-                        })
-                    };
-                }
-                return { ok: false };
-            };
+            mockApi({
+                'GET https://raw.githubusercontent.com/episphere/conceptGithubActions/master/jsons/varToConcept.json': jsonResponse({ Key1: '123456789' }),
+                'GET retrieveRequestAKitConditions': jsonResponse({
+                    data: { conditions: '[]', sorts: '[]', limit: 10 },
+                }),
+            });
 
             await renderRequestAKitConditions();
             
@@ -59,54 +40,35 @@ describe('requestAKitConditions', () => {
 
     describe('processRequestAKitConditions', () => {
         it('calls processing API correctly for dry run', async () => {
-            let capturedUrl;
-            
-            global.fetch = async (url) => {
-                capturedUrl = url;
-                return {
-                    ok: true,
-                    json: async () => ({ success: true })
-                };
-            };
+            const fetchMock = mockApi({
+                'GET processRequestAKitConditions': jsonResponse({ success: true }),
+            });
 
             await processRequestAKitConditions(false);
-            expect(capturedUrl).toContain('api=processRequestAKitConditions&updateDb=false');
+            expect(fetchMock.mock.lastCall[0]).toContain('api=processRequestAKitConditions&updateDb=false');
         });
 
         it('calls processing API correctly for live run', async () => {
-            let capturedUrl;
-            
-            global.fetch = async (url) => {
-                capturedUrl = url;
-                return {
-                    ok: true,
-                    json: async () => ({ success: true })
-                };
-            };
+            const fetchMock = mockApi({
+                'GET processRequestAKitConditions': jsonResponse({ success: true }),
+            });
 
             await processRequestAKitConditions(true);
-            expect(capturedUrl).toContain('api=processRequestAKitConditions&updateDb=true');
+            expect(fetchMock.mock.lastCall[0]).toContain('api=processRequestAKitConditions&updateDb=true');
         });
     });
 
     describe('storeRequestAKitConditions', () => {
         it('sends schema to API', async () => {
             const schema = { limit: 100, conditions: "[]" };
-            let capturedUrl;
-            let capturedBody;
-
-            global.fetch = async (url, options) => {
-                capturedUrl = url;
-                capturedBody = JSON.parse(options.body);
-                return {
-                    ok: true,
-                    json: async () => ({ code: 200 })
-                };
-            };
+            const fetchMock = mockApi({
+                'POST updateRequestAKitConditions': jsonResponse({ code: 200 }),
+            });
 
             await storeRequestAKitConditions(schema);
-            expect(capturedUrl).toContain('api=updateRequestAKitConditions');
-            expect(capturedBody.data).toEqual(schema);
+            const [url, options] = fetchMock.mock.lastCall;
+            expect(url).toContain('api=updateRequestAKitConditions');
+            expect(JSON.parse(options.body).data).toEqual(schema);
         });
     });
 });

@@ -1,8 +1,8 @@
 import { updateNavBar } from './navigationBar.js';
 import { renderParticipantHeader } from './participantHeader.js';
-import { findParticipant, navigateBackToSearchResults } from './participantLookup.js';
+import { navigateBackToSearchResults } from './participantLookup.js';
 import fieldMapping from './fieldToConceptIdMapping.js'; 
-import { baseAPI, getIdToken, hideAnimation, showAnimation } from './utils.js';
+import { baseAPI, getIdToken, getParticipantByToken, hideAnimation, showAnimation } from './utils.js';
 import { invalidateSearchResultsCache } from './stateManager.js';
 
 const getBootstrapModalInstance = (modalEl) => {
@@ -527,7 +527,7 @@ const closeModal = () => {
 
 const refreshParticipantAfterSuccess = async (token) => {
     try {
-        const participant = await reloadParticipantData(token);
+        const participant = await getParticipantByToken(token);
         const stateManagerModule = await import('./stateManager.js');
         const participantState = stateManagerModule.participantState || stateManagerModule.default?.participantState;
         await participantState.setParticipant(participant);
@@ -544,17 +544,6 @@ const refreshParticipantAfterSuccess = async (token) => {
         console.error('err', err);
         alert('The kit was successfully requested, but refreshing the participant information failed. Participant data displayed may be stale.');
     }
-}
-
-const reloadParticipantData = async (token) => {
-    const query = `token=${token}`;
-    // Errors handled in refreshParticipantAfterReplacement
-    const {data, code} = await findParticipant(query);
-    if (code !== 200) {
-        throw new Error(code + ' error reloading participant');
-    }
-    const reloadedParticipant = data[0];
-    return reloadedParticipant;
 }
 
 export const requestKit = async (connectId) => {

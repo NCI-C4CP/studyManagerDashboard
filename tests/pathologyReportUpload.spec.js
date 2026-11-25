@@ -1,29 +1,53 @@
-import { setupTestSuite, createMockParticipant, waitForAsyncTasks } from './helpers.js';
+import { setupTestSuite, createMockParticipant, mockApi, jsonResponse } from './helpers.js';
 import conceptIds from '../src/fieldToConceptIdMapping.js';
 import { renderPathologyTabContent } from '../src/pathologyReportUpload.js';
-import { baseAPI } from '../src/utils.js';
 
 describe('pathologyReportUpload', () => {
     let cleanup;
-    let firebaseStub;
+    let windowListeners;
 
     beforeEach(async () => {
-        const suite = await setupTestSuite();
-        cleanup = suite.cleanup;
-        firebaseStub = suite.firebaseStub;
-
-        // Mock jQuery modal
-        window.$ = () => ({
-            modal: () => {}
+        const suite = await setupTestSuite({
+            domFixtures: [{ id: 'mainContent' }],
         });
+        cleanup = suite.cleanup;
+        windowListeners = vi.spyOn(window, 'addEventListener');
     });
 
     afterEach(() => {
-        cleanup();
-        if (typeof window !== 'undefined') {
-            delete window.$;
+        for (const [type, listener, options] of windowListeners.mock.calls) {
+            if (type === 'dragover' || type === 'drop') {
+                window.removeEventListener(type, listener, options);
+            }
         }
+        windowListeners.mockRestore();
+        cleanup();
     });
+
+    const mountUpload = async (filenames = []) => {
+        mockApi({
+            'GET getUploadedPathologyReportNames': () => jsonResponse({ code: 200, data: filenames }),
+        });
+        const participant = createMockParticipant('test-uid', {
+            [conceptIds.verifiedFlag]: conceptIds.verified,
+            [conceptIds.consentFlag]: conceptIds.yes,
+            [conceptIds.hipaaFlag]: conceptIds.yes,
+            [conceptIds.withdrawConsent]: conceptIds.no,
+            [conceptIds.revokeHIPAA]: conceptIds.no,
+            [conceptIds.destroyData]: conceptIds.no,
+            [conceptIds.healthcareProvider]: 125001209,
+        });
+
+        // The renderer schedules initialization for after its caller mounts the HTML.
+        const frame = vi.spyOn(global, 'requestAnimationFrame').mockImplementationOnce(() => 0);
+        try {
+            document.getElementById('mainContent').innerHTML = await renderPathologyTabContent(participant);
+            const [[initialize]] = frame.mock.calls;
+            await initialize();
+        } finally {
+            frame.mockRestore();
+        }
+    };
 
     describe('renderPathologyTabContent', () => {
         it('renders "No participant data" if null', async () => {
@@ -47,100 +71,35 @@ describe('pathologyReportUpload', () => {
             expect(html).toContain('Participant does not meet the criteria');
         });
 
-        it('renders upload interface for eligible participant', async () => {
-            const participant = createMockParticipant('test-uid', {
-                [conceptIds.verifiedFlag]: conceptIds.verified,
-                [conceptIds.consentFlag]: conceptIds.yes,
-                [conceptIds.hipaaFlag]: conceptIds.yes,
-                [conceptIds.withdrawConsent]: conceptIds.no,
-                [conceptIds.revokeHIPAA]: conceptIds.no,
-                [conceptIds.destroyData]: conceptIds.no,
-                [conceptIds.healthcareProvider]: 125001209 // KPCO ID
-            });
+        it('renders the upload interface and lists existing reports', async () => {
+            await mountUpload(['existing-report.pdf']);
 
-            // Mock getUploadedPathologyReportNames
-            global.fetch = async (url) => {
-                if (url.includes('getUploadedPathologyReportNames')) {
-                    return {
-                        ok: true,
-                        json: async () => ({ code: 200, data: [] })
-                    };
-                }
-                return { ok: false };
-            };
-
-            const html = await renderPathologyTabContent(participant);
-            expect(html).toContain('Select Pathology Reports');
-            expect(html).toContain('Drop files here');
+            expect(document.getElementById('mainContent').textContent).toContain('Select Pathology Reports');
+            expect(document.getElementById('dropBox').textContent).toContain('Drop files here');
+            expect(document.getElementById('uploadedFilesNames').textContent).toContain('existing-report.pdf');
+            expect(document.getElementById('uploadedFilesWrapper').style.display).not.toBe('none');
         });
 
         it('clicking "choose your files" opens file picker instead of navigating', async () => {
-            const participant = createMockParticipant('test-uid', {
-                [conceptIds.verifiedFlag]: conceptIds.verified,
-                [conceptIds.consentFlag]: conceptIds.yes,
-                [conceptIds.hipaaFlag]: conceptIds.yes,
-                [conceptIds.withdrawConsent]: conceptIds.no,
-                [conceptIds.revokeHIPAA]: conceptIds.no,
-                [conceptIds.destroyData]: conceptIds.no,
-                [conceptIds.healthcareProvider]: 125001209
-            });
-
-            global.fetch = async (url) => {
-                if (url.includes('getUploadedPathologyReportNames')) {
-                    return { ok: true, json: async () => ({ code: 200, data: [] }) };
-                }
-                return { ok: false };
-            };
-
-            const html = await renderPathologyTabContent(participant);
-            document.body.innerHTML = `<div id="mainContent">${html}</div>`;
-
-            await waitForAsyncTasks();
-
+            await mountUpload();
             const fileInput = document.getElementById('fileInput');
-            let clicked = false;
-            fileInput.click = () => { clicked = true; };
+            const openPicker = vi.spyOn(fileInput, 'click').mockImplementation(() => {});
 
             const link = document.getElementById('selectFilesLink');
             const event = new window.Event('click', { bubbles: true, cancelable: true });
             link.dispatchEvent(event);
 
-            expect(clicked).toBe(true);
+            expect(openPicker).toHaveBeenCalledOnce();
             expect(event.defaultPrevented).toBe(true);
         });
 
-        it('dropping files does not navigate away and prevents default navigation', async () => {
-            const participant = createMockParticipant('test-uid', {
-                [conceptIds.verifiedFlag]: conceptIds.verified,
-                [conceptIds.consentFlag]: conceptIds.yes,
-                [conceptIds.hipaaFlag]: conceptIds.yes,
-                [conceptIds.withdrawConsent]: conceptIds.no,
-                [conceptIds.revokeHIPAA]: conceptIds.no,
-                [conceptIds.destroyData]: conceptIds.no,
-                [conceptIds.healthcareProvider]: 125001209
-            });
-
-            global.fetch = async (url) => {
-                if (url.includes('getUploadedPathologyReportNames')) {
-                    return { ok: true, json: async () => ({ code: 200, data: [] }) };
-                }
-                return { ok: false };
-            };
-
-            const html = await renderPathologyTabContent(participant);
-            document.body.innerHTML = `<div id="mainContent">${html}</div>`;
-            await waitForAsyncTasks();
+        it('dropping files outside the upload area prevents default navigation', async () => {
+            await mountUpload();
 
             const dropEvent = new window.Event('drop', { bubbles: true, cancelable: true });
-            let prevented = false;
-            dropEvent.preventDefault = () => { prevented = true; };
-            dropEvent.stopPropagation = () => {};
-            dropEvent.dataTransfer = { files: [] };
-
             window.dispatchEvent(dropEvent);
 
-            expect(prevented).toBe(true);
+            expect(dropEvent.defaultPrevented).toBe(true);
         });
-
     });
 });

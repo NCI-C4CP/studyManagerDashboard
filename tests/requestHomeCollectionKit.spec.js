@@ -1,4 +1,4 @@
-import { setupTestSuite, createMockParticipant, waitForAsyncTasks, trackAsyncEventHandlers } from './helpers.js';
+import { setupTestSuite, createMockParticipant, trackAsyncEventHandlers, mockApi, jsonResponse, expectConsole } from './helpers.js';
 import fieldMapping from '../src/fieldToConceptIdMapping.js';
 import { renderKitRequest, renderKitRequestTabContent, requestKit } from '../src/requestHomeCollectionKit.js';
 import { baseAPI } from '../src/utils.js';
@@ -11,29 +11,27 @@ vi.mock('../src/navigationBar.js', async (importOriginal) => {
 import * as stateManagerModule from '../src/stateManager.js';
 const stateManager = stateManagerModule?.default ?? stateManagerModule;
 const participantState = stateManager.participantState;
+const searchState = stateManager.searchState;
 
 describe('requestHomeCollectionKit', () => {
     let cleanup;
-    let firebaseStub;
     let asyncHandlerTracker;
 
     beforeEach(async () => {
         const suite = await setupTestSuite();
         cleanup = suite.cleanup;
-        firebaseStub = suite.firebaseStub;
         asyncHandlerTracker = trackAsyncEventHandlers();
-
-        // Mock requestAnimationFrame to run immediately
-        global.requestAnimationFrame = (callback) => callback();
     });
 
     afterEach(async () => {
-        if (asyncHandlerTracker) {
-            await asyncHandlerTracker.allSettled();
-            asyncHandlerTracker.restore();
+        try {
+            await asyncHandlerTracker?.allSettled();
+        } finally {
+            asyncHandlerTracker?.restore();
             asyncHandlerTracker = null;
+            cleanup?.();
+            cleanup = null;
         }
-        cleanup();
     });
 
     describe('renderKitRequestTabContent', () => {
@@ -99,27 +97,20 @@ describe('requestHomeCollectionKit', () => {
     describe('requestKit (API)', () => {
         it('sends request to API', async () => {
             const connectId = 'CONN001';
-            let capturedUrl;
-            let capturedBody;
-
-            global.fetch = async (url, options) => {
-                capturedUrl = url;
-                capturedBody = JSON.parse(options.body);
-                return {
-                    ok: true,
-                    json: async () => ({ code: 200 })
-                };
-            };
+            const fetchMock = mockApi({
+                'POST requestHomeKit': jsonResponse({ code: 200 }),
+            });
 
             await requestKit(connectId);
 
-            expect(capturedUrl).toContain(`${baseAPI}/dashboard?api=requestHomeKit`);
-            expect(capturedBody.connectId).toBe(connectId);
+            const [url, options] = fetchMock.mock.lastCall;
+            expect(url).toContain(`${baseAPI}/dashboard?api=requestHomeKit`);
+            expect(JSON.parse(options.body).connectId).toBe(connectId);
         });
     });
 
     describe('renderKitRequest interactions', () => {
-        it('shows success modal when initial kit request succeeds', async () => {
+        it('requests an initial kit, refreshes participant state, and shows success', async () => {
             const participant = createMockParticipant('test-uid', {
                 [fieldMapping.address1]: '123 Main St',
                 [fieldMapping.city]: 'Anytown',
@@ -128,76 +119,80 @@ describe('requestHomeCollectionKit', () => {
                 [fieldMapping.physicalAddress1]: '123 Main St'
             });
 
-
-            // Prepare DOM
-            document.body.innerHTML = '<div id="mainContent"></div><div id="navBarLinks"></div>';
-
-            // Mock API calls for kit request and participant reload
-            global.fetch = async (url) => {
-                if (url.includes('requestHomeKit')) {
-                    return { ok: true, json: async () => ({ code: 200 }) };
-                }
-                if (url.includes('getFilteredParticipants')) {
-                    return { ok: true, json: async () => ({ code: 200, data: [participant] }) };
-                }
-                return { ok: false, json: async () => ({ message: 'unexpected' }) };
+            const updatedParticipant = {
+                ...participant,
+                [fieldMapping.collectionDetails]: {
+                    [fieldMapping.baseline]: {
+                        [fieldMapping.bioKitMouthwash]: {
+                            [fieldMapping.kitStatus]: fieldMapping.kitStatusValues.pending,
+                        },
+                    },
+                },
             };
 
+
+            document.body.innerHTML = '<div id="mainContent"></div><div id="navBarLinks"></div>';
+
+            const requestKitResponse = vi.fn(() => jsonResponse({ code: 200 }));
+            await searchState.setSearchResults({ searchType: 'lookup', token: participant.token }, [participant]);
+            mockApi({
+                'POST requestHomeKit': requestKitResponse,
+                'GET getFilteredParticipants': jsonResponse({ code: 200, data: [updatedParticipant] }),
+            });
+
             renderKitRequest(participant);
-            await waitForAsyncTasks();
 
             const requestBtn = document.getElementById('requestKitBtn');
             expect(requestBtn).not.toBeNull();
             requestBtn.click();
-
             await asyncHandlerTracker.allSettled();
+
+            const currentParticipant = participantState.getParticipant();
+            expect(requestKitResponse).toHaveBeenCalledOnce();
+            expect(currentParticipant).toEqual(updatedParticipant);
+            expect(searchState.getSearchResults()).toBeNull();
 
             const modal = document.getElementById('modalSuccess');
             expect(modal.classList.contains('show') || modal.style.display === 'block').toBe(true);
             expect(document.getElementById('modalHeader').textContent).toContain('Success');
         });
 
-        it('updates participant state after successful kit request', async () => {
+        it.each(['api-error', 'empty', 'multiple'])('preserves the saved kit outcome when the participant lookup returns %s', async (mode) => {
             const participant = createMockParticipant('test-uid', {
                 [fieldMapping.address1]: '123 Main St',
                 [fieldMapping.city]: 'Anytown',
                 [fieldMapping.state]: 'NY',
                 [fieldMapping.zip]: '12345',
-                [fieldMapping.physicalAddress1]: '123 Main St'
+                [fieldMapping.physicalAddress1]: '123 Main St',
             });
-
-            const updatedParticipant = { 
-                ...participant, 
-                token: participant.token, // token is persistent
-            };
-
-
+            await participantState.setParticipant(participant);
             document.body.innerHTML = '<div id="mainContent"></div><div id="navBarLinks"></div>';
 
-            let requestCount = 0;
-            global.fetch = async (url) => {
-                if (url.includes('requestHomeKit')) {
-                    requestCount += 1;
-                    return { ok: true, json: async () => ({ code: 200 }) };
-                }
-                if (url.includes('getFilteredParticipants')) {
-                    return { ok: true, json: async () => ({ code: 200, data: [updatedParticipant] }) };
-                }
-                return { ok: false, json: async () => ({ message: 'unexpected' }) };
-            };
+            const requestKitResponse = vi.fn(() => jsonResponse({ code: 200 }));
+            const otherParticipant = createMockParticipant('other-uid');
+            mockApi({
+                'POST requestHomeKit': requestKitResponse,
+                'GET getFilteredParticipants': jsonResponse(mode === 'api-error'
+                    ? { code: 503, message: 'Lookup unavailable' }
+                    : { code: 200, data: mode === 'empty' ? [] : [otherParticipant, participant] }),
+            });
+            const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+            expectConsole('error', /^err Error:/);
 
             renderKitRequest(participant);
-            await waitForAsyncTasks();
-
             document.getElementById('requestKitBtn').click();
             await asyncHandlerTracker.allSettled();
 
-            const currentParticipant = participantState.getParticipant();
-            expect(requestCount).toBe(1);
-            expect(currentParticipant.token).toBe(participant.token);
+            expect(requestKitResponse).toHaveBeenCalledOnce();
+            expect(participantState.getParticipant()).toEqual(participant);
+            expect(alertSpy).toHaveBeenCalledExactlyOnceWith(
+                'The kit was successfully requested, but refreshing the participant information failed. Participant data displayed may be stale.',
+            );
+            expect(document.getElementById('modalSuccess').classList.contains('show')).toBe(true);
+            expect(document.getElementById('modalHeader').textContent).toContain('Success! Kit requested.');
         });
 
-        it('enables request button when address override is checked', async () => {
+        it('enables request button when address override is checked', () => {
             const participant = createMockParticipant('test-uid', {
                 [fieldMapping.address1]: '123 Main St',
                 [fieldMapping.city]: 'Anytown',
@@ -213,14 +208,9 @@ describe('requestHomeCollectionKit', () => {
                 }
             });
 
-            // Stub navbar update
-            const navBarModule = await import('../src/navigationBar.js');
-            navBarModule.updateNavBar = () => {};
-
             document.body.innerHTML = '<div id="mainContent"></div><div id="navBarLinks"></div>';
 
             renderKitRequest(participant);
-            await waitForAsyncTasks();
 
             const checkbox = document.getElementById('initialOverrideCheckbox');
             const button = document.getElementById('requestKitBtn');
@@ -228,7 +218,6 @@ describe('requestHomeCollectionKit', () => {
             expect(button.disabled).toBe(true);
 
             checkbox.click();
-            await asyncHandlerTracker.allSettled();
             expect(button.disabled).toBe(false);
         });
     });

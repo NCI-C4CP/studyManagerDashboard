@@ -725,6 +725,36 @@ export const getParticipantByToken = async (participantToken) => {
     return responseObj.data[0];
 };
 
+/**
+ * Reload a participant with follow-up data after an action returned the bare participant document.
+ * Falls back to the given participant if the reload fails, so a completed action is not reported as failed.
+ * @param {object} participant Participant document returned by the action.
+ * @returns {Promise<object>} Reloaded participant, or action-response fields without stale follow-ups.
+ */
+export const reloadParticipantWithFollowups = async (participant) => {
+    try {
+        return await getParticipantByToken(participant?.token);
+    } catch (error) {
+        console.error('Unable to reload follow-up data. Using the action response.', error);
+        if (!participant) return participant;
+        const updatedParticipant = { ...participant };
+        delete updatedParticipant.followups;
+        return updatedParticipant;
+    }
+};
+
+export const PARTICIPANT_REFRESH_WARNING = 'Saved. Reopen the participant to refresh follow-up data.';
+
+// An empty array is a confirmed lookup; a missing array means enrichment was unavailable.
+export const notifyParticipantUpdate = (participant, successMessage, timeout) => {
+    const followupsLoaded = Array.isArray(participant?.followups);
+    triggerNotificationBanner(
+        followupsLoaded ? successMessage : PARTICIPANT_REFRESH_WARNING,
+        followupsLoaded ? 'success' : 'warning',
+        timeout,
+    );
+};
+
 // Ensure that the date is a valid ISO 8601 string
 export function timestampValidation(iso8601String) {
   if (iso8601String) {

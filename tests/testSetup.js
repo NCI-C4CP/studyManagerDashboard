@@ -1,6 +1,31 @@
-// Test setup file that runs before all tests
-// Vitest's jsdom environment handles window/document/navigator/etc. automatically.
-// This file only provides stubs for browser-global libraries used by application code.
+import { beforeEach, afterEach, afterAll, vi } from 'vitest';
+import { installNetworkIsolation, resetNetworkMocks, assertNoUnexpectedRequests } from './network.js';
+import { resetConsoleMocks, assertExpectedConsole } from './console.js';
+
+installNetworkIsolation();
+
+beforeEach(() => {
+  assertNoUnexpectedRequests();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  resetNetworkMocks();
+  resetConsoleMocks();
+});
+
+afterAll(assertNoUnexpectedRequests);
+
+afterEach(() => {
+  try {
+    assertNoUnexpectedRequests();
+    assertExpectedConsole();
+  } finally {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  }
+});
+
+// Vitest owns window/document/navigator. These browser-library stubs support
+// modules imported by the tests, alongside the request and console guards above.
 
 // Stub window.scrollTo for JSDOM
 window.scrollTo = () => {};
